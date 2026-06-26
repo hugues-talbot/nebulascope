@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#06080b;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;}
+  *{box-sizing:border-box;}
+  @keyframes ants{to{stroke-dashoffset:-14;}}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:3px;background:#243040;border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#cdd7e1;border:1px solid #06080b;cursor:ew-resize;}
+</style>
+</helmet>
+
+<div data-screen-label="Astro Inspector" style="width:100vw;height:100vh;background:#0a0e13;overflow:hidden;display:flex;flex-direction:column;color:#c8d2dc;">
+  <div style="height:47px;flex:0 0 47px;display:flex;align-items:center;gap:18px;padding:0 16px;background:#0c1117;border-bottom:1px solid #18222d;display:{{ chromeDisp }};">
+    <div style="display:flex;align-items:center;gap:9px;"><div style="width:15px;height:15px;border-radius:3px;background:linear-gradient(135deg,#5aa9ff,#8a6cff);"></div><span style="font-weight:700;font-size:13.5px;letter-spacing:.02em;color:#e7eef5;">NebulaScope</span><span style="font-size:11px;color:#5b6876;">Inspector</span></div>
+    <div style="display:flex;gap:2px;font-size:12px;color:#8492a0;">
+      <span style="padding:5px 9px;border-radius:4px;">File</span><span style="padding:5px 9px;border-radius:4px;">View</span><span style="padding:5px 9px;border-radius:4px;">Analyze</span>
+    </div>
+    <div style="width:1px;height:20px;background:#1d2833;"></div>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;background:#13202e;border:1px solid #2a557e;border-radius:5px;font-size:11.5px;color:#8fc0f5;font-weight:500;"><span style="width:11px;height:11px;border:1.5px solid #8fc0f5;border-radius:1px;display:inline-block;"></span>Zoom Window</div>
+      <div style="padding:6px 10px;border:1px solid #1f2b37;border-radius:5px;font-size:11.5px;color:#8492a0;">Fit</div>
+      <div style="padding:6px 10px;border:1px solid #1f2b37;border-radius:5px;font-size:11.5px;color:#8492a0;">1:1</div>
+    </div>
+    {{ viewToggles }}
+    <div style="margin-left:auto;display:flex;gap:7px;align-items:center;font-family:'IBM Plex Mono';font-size:11px;">
+      <span style="color:#5b6876;">X</span><span style="color:#aeb9c4;width:42px;">2104</span><span style="color:#5b6876;">Y</span><span style="color:#aeb9c4;width:42px;">1387</span>
+      <div style="display:flex;gap:1px;margin-left:6px;">
+        <span style="background:#2a1416;color:#ff8a8a;padding:3px 7px;border-radius:3px 0 0 3px;">38211</span>
+        <span style="background:#0f2417;color:#7fe0a6;padding:3px 7px;">29044</span>
+        <span style="background:#11203a;color:#8fc0f5;padding:3px 7px;border-radius:0 3px 3px 0;">41902</span>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;min-height:0;">
+    <div style="width:210px;flex:0 0 210px;background:#0b1016;border-right:1px solid #18222d;display:flex;flex-direction:column;display:{{ railDisp }};">
+      <div style="padding:11px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #141d26;">
+        <span style="font-size:10.5px;letter-spacing:.13em;color:#5b6876;font-weight:600;">OPEN IMAGES</span>
+        <div onClick="{{ toggleRailFn }}" title="Hide panel (F2)" style="cursor:pointer;color:#5b6876;font-size:15px;line-height:1;padding:0 3px;">‹</div>
+      </div>
+      <div style="padding:8px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:9px;align-items:center;padding:7px;border-radius:5px;background:#13202e;border:1px solid #284663;">
+          <div style="width:38px;height:38px;border-radius:4px;background:radial-gradient(circle at 55% 45%,#d8c39a,#3a2f3d 55%,#0b0d14);flex:0 0 38px;"></div>
+          <div style="min-width:0;"><div style="font-size:11.5px;color:#dce5ee;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">NGC4565_LRGB.fits</div><div style="font-size:10px;color:#5f6c7a;font-family:'IBM Plex Mono';">4144×2822 · f32</div></div>
+        </div>
+        <div style="display:flex;gap:9px;align-items:center;padding:7px;border-radius:5px;">
+          <div style="width:38px;height:38px;border-radius:4px;background:radial-gradient(circle at 50% 50%,#6a7da0,#1a2030 60%,#0b0d14);flex:0 0 38px;"></div>
+          <div style="min-width:0;"><div style="font-size:11.5px;color:#9fabb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">M51_Ha.fits</div><div style="font-size:10px;color:#5f6c7a;font-family:'IBM Plex Mono';">3008×3008 · f32</div></div>
+        </div>
+        <div style="display:flex;gap:9px;align-items:center;padding:7px;border-radius:5px;">
+          <div style="width:38px;height:38px;border-radius:4px;background:radial-gradient(circle at 40% 60%,#c2a07a,#2a1f28 60%,#0b0d14);flex:0 0 38px;"></div>
+          <div style="min-width:0;"><div style="font-size:11.5px;color:#9fabb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">M81_RGB.fits</div><div style="font-size:10px;color:#5f6c7a;font-family:'IBM Plex Mono';">5202×3464 · f32</div></div>
+        </div>
+      </div>
+      <div style="margin-top:auto;padding:11px 13px;border-top:1px solid #141d26;font-size:10.5px;color:#5b6876;font-family:'IBM Plex Mono';line-height:1.7;">
+        <div style="display:flex;justify-content:space-between;"><span>MEDIAN</span><span style="color:#9fabb8;">312.4</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>σ (MAD)</span><span style="color:#9fabb8;">88.1</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>MIN / MAX</span><span style="color:#9fabb8;">−4 / 64k</span></div>
+      </div>
+    </div>
+    <div style="flex:1;position:relative;min-width:0;background:#05070a;overflow:hidden;">
+      <canvas id="gal" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+      {{ restoreBtn }}
+      <svg style="position:absolute;left:30%;top:24%;width:34%;height:40%;overflow:visible;pointer-events:none;"><rect x="1" y="1" width="98%" height="98%" fill="rgba(90,169,255,0.07)" stroke="#8fc0f5" stroke-width="1.4" stroke-dasharray="7 5" style="animation:ants 0.8s linear infinite;"></rect></svg>
+      <div style="position:absolute;left:30%;top:24%;transform:translateY(-22px);font-family:'IBM Plex Mono';font-size:10.5px;color:#8fc0f5;background:#0b1622cc;padding:2px 7px;border-radius:3px;">drag → zoom to selection</div>
+      <div style="position:absolute;right:14px;top:14px;background:#0a121cdd;border:1px solid #223344;border-radius:6px;padding:9px 11px;font-family:'IBM Plex Mono';font-size:10.5px;backdrop-filter:blur(3px);">
+        <div style="color:#5b6876;letter-spacing:.1em;margin-bottom:5px;">PIXEL · 2104,1387</div>
+        <div style="display:flex;gap:13px;"><span style="color:#ff8a8a;">R 38211</span><span style="color:#7fe0a6;">G 29044</span><span style="color:#8fc0f5;">B 41902</span></div>
+      </div>
+      <div style="position:absolute;left:14px;bottom:14px;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono';font-size:10.5px;color:#7e8b98;"><div style="width:60px;height:3px;background:#cdd7e1;border-radius:2px;"></div>30″</div>
+      <div style="position:absolute;right:14px;bottom:14px;font-family:'IBM Plex Mono';font-size:10.5px;color:#7e8b98;background:#0a121caa;padding:3px 8px;border-radius:4px;">100%</div>
+    </div>
+    <div style="width:422px;flex:0 0 422px;background:#0b1016;border-left:1px solid #18222d;overflow-y:auto;display:flex;flex-direction:column;display:{{ dockDisp }};">{{ dock }}</div>
+  </div>
+  <div style="height:28px;flex:0 0 28px;display:flex;align-items:center;gap:16px;padding:0 14px;background:#0c1117;border-top:1px solid #18222d;font-family:'IBM Plex Mono';font-size:10.5px;color:#6b7886;display:{{ chromeDisp }};">
+    <span>NGC4565_LRGB.fits</span><span>4144×2822</span><span>32-bit float</span><span style="margin-left:auto;color:#8fc0f5;">{{ modeLabel }}</span><span>zoom 100%</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.COL = { R:'#ff6b6b', G:'#3fd07f', B:'#5aa9ff' };
+    this.DEF_A = { R:{b:0.072,m:0.205,w:0.62}, G:{b:0.060,m:0.182,w:0.585}, B:{b:0.050,m:0.165,w:0.55} };
+    this.DEF_COMB = { b:0.060, m:0.185, w:0.585 };
+    this.state = {
+      view:'A',
+      stretchA:'asinh', linkedA:true,
+      chans: JSON.parse(JSON.stringify(this.DEF_A)),
+      stretchB:'asinh', channelB:'RGB',
+      comb: {...this.DEF_COMB}, offsets:{R:8,G:0,B:-6},
+      ghs:{D:1.6,b:6,SP:0.18,LP:0.0,HP:1.0},
+      showRail:true, showDock:true, imageOnly:false
+    };
+    this.hist = { R:this.genHist(0.012), G:this.genHist(0.0), B:this.genHist(-0.014) };
+    this.drag = null;
+  }
+  h(){ return React.createElement.apply(React, arguments); }
+  gauss(x,mu,sd){ const d=(x-mu)/sd; return Math.exp(-0.5*d*d); }
+  genHist(shift){
+    const N=256, raw=[]; let mx=0;
+    for(let i=0;i<N;i++){
+      const x=i/(N-1);
+      let v = 1.00*this.gauss(x,0.105+shift,0.022)
+            + 0.165*this.gauss(x,0.30+shift,0.105)
+            + 0.020*Math.exp(-Math.max(0,x-0.42)*3.4)
+            + 0.010*this.gauss(x,0.70,0.05)
+            + 0.006*this.gauss(x,0.88,0.04);
+      const y = Math.log(1+v*80)/Math.log(81);
+      raw.push(y); if(y>mx) mx=y;
+    }
+    return raw.map(y=>y/mx);
+  }
+  areaPath(arr,H){
+    let d='M0,'+H;
+    for(let i=0;i<arr.length;i++){ d+=' L'+((i/(arr.length-1))*1000).toFixed(1)+','+(H-arr[i]*(H-6)).toFixed(1); }
+    d+=' L1000,'+H+' Z'; return d;
+  }
+  stretchMap(t,m,stretch){
+    t=Math.max(0,Math.min(1,t));
+    let base;
+    if(stretch==='log') base=Math.log(1+t*50)/Math.log(51);
+    else if(stretch==='asinh') base=Math.asinh(t*12)/Math.asinh(12);
+    else base=t;
+    const mm=Math.max(0.02,Math.min(0.98,m));
+    let out=((mm-1)*base)/(((2*mm-1)*base)-mm);
+    return Math.max(0,Math.min(1,out));
+  }
+  curvePath(b,m,w,stretch,H){
+    const mm=(m-b)/Math.max(1e-4,(w-b));
+    let d=''; const STEPS=120;
+    for(let i=0;i<=STEPS;i++){
+      const x=i/STEPS;
+      const t=(x-b)/Math.max(1e-4,(w-b));
+      const out=this.stretchMap(t,mm,stretch);
+      d+=(i?' L':'M')+(x*1000).toFixed(1)+','+(H-out*(H-6)).toFixed(1);
+    }
+    return d;
+  }
+  f16(f){ return Math.round(f*65535).toLocaleString('en-US'); }
+  getH(frame,ch){ return frame==='A'?this.state.chans[ch]:this.state.comb; }
+  clampSet(o,handle,val){
+    const e=0.006; let {b,m,w}={...o};
+    if(handle==='b') b=Math.max(0,Math.min(val,m-e));
+    else if(handle==='m') m=Math.max(b+e,Math.min(val,w-e));
+    else w=Math.max(m+e,Math.min(val,1));
+    return {b,m,w};
+  }
+  startDrag(e,frame,ch,handle){
+    e.preventDefault(); e.stopPropagation();
+    const track=e.currentTarget.closest('[data-track]');
+    if(track) this.drag={frame,ch,handle,track};
+  }
+  onMove(e){
+    if(!this.drag) return;
+    const {frame,ch,handle,track}=this.drag;
+    const r=track.getBoundingClientRect();
+    let f=(e.clientX-r.left)/r.width; f=Math.max(0,Math.min(1,f));
+    if(frame==='A' && this.state.linkedA){
+      const d=f-this.state.chans[ch][handle], nc={};
+      ['R','G','B'].forEach(k=>{ nc[k]=this.clampSet(this.state.chans[k],handle,this.state.chans[k][handle]+d); });
+      this.setState({chans:nc});
+    } else if(frame==='A'){
+      this.setState({chans:{...this.state.chans,[ch]:this.clampSet(this.state.chans[ch],handle,f)}});
+    } else if(frame==='G'){
+      const g={...this.state.ghs}, e=0.012;
+      if(handle==='SP') g.SP=Math.max(g.LP+e,Math.min(f,g.HP-e));
+      else if(handle==='LP') g.LP=Math.max(0,Math.min(f,g.SP-e));
+      else if(handle==='HP') g.HP=Math.max(g.SP+e,Math.min(f,1));
+      this.setState({ghs:g});
+    } else {
+      this.setState({comb:this.clampSet(this.state.comb,handle,f)});
+    }
+  }
+  onUp(){ this.drag=null; }
+  doAuto(frame){
+    if(frame==='A') this.setState({stretchA:'asinh',chans:{R:{b:0.052,m:0.135,w:0.49},G:{b:0.044,m:0.122,w:0.47},B:{b:0.036,m:0.110,w:0.45}}});
+    else if(this.state.stretchB==='ghs') this.setState({ghs:{D:3.2,b:8,SP:0.12,LP:0.0,HP:1.0}});
+    else this.setState({stretchB:'asinh',comb:{b:0.046,m:0.122,w:0.47}});
+  }
+  doReset(frame){
+    if(frame==='A') this.setState({chans:JSON.parse(JSON.stringify(this.DEF_A)),stretchA:'asinh',linkedA:true});
+    else if(this.state.stretchB==='ghs') this.setState({ghs:{D:1.6,b:6,SP:0.18,LP:0.0,HP:1.0}});
+    else this.setState({comb:{...this.DEF_COMB},stretchB:'asinh',offsets:{R:8,G:0,B:-6}});
+  }
+  componentDidMount(){
+    this._mv=this.onMove.bind(this); this._up=this.onUp.bind(this);
+    window.addEventListener('pointermove',this._mv);
+    window.addEventListener('pointerup',this._up);
+    this._kd=(e)=>{
+      if(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      const k=e.key;
+      if(k==='1') this.setState({view:'A'});
+      else if(k==='2') this.setState({view:'B'});
+      else if(k==='v'||k==='V') this.setState({view:this.state.view==='A'?'B':'A'});
+      else if(k==='F2'){ e.preventDefault(); this.setState({showRail:!this.state.showRail}); }
+      else if(k==='F3'){ e.preventDefault(); this.setState({showDock:!this.state.showDock}); }
+      else if(k==='Tab'||k==='f'||k==='F'){ e.preventDefault(); this.setState({imageOnly:!this.state.imageOnly}); }
+      else if(k==='Escape'){ if(this.state.imageOnly) this.setState({imageOnly:false}); }
+    };
+    window.addEventListener('keydown',this._kd);
+    requestAnimationFrame(()=>this.drawGalaxy('gal'));
+    this._rz=()=>this.drawGalaxy('gal');
+    window.addEventListener('resize',this._rz);
+  }
+  componentWillUnmount(){
+    window.removeEventListener('pointermove',this._mv);
+    window.removeEventListener('pointerup',this._up);
+    window.removeEventListener('keydown',this._kd);
+    window.removeEventListener('resize',this._rz);
+  }
+  componentDidUpdate(){
+    // Redraw the canvas at its new size whenever the panel layout changes.
+    const sig = '' + this.state.showRail + this.state.showDock + this.state.imageOnly;
+    if(this._layoutSig !== undefined && this._layoutSig !== sig){
+      requestAnimationFrame(()=>this.drawGalaxy('gal'));
+    }
+    this._layoutSig = sig;
+  }
+  mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  drawGalaxy(id){
+    const el=document.getElementById(id); if(!el) return;
+    const r=el.getBoundingClientRect(); if(!r.width) return;
+    const w=el.width=Math.round(r.width), hh=el.height=Math.round(r.height);
+    const ctx=el.getContext('2d'); const rng=this.mulberry32(11);
+    let g=ctx.createLinearGradient(0,0,w,hh);
+    g.addColorStop(0,'#04060a'); g.addColorStop(1,'#070912'); ctx.fillStyle=g; ctx.fillRect(0,0,w,hh);
+    for(let i=0;i<6;i++){
+      const x=rng()*w, y=rng()*hh, rad=120+rng()*260;
+      const gg=ctx.createRadialGradient(x,y,0,x,y,rad);
+      gg.addColorStop(0,'rgba(60,80,120,0.05)'); gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg; ctx.fillRect(0,0,w,hh);
+    }
+    const cx=w*0.52, cy=hh*0.46, R=Math.min(w,hh)*0.62;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.42); ctx.scale(1,0.30);
+    let halo=ctx.createRadialGradient(0,0,0,0,0,R);
+    halo.addColorStop(0,'rgba(255,240,214,0.95)'); halo.addColorStop(0.10,'rgba(255,224,182,0.75)');
+    halo.addColorStop(0.30,'rgba(212,180,150,0.34)'); halo.addColorStop(0.62,'rgba(120,134,176,0.14)');
+    halo.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
+    ctx.restore();
+    ctx.save(); ctx.translate(cx,cy);
+    let core=ctx.createRadialGradient(0,0,0,0,0,R*0.10);
+    core.addColorStop(0,'rgba(255,252,244,1)'); core.addColorStop(0.5,'rgba(255,238,210,0.85)'); core.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,R*0.10,0,7); ctx.fill();
+    ctx.restore();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.42); ctx.scale(1,0.30);
+    ctx.fillStyle='rgba(20,12,16,0.55)'; ctx.beginPath(); ctx.ellipse(0,R*0.10,R*0.92,R*0.05,0,0,7); ctx.fill();
+    ctx.restore();
+    for(let i=0;i<620;i++){
+      const x=rng()*w, y=rng()*hh, b=Math.pow(rng(),3.2);
+      const rad=0.4+b*2.6, a=0.28+b*0.72;
+      const tint=b>0.7? '255,236,224' : (rng()>0.5?'226,234,255':'255,255,255');
+      ctx.fillStyle='rgba('+tint+','+a+')'; ctx.beginPath(); ctx.arc(x,y,rad,0,7); ctx.fill();
+      if(b>0.86){
+        const gl=ctx.createRadialGradient(x,y,0,x,y,rad*7);
+        gl.addColorStop(0,'rgba(255,255,255,0.5)'); gl.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(x,y,rad*7,0,7); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.32)'; ctx.lineWidth=0.7;
+        ctx.beginPath(); ctx.moveTo(x-rad*6,y); ctx.lineTo(x+rad*6,y); ctx.moveTo(x,y-rad*6); ctx.lineTo(x,y+rad*6); ctx.stroke();
+      }
+    }
+    let vg=ctx.createRadialGradient(w/2,hh/2,Math.min(w,hh)*0.3,w/2,hh/2,Math.max(w,hh)*0.75);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=vg; ctx.fillRect(0,0,w,hh);
+  }
+  segTabs(active,onPick,items,accent){
+    return this.h('div',{style:{display:'flex',gap:'2px',background:'#0d141c',border:'1px solid #1c2733',borderRadius:'6px',padding:'2px'}},
+      items.map(it=>this.h('div',{key:it.k,onClick:()=>onPick(it.k),style:{flex:1,textAlign:'center',cursor:'pointer',padding:'5px 0',fontSize:'11px',fontWeight:600,borderRadius:'4px',color:active===it.k?'#06080b':'#7e8b98',background:active===it.k?(accent||'#5aa9ff'):'transparent',transition:'background .12s'}},it.t)));
+  }
+  miniBtn(label,onClick,accent){
+    return this.h('div',{onClick,style:{cursor:'pointer',padding:'6px 12px',fontSize:'11px',fontWeight:600,borderRadius:'5px',border:'1px solid '+(accent?'#2a557e':'#27323e'),color:accent?'#8fc0f5':'#9fabb8',background:accent?'#13202e':'transparent'}},label);
+  }
+  handle(frame,ch,handle,frac,color,letter){
+    const grip = this.h('div',{style:{position:'absolute',top:'-9px',left:'50%',transform:'translateX(-50%)',width:'19px',height:'19px',borderRadius:'4px',background:color,color:'#06080b',fontSize:'10px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,.5)',fontFamily:"'IBM Plex Mono'"}},letter);
+    const line = this.h('div',{style:{position:'absolute',top:'9px',bottom:0,left:'50%',width:'2px',transform:'translateX(-1px)',background:color,opacity:0.92}});
+    return this.h('div',{key:handle,onPointerDown:(e)=>this.startDrag(e,frame,ch,handle),style:{position:'absolute',top:0,bottom:0,left:(frac*100)+'%',width:'18px',marginLeft:'-9px',cursor:'ew-resize',touchAction:'none',zIndex:3}},grip,line);
+  }
+  plot(frame,ch,H,overlay){
+    const hv=this.getH(frame,ch);
+    const stretch=frame==='A'?this.state.stretchA:this.state.stretchB;
+    const accent=frame==='A'?this.COL[ch]:'#cdd7e1';
+    const svgKids=[];
+    svgKids.push(this.h('rect',{key:'bg',x:0,y:0,width:1000,height:H,fill:'#070b10'}));
+    [0.25,0.5,0.75].forEach((gx,i)=>svgKids.push(this.h('line',{key:'gx'+i,x1:gx*1000,y1:0,x2:gx*1000,y2:H,stroke:'#121b24',strokeWidth:1})));
+    svgKids.push(this.h('rect',{key:'reg',x:hv.b*1000,y:0,width:(hv.w-hv.b)*1000,height:H,fill:(frame==='A'?this.COL[ch]:'#5aa9ff'),opacity:0.06}));
+    if(overlay){
+      ['R','G','B'].forEach(k=>{ svgKids.push(this.h('path',{key:'h'+k,d:this.areaPath(this.hist[k],H),fill:this.COL[k],opacity:0.22,stroke:this.COL[k],strokeWidth:1.1,strokeOpacity:0.6})); });
+    } else {
+      svgKids.push(this.h('path',{key:'h',d:this.areaPath(this.hist[ch],H),fill:this.COL[ch],opacity:0.30,stroke:this.COL[ch],strokeWidth:1.2,strokeOpacity:0.85}));
+    }
+    svgKids.push(this.h('path',{key:'cv',d:this.curvePath(hv.b,hv.m,hv.w,stretch,H),fill:'none',stroke:'#eef3f8',strokeWidth:1.8,opacity:0.9}));
+    [['b',hv.b],['m',hv.m],['w',hv.w]].forEach(n=>{
+      const ny=H-this.stretchMap((n[1]-hv.b)/Math.max(1e-4,hv.w-hv.b),(hv.m-hv.b)/Math.max(1e-4,hv.w-hv.b),stretch)*(H-6);
+      svgKids.push(this.h('circle',{key:'n'+n[0],cx:n[1]*1000,cy:ny,r:4.2,fill:'#0a0e13',stroke:'#eef3f8',strokeWidth:1.8}));
+    });
+    const svg=this.h('svg',{viewBox:'0 0 1000 '+H,preserveAspectRatio:'none',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},svgKids);
+    const handles=[
+      this.handle(frame,ch,'b',hv.b,accent,'B'),
+      this.handle(frame,ch,'m',hv.m,'#cdd7e1','M'),
+      this.handle(frame,ch,'w',hv.w,accent,'W')
+    ];
+    return this.h('div',{'data-track':'1',style:{position:'relative',height:H+'px',borderRadius:'5px',overflow:'hidden',border:'1px solid #18222d'}},svg,
+      this.h('div',{style:{position:'absolute',inset:0}},handles));
+  }
+  valChips(hv){
+    const C=(lab,v,col)=>this.h('div',{key:lab,style:{display:'flex',gap:'5px',alignItems:'baseline'}},
+      this.h('span',{style:{fontSize:'9px',color:'#5b6876',fontWeight:600}},lab),
+      this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'11px',color:col}},this.f16(v)));
+    return this.h('div',{style:{display:'flex',gap:'14px'}},C('BLK',hv.b,'#aeb9c4'),C('MID',hv.m,'#cdd7e1'),C('WHT',hv.w,'#aeb9c4'));
+  }
+  buildSwitcher(){
+    const opt=(k,t,sub)=>this.h('div',{key:k,onClick:()=>this.setState({view:k}),style:{flex:1,cursor:'pointer',padding:'9px 10px',borderRadius:'6px',background:this.state.view===k?'#13202e':'transparent',border:'1px solid '+(this.state.view===k?'#2a557e':'transparent')}},
+      this.h('div',{style:{fontSize:'12px',fontWeight:700,color:this.state.view===k?'#e7eef5':'#8492a0'}},t),
+      this.h('div',{style:{fontSize:'9.5px',color:this.state.view===k?'#8fc0f5':'#5b6876',marginTop:'2px'}},sub));
+    const kbd=(x)=>this.h('span',{key:x,style:{border:'1px solid #27323e',borderRadius:'3px',padding:'1px 5px',color:'#7e8b98'}},x);
+    return this.h('div',{style:{padding:'12px 14px',borderBottom:'1px solid #18222d',display:'flex',flexDirection:'column',gap:'7px'}},
+      this.h('div',{style:{display:'flex',gap:'6px',background:'#0a0f15',borderRadius:'8px',padding:'4px'}},
+        opt('A','Per-channel','3 stacked R / G / B'),
+        opt('B','Combined','overlay + master curve')),
+      this.h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:'9.5px',color:'#5b6876',fontFamily:"'IBM Plex Mono'"}},
+        this.h('div',{style:{display:'flex',alignItems:'center',gap:'6px'}}, kbd('1'),kbd('2'),this.h('span',{},'/'),kbd('V'),this.h('span',{},'switch')),
+        this.h('div',{onClick:()=>this.setState({showDock:false}),title:'Hide panel (F3)',style:{cursor:'pointer',display:'flex',alignItems:'center',gap:'5px',color:'#7e8b98',padding:'2px 7px',border:'1px solid #27323e',borderRadius:'4px'}},
+          this.h('span',{},'Hide'), this.h('span',{style:{fontSize:'13px',lineHeight:1}},'\u203a'))));
+  }
+  viewBtn(label,key,active,onClick){
+    return this.h('div',{onClick,title:label+' ('+key+')',style:{cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',padding:'6px 9px',borderRadius:'5px',fontSize:'11px',fontWeight:500,border:'1px solid '+(active?'#2a557e':'#1f2b37'),color:active?'#8fc0f5':'#8492a0',background:active?'#13202e':'transparent'}},
+      this.h('span',{},label),
+      this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'9px',color:active?'#5f86b3':'#566472',border:'1px solid '+(active?'#2a557e':'#27323e'),borderRadius:'3px',padding:'0 4px'}},key));
+  }
+  buildViewToggles(){
+    return this.h('div',{style:{display:'flex',gap:'5px',alignItems:'center'}},
+      this.h('div',{style:{width:'1px',height:'20px',background:'#1d2833',marginRight:'3px'}}),
+      this.viewBtn('Image List','F2',this.state.showRail,()=>this.setState({showRail:!this.state.showRail})),
+      this.viewBtn('Histogram','F3',this.state.showDock,()=>this.setState({showDock:!this.state.showDock})),
+      this.viewBtn('Image Only','Tab',this.state.imageOnly,()=>this.setState({imageOnly:!this.state.imageOnly})));
+  }
+  buildRestore(){
+    if(!this.state.imageOnly) return null;
+    return this.h('div',{onClick:()=>this.setState({imageOnly:false}),title:'Exit image-only (Tab / Esc)',style:{position:'absolute',left:'14px',top:'14px',zIndex:6,cursor:'pointer',display:'flex',alignItems:'center',gap:'8px',padding:'8px 12px',background:'rgba(10,18,28,0.86)',border:'1px solid #2a557e',borderRadius:'6px',fontSize:'11.5px',color:'#8fc0f5',fontWeight:600,backdropFilter:'blur(3px)'}},
+      this.h('span',{},'Exit Image-Only'),
+      this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'10px',color:'#5b6876',border:'1px solid #27323e',borderRadius:'3px',padding:'1px 5px'}},'Tab'));
+  }
+  buildDockA(){
+    const head=this.h('div',{style:{padding:'15px 16px 13px',borderBottom:'1px solid #141d26'}},
+      this.h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}},
+        this.h('span',{style:{fontSize:'12.5px',fontWeight:700,color:'#e7eef5',letterSpacing:'.02em'}},'RGB HISTOGRAM'),
+        this.h('div',{onClick:()=>this.setState({linkedA:!this.state.linkedA}),style:{cursor:'pointer',display:'flex',alignItems:'center',gap:'7px',padding:'4px 9px',borderRadius:'20px',border:'1px solid '+(this.state.linkedA?'#2a557e':'#27323e'),background:this.state.linkedA?'#13202e':'transparent'}},
+          this.h('span',{style:{width:'7px',height:'7px',borderRadius:'50%',background:this.state.linkedA?'#5aa9ff':'#3a4654'}}),
+          this.h('span',{style:{fontSize:'11px',fontWeight:600,color:this.state.linkedA?'#8fc0f5':'#7e8b98'}},this.state.linkedA?'Linked':'Unlinked'))),
+      this.segTabs(this.state.stretchA,k=>this.setState({stretchA:k}),[{k:'linear',t:'Linear'},{k:'log',t:'Log'},{k:'asinh',t:'Asinh'}]));
+    const chRow=(ch)=>this.h('div',{key:ch,style:{padding:'13px 16px',borderBottom:'1px solid #101820'}},
+      this.h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'9px'}},
+        this.h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+          this.h('span',{style:{width:'10px',height:'10px',borderRadius:'2px',background:this.COL[ch]}}),
+          this.h('span',{style:{fontSize:'11.5px',fontWeight:700,color:'#dce5ee'}},ch+' channel')),
+        this.valChips(this.state.chans[ch])),
+      this.plot('A',ch,124,false));
+    const foot=this.h('div',{style:{padding:'13px 16px',display:'flex',gap:'8px'}},
+      this.miniBtn('Auto STF',()=>this.doAuto('A'),true),
+      this.miniBtn('Reset',()=>this.doReset('A')),
+      this.h('div',{style:{marginLeft:'auto',fontSize:'10px',color:'#5b6876',alignSelf:'center',fontFamily:"'IBM Plex Mono'"}},this.state.linkedA?'drag any handle · all move':'per-channel'));
+    return this.h('div',{},head,chRow('R'),chRow('G'),chRow('B'),foot);
+  }
+  ghsSlope(x,D,b,SP){
+    const dist=Math.abs(x-SP);
+    if(b>0.0001) return D*Math.pow(1+b*D*dist, -(1+1/b));
+    if(b<-0.0001){ const bb=-b; return D/(1+bb*D*dist); }
+    return D*Math.exp(-D*dist);
+  }
+  clampSlope(x,D,b,SP,LP,HP){ let xx=x; if(xx<LP) xx=LP; else if(xx>HP) xx=HP; return this.ghsSlope(xx,D,b,SP); }
+  ghsSamples(){
+    const {D,b,SP,LP,HP}=this.state.ghs;
+    const N=200, xs=[0], cum=[0]; let acc=0, prev=this.clampSlope(0,D,b,SP,LP,HP);
+    for(let i=1;i<=N;i++){
+      const x=i/N, s=this.clampSlope(x,D,b,SP,LP,HP);
+      acc+=0.5*(prev+s)*(1/N); prev=s; xs.push(x); cum.push(acc);
+    }
+    const tot=acc;
+    const ys = (tot<1e-9) ? xs.slice() : cum.map(v=>v/tot);
+    return {xs,ys};
+  }
+  ghsYat(samp,x){
+    const {xs,ys}=samp, N=xs.length-1, i=Math.max(0,Math.min(N-1,Math.floor(x*N)));
+    const t=(x-xs[i])/((xs[i+1]-xs[i])||1); return ys[i]+(ys[i+1]-ys[i])*t;
+  }
+  ghsPath(samp,H){
+    const {xs,ys}=samp; let d='';
+    for(let i=0;i<xs.length;i++){ d+=(i?' L':'M')+(xs[i]*1000).toFixed(1)+','+(H-ys[i]*(H-6)).toFixed(2); }
+    return d;
+  }
+  ghsHandle(handle,frac,color,label){
+    const grip=this.h('div',{style:{position:'absolute',top:'-9px',left:'50%',transform:'translateX(-50%)',height:'18px',padding:'0 5px',borderRadius:'4px',background:color,color:'#06080b',fontSize:'9.5px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,.5)',fontFamily:"'IBM Plex Mono'",whiteSpace:'nowrap'}},label);
+    const line=this.h('div',{style:{position:'absolute',top:'9px',bottom:0,left:'50%',width:'2px',transform:'translateX(-1px)',background:color,opacity:0.9}});
+    return this.h('div',{key:handle,onPointerDown:(e)=>this.startDrag(e,'G',null,handle),style:{position:'absolute',top:0,bottom:0,left:(frac*100)+'%',width:'18px',marginLeft:'-9px',cursor:'ew-resize',touchAction:'none',zIndex:3}},grip,line);
+  }
+  buildGhsPlot(H){
+    const {SP,LP,HP}=this.state.ghs;
+    const samp=this.ghsSamples();
+    const k=[];
+    k.push(this.h('rect',{key:'bg',x:0,y:0,width:1000,height:H,fill:'#070b10'}));
+    k.push(this.h('rect',{key:'lp',x:0,y:0,width:LP*1000,height:H,fill:'#5b6876',opacity:0.12}));
+    k.push(this.h('rect',{key:'hp',x:HP*1000,y:0,width:(1-HP)*1000,height:H,fill:'#5b6876',opacity:0.12}));
+    [0.25,0.5,0.75].forEach((gx,i)=>k.push(this.h('line',{key:'g'+i,x1:gx*1000,y1:0,x2:gx*1000,y2:H,stroke:'#121b24',strokeWidth:1})));
+    ['R','G','B'].forEach(c=>k.push(this.h('path',{key:'h'+c,d:this.areaPath(this.hist[c],H),fill:this.COL[c],opacity:0.16,stroke:this.COL[c],strokeWidth:1,strokeOpacity:0.5})));
+    k.push(this.h('line',{key:'spg',x1:SP*1000,y1:0,x2:SP*1000,y2:H,stroke:'#ffd27f',strokeWidth:1,strokeDasharray:'3 4',opacity:0.4}));
+    k.push(this.h('path',{key:'cv',d:this.ghsPath(samp,H),fill:'none',stroke:'#ffd27f',strokeWidth:2,opacity:0.95}));
+    const spy=H-this.ghsYat(samp,SP)*(H-6);
+    k.push(this.h('circle',{key:'spn',cx:SP*1000,cy:spy,r:4.5,fill:'#0a0e13',stroke:'#ffd27f',strokeWidth:2}));
+    const svg=this.h('svg',{viewBox:'0 0 1000 '+H,preserveAspectRatio:'none',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},k);
+    const handles=[this.ghsHandle('LP',LP,'#7e8b98','LP'),this.ghsHandle('SP',SP,'#ffd27f','SP'),this.ghsHandle('HP',HP,'#7e8b98','HP')];
+    return this.h('div',{'data-track':'1',style:{position:'relative',height:H+'px',borderRadius:'5px',overflow:'hidden',border:'1px solid #18222d'}},svg,this.h('div',{style:{position:'absolute',inset:0}},handles));
+  }
+  ghsSlider(label,key,min,max,step,val,fmt){
+    return this.h('div',{key:key,style:{marginBottom:'13px'}},
+      this.h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:'7px'}},
+        this.h('span',{style:{fontSize:'11px',color:'#9fabb8',fontWeight:600}},label),
+        this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'11px',color:'#ffd27f'}},fmt)),
+      this.h('input',{type:'range',min:min,max:max,step:step,value:val,onChange:(e)=>this.setState({ghs:{...this.state.ghs,[key]:parseFloat(e.target.value)}}),style:{width:'100%'}}));
+  }
+  buildDockB(){
+    const chips=[{k:'RGB',t:'RGB'},{k:'R',t:'R'},{k:'G',t:'G'},{k:'B',t:'B'},{k:'L',t:'Lum'}];
+    const isGhs=this.state.stretchB==='ghs';
+    const head=this.h('div',{style:{padding:'15px 16px 13px',borderBottom:'1px solid #141d26'}},
+      this.h('div',{style:{fontSize:'12.5px',fontWeight:700,color:'#e7eef5',letterSpacing:'.02em',marginBottom:'12px'}},'COMBINED CURVE'),
+      this.h('div',{style:{display:'flex',gap:'4px',marginBottom:'11px'}},
+        chips.map(c=>this.h('div',{key:c.k,onClick:()=>this.setState({channelB:c.k}),style:{cursor:'pointer',width:'34px',textAlign:'center',padding:'5px 0',borderRadius:'5px',fontSize:'11px',fontWeight:700,fontFamily:"'IBM Plex Mono'",color:this.state.channelB===c.k?'#06080b':(this.COL[c.k]||'#9fabb8'),background:this.state.channelB===c.k?(this.COL[c.k]||'#cdd7e1'):'#0d141c',border:'1px solid #1c2733'}},c.t))),
+      this.segTabs(this.state.stretchB,k=>this.setState({stretchB:k}),[{k:'linear',t:'Linear'},{k:'log',t:'Log'},{k:'asinh',t:'Asinh'},{k:'ghs',t:'GHS'}]));
+    if(isGhs){
+      const g=this.state.ghs;
+      const regime = g.b>1.001?'hyperbolic':(Math.abs(g.b)<0.05?'exponential':(g.b<0?'logarithmic':(Math.abs(g.b-1)<0.05?'harmonic':'sub-harmonic')));
+      const regCol = g.b>1.001?'#7fe0a6':(g.b<-0.05?'#8fc0f5':'#ffb37f');
+      const plot=this.h('div',{style:{padding:'15px 16px',borderBottom:'1px solid #101820'}},
+        this.h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'10px'}},
+          this.h('span',{style:{fontSize:'11px',color:'#7e8b98',fontWeight:600}},'Generalized hyperbolic · drag SP / LP / HP'),
+          this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'10px',color:'#5b6876'}},'peak @ '+this.f16(g.SP))),
+        this.buildGhsPlot(236));
+      const params=this.h('div',{style:{padding:'15px 16px',borderBottom:'1px solid #101820'}},
+        this.h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'13px'}},
+          this.h('span',{style:{fontSize:'10.5px',letterSpacing:'.12em',color:'#5b6876',fontWeight:600}},'GHS PARAMETERS'),
+          this.h('span',{style:{fontSize:'10px',fontWeight:700,color:regCol,fontFamily:"'IBM Plex Mono'",border:'1px solid '+regCol+'44',borderRadius:'3px',padding:'1px 6px'}},regime)),
+        this.ghsSlider('D · stretch strength','D',0,8,0.05,g.D,g.D.toFixed(2)),
+        this.ghsSlider('b · local intensity (focus)','b',-5,15,0.1,g.b,(g.b>0?'+':'')+g.b.toFixed(1)),
+        this.h('div',{style:{display:'flex',gap:'16px',marginTop:'2px',fontFamily:"'IBM Plex Mono'",fontSize:'10.5px',color:'#6b7886'}},
+          this.h('span',{},'SP '+g.SP.toFixed(3)),
+          this.h('span',{},'LP '+g.LP.toFixed(3)),
+          this.h('span',{},'HP '+g.HP.toFixed(3))));
+      const foot=this.h('div',{style:{padding:'13px 16px',display:'flex',gap:'8px',alignItems:'center'}},
+        this.miniBtn('Auto',()=>this.doAuto('B'),true),
+        this.miniBtn('Reset',()=>this.doReset('B')),
+        this.h('div',{style:{marginLeft:'auto',fontSize:'10px',color:'#5b6876',fontFamily:"'IBM Plex Mono'"}},'b=1 → harmonic'));
+      return this.h('div',{},head,plot,params,foot);
+    }
+    const big=this.h('div',{style:{padding:'15px 16px',borderBottom:'1px solid #101820'}},
+      this.h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:'10px'}},
+        this.h('span',{style:{fontSize:'11px',color:'#7e8b98',fontWeight:600}},'Master transfer · drag B / M / W'),
+        this.valChips(this.state.comb)),
+      this.plot('B','RGB',236,true));
+    const offRow=(ch)=>{
+      const v=this.state.offsets[ch];
+      return this.h('div',{key:ch,style:{display:'flex',alignItems:'center',gap:'11px',marginBottom:'11px'}},
+        this.h('span',{style:{width:'14px',height:'14px',borderRadius:'3px',background:this.COL[ch],flex:'0 0 14px'}}),
+        this.h('input',{type:'range',min:-60,max:60,value:v,onChange:(e)=>this.setState({offsets:{...this.state.offsets,[ch]:parseInt(e.target.value,10)}}),style:{flex:1}}),
+        this.h('span',{style:{width:'46px',textAlign:'right',fontFamily:"'IBM Plex Mono'",fontSize:'11px',color:'#cdd7e1'}},(v>0?'+':'')+v));
+    };
+    const offsets=this.h('div',{style:{padding:'15px 16px',borderBottom:'1px solid #101820'}},
+      this.h('div',{style:{fontSize:'10.5px',letterSpacing:'.12em',color:'#5b6876',fontWeight:600,marginBottom:'12px'}},'PER-CHANNEL BLACK-POINT OFFSET'),
+      offRow('R'),offRow('G'),offRow('B'));
+    const foot=this.h('div',{style:{padding:'13px 16px',display:'flex',gap:'8px'}},
+      this.miniBtn('Auto STF',()=>this.doAuto('B'),true),
+      this.miniBtn('Reset',()=>this.doReset('B')),
+      this.h('div',{style:{marginLeft:'auto',fontSize:'10px',color:'#5b6876',alignSelf:'center',fontFamily:"'IBM Plex Mono'"}},'channel · '+this.state.channelB));
+    return this.h('div',{},head,big,offsets,foot);
+  }
+  buildDock(){
+    return this.h('div',{}, this.buildSwitcher(), this.state.view==='A'?this.buildDockA():this.buildDockB());
+  }
+  renderVals(){
+    const io=this.state.imageOnly;
+    return {
+      dock:this.buildDock(),
+      modeLabel: this.state.view==='A'?'asinh · per-channel':(this.state.stretchB==='ghs'?'GHS · master':'asinh · master curve'),
+      chromeDisp: io?'none':'flex',
+      railDisp: (this.state.showRail && !io)?'flex':'none',
+      dockDisp: (this.state.showDock && !io)?'flex':'none',
+      toggleRailFn: ()=>this.setState({showRail:!this.state.showRail}),
+      viewToggles: this.buildViewToggles(),
+      restoreBtn: this.buildRestore()
+    };
+  }
+}
+</script>
+</body>
+</html>
