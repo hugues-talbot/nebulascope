@@ -23,7 +23,7 @@ target_include_directories(astro_core PUBLIC
 )
 target_link_libraries(astro_core PUBLIC
     Qt6::Core Qt6::Gui
-    ${CCFITS_LIB} PkgConfig:CFITSIO 
+    ${CCFITS_LIB} PkgConfig::CFITSIO 
     ${XISF_LIB}
     # ${ZLIB_LIB} ${LZ4_LIB} ${PUGIXML_LIB}   # if libXISF is static
 )
