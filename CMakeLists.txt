@@ -15,7 +15,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
 # FITS: CFITSIO (pkg-config) + CCfits (C++ wrapper)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO REQUIRED cfitsio)
+pkg_check_modules(CFITSIO REQUIRED IMPORTED_TARGET cfitsio)
 find_path(CCFITS_INCLUDE_DIR NAMES CCfits/CCfits)
 find_library(CCFITS_LIB NAMES CCfits)
 if(NOT CCFITS_INCLUDE_DIR OR NOT CCFITS_LIB)
