@@ -10,6 +10,10 @@
 
 #include <QDockWidget>
 #include <QListWidget>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QTextStream>
 #include <QLabel>
 #include <QMenuBar>
 #include <QToolBar>
@@ -39,13 +43,38 @@ void MainWindow::buildUi() {
     setCentralWidget(m_view);
     connect(m_view, &ImageView::pixelHovered, this, &MainWindow::onPixelHovered);
 
-    // left dock: open images
+    // left dock: open images (with an append / remove / export button bar)
     m_leftDock = new QDockWidget("Open Images", this);
     m_leftDock->setObjectName("leftDock");
-    m_fileList = new QListWidget(m_leftDock);
-    m_leftDock->setWidget(m_fileList);
+    auto* listHost = new QWidget(m_leftDock);
+    auto* lv = new QVBoxLayout(listHost);
+    lv->setContentsMargins(4, 4, 4, 4);
+    lv->setSpacing(4);
+    auto* bar = new QHBoxLayout();
+    bar->setSpacing(4);
+    auto* addBtn = new QToolButton(); addBtn->setText("+");  addBtn->setToolTip("Append files\u2026");
+    auto* remBtn = new QToolButton(); remBtn->setText("\u2212"); remBtn->setToolTip("Remove selected (Del)");
+    auto* expBtn = new QToolButton(); expBtn->setText("\u2913"); expBtn->setToolTip("Export list\u2026");
+    bar->addWidget(addBtn);
+    bar->addWidget(remBtn);
+    bar->addStretch();
+    bar->addWidget(expBtn);
+    lv->addLayout(bar);
+
+    m_fileList = new QListWidget(listHost);
+    m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_fileList->setDragDropMode(QAbstractItemView::InternalMove);   // drag to reorder
+    lv->addWidget(m_fileList, 1);
+    m_leftDock->setWidget(listHost);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
     connect(m_fileList, &QListWidget::currentRowChanged, this, &MainWindow::showRow);
+    connect(addBtn, &QToolButton::clicked, this, &MainWindow::appendToList);
+    connect(remBtn, &QToolButton::clicked, this, &MainWindow::removeSelected);
+    connect(expBtn, &QToolButton::clicked, this, &MainWindow::exportList);
+
+    auto* del = new QShortcut(QKeySequence::Delete, m_fileList);
+    del->setContext(Qt::WidgetShortcut);
+    connect(del, &QShortcut::activated, this, &MainWindow::removeSelected);
 
     // left dock (tabbed): image info / FITS structure / header
     m_infoDock = new QDockWidget("Info", this);
@@ -84,6 +113,8 @@ void MainWindow::buildMenusAndToolbar() {
     file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
     file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
     file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
+    file->addSeparator();
+    file->addAction("Export Image &List…", this, &MainWindow::exportList);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
@@ -185,6 +216,46 @@ void MainWindow::addPaths(const QStringList& paths) {
     // If nothing is displayed yet, show the first newly added file.
     if (m_fileList->currentRow() < 0 && firstAdded)
         m_fileList->setCurrentItem(firstAdded);   // fires currentRowChanged -> showRow
+}
+
+void MainWindow::appendToList() {
+    const QStringList paths = QFileDialog::getOpenFileNames(
+        this, "Append image(s)", QString(),
+        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff);;All files (*)");
+    if (!paths.isEmpty()) addPaths(paths);
+}
+
+void MainWindow::removeSelected() {
+    const auto sel = m_fileList->selectedItems();
+    if (sel.isEmpty()) return;
+    // Forget any per-image stretch memory for removed paths, then delete rows.
+    for (QListWidgetItem* it : sel) {
+        const QString p = it->data(Qt::UserRole).toString();
+        m_stfByPath.remove(p);
+        delete m_fileList->takeItem(m_fileList->row(it));
+    }
+    if (m_fileList->count() == 0) {
+        m_currentPath.clear();
+        setWindowTitle("NebulaScope \u2014 Inspector");
+    } else if (m_fileList->currentRow() < 0) {
+        m_fileList->setCurrentRow(0);
+    }
+}
+
+void MainWindow::exportList() {
+    if (m_fileList->count() == 0) return;
+    const QString path = QFileDialog::getSaveFileName(
+        this, "Export image list", "images.txt", "Text file (*.txt);;All files (*)");
+    if (path.isEmpty()) return;
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Export failed", "Could not write " + path);
+        return;
+    }
+    QTextStream out(&f);
+    for (int i = 0; i < m_fileList->count(); ++i)
+        out << m_fileList->item(i)->data(Qt::UserRole).toString() << '\n';
+    statusBar()->showMessage(QStringLiteral("Exported list of %1 file(s)").arg(m_fileList->count()), 3000);
 }
 
 void MainWindow::showRow(int row) {

@@ -44,6 +44,9 @@ private slots:
     void showRow(int row);      // decode + display the list item at row
     void nextImage();           // Space
     void prevImage();           // Backspace
+    void appendToList();        // + : pick files, append
+    void removeSelected();      // − / Del : drop selected entries
+    void exportList();          // write the list of paths to a text file
 
 private:
     void buildUi();
