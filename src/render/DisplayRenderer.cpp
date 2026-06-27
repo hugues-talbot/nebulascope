@@ -23,11 +23,14 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     }
 
     auto mapVal = [&](int c, float v) -> int {
+        if (!std::isfinite(v)) return 0;                 // NaN/Inf blanks → black
         const int ci = (ch == 1) ? 0 : c;
         const double lo = model.lo(ci), hi = model.hi(ci);
         double x = (double(v) - lo) / std::max(1e-9, hi - lo);
         x = x < 0 ? 0 : (x > 1 ? 1 : x);
-        const float y = lut[ci][int(x * (N - 1))];
+        int idx = int(x * (N - 1));
+        idx = idx < 0 ? 0 : (idx > N - 1 ? N - 1 : idx);
+        const float y = lut[ci][idx];
         const int o = int(y * 255.0f + 0.5f);
         return o < 0 ? 0 : (o > 255 ? 255 : o);
     };

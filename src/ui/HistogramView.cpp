@@ -42,7 +42,9 @@ void HistogramView::recomputeHistogram() {
         const double lo = m_model->lo(c), hi = m_model->hi(c);
         const double span = std::max(1e-9, hi - lo);
         for (std::size_t i = 0; i < n; i += step) {
-            double x = (double(p[i]) - lo) / span;
+            const double pv = double(p[i]);
+            if (!std::isfinite(pv)) continue;            // skip NaN/Inf blanks
+            double x = (pv - lo) / span;
             if (x < 0 || x > 1) continue;
             int bi = int(x * (bins - 1));
             hb[bi] += 1.0f;
