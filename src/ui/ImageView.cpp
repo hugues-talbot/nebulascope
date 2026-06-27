@@ -4,6 +4,7 @@
 #include <QRubberBand>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QScrollBar>
 #include <cmath>
 
 namespace astro {
@@ -59,18 +60,24 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
         m_band->show();
         return;
     }
-    if (e->button() == Qt::RightButton) {           // zoom out
-        scale(0.7, 0.7);
+    if (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton) {  // pan
+        m_panning = true;
+        m_panLast = e->pos();
+        setCursor(Qt::ClosedHandCursor);
         return;
-    }
-    if (e->button() == Qt::MiddleButton) {          // pan
-        setDragMode(QGraphicsView::ScrollHandDrag);
     }
     QGraphicsView::mousePressEvent(e);
 }
 
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
     if (m_banding && m_band) m_band->setGeometry(QRect(m_press, e->pos()).normalized());
+
+    if (m_panning) {                                 // right/middle-button pan
+        const QPoint d = e->pos() - m_panLast;
+        m_panLast = e->pos();
+        horizontalScrollBar()->setValue(horizontalScrollBar()->value() - d.x());
+        verticalScrollBar()->setValue(verticalScrollBar()->value() - d.y());
+    }
 
     if (m_src) {
         const QPointF sp = mapToScene(e->pos());
@@ -95,10 +102,14 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent* e) {
-    // End a Shift-pan (or middle-button pan): hand the release to the base class
-    // while still in ScrollHandDrag, then return to the default no-drag mode.
-    if (dragMode() == QGraphicsView::ScrollHandDrag &&
-        (e->button() == Qt::LeftButton || e->button() == Qt::MiddleButton)) {
+    if (m_panning && (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton)) {
+        m_panning = false;
+        unsetCursor();
+        return;
+    }
+    // End a Shift-pan: hand the release to the base class while still in
+    // ScrollHandDrag, then return to the default no-drag mode.
+    if (dragMode() == QGraphicsView::ScrollHandDrag && e->button() == Qt::LeftButton) {
         QGraphicsView::mouseReleaseEvent(e);
         setDragMode(QGraphicsView::NoDrag);
         return;
@@ -113,7 +124,6 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
         }
         return;
     }
-    if (e->button() == Qt::MiddleButton) setDragMode(QGraphicsView::NoDrag);
     QGraphicsView::mouseReleaseEvent(e);
 }
 

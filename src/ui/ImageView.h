@@ -3,9 +3,9 @@
 // ImageView — the central canvas. Shows the stretched image and provides the
 // inspection interactions from the mockup:
 //   * left-drag a rectangle  -> zoom to that region
-//   * right-click            -> zoom out
-//   * wheel                  -> zoom at cursor
-//   * middle-drag            -> pan
+//   * wheel                  -> zoom in / out at cursor
+//   * right-drag or middle-drag -> pan
+//   * Shift + left-drag      -> pan
 //   * hover                  -> emit the pixel value under the cursor
 //
 #include <QGraphicsView>
@@ -45,6 +45,8 @@ private:
     QRubberBand* m_band = nullptr;
     QPoint m_press;
     bool m_banding = false;
+    bool m_panning = false;
+    QPoint m_panLast;
     const ImageData* m_src = nullptr;
 };
 
