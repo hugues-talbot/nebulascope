@@ -107,6 +107,22 @@ void MainWindow::buildUi() {
     });
 }
 
+void MainWindow::showAbout() {
+    QMessageBox box(this);
+    box.setWindowTitle("About NebulaScope");
+    box.setIconPixmap(windowIcon().pixmap(96, 96));
+    box.setTextFormat(Qt::RichText);
+    box.setText(
+        "<h2 style='margin:0'>NebulaScope</h2>"
+        "<p style='color:#9fabb8;margin:2px 0 10px'>Astronomical image inspector</p>"
+        "<p>Interactive FITS / XISF / JPEG / PNG / TIFF viewer with precise RGB"
+        " histogram control, Generalised Hyperbolic Stretch, false-colour maps,"
+        " and blink comparison.</p>"
+        "<p style='color:#7e8b98;font-size:11px'>Built with Qt, CFITSIO/CCfits and libXISF.</p>");
+    box.setStandardButtons(QMessageBox::Ok);
+    box.exec();
+}
+
 void MainWindow::buildMenusAndToolbar() {
     // File
     QMenu* file = menuBar()->addMenu("&File");
@@ -142,6 +158,14 @@ void MainWindow::buildMenusAndToolbar() {
     Q_UNUSED(aImageOnly);
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
+
+    // Help — the About action carries AboutRole, so on macOS Qt moves it into
+    // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
+    QMenu* help = menuBar()->addMenu("&Help");
+    QAction* about = help->addAction("&About NebulaScope", this, &MainWindow::showAbout);
+    about->setMenuRole(QAction::AboutRole);
+    QAction* aboutQt = help->addAction("About &Qt", qApp, &QApplication::aboutQt);
+    aboutQt->setMenuRole(QAction::AboutQtRole);
 
     // Walk the loaded-image list: Space = next, Backspace = previous.
     auto* next = new QShortcut(QKeySequence(Qt::Key_Space), this);

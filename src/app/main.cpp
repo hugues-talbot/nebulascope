@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStringList>
+#include <QIcon>
 #include <cstdio>
 #include <cstdlib>
 
@@ -87,6 +88,9 @@ int main(int argc, char** argv) {
 
     QApplication app(argc, argv);
     app.setApplicationName("NebulaScope");
+    app.setApplicationDisplayName("NebulaScope");
+    app.setOrganizationName("NebulaScope");
+    app.setWindowIcon(QIcon(":/appicon.png"));   // bundled via Qt resource; .icns drives the macOS dock
     applyTheme(app);
 
     astro::MainWindow w;

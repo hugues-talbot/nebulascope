@@ -48,6 +48,7 @@ private slots:
     void removeSelected();      // − / Del : drop selected entries
     void exportList();          // write the list of paths to a text file
     void importList();          // read a list of paths from a text file
+    void showAbout();           // About dialog (App menu on macOS)
 
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
