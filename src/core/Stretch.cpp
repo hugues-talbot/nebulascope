@@ -57,10 +57,24 @@ static std::vector<float> buildGhsLut(const GHSParams& g, int N) {
 
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N) {
-    if (fn == StretchFn::GHS) return buildGhsLut(ghs, N);
+    const double denom = std::max(1e-6, cs.white - cs.black);
+
+    if (fn == StretchFn::GHS) {
+        // Compose GHS with the linear black/white window, like Log/Asinh: the
+        // data is first mapped [black,white] -> [0,1], then the GHS curve (with
+        // SP/LP/HP defined in that windowed space) is applied. This keeps GHS
+        // consistent with the other transfers instead of acting on the full range.
+        const std::vector<float> shape = buildGhsLut(ghs, N);
+        std::vector<float> lut(N);
+        for (int i = 0; i < N; ++i) {
+            const double x = double(i) / (N - 1);
+            const double t = clamp01((x - cs.black) / denom);
+            lut[i] = shape[int(t * (N - 1))];
+        }
+        return lut;
+    }
 
     std::vector<float> lut(N);
-    const double denom = std::max(1e-6, cs.white - cs.black);
     const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
     for (int i = 0; i < N; ++i) {
         const double x = double(i) / (N - 1);
@@ -71,12 +85,13 @@ std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
 }
 
 double transferAt(double x, StretchFn fn, const ChannelStretch& cs, const GHSParams& ghs) {
+    const double denom = std::max(1e-6, cs.white - cs.black);
     if (fn == StretchFn::GHS) {
         static const int N = 1024;
         const auto l = buildGhsLut(ghs, N);
-        return l[int(clamp01(x) * (N - 1))];
+        const double t = clamp01((x - cs.black) / denom);
+        return l[int(t * (N - 1))];
     }
-    const double denom = std::max(1e-6, cs.white - cs.black);
     const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
     return mtf(baseShape(clamp01((x - cs.black) / denom), fn), m);
 }

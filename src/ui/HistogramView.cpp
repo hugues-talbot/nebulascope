@@ -79,12 +79,15 @@ void HistogramView::paintEvent(QPaintEvent*) {
     g.fillRect(rect(), QColor("#0b1016"));
     g.fillRect(r, QColor("#070b10"));
 
-    // GHS protection bands
+    // GHS protection bands (mapped through the black/white window)
     const bool ghs = m_model->fn() == StretchFn::GHS;
     if (ghs) {
         const GHSParams gp = m_model->ghs();
-        g.fillRect(QRectF(r.left(), r.top(), gp.LP * r.width(), r.height()), QColor(91, 104, 118, 32));
-        g.fillRect(QRectF(valToX(gp.HP), r.top(), r.right() - valToX(gp.HP), r.height()), QColor(91, 104, 118, 32));
+        const ChannelStretch wc = m_model->channel(0);
+        const double span = std::max(1e-6, wc.white - wc.black);
+        auto wx = [&](double p){ return valToX(wc.black + p * span); };
+        g.fillRect(QRectF(r.left(), r.top(), wx(gp.LP) - r.left(), r.height()), QColor(91, 104, 118, 32));
+        g.fillRect(QRectF(wx(gp.HP), r.top(), r.right() - wx(gp.HP), r.height()), QColor(91, 104, 118, 32));
     }
 
     // grid
@@ -124,12 +127,14 @@ void HistogramView::paintEvent(QPaintEvent*) {
     g.setPen(QPen(ghs ? GHS_COL : QColor("#eef3f8"), 1.8));
     g.drawPath(curve);
 
-    // handles
-    auto drawHandle = [&](double v, const QColor& col, const QString& label) {
+    // handles. `bottom` places the grip at the lower edge so GHS window (top)
+    // and GHS shape (bottom) handles don't collide when they share an x.
+    auto drawHandle = [&](double v, const QColor& col, const QString& label, bool bottom) {
         const double px = valToX(v);
         g.setPen(QPen(col, 2.0));
         g.drawLine(QPointF(px, r.top() + 8), QPointF(px, r.bottom()));
-        QRectF grip(px - 9, r.top() - 8, 18, 16);
+        QRectF grip = bottom ? QRectF(px - 9, r.bottom() - 8, 18, 16)
+                             : QRectF(px - 9, r.top() - 8, 18, 16);
         g.fillRect(grip, col);
         g.setPen(QColor("#06080b"));
         g.drawText(grip, Qt::AlignCenter, label);
@@ -137,29 +142,45 @@ void HistogramView::paintEvent(QPaintEvent*) {
 
     if (ghs) {
         const GHSParams gp = m_model->ghs();
-        drawHandle(gp.LP, QColor("#7e8b98"), "LP");
-        drawHandle(gp.SP, GHS_COL, "SP");
-        drawHandle(gp.HP, QColor("#7e8b98"), "HP");
+        const ChannelStretch wc = m_model->channel(0);
+        const double span = std::max(1e-6, wc.white - wc.black);
+        auto wv = [&](double p){ return wc.black + p * span; };   // windowed pos -> display value
+        drawHandle(wc.black, QColor("#cdd7e1"), "B", false);       // window (top)
+        drawHandle(wc.white, QColor("#cdd7e1"), "W", false);
+        drawHandle(wv(gp.LP), QColor("#7e8b98"), "LP", true);      // GHS shape (bottom)
+        drawHandle(wv(gp.SP), GHS_COL, "SP", true);
+        drawHandle(wv(gp.HP), QColor("#7e8b98"), "HP", true);
     } else {
         const ChannelStretch cs = m_model->channel(curveCh);
         const QColor hc = (m_active < 0 || ch == 1) ? QColor("#cdd7e1") : CH_COL[curveCh];
-        drawHandle(cs.black, hc, "B");
-        drawHandle(cs.mid, QColor("#cdd7e1"), "M");
-        drawHandle(cs.white, hc, "W");
+        drawHandle(cs.black, hc, "B", false);
+        drawHandle(cs.mid, QColor("#cdd7e1"), "M", false);
+        drawHandle(cs.white, hc, "W", false);
     }
 }
 
 void HistogramView::mousePressEvent(QMouseEvent* e) {
     const double px = e->position().x();
+    const double py = e->position().y();
+    const QRectF r = plotRect();
     const bool ghs = m_model->fn() == StretchFn::GHS;
     auto near = [&](double v) { return std::fabs(px - valToX(v)) < 10.0; };
 
     m_dragHandle.clear();
     if (ghs) {
         const GHSParams gp = m_model->ghs();
-        if (near(gp.SP)) m_dragHandle = "SP";
-        else if (near(gp.LP)) m_dragHandle = "LP";
-        else if (near(gp.HP)) m_dragHandle = "HP";
+        const ChannelStretch wc = m_model->channel(0);
+        const double span = std::max(1e-6, wc.white - wc.black);
+        auto wv = [&](double p){ return wc.black + p * span; };
+        const bool lower = py > (r.top() + r.bottom()) / 2;   // top = window, bottom = shape
+        if (lower) {
+            if (near(wv(gp.SP))) m_dragHandle = "SP";
+            else if (near(wv(gp.LP))) m_dragHandle = "LP";
+            else if (near(wv(gp.HP))) m_dragHandle = "HP";
+        } else {
+            if (near(wc.black)) m_dragHandle = "b";
+            else if (near(wc.white)) m_dragHandle = "w";
+        }
     } else {
         const int c = (m_active < 0) ? 0 : m_active;
         const ChannelStretch cs = m_model->channel(c);
@@ -181,10 +202,27 @@ void HistogramView::mouseReleaseEvent(QMouseEvent*) {
 void HistogramView::applyDrag(double v) {
     const double eps = 0.006;
     if (m_model->fn() == StretchFn::GHS) {
+        // B/W set the linear window (channel 0 = the GHS master window); SP/LP/HP
+        // are positions WITHIN that window, so convert the dragged display value
+        // into windowed [0,1] before storing.
+        ChannelStretch wc = m_model->channel(0);
+        if (m_dragHandle == "b") {
+            wc.black = std::min(wc.white - eps, std::max(0.0, v));
+            m_model->setChannel(0, wc);
+            return;
+        }
+        if (m_dragHandle == "w") {
+            wc.white = std::max(wc.black + eps, std::min(1.0, v));
+            m_model->setChannel(0, wc);
+            return;
+        }
+        const double span = std::max(1e-6, wc.white - wc.black);
+        double p = (v - wc.black) / span;
+        p = p < 0 ? 0 : (p > 1 ? 1 : p);
         GHSParams g = m_model->ghs();
-        if (m_dragHandle == "SP") g.SP = std::min(g.HP - eps, std::max(g.LP + eps, v));
-        else if (m_dragHandle == "LP") g.LP = std::min(g.SP - eps, std::max(0.0, v));
-        else if (m_dragHandle == "HP") g.HP = std::max(g.SP + eps, std::min(1.0, v));
+        if (m_dragHandle == "SP") g.SP = std::min(g.HP - eps, std::max(g.LP + eps, p));
+        else if (m_dragHandle == "LP") g.LP = std::min(g.SP - eps, std::max(0.0, p));
+        else if (m_dragHandle == "HP") g.HP = std::max(g.SP + eps, std::min(1.0, p));
         m_model->setGhs(g);
         return;
     }
