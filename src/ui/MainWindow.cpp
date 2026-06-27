@@ -14,6 +14,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTextStream>
+#include <QDir>
 #include <QLabel>
 #include <QMenuBar>
 #include <QToolBar>
@@ -115,6 +116,7 @@ void MainWindow::buildMenusAndToolbar() {
     file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
     file->addAction("Export Image &List…", this, &MainWindow::exportList);
+    file->addAction("&Import Image List…", this, &MainWindow::importList);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
@@ -256,6 +258,35 @@ void MainWindow::exportList() {
     for (int i = 0; i < m_fileList->count(); ++i)
         out << m_fileList->item(i)->data(Qt::UserRole).toString() << '\n';
     statusBar()->showMessage(QStringLiteral("Exported list of %1 file(s)").arg(m_fileList->count()), 3000);
+}
+
+void MainWindow::importList() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, "Import image list", QString(), "Text file (*.txt);;All files (*)");
+    if (!path.isEmpty()) importListFile(path);
+}
+
+void MainWindow::importListFile(const QString& listPath) {
+    QFile f(listPath);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Import failed", "Could not read " + listPath);
+        return;
+    }
+    // Relative paths in the list are resolved against the list file's directory.
+    const QDir base = QFileInfo(listPath).absoluteDir();
+    QStringList paths;
+    QTextStream in(&f);
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith('#')) continue;   // skip blanks/comments
+        paths << (QFileInfo(line).isAbsolute() ? line : base.absoluteFilePath(line));
+    }
+    if (paths.isEmpty()) {
+        statusBar()->showMessage("List file had no entries", 3000);
+        return;
+    }
+    addPaths(paths);
+    statusBar()->showMessage(QStringLiteral("Imported %1 file(s)").arg(paths.size()), 3000);
 }
 
 void MainWindow::showRow(int row) {

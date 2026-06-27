@@ -59,11 +59,15 @@ int main(int argc, char** argv) {
     astro::MainWindow w;
     w.show();
 
-    // Files from the command line: nebulascope *.fits  (the shell usually globs;
-    // expand any surviving wildcards ourselves so it also works on Windows).
+    // Command line:  nebulascope *.fits        (files; shell usually globs)
+    //                nebulascope --list set.txt (a saved image list)
     QStringList files;
-    for (const QString& a : app.arguments().mid(1)) {
-        if (a.contains('*') || a.contains('?') || a.contains('[')) {
+    const QStringList args = app.arguments().mid(1);
+    for (int i = 0; i < args.size(); ++i) {
+        const QString& a = args[i];
+        if ((a == "--list" || a == "-l") && i + 1 < args.size()) {
+            w.importListFile(args[++i]);            // load a saved list file
+        } else if (a.contains('*') || a.contains('?') || a.contains('[')) {
             const QFileInfo fi(a);
             QDir dir(fi.absolutePath());
             const auto matches = dir.entryList(QStringList{ fi.fileName() }, QDir::Files, QDir::Name);
