@@ -43,7 +43,7 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
 
     // Mono + a non-Gray colormap: stretch once, then look up false colour.
     if (ch == 1 && model.colormap() != Colormap::Gray) {
-        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), 256);
+        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), 256, model.splitThreshold());
         const double lo = model.lo(0), hi = model.hi(0);
         const auto& l = lut[0];
         for (int y = 0; y < h; ++y) {

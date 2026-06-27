@@ -20,6 +20,9 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QComboBox>
+#include <QSlider>
+#include <QWidget>
+#include <QHBoxLayout>
 
 namespace astro {
 
@@ -129,6 +132,24 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addWidget(m_cmapCombo);
     connect(m_cmapCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int i) {
         m_model.setColormap(static_cast<Colormap>(i));
+        if (m_splitWidget)
+            m_splitWidget->setVisible(static_cast<Colormap>(i) == Colormap::Split);
+    });
+
+    // Split break-point slider (visible only when the Split map is active).
+    m_splitWidget = new QWidget();
+    auto* sl = new QHBoxLayout(m_splitWidget);
+    sl->setContentsMargins(0, 0, 0, 0);
+    sl->addWidget(new QLabel(" break "));
+    m_splitSlider = new QSlider(Qt::Horizontal);
+    m_splitSlider->setRange(0, 100);
+    m_splitSlider->setValue(int(m_model.splitThreshold() * 100));
+    m_splitSlider->setFixedWidth(110);
+    sl->addWidget(m_splitSlider);
+    tb->addWidget(m_splitWidget);
+    m_splitWidget->setVisible(false);
+    connect(m_splitSlider, &QSlider::valueChanged, this, [this](int v) {
+        m_model.setSplitThreshold(v / 100.0);
     });
     tb->addSeparator();
     tb->addAction(aLeft);
@@ -213,7 +234,13 @@ void MainWindow::displayPath(const QString& path) {
         const bool mono = m_image.channels() == 1;
         m_cmapCombo->setEnabled(mono);
         QSignalBlocker blk(m_cmapCombo);
-        m_cmapCombo->setCurrentIndex(mono ? int(m_model.colormap()) : int(Colormap::Gray));
+        const Colormap cm = mono ? m_model.colormap() : Colormap::Gray;
+        m_cmapCombo->setCurrentIndex(int(cm));
+        if (m_splitSlider) {
+            QSignalBlocker bs(m_splitSlider);
+            m_splitSlider->setValue(int(m_model.splitThreshold() * 100));
+        }
+        if (m_splitWidget) m_splitWidget->setVisible(mono && cm == Colormap::Split);
     }
 
     updateDisplay();

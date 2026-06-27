@@ -15,6 +15,8 @@ class QDockWidget;
 class QListWidget;
 class QLabel;
 class QComboBox;
+class QSlider;
+class QWidget;
 
 namespace astro {
 
@@ -60,6 +62,8 @@ private:
     QListWidget*    m_fileList = nullptr;
     QLabel*         m_pixelLabel = nullptr;
     QComboBox*      m_cmapCombo = nullptr;
+    QWidget*        m_splitWidget = nullptr;
+    QSlider*        m_splitSlider = nullptr;
 
     bool m_imageOnly = false;
     bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;

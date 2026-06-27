@@ -35,19 +35,49 @@ static const Anchors& anchorsFor(Colormap m) {
 
 const char* colormapName(Colormap c) {
     switch (c) {
-        case Colormap::Gray:    return "Gray";
-        case Colormap::Heat:    return "Heat";
-        case Colormap::Viridis: return "Viridis";
-        case Colormap::Magma:   return "Magma";
-        case Colormap::Inferno: return "Inferno";
-        case Colormap::Cividis: return "Cividis";
+        case Colormap::Gray:     return "Gray";
+        case Colormap::Heat:     return "Heat";
+        case Colormap::Viridis:  return "Viridis";
+        case Colormap::Magma:    return "Magma";
+        case Colormap::Inferno:  return "Inferno";
+        case Colormap::Cividis:  return "Cividis";
+        case Colormap::Inverted: return "Gray (inv)";
+        case Colormap::Split:    return "Split";
     }
     return "Gray";
 }
 
-std::vector<std::uint8_t> buildColormapLut(Colormap c, int n) {
-    const Anchors& a = anchorsFor(c);
+std::vector<std::uint8_t> buildColormapLut(Colormap c, int n, double splitT) {
     std::vector<std::uint8_t> lut(std::size_t(n) * 3);
+
+    // Fully-inverted grayscale: 0 -> white, 1 -> black.
+    if (c == Colormap::Inverted) {
+        for (int i = 0; i < n; ++i) {
+            const double t = (n == 1) ? 0.0 : double(i) / (n - 1);
+            const std::uint8_t g = std::uint8_t(std::clamp(int((1.0 - t) * 255 + 0.5), 0, 255));
+            lut[i*3+0] = lut[i*3+1] = lut[i*3+2] = g;
+        }
+        return lut;
+    }
+
+    // Split grayscale: above the break, normal (break=black -> 1=white); below
+    // the break, inverted (0=white -> break=black). The break sits at the sky
+    // level, so faint background structure is rendered with an inverted ramp
+    // while sources above it read as a normal positive image.
+    if (c == Colormap::Split) {
+        const double T = std::clamp(splitT, 0.0, 1.0);
+        for (int i = 0; i < n; ++i) {
+            const double t = (n == 1) ? 0.0 : double(i) / (n - 1);
+            double lum;
+            if (t >= T) lum = (T >= 1.0) ? 0.0 : (t - T) / (1.0 - T);
+            else        lum = (T <= 0.0) ? 0.0 : (T - t) / T;
+            const std::uint8_t g = std::uint8_t(std::clamp(int(lum * 255 + 0.5), 0, 255));
+            lut[i*3+0] = lut[i*3+1] = lut[i*3+2] = g;
+        }
+        return lut;
+    }
+
+    const Anchors& a = anchorsFor(c);
     for (int i = 0; i < n; ++i) {
         const double t = (n == 1) ? 0.0 : double(i) / (n - 1);   // [0,1]
         const double seg = t * 8.0;                              // 8 intervals
