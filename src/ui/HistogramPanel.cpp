@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QDoubleValidator>
+#include <QLocale>
 #include <algorithm>
 
 namespace astro {
@@ -65,7 +66,10 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         m_pLbl[i] = new QLabel("");
         m_pLbl[i]->setStyleSheet("color:#7e8b98; font-size:10px;");
         m_pEdit[i] = new QLineEdit();
-        m_pEdit[i]->setValidator(new QDoubleValidator(this));
+        auto* dv = new QDoubleValidator(this);
+        dv->setLocale(QLocale::c());                 // '.' decimal, locale-independent
+        m_pEdit[i]->setValidator(dv);
+        m_pEdit[i]->setLocale(QLocale::c());
         m_pEdit[i]->setMaximumWidth(90);
         rl->addWidget(m_pLbl[i]);
         rl->addWidget(m_pEdit[i]);
@@ -188,7 +192,9 @@ int HistogramPanel::editChannel() const {
 
 void HistogramPanel::onParamEdited(int idx) {
     bool ok = false;
-    const double val = m_pEdit[idx]->text().toDouble(&ok);
+    QString txt = m_pEdit[idx]->text().trimmed();
+    txt.replace(',', '.');                          // accept comma decimals too
+    const double val = txt.toDouble(&ok);
     if (!ok) { syncFromModel(); return; }
     const double eps = 0.006;
     auto clamp01 = [](double v){ return v < 0 ? 0.0 : (v > 1 ? 1.0 : v); };
