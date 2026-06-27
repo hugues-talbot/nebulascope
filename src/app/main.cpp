@@ -102,6 +102,13 @@ int main(int argc, char** argv) {
     const QStringList args = app.arguments().mid(1);
     for (int i = 0; i < args.size(); ++i) {
         const QString& a = args[i];
+        if (a.startsWith("-psn_") || a.startsWith("-NSDocumentRevisionsDebugMode")) {
+            // Cocoa-injected args when Finder/Launchpad launches the .app bundle
+            // (process serial number, document-revisions debug). Ignore them so
+            // they aren't mistaken for unknown options or filenames.
+            if (a == "-NSDocumentRevisionsDebugMode" && i + 1 < args.size()) ++i;  // skip its value
+            continue;
+        }
         if ((a == "--list" || a == "-l") && i + 1 < args.size()) {
             w.importListFile(args[++i]);            // load a saved list file
         } else if (a.startsWith('-')) {
