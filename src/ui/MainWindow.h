@@ -6,6 +6,7 @@
 // to the renderer so any histogram edit updates the display live.
 //
 #include <QMainWindow>
+#include <QHash>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
 #include "render/StretchModel.h"
@@ -25,17 +26,25 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow();
 
+    // Register files (e.g. from the command line) without decoding; the first
+    // becomes the displayed image if nothing is shown yet.
+    void openPaths(const QStringList& paths);
+
 private slots:
     void openFile();
     void saveFile();
     void updateDisplay();
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
+    void showRow(int row);      // decode + display the list item at row
+    void nextImage();           // Space
+    void prevImage();           // Backspace
 
 private:
     void buildUi();
     void buildMenusAndToolbar();
-    void loadPath(const QString& path);
+    void addPaths(const QStringList& paths);   // append list items, no decode
+    void displayPath(const QString& path);     // decode one file into the view
 
     ImageData      m_image;
     ImageHeader    m_header;
@@ -52,6 +61,11 @@ private:
 
     bool m_imageOnly = false;
     bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;
+
+    // Per-image stretch memory: each file remembers the last STF applied to it,
+    // re-applied on revisit; first visit auto-stretches. Keyed by file path.
+    QHash<QString, StretchModel::State> m_stfByPath;
+    QString m_currentPath;
 };
 
 } // namespace astro

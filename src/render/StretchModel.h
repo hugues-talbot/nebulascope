@@ -32,6 +32,30 @@ public:
     int channelCount() const { return m_count; }
     void setChannelCount(int n) { m_count = n < 1 ? 1 : (n > 3 ? 3 : n); }
 
+    // A full snapshot of the display parameters, so each image in the list can
+    // remember (and later restore) the last stretch the user applied to it.
+    struct State {
+        bool           valid = false;
+        StretchFn      fn = StretchFn::Asinh;
+        int            count = 3;
+        ChannelStretch chan[3];
+        GHSParams      ghs;
+        double         lo[3] = {0, 0, 0};
+        double         hi[3] = {1, 1, 1};
+    };
+    State state() const {
+        State s;
+        s.valid = true; s.fn = m_fn; s.count = m_count; s.ghs = m_ghs;
+        for (int c = 0; c < 3; ++c) { s.chan[c] = m_chan[c]; s.lo[c] = m_lo[c]; s.hi[c] = m_hi[c]; }
+        return s;
+    }
+    void setState(const State& s) {
+        if (!s.valid) return;
+        m_fn = s.fn; m_count = s.count; m_ghs = s.ghs;
+        for (int c = 0; c < 3; ++c) { m_chan[c] = s.chan[c]; m_lo[c] = s.lo[c]; m_hi[c] = s.hi[c]; }
+        emit changed();
+    }
+
     // STF-style auto stretch: sets per-channel display ranges and a midtone that
     // lifts the background to ~0.25. Switches to the Linear+MTF transfer.
     void autoStretch(const std::vector<ChannelStats>& stats);

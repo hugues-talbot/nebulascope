@@ -40,6 +40,7 @@ void MainWindow::buildUi() {
     m_fileList = new QListWidget(m_leftDock);
     m_leftDock->setWidget(m_fileList);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
+    connect(m_fileList, &QListWidget::currentRowChanged, this, &MainWindow::showRow);
 
     // left dock (tabbed): image info / FITS structure / header
     m_infoDock = new QDockWidget("Info", this);
@@ -63,6 +64,12 @@ void MainWindow::buildUi() {
     statusBar()->addPermanentWidget(m_pixelLabel);
 
     connect(&m_model, &StretchModel::changed, this, &MainWindow::updateDisplay);
+
+    // Keep the active image's stretch memory current: every edit (drag, tab,
+    // Auto/Reset) is snapshotted under its path, so revisiting restores it.
+    connect(&m_model, &StretchModel::changed, this, [this] {
+        if (!m_currentPath.isEmpty()) m_stfByPath.insert(m_currentPath, m_model.state());
+    });
 }
 
 void MainWindow::buildMenusAndToolbar() {
@@ -96,6 +103,12 @@ void MainWindow::buildMenusAndToolbar() {
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 
+    // Walk the loaded-image list: Space = next, Backspace = previous.
+    auto* next = new QShortcut(QKeySequence(Qt::Key_Space), this);
+    connect(next, &QShortcut::activated, this, &MainWindow::nextImage);
+    auto* prev = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+    connect(prev, &QShortcut::activated, this, &MainWindow::prevImage);
+
     // Toolbar
     QToolBar* tb = addToolBar("Main");
     tb->setObjectName("mainToolbar");
@@ -111,13 +124,53 @@ void MainWindow::buildMenusAndToolbar() {
 }
 
 void MainWindow::openFile() {
-    const QString path = QFileDialog::getOpenFileName(
-        this, "Open image", QString(),
-        "Astronomy images (*.fits *.fit *.fts *.xisf);;All files (*)");
-    if (!path.isEmpty()) loadPath(path);
+    const QStringList paths = QFileDialog::getOpenFileNames(
+        this, "Open image(s)", QString(),
+        "Astronomy images (*.fits *.fit *.fts *.fz *.xisf);;All files (*)");
+    if (!paths.isEmpty()) addPaths(paths);
 }
 
-void MainWindow::loadPath(const QString& path) {
+void MainWindow::openPaths(const QStringList& paths) {
+    addPaths(paths);
+}
+
+// Append entries to the list without decoding. Selecting one (here or via the
+// keyboard) is what triggers the actual load in showRow().
+void MainWindow::addPaths(const QStringList& paths) {
+    QListWidgetItem* firstAdded = nullptr;
+    for (const QString& p : paths) {
+        if (p.isEmpty()) continue;
+        auto* it = new QListWidgetItem(QFileInfo(p).fileName(), m_fileList);
+        it->setData(Qt::UserRole, p);
+        it->setToolTip(p);
+        if (!firstAdded) firstAdded = it;
+    }
+    // If nothing is displayed yet, show the first newly added file.
+    if (m_fileList->currentRow() < 0 && firstAdded)
+        m_fileList->setCurrentItem(firstAdded);   // fires currentRowChanged -> showRow
+}
+
+void MainWindow::showRow(int row) {
+    if (row < 0 || row >= m_fileList->count()) return;
+    const QString path = m_fileList->item(row)->data(Qt::UserRole).toString();
+    if (!path.isEmpty()) displayPath(path);
+}
+
+void MainWindow::nextImage() {
+    const int n = m_fileList->count();
+    if (n == 0) return;
+    const int row = m_fileList->currentRow();
+    if (row < n - 1) m_fileList->setCurrentRow(row + 1);
+}
+
+void MainWindow::prevImage() {
+    const int n = m_fileList->count();
+    if (n == 0) return;
+    const int row = m_fileList->currentRow();
+    if (row > 0) m_fileList->setCurrentRow(row - 1);
+}
+
+void MainWindow::displayPath(const QString& path) {
     io::LoadResult res = io::loadImage(path);            // promoteToFloat = true
     if (!res.ok) {
         QMessageBox::warning(this, "Open failed", res.error);
@@ -128,18 +181,27 @@ void MainWindow::loadPath(const QString& path) {
 
     m_model.setChannelCount(m_image.channels());
     const std::vector<ChannelStats> stats = computeStats(m_image);
-    m_model.autoStretch(stats);                          // sets ranges + STF, emits changed()
+
+    // Per-image STF memory: restore this file's last stretch, or auto-stretch on
+    // first visit. Set m_currentPath first so the change handler saves correctly.
+    m_currentPath = path;
+    auto remembered = m_stfByPath.constFind(path);
+    if (remembered != m_stfByPath.constEnd() && remembered.value().valid)
+        m_model.setState(remembered.value());            // re-apply remembered STF
+    else
+        m_model.autoStretch(stats);                      // first visit: auto STF
+
     m_view->setSource(&m_image);
     m_hist->setSource(&m_image);
     m_info->setData(&m_image, &m_header, stats);
     updateDisplay();
     m_view->zoomToFit();
 
-    auto* it = new QListWidgetItem(QFileInfo(path).fileName(), m_fileList);
-    it->setData(Qt::UserRole, path);
-    m_fileList->setCurrentItem(it);
-    statusBar()->showMessage(QString("%1   %2×%3   %4 ch")
-        .arg(QFileInfo(path).fileName()).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels()), 4000);
+    const QString name = QFileInfo(path).fileName();
+    setWindowTitle(QStringLiteral("NebulaScope \u2014 %1").arg(name));
+    statusBar()->showMessage(QStringLiteral("%1   %2\u00d7%3   %4 ch   [%5/%6]")
+        .arg(name).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels())
+        .arg(m_fileList->currentRow() + 1).arg(m_fileList->count()), 4000);
 }
 
 void MainWindow::saveFile() {

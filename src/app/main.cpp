@@ -2,6 +2,9 @@
 #include <QApplication>
 #include <QPalette>
 #include <QStyleFactory>
+#include <QDir>
+#include <QFileInfo>
+#include <QStringList>
 
 // Dark "astro tool" theme, roughly matching the mockup.
 static void applyTheme(QApplication& app) {
@@ -55,5 +58,21 @@ int main(int argc, char** argv) {
 
     astro::MainWindow w;
     w.show();
+
+    // Files from the command line: nebulascope *.fits  (the shell usually globs;
+    // expand any surviving wildcards ourselves so it also works on Windows).
+    QStringList files;
+    for (const QString& a : app.arguments().mid(1)) {
+        if (a.contains('*') || a.contains('?') || a.contains('[')) {
+            const QFileInfo fi(a);
+            QDir dir(fi.absolutePath());
+            const auto matches = dir.entryList(QStringList{ fi.fileName() }, QDir::Files, QDir::Name);
+            for (const QString& m : matches) files << dir.absoluteFilePath(m);
+        } else if (QFileInfo::exists(a)) {
+            files << QFileInfo(a).absoluteFilePath();
+        }
+    }
+    if (!files.isEmpty()) w.openPaths(files);
+
     return app.exec();
 }
