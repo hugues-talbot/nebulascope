@@ -37,6 +37,7 @@ add_executable(nebulascope
     ui/ImageView.cpp
     ui/HistogramView.cpp
     ui/HistogramPanel.cpp
+    ui/ColorBar.cpp
     ui/InfoPanel.cpp
     ui/MainWindow.cpp
 )

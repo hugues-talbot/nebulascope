@@ -1,5 +1,6 @@
 #include "ui/HistogramPanel.h"
 #include "ui/HistogramView.h"
+#include "ui/ColorBar.h"
 #include "core/ImageStats.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -73,6 +74,12 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     btnRow->addWidget(resetBtn);
     btnRow->addStretch();
     root->addLayout(btnRow);
+
+    // --- colorbar legend (value -> display, reflects stretch + colormap) ---
+    auto* cbLabel = new QLabel("COLORBAR");
+    cbLabel->setStyleSheet("color:#5b6876; font-size:10px; letter-spacing:1.5px; font-weight:600;");
+    root->addWidget(cbLabel);
+    root->addWidget(new ColorBar(m_model));
 
     // --- wiring ---
     connect(m_fnGroup, &QButtonGroup::idClicked, this, [this](int id) {
