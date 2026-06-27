@@ -10,6 +10,7 @@
 
 #include <QDockWidget>
 #include <QListWidget>
+#include <QApplication>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
