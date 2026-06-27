@@ -47,6 +47,12 @@ private slots:
     void appendToList();        // + : pick files, append
     void removeSelected();      // − / Del : drop selected entries
     void exportList();          // write the list of paths to a text file
+    void importList();          // read a list of paths from a text file
+
+public:
+    // Load a list file (one path per line; blanks and #-comments ignored) and
+    // append its entries. Used by File▸Import List and the --list CLI flag.
+    void importListFile(const QString& listPath);
 
 private:
     void buildUi();
