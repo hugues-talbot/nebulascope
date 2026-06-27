@@ -6,6 +6,7 @@ add_library(astro_core STATIC
     core/Convert.cpp
     core/ImageStats.cpp
     core/Stretch.cpp
+    core/Colormap.cpp
     io/ImageReader.cpp
     io/FitsReader.cpp
     io/XisfReader.cpp

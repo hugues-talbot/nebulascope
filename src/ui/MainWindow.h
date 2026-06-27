@@ -14,6 +14,7 @@
 class QDockWidget;
 class QListWidget;
 class QLabel;
+class QComboBox;
 
 namespace astro {
 
@@ -58,6 +59,7 @@ private:
     QDockWidget*    m_infoDock = nullptr;
     QListWidget*    m_fileList = nullptr;
     QLabel*         m_pixelLabel = nullptr;
+    QComboBox*      m_cmapCombo = nullptr;
 
     bool m_imageOnly = false;
     bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;

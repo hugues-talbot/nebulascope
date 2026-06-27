@@ -6,6 +6,7 @@
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
 #include "render/DisplayRenderer.h"
+#include "core/Colormap.h"
 
 #include <QDockWidget>
 #include <QListWidget>
@@ -18,6 +19,7 @@
 #include <QFileInfo>
 #include <QShortcut>
 #include <QKeySequence>
+#include <QComboBox>
 
 namespace astro {
 
@@ -118,6 +120,17 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addSeparator();
     tb->addAction("Fit", m_view, &ImageView::zoomToFit);
     tb->addSeparator();
+
+    // False-colour map for mono images.
+    tb->addWidget(new QLabel(" Colormap "));
+    m_cmapCombo = new QComboBox();
+    for (int i = 0; i < kColormapCount; ++i)
+        m_cmapCombo->addItem(colormapName(static_cast<Colormap>(i)));
+    tb->addWidget(m_cmapCombo);
+    connect(m_cmapCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int i) {
+        m_model.setColormap(static_cast<Colormap>(i));
+    });
+    tb->addSeparator();
     tb->addAction(aLeft);
     tb->addAction(aRight);
     tb->addAction(aImageOnly);
@@ -194,6 +207,15 @@ void MainWindow::displayPath(const QString& path) {
     m_view->setSource(&m_image);
     m_hist->setSource(&m_image);
     m_info->setData(&m_image, &m_header, stats);
+
+    // Colormap selector: only meaningful for mono images; reflect remembered map.
+    if (m_cmapCombo) {
+        const bool mono = m_image.channels() == 1;
+        m_cmapCombo->setEnabled(mono);
+        QSignalBlocker blk(m_cmapCombo);
+        m_cmapCombo->setCurrentIndex(mono ? int(m_model.colormap()) : int(Colormap::Gray));
+    }
+
     updateDisplay();
     // Preserve zoom/pan when stepping between images of identical geometry so a
     // zoomed-in region stays put for comparison; otherwise fit the new image.

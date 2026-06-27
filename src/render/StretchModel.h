@@ -6,6 +6,7 @@
 //
 #include "core/Stretch.h"
 #include "core/ImageStats.h"
+#include "core/Colormap.h"
 #include <QObject>
 #include <vector>
 
@@ -25,6 +26,10 @@ public:
     const GHSParams& ghs() const { return m_ghs; }
     void setGhs(const GHSParams& g) { m_ghs = g; emit changed(); }
 
+    // False-colour map for mono images (ignored for RGB).
+    Colormap colormap() const { return m_cmap; }
+    void setColormap(Colormap c) { if (c != m_cmap) { m_cmap = c; emit changed(); } }
+
     double lo(int c) const { return m_lo[clampC(c)]; }
     double hi(int c) const { return m_hi[clampC(c)]; }
     void setRange(int c, double lo, double hi) { c = clampC(c); m_lo[c] = lo; m_hi[c] = hi; }
@@ -42,16 +47,17 @@ public:
         GHSParams      ghs;
         double         lo[3] = {0, 0, 0};
         double         hi[3] = {1, 1, 1};
+        Colormap       cmap = Colormap::Gray;
     };
     State state() const {
         State s;
-        s.valid = true; s.fn = m_fn; s.count = m_count; s.ghs = m_ghs;
+        s.valid = true; s.fn = m_fn; s.count = m_count; s.ghs = m_ghs; s.cmap = m_cmap;
         for (int c = 0; c < 3; ++c) { s.chan[c] = m_chan[c]; s.lo[c] = m_lo[c]; s.hi[c] = m_hi[c]; }
         return s;
     }
     void setState(const State& s) {
         if (!s.valid) return;
-        m_fn = s.fn; m_count = s.count; m_ghs = s.ghs;
+        m_fn = s.fn; m_count = s.count; m_ghs = s.ghs; m_cmap = s.cmap;
         for (int c = 0; c < 3; ++c) { m_chan[c] = s.chan[c]; m_lo[c] = s.lo[c]; m_hi[c] = s.hi[c]; }
         emit changed();
     }
@@ -71,6 +77,7 @@ private:
     int m_count = 3;
     ChannelStretch m_chan[3];
     GHSParams m_ghs;
+    Colormap m_cmap = Colormap::Gray;
     double m_lo[3] = {0, 0, 0};
     double m_hi[3] = {1, 1, 1};
 };

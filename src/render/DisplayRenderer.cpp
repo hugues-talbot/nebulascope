@@ -1,5 +1,6 @@
 #include "render/DisplayRenderer.h"
 #include "core/Stretch.h"
+#include "core/Colormap.h"
 #include <algorithm>
 #include <cmath>
 
@@ -39,6 +40,34 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     const float* p0 = img.plane<float>(0);
     const float* p1 = ch >= 3 ? img.plane<float>(1) : p0;
     const float* p2 = ch >= 3 ? img.plane<float>(2) : p0;
+
+    // Mono + a non-Gray colormap: stretch once, then look up false colour.
+    if (ch == 1 && model.colormap() != Colormap::Gray) {
+        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), 256);
+        const double lo = model.lo(0), hi = model.hi(0);
+        const auto& l = lut[0];
+        for (int y = 0; y < h; ++y) {
+            uchar* row = out.scanLine(y);
+            const std::size_t off = std::size_t(y) * w;
+            for (int x = 0; x < w; ++x) {
+                const float v = p0[off + x];
+                int ci;
+                if (!std::isfinite(v)) { ci = 0; }
+                else {
+                    double xx = (double(v) - lo) / std::max(1e-9, hi - lo);
+                    xx = xx < 0 ? 0 : (xx > 1 ? 1 : xx);
+                    int idx = int(xx * (N - 1));
+                    idx = idx < 0 ? 0 : (idx > N - 1 ? N - 1 : idx);
+                    ci = int(l[idx] * 255.0f + 0.5f);
+                    ci = ci < 0 ? 0 : (ci > 255 ? 255 : ci);
+                }
+                row[x * 3 + 0] = cmap[ci * 3 + 0];
+                row[x * 3 + 1] = cmap[ci * 3 + 1];
+                row[x * 3 + 2] = cmap[ci * 3 + 2];
+            }
+        }
+        return out;
+    }
 
     for (int y = 0; y < h; ++y) {
         uchar* row = out.scanLine(y);
