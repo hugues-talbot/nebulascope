@@ -195,7 +195,12 @@ void MainWindow::displayPath(const QString& path) {
     m_hist->setSource(&m_image);
     m_info->setData(&m_image, &m_header, stats);
     updateDisplay();
-    m_view->zoomToFit();
+    // Preserve zoom/pan when stepping between images of identical geometry so a
+    // zoomed-in region stays put for comparison; otherwise fit the new image.
+    if (m_image.width() != m_lastW || m_image.height() != m_lastH)
+        m_view->zoomToFit();
+    m_lastW = m_image.width();
+    m_lastH = m_image.height();
 
     const QString name = QFileInfo(path).fileName();
     setWindowTitle(QStringLiteral("NebulaScope \u2014 %1").arg(name));

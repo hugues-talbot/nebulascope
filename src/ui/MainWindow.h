@@ -62,6 +62,10 @@ private:
     bool m_imageOnly = false;
     bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;
 
+    // Last displayed image dimensions; used to keep zoom/pan when the next image
+    // has the same geometry (so small regions stay aligned for comparison).
+    int m_lastW = -1, m_lastH = -1;
+
     // Per-image stretch memory: each file remembers the last STF applied to it,
     // re-applied on revisit; first visit auto-stretches. Keyed by file path.
     QHash<QString, StretchModel::State> m_stfByPath;
