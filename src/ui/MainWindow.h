@@ -36,6 +36,7 @@ public:
 private slots:
     void openFile();
     void saveFile();
+    void exportView();
     void updateDisplay();
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);

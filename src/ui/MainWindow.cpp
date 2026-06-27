@@ -81,7 +81,8 @@ void MainWindow::buildMenusAndToolbar() {
     // File
     QMenu* file = menuBar()->addMenu("&File");
     file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
-    file->addAction("&Save As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
+    file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
+    file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
@@ -120,6 +121,7 @@ void MainWindow::buildMenusAndToolbar() {
     tb->setMovable(false);
     tb->addAction("Open", this, &MainWindow::openFile);
     tb->addAction("Save", this, &MainWindow::saveFile);
+    tb->addAction("Export", this, &MainWindow::exportView);
     tb->addSeparator();
     tb->addAction("Fit", m_view, &ImageView::zoomToFit);
     tb->addSeparator();
@@ -266,6 +268,24 @@ void MainWindow::saveFile() {
     io::SaveResult sr = io::saveImage(path, m_image, m_header);
     if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);
     else statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
+}
+
+void MainWindow::exportView() {
+    if (!m_image.isValid()) return;
+    QString sel;
+    const QString path = QFileDialog::getSaveFileName(
+        this, "Export view (stretched + colormapped)", QString(),
+        "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff)", &sel);
+    if (path.isEmpty()) return;
+
+    // The exact 8-bit RGB image currently on screen — stretch, colormap and all.
+    const QImage view = DisplayRenderer::render(m_image, m_model);
+    if (!view.save(path)) {
+        QMessageBox::warning(this, "Export failed",
+                             QStringLiteral("Could not write %1").arg(QFileInfo(path).fileName()));
+        return;
+    }
+    statusBar()->showMessage("Exported view " + QFileInfo(path).fileName(), 3000);
 }
 
 void MainWindow::updateDisplay() {
