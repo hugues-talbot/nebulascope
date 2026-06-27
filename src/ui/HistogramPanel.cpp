@@ -8,6 +8,9 @@
 #include <QButtonGroup>
 #include <QSlider>
 #include <QLabel>
+#include <QLineEdit>
+#include <QDoubleValidator>
+#include <algorithm>
 
 namespace astro {
 
@@ -50,6 +53,27 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     // --- the plot ---
     m_view = new HistogramView(m_model);
     root->addWidget(m_view, 1);
+
+    // --- editable parameter fields (precise entry; relabelled per mode) ---
+    auto* pGrid = new QHBoxLayout();
+    pGrid->setSpacing(8);
+    for (int i = 0; i < kParamFields; ++i) {
+        m_pRow[i] = new QWidget();
+        auto* rl = new QVBoxLayout(m_pRow[i]);
+        rl->setContentsMargins(0, 0, 0, 0);
+        rl->setSpacing(2);
+        m_pLbl[i] = new QLabel("");
+        m_pLbl[i]->setStyleSheet("color:#7e8b98; font-size:10px;");
+        m_pEdit[i] = new QLineEdit();
+        m_pEdit[i]->setValidator(new QDoubleValidator(this));
+        m_pEdit[i]->setMaximumWidth(90);
+        rl->addWidget(m_pLbl[i]);
+        rl->addWidget(m_pEdit[i]);
+        pGrid->addWidget(m_pRow[i]);
+        connect(m_pEdit[i], &QLineEdit::editingFinished, this, [this, i] { onParamEdited(i); });
+    }
+    pGrid->addStretch();
+    root->addLayout(pGrid);
 
     // --- GHS sliders (shown only in GHS mode) ---
     m_ghsBox = new QWidget();
@@ -127,6 +151,73 @@ void HistogramPanel::syncFromModel() {
     m_dSlider->setValue(int(m_model->ghs().D * 100));
     m_bSlider->setValue(int(m_model->ghs().b * 100));
     m_view->recomputeHistogram();
+
+    // --- editable parameter fields ---
+    auto setField = [this](int i, const QString& label, double value, int prec) {
+        m_pRow[i]->setVisible(true);
+        m_pLbl[i]->setText(label);
+        if (!m_pEdit[i]->hasFocus())                       // don't fight active typing
+            m_pEdit[i]->setText(QString::number(value, 'g', prec));
+    };
+    if (ghs) {
+        const GHSParams g = m_model->ghs();
+        setField(0, "SP", g.SP, 4);
+        setField(1, "LP", g.LP, 4);
+        setField(2, "HP", g.HP, 4);
+        setField(3, "D",  g.D,  4);
+        setField(4, "b",  g.b,  4);
+    } else {
+        const int ec = editChannel();
+        const double lo = m_model->lo(ec), hi = m_model->hi(ec);
+        const ChannelStretch cs = m_model->channel(ec);
+        const bool linear = m_model->fn() == StretchFn::Linear;
+        setField(0, "Black", lo + cs.black * (hi - lo), 6);
+        setField(1, "Mid",   lo + cs.mid   * (hi - lo), 6);
+        setField(2, "White", lo + cs.white * (hi - lo), 6);
+        m_pRow[0]->setVisible(linear);                     // B/W are the window: edit in Linear
+        m_pRow[2]->setVisible(linear);
+        m_pRow[3]->setVisible(false);
+        m_pRow[4]->setVisible(false);
+    }
+}
+
+int HistogramPanel::editChannel() const {
+    const int a = m_view ? m_view->activeChannel() : -1;
+    return a < 0 ? 0 : a;
+}
+
+void HistogramPanel::onParamEdited(int idx) {
+    bool ok = false;
+    const double val = m_pEdit[idx]->text().toDouble(&ok);
+    if (!ok) { syncFromModel(); return; }
+    const double eps = 0.006;
+    auto clamp01 = [](double v){ return v < 0 ? 0.0 : (v > 1 ? 1.0 : v); };
+
+    if (m_model->fn() == StretchFn::GHS) {
+        GHSParams g = m_model->ghs();
+        if (idx == 0)      g.SP = std::min(g.HP - eps, std::max(g.LP + eps, clamp01(val)));
+        else if (idx == 1) g.LP = std::min(g.SP - eps, std::max(0.0, clamp01(val)));
+        else if (idx == 2) g.HP = std::max(g.SP + eps, std::min(1.0, clamp01(val)));
+        else if (idx == 3) g.D  = std::min(8.0,  std::max(0.0,  val));
+        else if (idx == 4) g.b  = std::min(15.0, std::max(-5.0, val));
+        m_model->setGhs(g);
+        return;
+    }
+
+    // Linear/Log/Asinh: idx 0=Black 1=Mid 2=White, entered as RAW data values.
+    auto applyChan = [&](int c) {
+        const double lo = m_model->lo(c), hi = m_model->hi(c);
+        double nv = clamp01((val - lo) / std::max(1e-12, hi - lo));
+        ChannelStretch cs = m_model->channel(c);
+        if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(0.0, nv));
+        else if (idx == 1) cs.mid   = std::min(cs.white - eps, std::max(cs.black + eps, nv));
+        else if (idx == 2) cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
+        m_model->setChannel(c, cs);
+    };
+    if (m_view && m_view->activeChannel() < 0)
+        for (int c = 0; c < m_model->channelCount(); ++c) applyChan(c);
+    else
+        applyChan(editChannel());
 }
 
 } // namespace astro
