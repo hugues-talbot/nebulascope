@@ -29,6 +29,18 @@ static SampleFormat xisfFormat(LibXISF::Image::SampleFormat f) {
     }
 }
 
+static QString xisfTypeString(LibXISF::Image::SampleFormat f) {
+    using SF = LibXISF::Image::SampleFormat;
+    switch (f) {
+        case SF::UInt8:   return "8-bit unsigned int";
+        case SF::UInt16:  return "16-bit unsigned int";
+        case SF::UInt32:  return "32-bit unsigned int";
+        case SF::Float32: return "32-bit float";
+        case SF::Float64: return "64-bit float";
+        default:          return "unsupported sample format";
+    }
+}
+
 bool XisfReader::canRead(const QString& path) const {
     if (QFileInfo(path).suffix().toLower() == "xisf") return true;
     // Magic: a monolithic XISF file starts with the ASCII signature "XISF0100".
@@ -79,6 +91,18 @@ LoadResult XisfReader::load(const QString& path, const LoadOptions& opts) const 
         // Promote integer images to Float32 (XISF integers normalize to [0,1]).
         if (opts.promoteToFloat && img.format() != SampleFormat::Float32)
             img = toFloat32(img, /*normalizeIntegers=*/true);
+
+        // Orientation info for the Info panel.
+        r.header.container = "XISF";
+        r.header.nativeType = xisfTypeString(im.sampleFormat());
+        r.header.structure << QStringLiteral("Image 0: %1\u00d7%2\u00d7%3, %4, %5")
+                                  .arg(w).arg(h).arg(ch)
+                                  .arg(xisfTypeString(im.sampleFormat()),
+                                       cs == ColorSpace::RGB ? "RGB" : "Gray");
+        if (reader.imagesCount() > 1)
+            r.header.structure << QStringLiteral("(+ %1 more image%2 in file)")
+                                      .arg(reader.imagesCount() - 1)
+                                      .arg(reader.imagesCount() - 1 == 1 ? "" : "s");
 
         r.image = std::move(img);
         r.ok    = true;

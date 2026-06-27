@@ -10,6 +10,7 @@
 //                   colour-management, ...). Empty for plain FITS.
 //
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 #include <vector>
 
@@ -24,6 +25,11 @@ struct HeaderCard {
 struct ImageHeader {
     std::vector<HeaderCard> cards;
     QVariantMap             properties;
+
+    // Orientation info for the Info panel (populated by the readers).
+    QString     container;    // "FITS" / "XISF"
+    QString     nativeType;   // on-disk sample type, e.g. "16-bit unsigned int"
+    QStringList structure;    // one line per HDU (FITS) or image/block (XISF)
 
     QString valueOf(const QString& key, const QString& fallback = {}) const {
         for (const auto& c : cards)

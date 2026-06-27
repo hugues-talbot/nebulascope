@@ -18,6 +18,7 @@ namespace astro {
 
 class ImageView;
 class HistogramPanel;
+class InfoPanel;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -42,13 +43,15 @@ private:
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;
+    InfoPanel*      m_info = nullptr;
     QDockWidget*    m_leftDock = nullptr;
     QDockWidget*    m_rightDock = nullptr;
+    QDockWidget*    m_infoDock = nullptr;
     QListWidget*    m_fileList = nullptr;
     QLabel*         m_pixelLabel = nullptr;
 
     bool m_imageOnly = false;
-    bool m_savedLeft = true, m_savedRight = true;
+    bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;
 };
 
 } // namespace astro

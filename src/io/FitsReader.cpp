@@ -36,37 +36,66 @@ static int cfitsioType(SampleFormat f) {
     return TFLOAT;
 }
 
-// Move to the first HDU holding a >=2-D image. Returns false if none found.
-// A tile-compressed image extension reports as IMAGE_HDU to CFITSIO, so this
-// transparently catches both MEF and Rice/gzip-compressed FITS.
-static bool moveToFirstImage(fitsfile* fptr, int& naxis, long naxes[3], int& status) {
+// Human-readable on-disk pixel type from a CFITSIO (equiv) BITPIX value.
+static QString typeString(int eqbitpix) {
+    switch (eqbitpix) {
+        case BYTE_IMG:     return "8-bit unsigned int";
+        case SHORT_IMG:    return "16-bit signed int";
+        case USHORT_IMG:   return "16-bit unsigned int";
+        case LONG_IMG:     return "32-bit signed int";
+        case ULONG_IMG:    return "32-bit unsigned int";
+        case LONGLONG_IMG: return "64-bit int";
+        case FLOAT_IMG:    return "32-bit float";
+        case DOUBLE_IMG:   return "64-bit float";
+        default:           return QStringLiteral("BITPIX %1").arg(eqbitpix);
+    }
+}
+
+// Walk every HDU and append a one-line summary; record the first image HDU.
+static void enumerateHdus(fitsfile* fptr, QStringList& out, int& firstImageHdu, int& status) {
     int nhdus = 0;
     fits_get_num_hdus(fptr, &nhdus, &status);
-    if (status) return false;
+    if (status) return;
 
     for (int i = 1; i <= nhdus; ++i) {
         int hdutype = 0;
         fits_movabs_hdu(fptr, i, &hdutype, &status);
         if (status) { status = 0; continue; }
-        if (hdutype != IMAGE_HDU) continue;
 
-        int nd = 0;
-        fits_get_img_dim(fptr, &nd, &status);
-        if (status || nd < 2) { status = 0; continue; }
-
-        long dims[9] = {0};
-        fits_get_img_size(fptr, (nd > 9 ? 9 : nd), dims, &status);
-        if (status) { status = 0; continue; }
-
-        naxis = nd;
-        naxes[0] = dims[0];
-        naxes[1] = dims[1];
-        naxes[2] = (nd >= 3) ? dims[2] : 1;
-        return true;
+        QString line = QStringLiteral("HDU %1: ").arg(i - 1);
+        if (hdutype == IMAGE_HDU) {
+            int nd = 0;
+            fits_get_img_dim(fptr, &nd, &status);
+            if (nd < 2) {
+                line += "Primary/Image \u2014 no data";
+            } else {
+                long dims[9] = {0};
+                fits_get_img_size(fptr, (nd > 9 ? 9 : nd), dims, &status);
+                int eq = 0; fits_get_img_equivtype(fptr, &eq, &status);
+                QString geom = QString::number(dims[0]);
+                for (int d = 1; d < nd; ++d) geom += QStringLiteral("\u00d7%1").arg(dims[d]);
+                const bool comp = fits_is_compressed_image(fptr, &status) != 0;
+                line += QStringLiteral("Image %1, %2%3")
+                            .arg(geom, typeString(eq), comp ? " (compressed)" : "");
+                if (firstImageHdu < 0) firstImageHdu = i;
+            }
+        } else if (hdutype == ASCII_TBL || hdutype == BINARY_TBL) {
+            long nrows = 0; int ncols = 0;
+            fits_get_num_rows(fptr, &nrows, &status);
+            fits_get_num_cols(fptr, &ncols, &status);
+            line += QStringLiteral("%1 table, %2 cols \u00d7 %3 rows")
+                        .arg(hdutype == BINARY_TBL ? "Binary" : "ASCII").arg(ncols).arg(nrows);
+        } else {
+            line += "Other";
+        }
+        if (status) status = 0;
+        out << line;
     }
-    return false;
 }
 
+// Move to the first HDU holding a >=2-D image. Returns false if none found.
+// A tile-compressed image extension reports as IMAGE_HDU to CFITSIO, so this
+// transparently catches both MEF and Rice/gzip-compressed FITS.
 static void extractHeader(fitsfile* fptr, ImageHeader& h, int& status) {
     int nkeys = 0;
     fits_get_hdrspace(fptr, &nkeys, nullptr, &status);
@@ -103,13 +132,22 @@ LoadResult FitsReader::load(const QString& path, const LoadOptions& opts) const 
         return r;
     }
 
-    int naxis = 0;
-    long naxes[3] = {0, 0, 1};
-    if (!moveToFirstImage(fptr, naxis, naxes, status)) {
+    // Enumerate all HDUs for the structure view, and locate the first image.
+    int firstImageHdu = -1;
+    QStringList structure;
+    enumerateHdus(fptr, structure, firstImageHdu, status);
+    if (firstImageHdu < 0) {
         r.error = QStringLiteral("No 2-D image found in any HDU (primary or extensions)");
         int s2 = 0; fits_close_file(fptr, &s2);
         return r;
     }
+
+    int hdutype = 0;
+    fits_movabs_hdu(fptr, firstImageHdu, &hdutype, &status);
+    int naxis = 0;
+    long naxes[9] = {0};
+    fits_get_img_dim(fptr, &naxis, &status);
+    fits_get_img_size(fptr, (naxis > 9 ? 9 : naxis), naxes, &status);
 
     const int w  = int(naxes[0]);
     const int h  = int(naxes[1]);
@@ -139,6 +177,9 @@ LoadResult FitsReader::load(const QString& path, const LoadOptions& opts) const 
 
     int hs = 0;
     extractHeader(fptr, r.header, hs);
+    r.header.container = "FITS";
+    r.header.nativeType = typeString(eqtype);
+    r.header.structure = structure;
 
     int s2 = 0;
     fits_close_file(fptr, &s2);

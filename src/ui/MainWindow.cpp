@@ -1,6 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
+#include "ui/InfoPanel.h"
 #include "io/ImageReader.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
@@ -40,6 +41,15 @@ void MainWindow::buildUi() {
     m_leftDock->setWidget(m_fileList);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
 
+    // left dock (tabbed): image info / FITS structure / header
+    m_infoDock = new QDockWidget("Info", this);
+    m_infoDock->setObjectName("infoDock");
+    m_info = new InfoPanel(&m_model, m_infoDock);
+    m_infoDock->setWidget(m_info);
+    addDockWidget(Qt::LeftDockWidgetArea, m_infoDock);
+    tabifyDockWidget(m_leftDock, m_infoDock);
+    m_leftDock->raise();
+
     // right dock: histogram
     m_rightDock = new QDockWidget("Histogram", this);
     m_rightDock->setObjectName("rightDock");
@@ -69,7 +79,10 @@ void MainWindow::buildMenusAndToolbar() {
     aLeft->setShortcut(QKeySequence("F2"));
     QAction* aRight = m_rightDock->toggleViewAction();
     aRight->setShortcut(QKeySequence("F3"));
+    QAction* aInfo = m_infoDock->toggleViewAction();
+    aInfo->setShortcut(QKeySequence("F4"));
     view->addAction(aLeft);
+    view->addAction(aInfo);
     view->addAction(aRight);
     view->addSeparator();
     QAction* aFit = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
@@ -114,9 +127,11 @@ void MainWindow::loadPath(const QString& path) {
     m_header = std::move(res.header);
 
     m_model.setChannelCount(m_image.channels());
-    m_model.autoStretch(computeStats(m_image));          // sets ranges + STF, emits changed()
+    const std::vector<ChannelStats> stats = computeStats(m_image);
+    m_model.autoStretch(stats);                          // sets ranges + STF, emits changed()
     m_view->setSource(&m_image);
     m_hist->setSource(&m_image);
+    m_info->setData(&m_image, &m_header, stats);
     updateDisplay();
     m_view->zoomToFit();
 
@@ -147,14 +162,17 @@ void MainWindow::toggleImageOnly() {
     if (m_imageOnly) {
         m_savedLeft = m_leftDock->isVisible();
         m_savedRight = m_rightDock->isVisible();
+        m_savedInfo = m_infoDock->isVisible();
         m_leftDock->hide();
         m_rightDock->hide();
+        m_infoDock->hide();
         menuBar()->hide();
         statusBar()->hide();
         for (QToolBar* tb : findChildren<QToolBar*>()) tb->hide();
     } else {
         m_leftDock->setVisible(m_savedLeft);
         m_rightDock->setVisible(m_savedRight);
+        m_infoDock->setVisible(m_savedInfo);
         menuBar()->show();
         statusBar()->show();
         for (QToolBar* tb : findChildren<QToolBar*>()) tb->show();
