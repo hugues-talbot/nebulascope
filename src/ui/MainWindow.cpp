@@ -160,14 +160,14 @@ void MainWindow::nextImage() {
     const int n = m_fileList->count();
     if (n == 0) return;
     const int row = m_fileList->currentRow();
-    if (row < n - 1) m_fileList->setCurrentRow(row + 1);
+    m_fileList->setCurrentRow((row + 1) % n);            // wrap to top after last
 }
 
 void MainWindow::prevImage() {
     const int n = m_fileList->count();
     if (n == 0) return;
     const int row = m_fileList->currentRow();
-    if (row > 0) m_fileList->setCurrentRow(row - 1);
+    m_fileList->setCurrentRow((row - 1 + n) % n);        // wrap to bottom before first
 }
 
 void MainWindow::displayPath(const QString& path) {
