@@ -5,6 +5,33 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStringList>
+#include <cstdio>
+#include <cstdlib>
+
+static void printUsage() {
+    std::printf(
+        "NebulaScope \u2014 astronomical image inspector (FITS / XISF / JPEG / PNG / TIFF)\n"
+        "\n"
+        "Usage:\n"
+        "  nebulascope [options] [files...]\n"
+        "\n"
+        "Arguments:\n"
+        "  files                 One or more images to open. Globs (e.g. *.fits) are\n"
+        "                        expanded by the shell, or by NebulaScope if unexpanded.\n"
+        "\n"
+        "Options:\n"
+        "  -l, --list <file>     Load a saved image list (one path per line; blank\n"
+        "                        lines and #-comments ignored; relative paths resolved\n"
+        "                        against the list file's directory).\n"
+        "  -h, --help            Show this help and exit.\n"
+        "\n"
+        "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff\n"
+        "\n"
+        "Examples:\n"
+        "  nebulascope M51.fits\n"
+        "  nebulascope *.fits\n"
+        "  nebulascope --list tonight.txt\n");
+}
 
 // Dark "astro tool" theme, roughly matching the mockup.
 static void applyTheme(QApplication& app) {
@@ -52,6 +79,12 @@ static void applyTheme(QApplication& app) {
 }
 
 int main(int argc, char** argv) {
+    // Handle --help/-h before constructing the GUI so it works headless too.
+    for (int i = 1; i < argc; ++i) {
+        const QString a = QString::fromLocal8Bit(argv[i]);
+        if (a == "--help" || a == "-h") { printUsage(); return 0; }
+    }
+
     QApplication app(argc, argv);
     app.setApplicationName("NebulaScope");
     applyTheme(app);
@@ -67,6 +100,10 @@ int main(int argc, char** argv) {
         const QString& a = args[i];
         if ((a == "--list" || a == "-l") && i + 1 < args.size()) {
             w.importListFile(args[++i]);            // load a saved list file
+        } else if (a.startsWith('-')) {
+            std::fprintf(stderr, "Unknown option: %s\n", a.toLocal8Bit().constData());
+            printUsage();
+            return 2;
         } else if (a.contains('*') || a.contains('?') || a.contains('[')) {
             const QFileInfo fi(a);
             QDir dir(fi.absolutePath());
