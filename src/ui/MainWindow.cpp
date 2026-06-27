@@ -83,6 +83,7 @@ void MainWindow::buildMenusAndToolbar() {
     file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
     file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
     file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
+    file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
@@ -272,20 +273,34 @@ void MainWindow::saveFile() {
 
 void MainWindow::exportView() {
     if (!m_image.isValid()) return;
-    QString sel;
-    const QString path = QFileDialog::getSaveFileName(
-        this, "Export view (stretched + colormapped)", QString(),
-        "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff)", &sel);
-    if (path.isEmpty()) return;
-
     // The exact 8-bit RGB image currently on screen — stretch, colormap and all.
-    const QImage view = DisplayRenderer::render(m_image, m_model);
-    if (!view.save(path)) {
+    saveRenderedImage(DisplayRenderer::render(m_image, m_model), "Export view (full frame)");
+}
+
+void MainWindow::exportRegion() {
+    if (!m_image.isValid()) return;
+    const QRect roi = m_view->visibleImageRect();
+    if (roi.isEmpty()) {
+        QMessageBox::information(this, "Export region", "Nothing is visible to export.");
+        return;
+    }
+    // Render the whole frame, then crop to the currently visible image pixels.
+    const QImage full = DisplayRenderer::render(m_image, m_model);
+    saveRenderedImage(full.copy(roi.intersected(full.rect())), "Export zoomed region");
+}
+
+void MainWindow::saveRenderedImage(const QImage& img, const QString& title) {
+    if (img.isNull()) return;
+    const QString path = QFileDialog::getSaveFileName(
+        this, title, QString(), "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff)");
+    if (path.isEmpty()) return;
+    if (!img.save(path)) {
         QMessageBox::warning(this, "Export failed",
                              QStringLiteral("Could not write %1").arg(QFileInfo(path).fileName()));
         return;
     }
-    statusBar()->showMessage("Exported view " + QFileInfo(path).fileName(), 3000);
+    statusBar()->showMessage(QStringLiteral("Exported %1 (%2\u00d7%3)")
+        .arg(QFileInfo(path).fileName()).arg(img.width()).arg(img.height()), 3000);
 }
 
 void MainWindow::updateDisplay() {

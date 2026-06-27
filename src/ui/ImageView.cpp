@@ -35,6 +35,15 @@ void ImageView::zoomToFit() {
     if (m_item) fitInView(m_item->boundingRect(), Qt::KeepAspectRatio);
 }
 
+QRect ImageView::visibleImageRect() const {
+    if (!m_item) return QRect();
+    // Scene coordinates map 1:1 to image pixels (pixmap at origin, unscaled item).
+    const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+    const QRectF inter = vis.intersected(m_item->boundingRect());
+    if (inter.width() < 1 || inter.height() < 1) return QRect();
+    return inter.toRect();
+}
+
 void ImageView::mousePressEvent(QMouseEvent* e) {
     // Shift + left-drag pans the canvas (instead of rubber-band zoom).
     if (e->button() == Qt::LeftButton && (e->modifiers() & Qt::ShiftModifier)) {

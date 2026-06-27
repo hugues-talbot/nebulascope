@@ -37,6 +37,7 @@ private slots:
     void openFile();
     void saveFile();
     void exportView();
+    void exportRegion();
     void updateDisplay();
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
@@ -49,6 +50,7 @@ private:
     void buildMenusAndToolbar();
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
+    void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog
 
     ImageData      m_image;
     ImageHeader    m_header;

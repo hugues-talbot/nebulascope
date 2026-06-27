@@ -26,6 +26,10 @@ public:
     void setSource(const ImageData* img) { m_src = img; }   // for pixel readout
     void zoomToFit();
 
+    // The image-pixel rectangle currently visible in the viewport, clamped to
+    // the image bounds (empty if nothing is shown). Used for region export.
+    QRect visibleImageRect() const;
+
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);
 
