@@ -160,7 +160,7 @@ void MainWindow::buildMenusAndToolbar() {
 void MainWindow::openFile() {
     const QStringList paths = QFileDialog::getOpenFileNames(
         this, "Open image(s)", QString(),
-        "Astronomy images (*.fits *.fit *.fts *.fz *.xisf);;All files (*)");
+        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff);;All files (*)");
     if (!paths.isEmpty()) addPaths(paths);
 }
 
@@ -261,7 +261,7 @@ void MainWindow::displayPath(const QString& path) {
 void MainWindow::saveFile() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Save image", QString(), "FITS (*.fits);;XISF (*.xisf)");
+        this, "Save image", QString(), "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
     if (path.isEmpty()) return;
     io::SaveResult sr = io::saveImage(path, m_image, m_header);
     if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);

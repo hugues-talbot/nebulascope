@@ -10,9 +10,11 @@ add_library(astro_core STATIC
     io/ImageReader.cpp
     io/FitsReader.cpp
     io/XisfReader.cpp
+    io/QtImageReader.cpp
     io/ImageWriter.cpp
     io/FitsWriter.cpp
     io/XisfWriter.cpp
+    io/TiffWriter.cpp
     render/StretchModel.cpp
     render/DisplayRenderer.cpp
 )

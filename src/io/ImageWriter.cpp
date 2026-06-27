@@ -1,13 +1,15 @@
 #include "io/ImageWriter.h"
 #include "io/FitsWriter.h"
 #include "io/XisfWriter.h"
+#include "io/TiffWriter.h"
 
 namespace astro::io {
 
 std::vector<ImageWriter*> registeredWriters() {
     static FitsWriter fits;
     static XisfWriter xisf;
-    static std::vector<ImageWriter*> writers { &fits, &xisf };
+    static TiffWriter tiff;
+    static std::vector<ImageWriter*> writers { &fits, &xisf, &tiff };
     return writers;
 }
 

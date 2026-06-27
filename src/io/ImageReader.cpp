@@ -1,6 +1,7 @@
 #include "io/ImageReader.h"
 #include "io/FitsReader.h"
 #include "io/XisfReader.h"
+#include "io/QtImageReader.h"
 
 namespace astro::io {
 
@@ -9,7 +10,8 @@ std::vector<ImageReader*> registeredReaders() {
     // Order matters only for ambiguous probes — list most-specific first.
     static FitsReader fits;
     static XisfReader xisf;
-    static std::vector<ImageReader*> readers { &fits, &xisf };
+    static QtImageReader picture;   // JPEG / PNG / TIFF
+    static std::vector<ImageReader*> readers { &fits, &xisf, &picture };
     return readers;
 }
 
