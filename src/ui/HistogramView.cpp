@@ -36,6 +36,9 @@ void HistogramView::recomputeHistogram() {
     const std::size_t n = m_src->samplesPerChannel();
     const std::size_t step = n > 400000 ? n / 400000 : 1;
 
+    double a, b; viewRange(a, b);   // bin only the visible window
+    const double vspan = std::max(1e-6, b - a);
+
     for (int c = 0; c < ch; ++c) {
         std::vector<float> hb(bins, 0.0f);
         const float* p = m_src->plane<float>(c);
@@ -44,15 +47,14 @@ void HistogramView::recomputeHistogram() {
         for (std::size_t i = 0; i < n; i += step) {
             const double pv = double(p[i]);
             if (!std::isfinite(pv)) continue;            // skip NaN/Inf blanks
-            double x = (pv - lo) / span;
-            if (x < 0 || x > 1) continue;
+            const double u = (pv - lo) / span;           // normalized over [lo,hi]
+            if (u < a || u > b) continue;                // outside the view window
+            const double x = (u - a) / vspan;            // 0..1 across the plot
             int bi = int(x * (bins - 1));
+            if (bi < 0) bi = 0; else if (bi > bins - 1) bi = bins - 1;
             hb[bi] += 1.0f;
         }
-        float mx = 0.0f;
-        for (float v : hb) { v = std::log1p(v); if (v > mx) mx = v; }     // log-scale frequency
-        for (auto& v : hb) v = mx > 0 ? std::log1p(v) / mx : 0.0f;
-        m_hist.push_back(std::move(hb));
+        m_hist.push_back(std::move(hb));                 // RAW counts; scaled at paint
     }
     update();
 }
@@ -61,13 +63,22 @@ QRectF HistogramView::plotRect() const {
     return QRectF(rect()).adjusted(10, 16, -10, -14);   // headroom for handle grips
 }
 
+void HistogramView::viewRange(double& a, double& b) const {
+    if (m_model->fn() == StretchFn::Linear) { a = 0.0; b = 1.0; return; }
+    const ChannelStretch w = m_model->channel(0);
+    a = w.black; b = w.white;
+    if (b - a < 1e-4) { a = 0.0; b = 1.0; }              // safety for a collapsed window
+}
+
 double HistogramView::valToX(double v) const {
     const QRectF r = plotRect();
-    return r.left() + v * r.width();
+    double a, b; viewRange(a, b);
+    return r.left() + (v - a) / std::max(1e-6, b - a) * r.width();
 }
 double HistogramView::xToVal(double px) const {
     const QRectF r = plotRect();
-    double v = (px - r.left()) / std::max(1.0, r.width());
+    double a, b; viewRange(a, b);
+    double v = a + (px - r.left()) / std::max(1.0, r.width()) * (b - a);
     return v < 0 ? 0 : (v > 1 ? 1 : v);
 }
 
@@ -90,19 +101,25 @@ void HistogramView::paintEvent(QPaintEvent*) {
         g.fillRect(QRectF(wx(gp.HP), r.top(), r.right() - wx(gp.HP), r.height()), QColor(91, 104, 118, 32));
     }
 
-    // grid
+    // grid (fixed fractions of the plot width)
     g.setPen(QColor("#121b24"));
-    for (double gx = 0.25; gx < 1.0; gx += 0.25) g.drawLine(QPointF(valToX(gx), r.top()), QPointF(valToX(gx), r.bottom()));
+    for (double gx = 0.25; gx < 1.0; gx += 0.25) {
+        const double px = r.left() + gx * r.width();
+        g.drawLine(QPointF(px, r.top()), QPointF(px, r.bottom()));
+    }
 
-    // histogram areas
+    // histogram areas (raw counts scaled linear or log per the toggle)
     const int ch = int(m_hist.size());
     for (int c = 0; c < ch; ++c) {
         const auto& hb = m_hist[c];
+        float mx = 0.0f;
+        for (float v : hb) { const float s = m_logHist ? std::log1p(v) : v; if (s > mx) mx = s; }
         QPainterPath path;
         path.moveTo(r.left(), r.bottom());
         for (int i = 0; i < int(hb.size()); ++i) {
             const double x = r.left() + (double(i) / (hb.size() - 1)) * r.width();
-            const double y = r.bottom() - hb[i] * (r.height() - 4);
+            const double s = m_logHist ? std::log1p(hb[i]) : double(hb[i]);
+            const double y = r.bottom() - (mx > 0 ? s / mx : 0.0) * (r.height() - 4);
             path.lineTo(x, y);
         }
         path.lineTo(r.right(), r.bottom());
@@ -114,14 +131,18 @@ void HistogramView::paintEvent(QPaintEvent*) {
         g.drawPath(path);
     }
 
-    // transfer curve
+    // transfer curve (sampled across the visible window)
     const int N = 512;
     const int curveCh = (m_active < 0 || m_active >= ch) ? 0 : m_active;
     std::vector<float> lut = buildLut(m_model->fn(), m_model->channel(curveCh), m_model->ghs(), N);
+    double va, vb; viewRange(va, vb);
     QPainterPath curve;
     for (int i = 0; i < N; ++i) {
-        const double x = r.left() + (double(i) / (N - 1)) * r.width();
-        const double y = r.bottom() - lut[i] * (r.height() - 4);
+        const double frac = double(i) / (N - 1);
+        const double u = va + frac * (vb - va);            // value coord under this x
+        const float yv = lut[std::min(N - 1, std::max(0, int(u * (N - 1))))];
+        const double x = r.left() + frac * r.width();
+        const double y = r.bottom() - yv * (r.height() - 4);
         if (i == 0) curve.moveTo(x, y); else curve.lineTo(x, y);
     }
     g.setPen(QPen(ghs ? GHS_COL : QColor("#eef3f8"), 1.8));
@@ -144,25 +165,25 @@ void HistogramView::paintEvent(QPaintEvent*) {
         const GHSParams gp = m_model->ghs();
         const ChannelStretch wc = m_model->channel(0);
         const double span = std::max(1e-6, wc.white - wc.black);
-        auto wv = [&](double p){ return wc.black + p * span; };   // windowed pos -> display value
-        drawHandle(wc.black, QColor("#cdd7e1"), "B", false);       // window (top)
-        drawHandle(wc.white, QColor("#cdd7e1"), "W", false);
-        drawHandle(wv(gp.LP), QColor("#7e8b98"), "LP", true);      // GHS shape (bottom)
-        drawHandle(wv(gp.SP), GHS_COL, "SP", true);
-        drawHandle(wv(gp.HP), QColor("#7e8b98"), "HP", true);
-    } else {
+        auto wv = [&](double p){ return wc.black + p * span; };   // windowed pos -> value
+        drawHandle(wv(gp.LP), QColor("#7e8b98"), "LP", false);
+        drawHandle(wv(gp.SP), GHS_COL, "SP", false);
+        drawHandle(wv(gp.HP), QColor("#7e8b98"), "HP", false);
+        // B/W (the window) are set in Linear mode; not shown here.
+    } else if (m_model->fn() == StretchFn::Linear) {
         const ChannelStretch cs = m_model->channel(curveCh);
         const QColor hc = (m_active < 0 || ch == 1) ? QColor("#cdd7e1") : CH_COL[curveCh];
         drawHandle(cs.black, hc, "B", false);
         drawHandle(cs.mid, QColor("#cdd7e1"), "M", false);
         drawHandle(cs.white, hc, "W", false);
+    } else {   // Log / Asinh: window fixed by Linear; only the midtone here
+        const ChannelStretch cs = m_model->channel(curveCh);
+        drawHandle(cs.mid, QColor("#cdd7e1"), "M", false);
     }
 }
 
 void HistogramView::mousePressEvent(QMouseEvent* e) {
     const double px = e->position().x();
-    const double py = e->position().y();
-    const QRectF r = plotRect();
     const bool ghs = m_model->fn() == StretchFn::GHS;
     auto near = [&](double v) { return std::fabs(px - valToX(v)) < 10.0; };
 
@@ -172,21 +193,18 @@ void HistogramView::mousePressEvent(QMouseEvent* e) {
         const ChannelStretch wc = m_model->channel(0);
         const double span = std::max(1e-6, wc.white - wc.black);
         auto wv = [&](double p){ return wc.black + p * span; };
-        const bool lower = py > (r.top() + r.bottom()) / 2;   // top = window, bottom = shape
-        if (lower) {
-            if (near(wv(gp.SP))) m_dragHandle = "SP";
-            else if (near(wv(gp.LP))) m_dragHandle = "LP";
-            else if (near(wv(gp.HP))) m_dragHandle = "HP";
-        } else {
-            if (near(wc.black)) m_dragHandle = "b";
-            else if (near(wc.white)) m_dragHandle = "w";
-        }
-    } else {
+        if (near(wv(gp.SP))) m_dragHandle = "SP";
+        else if (near(wv(gp.LP))) m_dragHandle = "LP";
+        else if (near(wv(gp.HP))) m_dragHandle = "HP";
+    } else if (m_model->fn() == StretchFn::Linear) {
         const int c = (m_active < 0) ? 0 : m_active;
         const ChannelStretch cs = m_model->channel(c);
         if (near(cs.mid)) m_dragHandle = "m";
         else if (near(cs.black)) m_dragHandle = "b";
         else if (near(cs.white)) m_dragHandle = "w";
+    } else {   // Log / Asinh: only the midtone is adjustable here
+        const int c = (m_active < 0) ? 0 : m_active;
+        if (near(m_model->channel(c).mid)) m_dragHandle = "m";
     }
     if (!m_dragHandle.isEmpty()) applyDrag(xToVal(px));
 }
@@ -202,20 +220,9 @@ void HistogramView::mouseReleaseEvent(QMouseEvent*) {
 void HistogramView::applyDrag(double v) {
     const double eps = 0.006;
     if (m_model->fn() == StretchFn::GHS) {
-        // B/W set the linear window (channel 0 = the GHS master window); SP/LP/HP
-        // are positions WITHIN that window, so convert the dragged display value
-        // into windowed [0,1] before storing.
-        ChannelStretch wc = m_model->channel(0);
-        if (m_dragHandle == "b") {
-            wc.black = std::min(wc.white - eps, std::max(0.0, v));
-            m_model->setChannel(0, wc);
-            return;
-        }
-        if (m_dragHandle == "w") {
-            wc.white = std::max(wc.black + eps, std::min(1.0, v));
-            m_model->setChannel(0, wc);
-            return;
-        }
+        // SP/LP/HP are positions within the black/white window (set in Linear);
+        // convert the dragged value into windowed [0,1].
+        const ChannelStretch wc = m_model->channel(0);
         const double span = std::max(1e-6, wc.white - wc.black);
         double p = (v - wc.black) / span;
         p = p < 0 ? 0 : (p > 1 ? 1 : p);

@@ -39,6 +39,12 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     const char* chips[] = { "RGB", "R", "G", "B" };
     for (int i = 0; i < 4; ++i) { auto* b = tab(chips[i]); m_chanGroup->addButton(b, i - 1); chRow->addWidget(b); }
     chRow->addStretch();
+    auto* logBtn = new QPushButton("Log");
+    logBtn->setCheckable(true);
+    logBtn->setChecked(true);
+    logBtn->setCursor(Qt::PointingHandCursor);
+    logBtn->setToolTip("Logarithmic vs linear histogram frequency axis");
+    chRow->addWidget(logBtn);
     root->addLayout(chRow);
 
     // --- the plot ---
@@ -98,6 +104,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         if (m_src) m_model->autoStretch(computeStats(*m_src));
     });
     connect(resetBtn, &QPushButton::clicked, this, [this] { m_model->reset(); });
+    connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });
     connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncFromModel);
 
     if (auto* b = m_chanGroup->button(-1)) b->setChecked(true);
