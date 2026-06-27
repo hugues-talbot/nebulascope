@@ -36,6 +36,12 @@ void ImageView::zoomToFit() {
 }
 
 void ImageView::mousePressEvent(QMouseEvent* e) {
+    // Shift + left-drag pans the canvas (instead of rubber-band zoom).
+    if (e->button() == Qt::LeftButton && (e->modifiers() & Qt::ShiftModifier)) {
+        setDragMode(QGraphicsView::ScrollHandDrag);
+        QGraphicsView::mousePressEvent(e);              // base class drives the pan
+        return;
+    }
     if (e->button() == Qt::LeftButton) {
         m_press = e->pos();
         m_banding = true;
@@ -80,6 +86,14 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent* e) {
+    // End a Shift-pan (or middle-button pan): hand the release to the base class
+    // while still in ScrollHandDrag, then return to the default no-drag mode.
+    if (dragMode() == QGraphicsView::ScrollHandDrag &&
+        (e->button() == Qt::LeftButton || e->button() == Qt::MiddleButton)) {
+        QGraphicsView::mouseReleaseEvent(e);
+        setDragMode(QGraphicsView::NoDrag);
+        return;
+    }
     if (e->button() == Qt::LeftButton && m_banding && m_band) {
         m_banding = false;
         const QRect r = m_band->geometry();
