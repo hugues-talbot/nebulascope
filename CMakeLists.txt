@@ -13,19 +13,63 @@ endif()
 # ---- dependencies ----------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 
-# FITS: CFITSIO (pkg-config) + CCfits (C++ wrapper)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO REQUIRED IMPORTED_TARGET cfitsio)
+# FITS: CFITSIO (C lib) + CCfits (C++ wrapper).
+# Resolve CFITSIO to actual link items in ${CFITSIO_LINK_LIBS} (+ include dirs in
+# ${CFITSIO_INC_DIRS}). Prefer pkg-config FULL PATHS (so no -L search dir is
+# needed), then a vcpkg/CMake config package, then a manual find_library. This
+# works on Linux, macOS/Homebrew, and MSVC/vcpkg alike.
+find_package(PkgConfig QUIET)
+set(CFITSIO_LINK_LIBS "")
+set(CFITSIO_INC_DIRS "")
+if(PkgConfig_FOUND)
+    pkg_check_modules(PC_CFITSIO QUIET cfitsio)
+    if(PC_CFITSIO_FOUND)
+        if(PC_CFITSIO_LINK_LIBRARIES)
+            set(CFITSIO_LINK_LIBS ${PC_CFITSIO_LINK_LIBRARIES})    # absolute paths
+        else()
+            set(CFITSIO_LINK_LIBS ${PC_CFITSIO_LIBRARIES})         # bare names ...
+            link_directories(${PC_CFITSIO_LIBRARY_DIRS})           # ... + their dir
+        endif()
+        set(CFITSIO_INC_DIRS ${PC_CFITSIO_INCLUDE_DIRS})
+    endif()
+endif()
+if(NOT CFITSIO_LINK_LIBS)
+    find_package(CFITSIO CONFIG QUIET)                             # vcpkg config
+    if(TARGET CFITSIO::CFITSIO)
+        set(CFITSIO_LINK_LIBS CFITSIO::CFITSIO)
+    elseif(TARGET cfitsio)
+        set(CFITSIO_LINK_LIBS cfitsio)
+    endif()
+endif()
+if(NOT CFITSIO_LINK_LIBS)
+    find_path(CFITSIO_INCLUDE_DIR NAMES fitsio.h PATH_SUFFIXES cfitsio
+        HINTS /opt/homebrew/include /usr/local/include)
+    find_library(CFITSIO_LIB NAMES cfitsio libcfitsio
+        HINTS /opt/homebrew/lib /usr/local/lib)
+    if(NOT CFITSIO_INCLUDE_DIR OR NOT CFITSIO_LIB)
+        message(FATAL_ERROR "CFITSIO not found. Install it (brew/apt/vcpkg) or pass "
+                            "-DCFITSIO_INCLUDE_DIR=... -DCFITSIO_LIB=...")
+    endif()
+    set(CFITSIO_LINK_LIBS ${CFITSIO_LIB})
+    set(CFITSIO_INC_DIRS ${CFITSIO_INCLUDE_DIR})
+endif()
+if(NOT CFITSIO_LINK_LIBS)
+    message(FATAL_ERROR "CFITSIO could not be resolved to a link library.")
+endif()
+message(STATUS "CFITSIO link: ${CFITSIO_LINK_LIBS}")
+
 find_path(CCFITS_INCLUDE_DIR NAMES CCfits/CCfits)
 find_library(CCFITS_LIB NAMES CCfits)
 if(NOT CCFITS_INCLUDE_DIR OR NOT CCFITS_LIB)
-    message(FATAL_ERROR "CCfits not found. On macOS: brew install ccfits cfitsio, "
-                        "and configure with -DCMAKE_PREFIX_PATH=/opt/homebrew")
+    message(FATAL_ERROR "CCfits not found. macOS: brew install ccfits cfitsio (configure "
+                        "with -DCMAKE_PREFIX_PATH=/opt/homebrew). Linux: apt install libccfits-dev. "
+                        "Windows: build CCfits, or pass -DCCFITS_INCLUDE_DIR=... -DCCFITS_LIB=...")
 endif()
 
 # XISF: libXISF ships no CMake package config, so locate it directly. Works for
-# a shared .dylib/.so or a static .a. Override if it landed somewhere unusual:
-#   -DXISF_INCLUDE_DIR=/path/include  -DXISF_LIB=/path/libXISF.dylib
+# a shared lib (.dylib/.so/.dll) or a static .a/.lib. Override if it landed
+# somewhere unusual:
+#   -DXISF_INCLUDE_DIR=/path/include  -DXISF_LIB=/path/to/XISF{.dylib,.so,.lib}
 find_path(XISF_INCLUDE_DIR NAMES libxisf.h
     HINTS /opt/homebrew/include /usr/local/include)
 find_library(XISF_LIB NAMES XISF xisf libXISF

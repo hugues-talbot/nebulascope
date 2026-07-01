@@ -21,13 +21,13 @@ add_library(astro_core STATIC
 )
 target_include_directories(astro_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}            # so #include "core/..." / "io/..." resolve
-    ${CFITSIO_INCLUDE_DIRS}
+    ${CFITSIO_INC_DIRS}
     ${CCFITS_INCLUDE_DIR}
     ${XISF_INCLUDE_DIR}
 )
 target_link_libraries(astro_core PUBLIC
     Qt6::Core Qt6::Gui
-    ${CCFITS_LIB} ${CFITSIO_TARGET}
+    ${CCFITS_LIB} ${CFITSIO_LINK_LIBS}
     ${XISF_LIB}
     # ${ZLIB_LIB} ${LZ4_LIB} ${PUGIXML_LIB}   # if libXISF is static
 )
