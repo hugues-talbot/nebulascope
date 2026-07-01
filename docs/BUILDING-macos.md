@@ -26,12 +26,25 @@ This installs `/opt/homebrew/lib/libXISF.dylib` and `/opt/homebrew/include/libxi
 
 ## 3. Configure and build NebulaScope
 
-From the repository root:
+From the repository root, first generate the app icon (once), then build:
 
 ```sh
+./icon/make_icns.sh                       # creates icon/NebulaScope.icns (uses iconutil)
 cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=/opt/homebrew
 cmake --build build
-./build/nebulascope
+open build/src/NebulaScope.app            # launch the bundle (dock icon + native menu)
+```
+
+The build produces a real **`NebulaScope.app`** bundle (Info.plist + galaxy dock
+icon), and the **About** entry lands in the application menu. The icon step is
+optional — without it the app still builds, just with the generic icon.
+
+Command-line use runs the inner binary directly:
+
+```sh
+build/src/NebulaScope.app/Contents/MacOS/NebulaScope --help
+build/src/NebulaScope.app/Contents/MacOS/NebulaScope *.fits
+build/src/NebulaScope.app/Contents/MacOS/NebulaScope --list set.txt
 ```
 
 `-DCMAKE_PREFIX_PATH=/opt/homebrew` is the only flag you need — it lets CMake
@@ -44,6 +57,15 @@ configure you should see:
 ```
 
 (That line prints at **configure** time, not during `cmake --build`.)
+
+## 4. The app icon (.icns)
+
+`icon/make_icns.sh` builds `icon/NebulaScope.icns` from the PNGs in
+`icon/NebulaScope.iconset/`. The Retina variants are stored with `-2x` in their
+names (the asset generator couldn't write `@`); the script stages a temp
+`.iconset` with the `@2x` names macOS requires and runs `iconutil`. Re-run it if
+you change the artwork. The generated `.icns` is committed, so a fresh clone can
+build the bundle without running the script.
 
 ## Troubleshooting
 
@@ -72,7 +94,7 @@ libXISF was built static. Uncomment the `find_library` lines in the top-level
 ## Verify the link
 
 ```sh
-otool -L build/nebulascope | grep -i xisf
+otool -L build/src/NebulaScope.app/Contents/MacOS/NebulaScope | grep -i xisf
 ```
 
 Should list `libXISF.*.dylib`.

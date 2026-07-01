@@ -92,7 +92,9 @@ when you view it. Walk the loaded set with **Space** (next) / **Backspace**
 (previous), or click entries in the Open Images list.
 
 macOS specifics (Homebrew, building libXISF, common link errors) are in
-**[docs/BUILDING-macos.md](docs/BUILDING-macos.md)**.
+**[docs/BUILDING-macos.md](docs/BUILDING-macos.md)**; see also
+**[docs/BUILDING-linux.md](docs/BUILDING-linux.md)** and
+**[docs/BUILDING-windows.md](docs/BUILDING-windows.md)**.
 
 ## License
 
