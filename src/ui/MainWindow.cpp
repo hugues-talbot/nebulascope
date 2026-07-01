@@ -7,6 +7,7 @@
 #include "core/ImageStats.h"
 #include "render/DisplayRenderer.h"
 #include "core/Colormap.h"
+#include "core/Transform.h"
 
 #include <QDockWidget>
 #include <QListWidget>
@@ -108,6 +109,21 @@ void MainWindow::buildUi() {
     });
 }
 
+void MainWindow::applyTransform(Xform x) {
+    if (!m_image.isValid()) return;
+    switch (x) {
+        case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
+        case Xform::RotCCW: m_image = rotate90(m_image, false); break;
+        case Xform::FlipH:  m_image = flipHorizontal(m_image);  break;
+        case Xform::FlipV:  m_image = flipVertical(m_image);    break;
+    }
+    // Values are unchanged, so stretch/stats stay valid; only geometry differs.
+    m_view->setSource(&m_image);
+    updateDisplay();
+    const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
+    if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
+}
+
 void MainWindow::showAbout() {
     QMessageBox box(this);
     box.setWindowTitle("About NebulaScope");
@@ -160,6 +176,14 @@ void MainWindow::buildMenusAndToolbar() {
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 
+    // Image — lossless 90° rotations and flips (applied to the pixel data).
+    QMenu* image = menuBar()->addMenu("&Image");
+    image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
+    image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
+    image->addSeparator();
+    image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
+    image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
     QMenu* help = menuBar()->addMenu("&Help");
@@ -183,6 +207,11 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addAction("Export", this, &MainWindow::exportView);
     tb->addSeparator();
     tb->addAction("Fit", m_view, &ImageView::zoomToFit);
+    tb->addSeparator();
+    tb->addAction("\u21bb", this, [this]{ applyTransform(Xform::RotCW); })->setToolTip("Rotate 90\u00b0 clockwise ( ] )");
+    tb->addAction("\u21ba", this, [this]{ applyTransform(Xform::RotCCW); })->setToolTip("Rotate 90\u00b0 counter-clockwise ( [ )");
+    tb->addAction("\u2194", this, [this]{ applyTransform(Xform::FlipH); })->setToolTip("Flip horizontal (Ctrl+H)");
+    tb->addAction("\u2195", this, [this]{ applyTransform(Xform::FlipV); })->setToolTip("Flip vertical (Ctrl+J)");
     tb->addSeparator();
 
     // False-colour map for mono images.

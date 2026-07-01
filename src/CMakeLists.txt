@@ -7,6 +7,7 @@ add_library(astro_core STATIC
     core/ImageStats.cpp
     core/Stretch.cpp
     core/Colormap.cpp
+    core/Transform.cpp
     io/ImageReader.cpp
     io/FitsReader.cpp
     io/XisfReader.cpp
@@ -26,7 +27,7 @@ target_include_directories(astro_core PUBLIC
 )
 target_link_libraries(astro_core PUBLIC
     Qt6::Core Qt6::Gui
-    ${CCFITS_LIB} PkgConfig::CFITSIO
+    ${CCFITS_LIB} ${CFITSIO_TARGET}
     ${XISF_LIB}
     # ${ZLIB_LIB} ${LZ4_LIB} ${PUGIXML_LIB}   # if libXISF is static
 )

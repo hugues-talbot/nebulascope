@@ -50,6 +50,9 @@ private slots:
     void importList();          // read a list of paths from a text file
     void showAbout();           // About dialog (App menu on macOS)
 
+    enum class Xform { RotCW, RotCCW, FlipH, FlipV };
+    void applyTransform(Xform x);   // lossless geometry on the current image
+
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
     // append its entries. Used by File▸Import List and the --list CLI flag.
