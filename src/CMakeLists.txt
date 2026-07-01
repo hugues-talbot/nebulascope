@@ -66,6 +66,8 @@ if(APPLE)
     set_target_properties(nebulascope PROPERTIES
         MACOSX_BUNDLE TRUE
         OUTPUT_NAME "NebulaScope"
+        MACOSX_BUNDLE_EXECUTABLE_NAME "NebulaScope"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/app/Info.plist.in"
         MACOSX_BUNDLE_BUNDLE_NAME "NebulaScope"
         MACOSX_BUNDLE_GUI_IDENTIFIER "org.nebulascope.app"
         MACOSX_BUNDLE_BUNDLE_VERSION "1.0"

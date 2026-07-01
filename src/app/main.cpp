@@ -6,8 +6,38 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QIcon>
+#include <QFileOpenEvent>
+#include <QPointer>
 #include <cstdio>
 #include <cstdlib>
+
+// QApplication subclass that handles macOS "open document" requests — double-
+// clicking a file in Finder or using "Open With" sends a QFileOpenEvent rather
+// than passing the path in argv. We forward it to the main window. Events that
+// arrive before the window exists are queued and replayed once it's set.
+class NebulaApp : public QApplication {
+public:
+    NebulaApp(int& argc, char** argv) : QApplication(argc, argv) {}
+    void setWindow(astro::MainWindow* w) {
+        m_win = w;
+        if (w && !m_pending.isEmpty()) { w->openPaths(m_pending); m_pending.clear(); }
+    }
+protected:
+    bool event(QEvent* e) override {
+        if (e->type() == QEvent::FileOpen) {
+            const QString f = static_cast<QFileOpenEvent*>(e)->file();
+            if (!f.isEmpty()) {
+                if (m_win) m_win->openPaths({ f });
+                else       m_pending << f;
+            }
+            return true;
+        }
+        return QApplication::event(e);
+    }
+private:
+    QPointer<astro::MainWindow> m_win;
+    QStringList m_pending;
+};
 
 static void printUsage() {
     std::printf(
@@ -86,7 +116,7 @@ int main(int argc, char** argv) {
         if (a == "--help" || a == "-h") { printUsage(); return 0; }
     }
 
-    QApplication app(argc, argv);
+    NebulaApp app(argc, argv);
     app.setApplicationName("NebulaScope");
     app.setApplicationDisplayName("NebulaScope");
     app.setOrganizationName("NebulaScope");
@@ -95,6 +125,7 @@ int main(int argc, char** argv) {
 
     astro::MainWindow w;
     w.show();
+    app.setWindow(&w);                           // replays any Finder open-file events
 
     // Command line:  nebulascope *.fits        (files; shell usually globs)
     //                nebulascope --list set.txt (a saved image list)
