@@ -50,9 +50,6 @@ private slots:
     void importList();          // read a list of paths from a text file
     void showAbout();           // About dialog (App menu on macOS)
 
-    enum class Xform { RotCW, RotCCW, FlipH, FlipV };
-    void applyTransform(Xform x);   // lossless geometry on the current image
-
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
     // append its entries. Used by File▸Import List and the --list CLI flag.
@@ -63,6 +60,8 @@ private:
     void buildMenusAndToolbar();
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
+    enum class Xform { RotCW, RotCCW, FlipH, FlipV };
+    void applyTransform(Xform x);              // lossless geometry on the current image
     void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog
 
     ImageData      m_image;
