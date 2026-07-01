@@ -12,6 +12,10 @@
 #include <QDockWidget>
 #include <QListWidget>
 #include <QApplication>
+#include <QMimeData>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QUrl>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -37,7 +41,31 @@ MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
     buildUi();
     buildMenusAndToolbar();
+    setAcceptDrops(true);          // drop FITS/XISF/images onto the window to open
     resize(1480, 940);
+}
+
+static bool looksLikeImage(const QString& path) {
+    static const QStringList exts = {
+        "fits","fit","fts","fz","xisf","jpg","jpeg","png","tif","tiff","txt" };
+    return exts.contains(QFileInfo(path).suffix().toLower());
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
+    if (!e->mimeData()->hasUrls()) return;
+    for (const QUrl& u : e->mimeData()->urls())
+        if (u.isLocalFile() && looksLikeImage(u.toLocalFile())) { e->acceptProposedAction(); return; }
+}
+
+void MainWindow::dropEvent(QDropEvent* e) {
+    QStringList paths;
+    for (const QUrl& u : e->mimeData()->urls()) {
+        if (!u.isLocalFile()) continue;
+        const QString p = u.toLocalFile();
+        if (p.endsWith(".txt", Qt::CaseInsensitive)) importListFile(p);   // a saved list
+        else if (looksLikeImage(p)) paths << p;
+    }
+    if (!paths.isEmpty()) { openPaths(paths); e->acceptProposedAction(); }
 }
 
 void MainWindow::buildUi() {

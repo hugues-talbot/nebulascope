@@ -55,6 +55,10 @@ public:
     // append its entries. Used by File▸Import List and the --list CLI flag.
     void importListFile(const QString& listPath);
 
+protected:
+    void dragEnterEvent(QDragEnterEvent* e) override;   // accept file drops
+    void dropEvent(QDropEvent* e) override;
+
 private:
     void buildUi();
     void buildMenusAndToolbar();
