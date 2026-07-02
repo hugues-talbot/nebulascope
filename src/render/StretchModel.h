@@ -45,6 +45,9 @@ public:
     // remember (and later restore) the last stretch the user applied to it.
     struct State {
         bool           valid = false;
+        bool           renormalize = false;   // paste flag: recompute lo/hi from the
+                                              // target image's own stats on apply
+                                              // (normalized cross-image transfer)
         StretchFn      fn = StretchFn::Asinh;
         int            count = 3;
         ChannelStretch chan[3];

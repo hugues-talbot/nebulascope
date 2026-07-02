@@ -49,6 +49,10 @@ private slots:
     void exportList();          // write the list of paths to a text file
     void importList();          // read a list of paths from a text file
     void showAbout();           // About dialog (App menu on macOS)
+    void copyStretch();         // capture current image's stretch
+    void pasteStretchToSelected(bool normalized);   // apply to selected list rows
+    void pasteStretchToAll(bool normalized);        // apply to every list row
+    void onListContextMenu(const QPoint& pos);      // right-click on the image list
 
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
@@ -66,6 +70,7 @@ private:
     void displayPath(const QString& path);     // decode one file into the view
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
     void applyTransform(Xform x);              // lossless geometry on the current image
+    void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
     void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog
 
     ImageData      m_image;
@@ -95,6 +100,7 @@ private:
     // re-applied on revisit; first visit auto-stretches. Keyed by file path.
     QHash<QString, StretchModel::State> m_stfByPath;
     QString m_currentPath;
+    StretchModel::State m_copiedStretch;   // clipboard for Copy/Paste Stretch
 };
 
 } // namespace astro

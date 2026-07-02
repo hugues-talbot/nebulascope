@@ -12,6 +12,8 @@
 #include <QDockWidget>
 #include <QListWidget>
 #include <QApplication>
+#include <QMenu>
+#include <algorithm>
 #include <QMimeData>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -99,6 +101,8 @@ void MainWindow::buildUi() {
     m_leftDock->setWidget(listHost);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
     connect(m_fileList, &QListWidget::currentRowChanged, this, &MainWindow::showRow);
+    m_fileList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_fileList, &QListWidget::customContextMenuRequested, this, &MainWindow::onListContextMenu);
     connect(addBtn, &QToolButton::clicked, this, &MainWindow::appendToList);
     connect(remBtn, &QToolButton::clicked, this, &MainWindow::removeSelected);
     connect(expBtn, &QToolButton::clicked, this, &MainWindow::exportList);
@@ -168,6 +172,90 @@ void MainWindow::showAbout() {
     box.exec();
 }
 
+// ---- Copy / Paste Stretch ---------------------------------------------------
+
+void MainWindow::copyStretch() {
+    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
+    m_copiedStretch = m_model.state();                   // absolute lo/hi + fractional points
+    statusBar()->showMessage("Copied stretch — right-click a list entry to paste", 2500);
+}
+
+// Apply the copied stretch to one file. Normalized keeps the fractional black/
+// mid/white and re-derives the window from the target's own data range; absolute
+// carries the source's exact data-unit window.
+void MainWindow::applyCopiedStretch(const QString& path, bool normalized) {
+    if (!m_copiedStretch.valid || path.isEmpty()) return;
+    StretchModel::State s = m_copiedStretch;
+    s.valid = true;
+
+    if (path == m_currentPath && m_image.isValid()) {
+        // Target is decoded and on screen — apply live.
+        if (normalized)
+            for (int c = 0; c < 3; ++c) { s.lo[c] = m_model.lo(c); s.hi[c] = m_model.hi(c); }
+        if (s.count == 1)
+            for (int c = 1; c < 3; ++c) { s.chan[c] = s.chan[0]; s.lo[c] = s.lo[0]; s.hi[c] = s.hi[0]; }
+        s.count = m_image.channels();
+        s.renormalize = false;
+        m_model.setState(s);                             // changed handler persists it
+    } else {
+        // Not decoded yet — stash; displayPath() finalizes on next visit.
+        s.renormalize = normalized;                      // defer window to target's range
+        m_stfByPath.insert(path, s);
+    }
+}
+
+void MainWindow::pasteStretchToSelected(bool normalized) {
+    if (!m_copiedStretch.valid) { statusBar()->showMessage("No stretch copied yet", 2000); return; }
+    auto sel = m_fileList->selectedItems();
+    if (sel.isEmpty() && m_fileList->currentItem()) sel << m_fileList->currentItem();
+    int n = 0;
+    for (QListWidgetItem* it : sel) { applyCopiedStretch(it->data(Qt::UserRole).toString(), normalized); ++n; }
+    statusBar()->showMessage(QStringLiteral("Pasted %1 stretch to %2 image(s)")
+        .arg(normalized ? "normalized" : "absolute").arg(n), 3000);
+}
+
+void MainWindow::pasteStretchToAll(bool normalized) {
+    if (!m_copiedStretch.valid) { statusBar()->showMessage("No stretch copied yet", 2000); return; }
+    for (int i = 0; i < m_fileList->count(); ++i)
+        applyCopiedStretch(m_fileList->item(i)->data(Qt::UserRole).toString(), normalized);
+    statusBar()->showMessage(QStringLiteral("Pasted %1 stretch to all %2 image(s)")
+        .arg(normalized ? "normalized" : "absolute").arg(m_fileList->count()), 3000);
+}
+
+void MainWindow::onListContextMenu(const QPoint& pos) {
+    QListWidgetItem* clicked = m_fileList->itemAt(pos);
+    // If the right-clicked row isn't part of the current selection, target just
+    // it — but don't switch the displayed image (no setCurrentItem).
+    if (clicked && !clicked->isSelected()) {
+        m_fileList->clearSelection();
+        clicked->setSelected(true);
+    }
+    const int nSel = m_fileList->selectedItems().size();
+
+    QMenu menu(this);
+    QAction* aCopy = menu.addAction("Copy Stretch");
+    aCopy->setEnabled(!m_currentPath.isEmpty() && m_image.isValid());
+    menu.addSeparator();
+    QAction* aPasteN = menu.addAction(QStringLiteral("Paste Stretch — Normalized (%1)").arg(nSel));
+    QAction* aPasteA = menu.addAction(QStringLiteral("Paste Stretch — Absolute (%1)").arg(nSel));
+    QAction* aAllN = menu.addAction("Paste Stretch to All — Normalized");
+    const bool canPaste = m_copiedStretch.valid && nSel > 0;
+    aPasteN->setEnabled(canPaste);
+    aPasteA->setEnabled(canPaste);
+    aAllN->setEnabled(m_copiedStretch.valid && m_fileList->count() > 0);
+    menu.addSeparator();
+    QAction* aRemove = menu.addAction("Remove from List");
+    aRemove->setEnabled(nSel > 0);
+
+    QAction* chosen = menu.exec(m_fileList->viewport()->mapToGlobal(pos));
+    if (!chosen) return;
+    if (chosen == aCopy) copyStretch();
+    else if (chosen == aPasteN) pasteStretchToSelected(true);
+    else if (chosen == aPasteA) pasteStretchToSelected(false);
+    else if (chosen == aAllN) pasteStretchToAll(true);
+    else if (chosen == aRemove) removeSelected();
+}
+
 void MainWindow::buildMenusAndToolbar() {
     // File
     QMenu* file = menuBar()->addMenu("&File");
@@ -211,6 +299,14 @@ void MainWindow::buildMenusAndToolbar() {
     image->addSeparator();
     image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+
+    // Stretch — transfer the current image's stretch to others in the list.
+    QMenu* stretch = menuBar()->addMenu("&Stretch");
+    stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Shift+C"), this, &MainWindow::copyStretch);
+    stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Shift+V"), this, [this]{ pasteStretchToSelected(true); });
+    stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
+    stretch->addSeparator();
+    stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
@@ -407,10 +503,26 @@ void MainWindow::displayPath(const QString& path) {
     // first visit. Set m_currentPath first so the change handler saves correctly.
     m_currentPath = path;
     auto remembered = m_stfByPath.constFind(path);
-    if (remembered != m_stfByPath.constEnd() && remembered.value().valid)
-        m_model.setState(remembered.value());            // re-apply remembered STF
-    else
+    if (remembered != m_stfByPath.constEnd() && remembered.value().valid) {
+        StretchModel::State st = remembered.value();
+        // A pasted "normalized" stretch defers its window to the target: recompute
+        // lo/hi from THIS image's own data range, keeping the fractional points.
+        if (st.renormalize) {
+            for (int c = 0; c < 3; ++c) {
+                const int si = std::min(c, int(stats.size()) - 1);
+                if (si >= 0) { st.lo[c] = stats[si].min; st.hi[c] = stats[si].max; }
+            }
+            st.renormalize = false;
+        }
+        // Adapt a mono-sourced stretch to an RGB target (and vice versa).
+        if (st.count == 1)
+            for (int c = 1; c < 3; ++c) { st.chan[c] = st.chan[0]; st.lo[c] = st.lo[0]; st.hi[c] = st.hi[0]; }
+        st.count = m_image.channels();
+        m_model.setState(st);                            // re-apply remembered/pasted STF
+        m_stfByPath.insert(path, st);                    // persist finalized (flag cleared)
+    } else {
         m_model.autoStretch(stats);                      // first visit: auto STF
+    }
 
     m_view->setSource(&m_image);
     m_hist->setSource(&m_image);
