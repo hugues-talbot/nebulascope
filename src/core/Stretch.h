@@ -37,9 +37,25 @@ double baseShape(double t, StretchFn fn);
 // GHS local stretch intensity (the slope of the transfer); max at SP.
 double ghsSlope(double x, double D, double b, double SP);
 
-// Sample the full transfer into an N-entry lookup table over x in [0,1].
+// Sample the transfer SHAPE into an N-entry lookup table indexed by the
+// *windowed* coordinate t in [0,1] (0 = black point, 1 = white point). The
+// black/white window itself is applied by the caller via windowCoord() so that
+// the full LUT resolution spans the window (no posterization when the window is
+// a small fraction of the data range).
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N);
+
+// Map a raw sample to the windowed coordinate t in [0,1]:
+//   x = (v - lo) / (hi - lo);   t = (x - black) / (white - black)   (clamped).
+// Values below the black point clamp to 0, above the white point to 1, and the
+// span in between uses the whole [0,1] range at full floating-point precision.
+inline double windowCoord(double v, double lo, double hi, const ChannelStretch& cs) {
+    const double denomR = (hi - lo) > 1e-9 ? (hi - lo) : 1e-9;
+    const double x = (v - lo) / denomR;
+    const double denomW = (cs.white - cs.black) > 1e-6 ? (cs.white - cs.black) : 1e-6;
+    const double t = (x - cs.black) / denomW;
+    return t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+}
 
 // Single-sample transfer (handy for drawing curves).
 double transferAt(double x, StretchFn fn, const ChannelStretch& cs, const GHSParams& ghs);

@@ -39,12 +39,13 @@ void ColorBar::paintEvent(QPaintEvent*) {
         useCmap ? buildColormapLut(m_model->colormap(), 256, m_model->splitThreshold())
                 : std::vector<std::uint8_t>();
 
-    // Gradient: x across the bar = input fraction over [lo,hi]; colour = the
-    // stretched value, optionally through the colormap.
+    // Gradient: x across the bar spans the [black,white] window (t in [0,1]) so
+    // the full stretched gradient is visible; colour = the stretched value,
+    // optionally through the colormap.
     const int w = int(bar.width());
     for (int px = 0; px < w; ++px) {
-        const double x = (w <= 1) ? 0.0 : double(px) / (w - 1);
-        const float y = lut[int(x * (N - 1))];
+        const double t = (w <= 1) ? 0.0 : double(px) / (w - 1);
+        const float y = lut[int(t * (N - 1) + 0.5)];
         int rr, gg, bb;
         if (useCmap) {
             const int idx = std::clamp(int(y * 255.0f + 0.5f), 0, 255);
@@ -58,8 +59,10 @@ void ColorBar::paintEvent(QPaintEvent*) {
     g.setPen(QColor("#2a3744"));
     g.drawRect(bar);
 
-    // Value ticks in raw data units, from channel 0's display range.
+    // Value ticks in raw data units, spanning the black/white window.
     const double lo = m_model->lo(0), hi = m_model->hi(0);
+    const double effLo = lo + cs.black * (hi - lo);      // window edges in data units
+    const double effHi = lo + cs.white * (hi - lo);
     g.setPen(QColor("#8492a0"));
     QFont f = g.font(); f.setPointSizeF(8.0); g.setFont(f);
     const QFontMetrics fm(f);
@@ -68,7 +71,7 @@ void ColorBar::paintEvent(QPaintEvent*) {
         const double px = bar.left() + t * bar.width();
         g.setPen(QColor("#3a4654"));
         g.drawLine(QPointF(px, bar.bottom()), QPointF(px, bar.bottom() + 3));
-        const QString label = fmtVal(lo + t * (hi - lo));
+        const QString label = fmtVal(effLo + t * (effHi - effLo));
         int tx = int(px) - fm.horizontalAdvance(label) / 2;
         tx = std::max(int(full.left()), std::min(tx, int(full.right()) - fm.horizontalAdvance(label)));
         g.setPen(QColor("#8492a0"));

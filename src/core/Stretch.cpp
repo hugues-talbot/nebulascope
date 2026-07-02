@@ -57,28 +57,20 @@ static std::vector<float> buildGhsLut(const GHSParams& g, int N) {
 
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N) {
-    const double denom = std::max(1e-6, cs.white - cs.black);
-
+    // The LUT is indexed by the windowed coordinate t in [0,1] (the caller maps
+    // raw pixels to t via windowCoord). So here index i corresponds directly to
+    // t = i/(N-1) — no black/white remap, which is what previously crushed the
+    // usable range down to a few levels for narrow windows.
     if (fn == StretchFn::GHS) {
-        // Compose GHS with the linear black/white window, like Log/Asinh: the
-        // data is first mapped [black,white] -> [0,1], then the GHS curve (with
-        // SP/LP/HP defined in that windowed space) is applied. This keeps GHS
-        // consistent with the other transfers instead of acting on the full range.
-        const std::vector<float> shape = buildGhsLut(ghs, N);
-        std::vector<float> lut(N);
-        for (int i = 0; i < N; ++i) {
-            const double x = double(i) / (N - 1);
-            const double t = clamp01((x - cs.black) / denom);
-            lut[i] = shape[int(t * (N - 1))];
-        }
-        return lut;
+        // GHS shape is already defined on the windowed [0,1] (SP/LP/HP live there).
+        return buildGhsLut(ghs, N);
     }
 
-    std::vector<float> lut(N);
+    const double denom = std::max(1e-6, cs.white - cs.black);
     const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+    std::vector<float> lut(N);
     for (int i = 0; i < N; ++i) {
-        const double x = double(i) / (N - 1);
-        const double t = clamp01((x - cs.black) / denom);
+        const double t = double(i) / (N - 1);
         lut[i] = float(mtf(baseShape(t, fn), m));
     }
     return lut;

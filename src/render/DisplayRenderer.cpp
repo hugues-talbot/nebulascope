@@ -26,10 +26,10 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     auto mapVal = [&](int c, float v) -> int {
         if (!std::isfinite(v)) return 0;                 // NaN/Inf blanks → black
         const int ci = (ch == 1) ? 0 : c;
-        const double lo = model.lo(ci), hi = model.hi(ci);
-        double x = (double(v) - lo) / std::max(1e-9, hi - lo);
-        x = x < 0 ? 0 : (x > 1 ? 1 : x);
-        int idx = int(x * (N - 1));
+        // Window in float, then index the shape LUT by the windowed coordinate:
+        // full LUT + output resolution now span the [black,white] window.
+        const double t = windowCoord(v, model.lo(ci), model.hi(ci), model.channel(ci));
+        int idx = int(t * (N - 1) + 0.5);
         idx = idx < 0 ? 0 : (idx > N - 1 ? N - 1 : idx);
         const float y = lut[ci][idx];
         const int o = int(y * 255.0f + 0.5f);
@@ -45,7 +45,6 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     if (ch == 1 && model.colormap() != Colormap::Gray) {
         const int M = 4096;                              // colormap resolution (smooth gradient)
         const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), M, model.splitThreshold());
-        const double lo = model.lo(0), hi = model.hi(0);
         const auto& l = lut[0];
         for (int y = 0; y < h; ++y) {
             uchar* row = out.scanLine(y);
@@ -55,9 +54,8 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
                 int ci;
                 if (!std::isfinite(v)) { ci = 0; }
                 else {
-                    double xx = (double(v) - lo) / std::max(1e-9, hi - lo);
-                    xx = xx < 0 ? 0 : (xx > 1 ? 1 : xx);
-                    int idx = int(xx * (N - 1));
+                    const double t = windowCoord(v, model.lo(0), model.hi(0), model.channel(0));
+                    int idx = int(t * (N - 1) + 0.5);
                     idx = idx < 0 ? 0 : (idx > N - 1 ? N - 1 : idx);
                     ci = int(l[idx] * (M - 1) + 0.5f);
                     ci = ci < 0 ? 0 : (ci > M - 1 ? M - 1 : ci);

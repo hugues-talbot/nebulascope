@@ -134,13 +134,17 @@ void HistogramView::paintEvent(QPaintEvent*) {
     // transfer curve (sampled across the visible window)
     const int N = 512;
     const int curveCh = (m_active < 0 || m_active >= ch) ? 0 : m_active;
-    std::vector<float> lut = buildLut(m_model->fn(), m_model->channel(curveCh), m_model->ghs(), N);
+    const ChannelStretch cw = m_model->channel(curveCh);
+    std::vector<float> lut = buildLut(m_model->fn(), cw, m_model->ghs(), N);
+    const double wDenom = std::max(1e-6, cw.white - cw.black);
     double va, vb; viewRange(va, vb);
     QPainterPath curve;
     for (int i = 0; i < N; ++i) {
         const double frac = double(i) / (N - 1);
         const double u = va + frac * (vb - va);            // value coord under this x
-        const float yv = lut[std::min(N - 1, std::max(0, int(u * (N - 1))))];
+        double t = (u - cw.black) / wDenom;                // windowed coord (LUT is t-indexed)
+        t = t < 0 ? 0 : (t > 1 ? 1 : t);
+        const float yv = lut[std::min(N - 1, std::max(0, int(t * (N - 1) + 0.5)))];
         const double x = r.left() + frac * r.width();
         const double y = r.bottom() - yv * (r.height() - 4);
         if (i == 0) curve.moveTo(x, y); else curve.lineTo(x, y);
