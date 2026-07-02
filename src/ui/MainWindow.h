@@ -101,6 +101,7 @@ private:
     QHash<QString, StretchModel::State> m_stfByPath;
     QString m_currentPath;
     StretchModel::State m_copiedStretch;   // clipboard for Copy/Paste Stretch
+    std::vector<ChannelStats> m_curStats;  // stats of the currently displayed image
 };
 
 } // namespace astro

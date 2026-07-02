@@ -48,6 +48,12 @@ public:
         bool           renormalize = false;   // paste flag: recompute lo/hi from the
                                               // target image's own stats on apply
                                               // (normalized cross-image transfer)
+        bool           anchored = false;      // robust normalized paste: derive
+                                              // black/mid/white from the target's
+                                              // median+MAD via the anchors below
+        double         aBlack[3] = {0,0,0};   // (value - median) / MAD  per channel
+        double         aMid[3]   = {0,0,0};
+        double         aWhite[3] = {0,0,0};
         StretchFn      fn = StretchFn::Asinh;
         int            count = 3;
         ChannelStretch chan[3];

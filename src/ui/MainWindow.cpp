@@ -174,15 +174,64 @@ void MainWindow::showAbout() {
 
 // ---- Copy / Paste Stretch ---------------------------------------------------
 
+// Derive black/mid/white (as fractions of [min,max]) from a target image's own
+// median+MAD using the copied robust anchors ((value-median)/MAD). This is what
+// makes a "normalized" paste reproduce the same visual stretch on a frame with a
+// completely different data range (exposure/filter/modality) without collapsing
+// the signal into a few output levels.
+static void applyAnchorsToStats(StretchModel::State& st, const std::vector<ChannelStats>& stats) {
+    const int ns = int(stats.size());
+    for (int c = 0; c < 3; ++c) {
+        const int si = std::min(c, ns - 1);
+        if (si < 0) continue;
+        const double med = stats[si].median;
+        const double lo = stats[si].min, hi = stats[si].max;
+        const double range = std::max(1e-12, hi - lo);
+        double mad = stats[si].mad;
+        if (mad < 1e-12) mad = 0.01 * range;             // guard flat channels
+        auto frac = [&](double anchor) {
+            const double f = (med + anchor * mad - lo) / range;
+            return f < 0 ? 0.0 : (f > 1 ? 1.0 : f);
+        };
+        double b = frac(st.aBlack[c]), m = frac(st.aMid[c]), w = frac(st.aWhite[c]);
+        const double e = 0.0005;                          // keep black < mid < white
+        if (m < b + e) m = std::min(1.0, b + e);
+        if (w < m + e) w = std::min(1.0, m + e);
+        if (b > w - 2 * e) b = std::max(0.0, w - 2 * e);
+        st.chan[c].black = b; st.chan[c].mid = m; st.chan[c].white = w;
+        st.lo[c] = lo; st.hi[c] = hi;
+    }
+}
+
 void MainWindow::copyStretch() {
     if (m_currentPath.isEmpty() || !m_image.isValid()) return;
     m_copiedStretch = m_model.state();                   // absolute lo/hi + fractional points
+    // Robust anchors: express each point as (value - median)/MAD per channel, so
+    // a normalized paste can rebuild an equivalent window on any data range.
+    m_copiedStretch.anchored = false;
+    if (!m_curStats.empty()) {
+        const int ns = int(m_curStats.size());
+        for (int c = 0; c < 3; ++c) {
+            const int si = std::min(c, ns - 1);
+            const double med = m_curStats[si].median;
+            const double lo = m_model.lo(c), hi = m_model.hi(c);
+            const double range = std::max(1e-12, hi - lo);
+            double mad = m_curStats[si].mad;
+            if (mad < 1e-12) mad = 0.01 * range;
+            const ChannelStretch cs = m_model.channel(c);
+            auto anchor = [&](double f){ return (lo + f * range - med) / mad; };
+            m_copiedStretch.aBlack[c] = anchor(cs.black);
+            m_copiedStretch.aMid[c]   = anchor(cs.mid);
+            m_copiedStretch.aWhite[c] = anchor(cs.white);
+        }
+        m_copiedStretch.anchored = true;
+    }
     statusBar()->showMessage("Copied stretch — right-click a list entry to paste", 2500);
 }
 
-// Apply the copied stretch to one file. Normalized keeps the fractional black/
-// mid/white and re-derives the window from the target's own data range; absolute
-// carries the source's exact data-unit window.
+// Apply the copied stretch to one file. Normalized rebuilds the window from the
+// target's robust stats (median+MAD anchors); absolute carries the source's exact
+// data-unit window.
 void MainWindow::applyCopiedStretch(const QString& path, bool normalized) {
     if (!m_copiedStretch.valid || path.isEmpty()) return;
     StretchModel::State s = m_copiedStretch;
@@ -190,8 +239,10 @@ void MainWindow::applyCopiedStretch(const QString& path, bool normalized) {
 
     if (path == m_currentPath && m_image.isValid()) {
         // Target is decoded and on screen — apply live.
-        if (normalized)
-            for (int c = 0; c < 3; ++c) { s.lo[c] = m_model.lo(c); s.hi[c] = m_model.hi(c); }
+        if (normalized) {
+            if (s.anchored && !m_curStats.empty()) applyAnchorsToStats(s, m_curStats);
+            else for (int c = 0; c < 3; ++c) { s.lo[c] = m_model.lo(c); s.hi[c] = m_model.hi(c); }
+        }
         if (s.count == 1)
             for (int c = 1; c < 3; ++c) { s.chan[c] = s.chan[0]; s.lo[c] = s.lo[0]; s.hi[c] = s.hi[0]; }
         s.count = m_image.channels();
@@ -498,6 +549,7 @@ void MainWindow::displayPath(const QString& path) {
 
     m_model.setChannelCount(m_image.channels());
     const std::vector<ChannelStats> stats = computeStats(m_image);
+    m_curStats = stats;                                  // cache for Copy/Paste Stretch anchors
 
     // Per-image STF memory: restore this file's last stretch, or auto-stretch on
     // first visit. Set m_currentPath first so the change handler saves correctly.
@@ -505,12 +557,17 @@ void MainWindow::displayPath(const QString& path) {
     auto remembered = m_stfByPath.constFind(path);
     if (remembered != m_stfByPath.constEnd() && remembered.value().valid) {
         StretchModel::State st = remembered.value();
-        // A pasted "normalized" stretch defers its window to the target: recompute
-        // lo/hi from THIS image's own data range, keeping the fractional points.
+        // A pasted "normalized" stretch defers its window to the target: derive
+        // black/mid/white from THIS image's own robust stats (median+MAD anchors)
+        // so the look carries across differing data ranges without posterizing.
         if (st.renormalize) {
-            for (int c = 0; c < 3; ++c) {
-                const int si = std::min(c, int(stats.size()) - 1);
-                if (si >= 0) { st.lo[c] = stats[si].min; st.hi[c] = stats[si].max; }
+            if (st.anchored) {
+                applyAnchorsToStats(st, stats);
+            } else {
+                for (int c = 0; c < 3; ++c) {
+                    const int si = std::min(c, int(stats.size()) - 1);
+                    if (si >= 0) { st.lo[c] = stats[si].min; st.hi[c] = stats[si].max; }
+                }
             }
             st.renormalize = false;
         }
