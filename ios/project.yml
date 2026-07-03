@@ -1,0 +1,44 @@
+# XcodeGen spec — generates NebulaScopeiOS.xcodeproj from these sources.
+# Install XcodeGen (brew install xcodegen), then run `xcodegen` in this folder.
+#
+name: NebulaScopeiOS
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    CLANG_CXX_LIBRARY: "libc++"
+    # Mixing Swift + Objective-C++ needs the bridging header:
+    SWIFT_OBJC_BRIDGING_HEADER: NebulaScopeiOS/NebulaScope-Bridging-Header.h
+    # C++ headers (Stretch.h / Colormap.h / RenderCore.hpp) live under cpp/:
+    HEADER_SEARCH_PATHS:
+      - NebulaScopeiOS/cpp
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    TARGETED_DEVICE_FAMILY: "2"          # iPad only
+    PRODUCT_BUNDLE_IDENTIFIER: com.example.nebulascopeios
+
+targets:
+  NebulaScopeiOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: NebulaScopeiOS
+    # ---- To enable FITS loading, uncomment and point at your iOS CFITSIO build:
+    # settings:
+    #   base:
+    #     GCC_PREPROCESSOR_DEFINITIONS:
+    #       - "NEBULA_HAVE_CFITSIO=1"
+    #       - "$(inherited)"
+    #     HEADER_SEARCH_PATHS:
+    #       - NebulaScopeiOS/cpp
+    #       - /path/to/cfitsio-ios/include
+    #     LIBRARY_SEARCH_PATHS:
+    #       - /path/to/cfitsio-ios/lib
+    #     OTHER_LDFLAGS:
+    #       - "-lcfitsio"
