@@ -6,6 +6,8 @@
 // preview, and produce a new linear RGB ImageData.
 //
 #include <QDialog>
+#include <QHash>
+#include <QString>
 #include <memory>
 #include <vector>
 #include "core/ImageData.h"
@@ -41,6 +43,9 @@ private:
     };
 
     void applyPreset(int presetIndex);
+    void applyRemembered();       // restore last-used settings, or default preset
+    void rememberSettings();      // save current settings into the static memory
+    void resetToDefaults();       // Reset button: clear memory, back to SHO defaults
     void updatePreview();
     void accept() override;                       // builds m_result
     bool gatherPlanes(bool preview,
@@ -62,6 +67,15 @@ private:
     QLabel*     m_status   = nullptr;
 
     ImageData m_result;
+
+    // Cross-invocation memory: the dialog reopens with the settings you last used
+    // (global options + per-image role/weights, keyed by image name).
+    struct Remembered { int role = 0; double wR = 0, wG = 0, wB = 0; bool enabled = true; };
+    static bool    s_hasMemory;
+    static int     s_preset, s_preNorm, s_domain, s_lum;
+    static double  s_lumAmount;
+    static QString s_name;
+    static QHash<QString, Remembered> s_perImage;
 };
 
 } // namespace astro

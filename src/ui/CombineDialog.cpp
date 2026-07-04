@@ -45,13 +45,17 @@ static int guessRole(const QString& nameIn) {
 
 // ---- local auto-STF (asinh) so the preview and "stretched" domain match the
 //      normal on-open look, reusing the desktop Stretch math. -----------------
-
-struct Mapper { double lo = 0, hi = 1; ChannelStretch cs; std::vector<float> lut; int N = 1024;
+//
+// The mapper evaluates the transfer ANALYTICALLY in double precision (no LUT):
+// a lookup table would quantise each channel to N levels, and combining +
+// re-stretching those on display produced visible colour banding (posterization).
+struct Mapper { double lo = 0, hi = 1; ChannelStretch cs;
     float map(float v) const {
         if (!std::isfinite(v)) return 0.0f;
-        const double t = windowCoord(v, lo, hi, cs);
-        int i = int(t * (N - 1) + 0.5); i = i < 0 ? 0 : (i > N - 1 ? N - 1 : i);
-        return lut[i];
+        const double t = windowCoord(v, lo, hi, cs);                 // windowed [0,1]
+        const double denom = std::max(1e-6, cs.white - cs.black);
+        const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+        return float(mtf(baseShape(t, StretchFn::Asinh), m));        // continuous, un-quantised
     }
 };
 
@@ -60,7 +64,7 @@ static Mapper makeMapper(const float* p, std::size_t n) {
     float mn = 0, mx = 0; bool any = false;
     for (std::size_t i = 0; i < n; ++i) { const float v = p[i]; if (!std::isfinite(v)) continue;
         if (!any) { mn = mx = v; any = true; } else { if (v<mn) mn=v; if (v>mx) mx=v; } }
-    Mapper m; if (!any) { m.lut = buildLut(StretchFn::Asinh, m.cs, {}, m.N); return m; }
+    Mapper m; if (!any) return m;
     const std::size_t step = n > 120000 ? n / 120000 : 1;
     std::vector<float> s; s.reserve(n/step+1);
     for (std::size_t i = 0; i < n; i += step) if (std::isfinite(p[i])) s.push_back(p[i]);
@@ -75,7 +79,6 @@ static Mapper makeMapper(const float* p, std::size_t n) {
     double mm = xx*(0.25-1.0)/((2*0.25*xx)-0.25-xx); if (!(mm>0&&mm<1)) mm=0.5;
     m.cs.mid = m.cs.black + mm*(m.cs.white-m.cs.black);
     m.cs.mid = std::min(m.cs.white-1e-3, std::max(m.cs.black+1e-3, m.cs.mid));
-    m.lut = buildLut(StretchFn::Asinh, m.cs, {}, m.N);
     return m;
 }
 
@@ -177,13 +180,14 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     root->addLayout(prevRow);
 
     // Buttons
-    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Reset | QDialogButtonBox::Cancel);
     bb->button(QDialogButtonBox::Ok)->setText("Create Image");
     connect(bb, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(bb->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &CombineDialog::resetToDefaults);
     root->addWidget(bb);
 
-    applyPreset(PreSHO);
+    applyRemembered();      // reopen with last-used settings, or SHO defaults
 }
 
 QString CombineDialog::resultName() const {
@@ -310,7 +314,70 @@ void CombineDialog::accept() {
     CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
     if (!res.ok) { QMessageBox::warning(this, "Combine Channels", QString::fromStdString(res.error)); return; }
     m_result = std::move(res.image);
+    rememberSettings();     // persist for the next time the dialog opens
     QDialog::accept();
+}
+
+// ---- cross-invocation memory ----------------------------------------------
+
+bool    CombineDialog::s_hasMemory = false;
+int     CombineDialog::s_preset    = 0;   // PreSHO
+int     CombineDialog::s_preNorm   = 1;   // Median
+int     CombineDialog::s_domain    = 0;   // Linear
+int     CombineDialog::s_lum       = 0;   // None
+double  CombineDialog::s_lumAmount = 1.0;
+QString CombineDialog::s_name;
+QHash<QString, CombineDialog::Remembered> CombineDialog::s_perImage;
+
+void CombineDialog::rememberSettings() {
+    s_preset    = -1;                          // presets aren't a persistent control
+    s_preNorm   = m_preNormCombo->currentIndex();
+    s_domain    = m_domainCombo->currentIndex();
+    s_lum       = m_lumCombo->currentIndex();
+    s_lumAmount = m_lumAmount->value();
+    s_name      = m_nameEdit->text();
+    for (std::size_t i = 0; i < m_rows.size(); ++i) {
+        Remembered r;
+        r.role = m_rows[i].role->currentIndex();
+        r.wR = m_rows[i].wR->value(); r.wG = m_rows[i].wG->value(); r.wB = m_rows[i].wB->value();
+        r.enabled = m_rows[i].enable->isChecked();
+        s_perImage.insert(m_sources[i].name, r);   // keyed by image name
+    }
+    s_hasMemory = true;
+}
+
+void CombineDialog::applyRemembered() {
+    if (!s_hasMemory) { applyPreset(PreSHO); return; }
+    // Global options.
+    { QSignalBlocker b(m_preNormCombo); m_preNormCombo->setCurrentIndex(s_preNorm); }
+    { QSignalBlocker b(m_domainCombo);  m_domainCombo->setCurrentIndex(s_domain); }
+    { QSignalBlocker b(m_lumCombo);     m_lumCombo->setCurrentIndex(s_lum); }
+    { QSignalBlocker b(m_lumAmount);    m_lumAmount->setValue(s_lumAmount); }
+    if (!s_name.isEmpty()) { QSignalBlocker b(m_nameEdit); m_nameEdit->setText(s_name); }
+    // Per-image role + weights, matched by name; images not seen before keep
+    // their filename-guessed role and zero weights.
+    for (std::size_t i = 0; i < m_rows.size(); ++i) {
+        auto it = s_perImage.constFind(m_sources[i].name);
+        if (it == s_perImage.constEnd()) continue;
+        const Remembered& r = it.value();
+        QSignalBlocker b0(m_rows[i].enable), b1(m_rows[i].role),
+                       b2(m_rows[i].wR), b3(m_rows[i].wG), b4(m_rows[i].wB);
+        m_rows[i].enable->setChecked(r.enabled);
+        m_rows[i].role->setCurrentIndex(r.role);
+        m_rows[i].wR->setValue(r.wR); m_rows[i].wG->setValue(r.wG); m_rows[i].wB->setValue(r.wB);
+    }
+    updatePreview();
+}
+
+void CombineDialog::resetToDefaults() {
+    s_hasMemory = false;
+    s_perImage.clear();
+    for (std::size_t i = 0; i < m_rows.size(); ++i) {
+        QSignalBlocker b(m_rows[i].enable), br(m_rows[i].role);
+        m_rows[i].enable->setChecked(true);
+        m_rows[i].role->setCurrentIndex(guessRole(m_sources[i].name));   // revert to filename guess
+    }
+    applyPreset(PreSHO);        // resets weights, prenorm, lum, name to defaults
 }
 
 } // namespace astro
