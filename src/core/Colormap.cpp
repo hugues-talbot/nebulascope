@@ -41,53 +41,38 @@ const char* colormapName(Colormap c) {
         case Colormap::Magma:    return "Magma";
         case Colormap::Inferno:  return "Inferno";
         case Colormap::Cividis:  return "Cividis";
-        case Colormap::Inverted: return "Gray (inv)";
-        case Colormap::Split:    return "Split";
     }
     return "Gray";
 }
 
-std::vector<std::uint8_t> buildColormapLut(Colormap c, int n, double splitT) {
+// Fold the input at the split threshold: at t==T -> 0 (dark base-map end); both
+// t==0 and t==1 -> 1 (bright end). Below T the ramp is inverted, above it normal.
+static inline double splitFold(double t, double T) {
+    T = T < 0 ? 0 : (T > 1 ? 1 : T);
+    if (t >= T) return (T >= 1.0) ? 0.0 : (t - T) / (1.0 - T);
+    return (T <= 0.0) ? 0.0 : (T - t) / T;
+}
+
+// Interpolate the 9 anchors of a base map at u in [0,1].
+static inline void sampleAnchors(const Anchors& a, double u, std::uint8_t out[3]) {
+    u = u < 0 ? 0 : (u > 1 ? 1 : u);
+    const double seg = u * 8.0;
+    int s = int(seg); if (s > 7) s = 7;
+    const double f = seg - s;
+    for (int k = 0; k < 3; ++k) {
+        const double v = a.c[s][k] + (a.c[s + 1][k] - a.c[s][k]) * f;
+        out[k] = std::uint8_t(std::clamp(int(v + 0.5), 0, 255));
+    }
+}
+
+std::vector<std::uint8_t> buildColormapLut(Colormap c, const ColormapMods& mods, int n) {
     std::vector<std::uint8_t> lut(std::size_t(n) * 3);
-
-    // Fully-inverted grayscale: 0 -> white, 1 -> black.
-    if (c == Colormap::Inverted) {
-        for (int i = 0; i < n; ++i) {
-            const double t = (n == 1) ? 0.0 : double(i) / (n - 1);
-            const std::uint8_t g = std::uint8_t(std::clamp(int((1.0 - t) * 255 + 0.5), 0, 255));
-            lut[i*3+0] = lut[i*3+1] = lut[i*3+2] = g;
-        }
-        return lut;
-    }
-
-    // Split grayscale: above the break, normal (break=black -> 1=white); below
-    // the break, inverted (0=white -> break=black). The break sits at the sky
-    // level, so faint background structure is rendered with an inverted ramp
-    // while sources above it read as a normal positive image.
-    if (c == Colormap::Split) {
-        const double T = std::clamp(splitT, 0.0, 1.0);
-        for (int i = 0; i < n; ++i) {
-            const double t = (n == 1) ? 0.0 : double(i) / (n - 1);
-            double lum;
-            if (t >= T) lum = (T >= 1.0) ? 0.0 : (t - T) / (1.0 - T);
-            else        lum = (T <= 0.0) ? 0.0 : (T - t) / T;
-            const std::uint8_t g = std::uint8_t(std::clamp(int(lum * 255 + 0.5), 0, 255));
-            lut[i*3+0] = lut[i*3+1] = lut[i*3+2] = g;
-        }
-        return lut;
-    }
-
     const Anchors& a = anchorsFor(c);
     for (int i = 0; i < n; ++i) {
         const double t = (n == 1) ? 0.0 : double(i) / (n - 1);   // [0,1]
-        const double seg = t * 8.0;                              // 8 intervals
-        int s = int(seg);
-        if (s > 7) s = 7;
-        const double f = seg - s;
-        for (int k = 0; k < 3; ++k) {
-            const double v = a.c[s][k] + (a.c[s + 1][k] - a.c[s][k]) * f;
-            lut[i * 3 + k] = std::uint8_t(std::clamp(int(v + 0.5), 0, 255));
-        }
+        double u = mods.split ? splitFold(t, mods.splitT) : t;   // fold, then
+        if (mods.invert) u = 1.0 - u;                            // reverse, then
+        sampleAnchors(a, u, &lut[std::size_t(i) * 3]);           // colour lookup
     }
     return lut;
 }

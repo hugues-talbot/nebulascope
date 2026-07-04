@@ -1,24 +1,40 @@
 #pragma once
 //
-// Colormap — false-colour lookup for single-channel (mono) images. A colormap
-// maps a stretched display value in [0,1] to an RGB triplet. RGB images ignore
-// it. Maps are defined by a handful of anchor colours and interpolated to a
-// 256-entry table at build time.
+// Colormap — false-colour lookup for single-channel (mono) images. A base map
+// turns a stretched display value in [0,1] into an RGB triplet; two orthogonal
+// MODIFIERS reshape the input coordinate before lookup, so they compose with
+// every base map:
+//   * invert — reverse the ramp (0<->1). Gray+invert is a photo negative.
+//   * split  — fold at a threshold: inverted ramp below it, normal above, so
+//              faint background reads with reversed contrast while sources stay
+//              positive. Works on any base map (Gray+split = the classic view).
+// RGB images ignore all of this.
 //
 #include <vector>
 #include <cstdint>
 
 namespace astro {
 
-enum class Colormap { Gray, Heat, Viridis, Magma, Inferno, Cividis, Inverted, Split };
+enum class Colormap { Gray, Heat, Viridis, Magma, Inferno, Cividis };
 
-constexpr int kColormapCount = 8;
+constexpr int kColormapCount = 6;
 
 const char* colormapName(Colormap c);
 
-// 256*3 interpolated RGB table (row-major: r,g,b,r,g,b, ...).
-// `splitT` is the break point (0..1) for Colormap::Split: below it the grayscale
-// is inverted (background contrast), at it black, above it normal to white.
-std::vector<std::uint8_t> buildColormapLut(Colormap c, int n = 256, double splitT = 0.25);
+// Modifiers applied to the input coordinate t before the base-map lookup.
+struct ColormapMods {
+    bool   invert = false;
+    bool   split  = false;
+    double splitT = 0.25;   // break point (0..1) for `split`
+};
+
+// True when the map is anything other than plain Gray (i.e. the renderer must
+// take the colour-LUT path rather than the fast grayscale path).
+inline bool colormapActive(Colormap c, const ColormapMods& m) {
+    return c != Colormap::Gray || m.invert || m.split;
+}
+
+// n*3 interpolated RGB table (row-major: r,g,b,r,g,b, ...), base map + modifiers.
+std::vector<std::uint8_t> buildColormapLut(Colormap c, const ColormapMods& mods, int n = 256);
 
 } // namespace astro

@@ -34,9 +34,9 @@ void ColorBar::paintEvent(QPaintEvent*) {
 
     const int N = 512;
     const std::vector<float> lut = buildLut(fn, cs, m_model->ghs(), N);
-    const bool useCmap = mono && m_model->colormap() != Colormap::Gray;
+    const bool useCmap = mono && colormapActive(m_model->colormap(), m_model->cmapMods());
     const std::vector<std::uint8_t> cmap =
-        useCmap ? buildColormapLut(m_model->colormap(), 256, m_model->splitThreshold())
+        useCmap ? buildColormapLut(m_model->colormap(), m_model->cmapMods(), 256)
                 : std::vector<std::uint8_t>();
 
     // Gradient: x across the bar spans the [black,white] window (t in [0,1]) so

@@ -65,10 +65,11 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     const float* p1 = ch >= 3 ? img.plane<float>(1) : p0;
     const float* p2 = ch >= 3 ? img.plane<float>(2) : p0;
 
-    // Mono + a non-Gray colormap: stretch once, then look up false colour.
-    if (ch == 1 && model.colormap() != Colormap::Gray) {
+    // Mono + an active colormap (non-Gray base, or invert/split): stretch once,
+    // then look up false colour.
+    if (ch == 1 && colormapActive(model.colormap(), model.cmapMods())) {
         const int M = 4096;                              // colormap resolution (smooth gradient)
-        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), M, model.splitThreshold());
+        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
         const auto& l = lut[0];
         for (int y = 0; y < h; ++y) {
             uchar* row = out.scanLine(y);

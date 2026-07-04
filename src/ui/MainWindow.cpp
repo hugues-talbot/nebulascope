@@ -34,6 +34,7 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QSlider>
 #include <QWidget>
 #include <QHBoxLayout>
@@ -402,11 +403,25 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addWidget(m_cmapCombo);
     connect(m_cmapCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int i) {
         m_model.setColormap(static_cast<Colormap>(i));
-        if (m_splitWidget)
-            m_splitWidget->setVisible(static_cast<Colormap>(i) == Colormap::Split);
     });
 
-    // Split break-point slider (visible only when the Split map is active).
+    // Modifiers that compose with any base map.
+    m_invertCheck = new QCheckBox("Inv");
+    m_invertCheck->setToolTip("Invert the colormap (reverse the ramp)");
+    tb->addWidget(m_invertCheck);
+    connect(m_invertCheck, &QCheckBox::toggled, this, [this](bool on) {
+        m_model.setCmapInvert(on);
+    });
+
+    m_splitCheck = new QCheckBox("Split");
+    m_splitCheck->setToolTip("Fold the ramp at a threshold: inverted below, normal above");
+    tb->addWidget(m_splitCheck);
+    connect(m_splitCheck, &QCheckBox::toggled, this, [this](bool on) {
+        m_model.setCmapSplit(on);
+        if (m_splitWidget) m_splitWidget->setVisible(on);
+    });
+
+    // Split break-point slider (visible only when Split is enabled).
     m_splitWidget = new QWidget();
     auto* sl = new QHBoxLayout(m_splitWidget);
     sl->setContentsMargins(0, 0, 0, 0);
@@ -652,11 +667,21 @@ void MainWindow::displayPath(const QString& path) {
         QSignalBlocker blk(m_cmapCombo);
         const Colormap cm = mono ? m_model.colormap() : Colormap::Gray;
         m_cmapCombo->setCurrentIndex(int(cm));
+        if (m_invertCheck) {
+            m_invertCheck->setEnabled(mono);
+            QSignalBlocker bi(m_invertCheck);
+            m_invertCheck->setChecked(mono && m_model.cmapInvert());
+        }
+        if (m_splitCheck) {
+            m_splitCheck->setEnabled(mono);
+            QSignalBlocker bc(m_splitCheck);
+            m_splitCheck->setChecked(mono && m_model.cmapSplit());
+        }
         if (m_splitSlider) {
             QSignalBlocker bs(m_splitSlider);
             m_splitSlider->setValue(int(m_model.splitThreshold() * 100));
         }
-        if (m_splitWidget) m_splitWidget->setVisible(mono && cm == Colormap::Split);
+        if (m_splitWidget) m_splitWidget->setVisible(mono && m_model.cmapSplit());
     }
 
     updateDisplay();

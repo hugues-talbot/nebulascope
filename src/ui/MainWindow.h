@@ -16,6 +16,7 @@ class QDockWidget;
 class QListWidget;
 class QLabel;
 class QComboBox;
+class QCheckBox;
 class QSlider;
 class QWidget;
 
@@ -89,6 +90,8 @@ private:
     QListWidget*    m_fileList = nullptr;
     QLabel*         m_pixelLabel = nullptr;
     QComboBox*      m_cmapCombo = nullptr;
+    QCheckBox*      m_invertCheck = nullptr;
+    QCheckBox*      m_splitCheck = nullptr;
     QWidget*        m_splitWidget = nullptr;
     QSlider*        m_splitSlider = nullptr;
 
