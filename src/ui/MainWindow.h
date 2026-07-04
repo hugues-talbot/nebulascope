@@ -7,6 +7,7 @@
 //
 #include <QMainWindow>
 #include <QHash>
+#include <memory>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
 #include "render/StretchModel.h"
@@ -53,6 +54,7 @@ private slots:
     void pasteStretchToSelected(bool normalized);   // apply to selected list rows
     void pasteStretchToAll(bool normalized);        // apply to every list row
     void onListContextMenu(const QPoint& pos);      // right-click on the image list
+    void combineChannels();                         // Tools ▸ Combine Channels…
 
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
@@ -68,6 +70,7 @@ private:
     void buildMenusAndToolbar();
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
+    void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
     void applyTransform(Xform x);              // lossless geometry on the current image
     void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
@@ -102,6 +105,11 @@ private:
     QString m_currentPath;
     StretchModel::State m_copiedStretch;   // clipboard for Copy/Paste Stretch
     std::vector<ChannelStats> m_curStats;  // stats of the currently displayed image
+
+    // In-memory images produced in-app (channel combines) that have no file on
+    // disk. Keyed by a synthetic "mem://name#n" path stored in the list item;
+    // displayPath() serves these instead of hitting io::loadImage.
+    QHash<QString, std::shared_ptr<ImageData>> m_synthetic;
 };
 
 } // namespace astro

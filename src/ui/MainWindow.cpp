@@ -2,6 +2,7 @@
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
 #include "ui/InfoPanel.h"
+#include "ui/CombineDialog.h"
 #include "io/ImageReader.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
@@ -359,6 +360,10 @@ void MainWindow::buildMenusAndToolbar() {
     stretch->addSeparator();
     stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
 
+    // Tools — pixel-math utilities.
+    QMenu* tools = menuBar()->addMenu("&Tools");
+    tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
+
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
     QMenu* help = menuBar()->addMenu("&Help");
@@ -449,6 +454,48 @@ void MainWindow::addPaths(const QStringList& paths) {
         m_fileList->setCurrentItem(firstAdded);   // fires currentRowChanged -> showRow
 }
 
+// Register an in-memory image (e.g. a channel combine) and show it. It gets a
+// synthetic "mem://" key so displayPath() serves it from m_synthetic instead of
+// touching the disk; Save Data As… can later write it to a real file.
+void MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
+    static int counter = 0;
+    const QString key = QStringLiteral("mem://%1#%2").arg(name).arg(++counter);
+    m_synthetic.insert(key, std::make_shared<ImageData>(std::move(img)));
+    auto* it = new QListWidgetItem(name, m_fileList);
+    it->setData(Qt::UserRole, key);
+    it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
+    m_fileList->setCurrentItem(it);               // triggers showRow -> displayPath
+}
+
+// Tools ▸ Combine Channels: gather every MONO image in the list (loading those
+// not yet decoded), run the dialog, and add the RGB result to the list.
+void MainWindow::combineChannels() {
+    std::vector<CombineDialog::Source> mono;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* item = m_fileList->item(i);
+        const QString p = item->data(Qt::UserRole).toString();
+        std::shared_ptr<ImageData> img;
+        auto syn = m_synthetic.constFind(p);
+        if (syn != m_synthetic.constEnd()) img = syn.value();
+        else {
+            io::LoadResult res = io::loadImage(p);
+            if (!res.ok) continue;
+            img = std::make_shared<ImageData>(std::move(res.image));
+        }
+        if (img && img->channels() == 1) mono.push_back({ item->text(), img });
+    }
+    if (mono.size() < 2) {
+        QMessageBox::information(this, "Combine Channels",
+            "Load at least two single-channel (mono) images into the list first.");
+        return;
+    }
+    CombineDialog dlg(std::move(mono), this);
+    if (dlg.exec() == QDialog::Accepted && dlg.hasResult()) {
+        ImageData out = dlg.result();                 // copy out of the dialog
+        addSyntheticImage(dlg.resultName(), std::move(out));
+    }
+}
+
 void MainWindow::appendToList() {
     const QStringList paths = QFileDialog::getOpenFileNames(
         this, "Append image(s)", QString(),
@@ -463,6 +510,7 @@ void MainWindow::removeSelected() {
     for (QListWidgetItem* it : sel) {
         const QString p = it->data(Qt::UserRole).toString();
         m_stfByPath.remove(p);
+        m_synthetic.remove(p);                           // free any in-memory combine
         delete m_fileList->takeItem(m_fileList->row(it));
     }
     if (m_fileList->count() == 0) {
@@ -539,13 +587,25 @@ void MainWindow::prevImage() {
 }
 
 void MainWindow::displayPath(const QString& path) {
-    io::LoadResult res = io::loadImage(path);            // promoteToFloat = true
-    if (!res.ok) {
-        QMessageBox::warning(this, "Open failed", res.error);
-        return;
+    ImageData loaded; ImageHeader hdr;
+    auto syn = m_synthetic.constFind(path);
+    if (syn != m_synthetic.constEnd() && syn.value()) {
+        loaded = *syn.value();                           // in-memory combine result (copy)
+        hdr.container  = "In-memory";
+        hdr.nativeType = "32-bit float (channel combine)";
+        hdr.structure  = QStringList{ QString("RGB combine · %1×%2 · 3 channels")
+                                        .arg(loaded.width()).arg(loaded.height()) };
+    } else {
+        io::LoadResult res = io::loadImage(path);        // promoteToFloat = true
+        if (!res.ok) {
+            QMessageBox::warning(this, "Open failed", res.error);
+            return;
+        }
+        loaded = std::move(res.image);
+        hdr    = std::move(res.header);
     }
-    m_image = std::move(res.image);
-    m_header = std::move(res.header);
+    m_image = std::move(loaded);
+    m_header = std::move(hdr);
 
     m_model.setChannelCount(m_image.channels());
     const std::vector<ChannelStats> stats = computeStats(m_image);

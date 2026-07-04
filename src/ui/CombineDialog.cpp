@@ -1,0 +1,316 @@
+#include "ui/CombineDialog.h"
+#include "core/Stretch.h"
+#include <QtWidgets>
+#include <algorithm>
+#include <cmath>
+
+namespace astro {
+
+// Role indices used by the per-row combo box.
+enum { RoleUnused = 0, RoleR, RoleG, RoleB, RoleS, RoleH, RoleO, RoleL };
+static const char* kRoleNames[] = { "Unused", "R", "G", "B", "S (SII)", "H (Ha)", "O (OIII)", "L (lum)" };
+
+// Preset list (order matches the buttons).
+enum { PreSHO = 0, PreHOO, PreHSO, PreLRGB, PreRGB, PreBicolor, PresetCount };
+static const char* kPresetNames[] = { "SHO", "HOO", "HSO", "LRGB", "RGB", "Bicolor" };
+
+// (wR,wG,wB) contribution for a given role under a given preset. L handled apart.
+static void presetWeights(int preset, int role, double& wR, double& wG, double& wB) {
+    wR = wG = wB = 0.0;
+    auto set = [&](double r, double g, double b){ wR = r; wG = g; wB = b; };
+    switch (preset) {
+        case PreSHO:  if (role==RoleS) set(1,0,0); else if (role==RoleH) set(0,1,0); else if (role==RoleO) set(0,0,1);
+                      else if (role==RoleR) set(1,0,0); else if (role==RoleG) set(0,1,0); else if (role==RoleB) set(0,0,1); break;
+        case PreHOO:  if (role==RoleH) set(1,0,0); else if (role==RoleO) set(0,1,1); break;
+        case PreHSO:  if (role==RoleH) set(1,0,0); else if (role==RoleS) set(0,1,0); else if (role==RoleO) set(0,0,1); break;
+        case PreLRGB: if (role==RoleR) set(1,0,0); else if (role==RoleG) set(0,1,0); else if (role==RoleB) set(0,0,1); break;
+        case PreRGB:  if (role==RoleR) set(1,0,0); else if (role==RoleG) set(0,1,0); else if (role==RoleB) set(0,0,1); break;
+        case PreBicolor: if (role==RoleH) set(1,0,0); else if (role==RoleO) set(0,1,1); break;
+    }
+}
+
+// Guess a role from a file name (Ha / SII / OIII / R / G / B / L).
+static int guessRole(const QString& nameIn) {
+    const QString n = nameIn.toLower();
+    auto has = [&](const char* s){ return n.contains(QString::fromLatin1(s)); };
+    if (has("sii") || has("s2") || has("_s") || has("-s")) return RoleS;
+    if (has("oiii") || has("o3") || has("_o") || has("-o")) return RoleO;
+    if (has("ha") || has("halpha") || has("_h") || has("-h")) return RoleH;
+    if (has("lum") || has("_l") || has("-l")) return RoleL;
+    if (has("red") || has("_r") || has("-r")) return RoleR;
+    if (has("green") || has("_g") || has("-g")) return RoleG;
+    if (has("blue") || has("_b") || has("-b")) return RoleB;
+    return RoleUnused;
+}
+
+// ---- local auto-STF (asinh) so the preview and "stretched" domain match the
+//      normal on-open look, reusing the desktop Stretch math. -----------------
+
+struct Mapper { double lo = 0, hi = 1; ChannelStretch cs; std::vector<float> lut; int N = 1024;
+    float map(float v) const {
+        if (!std::isfinite(v)) return 0.0f;
+        const double t = windowCoord(v, lo, hi, cs);
+        int i = int(t * (N - 1) + 0.5); i = i < 0 ? 0 : (i > N - 1 ? N - 1 : i);
+        return lut[i];
+    }
+};
+
+static Mapper makeMapper(const float* p, std::size_t n) {
+    // robust min/max/median/mad
+    float mn = 0, mx = 0; bool any = false;
+    for (std::size_t i = 0; i < n; ++i) { const float v = p[i]; if (!std::isfinite(v)) continue;
+        if (!any) { mn = mx = v; any = true; } else { if (v<mn) mn=v; if (v>mx) mx=v; } }
+    Mapper m; if (!any) { m.lut = buildLut(StretchFn::Asinh, m.cs, {}, m.N); return m; }
+    const std::size_t step = n > 120000 ? n / 120000 : 1;
+    std::vector<float> s; s.reserve(n/step+1);
+    for (std::size_t i = 0; i < n; i += step) if (std::isfinite(p[i])) s.push_back(p[i]);
+    float med = mn, mad = 0;
+    if (!s.empty()) { const std::size_t k = s.size()/2; std::nth_element(s.begin(), s.begin()+k, s.end()); med = s[k];
+        for (auto& v : s) v = std::fabs(v-med); std::nth_element(s.begin(), s.begin()+k, s.end()); mad = s[k]; }
+    m.lo = mn; m.hi = mx;
+    const double span = std::max(1e-6, double(mx)-double(mn));
+    const double nMed = (double(med)-mn)/span; double nMad = double(mad)/span; if (nMad<1e-6) nMad=0.01;
+    m.cs.black = std::min(0.5, std::max(0.0, nMed - 2.8*nMad)); m.cs.white = 1.0;
+    double xx = (nMed-m.cs.black)/std::max(1e-6, m.cs.white-m.cs.black); xx = std::min(0.95, std::max(0.02, xx));
+    double mm = xx*(0.25-1.0)/((2*0.25*xx)-0.25-xx); if (!(mm>0&&mm<1)) mm=0.5;
+    m.cs.mid = m.cs.black + mm*(m.cs.white-m.cs.black);
+    m.cs.mid = std::min(m.cs.white-1e-3, std::max(m.cs.black+1e-3, m.cs.mid));
+    m.lut = buildLut(StretchFn::Asinh, m.cs, {}, m.N);
+    return m;
+}
+
+// ---------------------------------------------------------------------------
+
+CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
+    : QDialog(parent), m_sources(std::move(monoSources)) {
+    setWindowTitle("Combine Channels");
+    setModal(true);
+    resize(760, 560);
+
+    auto* root = new QVBoxLayout(this);
+
+    // Presets row
+    auto* presetRow = new QHBoxLayout();
+    presetRow->addWidget(new QLabel("<b>Preset:</b>"));
+    for (int i = 0; i < PresetCount; ++i) {
+        auto* b = new QPushButton(kPresetNames[i]);
+        connect(b, &QPushButton::clicked, this, [this, i]{ applyPreset(i); });
+        presetRow->addWidget(b);
+    }
+    presetRow->addStretch();
+    root->addLayout(presetRow);
+
+    // Channel table: enable | name | role | →R | →G | →B
+    auto* grid = new QGridLayout();
+    grid->setHorizontalSpacing(10);
+    const char* heads[] = { "", "Image", "Role", "→ R", "→ G", "→ B" };
+    for (int c = 0; c < 6; ++c) { auto* l = new QLabel(QString("<b>%1</b>").arg(heads[c])); grid->addWidget(l, 0, c); }
+
+    int r = 1;
+    for (auto& src : m_sources) {
+        Row row;
+        row.w = src.img ? src.img->width() : 0;
+        row.h = src.img ? src.img->height() : 0;
+        row.enable = new QCheckBox();
+        row.enable->setChecked(true);
+        row.role = new QComboBox();
+        for (const char* rn : kRoleNames) row.role->addItem(rn);
+        row.role->setCurrentIndex(guessRole(src.name));
+        auto mkSpin = [&]{ auto* s = new QDoubleSpinBox(); s->setRange(-4, 4); s->setSingleStep(0.05); s->setDecimals(2); return s; };
+        row.wR = mkSpin(); row.wG = mkSpin(); row.wB = mkSpin();
+
+        grid->addWidget(row.enable, r, 0);
+        auto* nameLbl = new QLabel(QString("%1  <span style='color:#5f6c7a'>%2×%3</span>").arg(src.name).arg(row.w).arg(row.h));
+        grid->addWidget(nameLbl, r, 1);
+        grid->addWidget(row.role, r, 2);
+        grid->addWidget(row.wR, r, 3);
+        grid->addWidget(row.wG, r, 4);
+        grid->addWidget(row.wB, r, 5);
+
+        for (QWidget* w : { (QWidget*)row.enable, (QWidget*)row.role, (QWidget*)row.wR, (QWidget*)row.wG, (QWidget*)row.wB }) {
+            if (auto* cb = qobject_cast<QCheckBox*>(w)) connect(cb, &QCheckBox::toggled, this, [this]{ updatePreview(); });
+            if (auto* co = qobject_cast<QComboBox*>(w)) connect(co, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]{ updatePreview(); });
+            if (auto* sp = qobject_cast<QDoubleSpinBox*>(w)) connect(sp, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this]{ updatePreview(); });
+        }
+        m_rows.push_back(row);
+        ++r;
+    }
+    root->addLayout(grid);
+
+    // Options row
+    auto* opt = new QGridLayout();
+    opt->addWidget(new QLabel("Pre-normalize:"), 0, 0);
+    m_preNormCombo = new QComboBox();
+    m_preNormCombo->addItems({ "None (raw × weight)", "Median (equalize background)", "Min/Max → [0,1]", "Pedestal (subtract median)" });
+    opt->addWidget(m_preNormCombo, 0, 1);
+
+    opt->addWidget(new QLabel("Data:"), 0, 2);
+    m_domainCombo = new QComboBox();
+    m_domainCombo->addItems({ "Linear (raw)", "Stretched (auto-STF)" });
+    opt->addWidget(m_domainCombo, 0, 3);
+
+    opt->addWidget(new QLabel("Luminance (L):"), 1, 0);
+    m_lumCombo = new QComboBox();
+    m_lumCombo->addItems({ "None", "Linear (add)", "Luminance (LRGB ratio)" });
+    opt->addWidget(m_lumCombo, 1, 1);
+    opt->addWidget(new QLabel("Amount:"), 1, 2);
+    m_lumAmount = new QDoubleSpinBox(); m_lumAmount->setRange(0, 4); m_lumAmount->setValue(1.0); m_lumAmount->setSingleStep(0.05);
+    opt->addWidget(m_lumAmount, 1, 3);
+
+    opt->addWidget(new QLabel("Name:"), 2, 0);
+    m_nameEdit = new QLineEdit("SHO_combine");
+    opt->addWidget(m_nameEdit, 2, 1, 1, 3);
+    root->addLayout(opt);
+
+    for (QComboBox* c : { m_preNormCombo, m_domainCombo, m_lumCombo })
+        connect(c, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]{ updatePreview(); });
+    connect(m_lumAmount, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this]{ updatePreview(); });
+
+    // Preview + status
+    auto* prevRow = new QHBoxLayout();
+    m_preview = new QLabel(); m_preview->setFixedSize(220, 160); m_preview->setStyleSheet("background:#05070a;border:1px solid #1b2530;");
+    m_preview->setAlignment(Qt::AlignCenter);
+    prevRow->addWidget(m_preview);
+    m_status = new QLabel("Assign roles and pick a preset."); m_status->setWordWrap(true);
+    m_status->setStyleSheet("color:#8492a0;");
+    prevRow->addWidget(m_status, 1);
+    root->addLayout(prevRow);
+
+    // Buttons
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    bb->button(QDialogButtonBox::Ok)->setText("Create Image");
+    connect(bb, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    root->addWidget(bb);
+
+    applyPreset(PreSHO);
+}
+
+QString CombineDialog::resultName() const {
+    const QString n = m_nameEdit->text().trimmed();
+    return n.isEmpty() ? QStringLiteral("combine") : n;
+}
+
+PreNorm CombineDialog::preNorm() const {
+    switch (m_preNormCombo->currentIndex()) {
+        case 1: return PreNorm::Median;
+        case 2: return PreNorm::MinMax;
+        case 3: return PreNorm::Pedestal;
+        default: return PreNorm::None;
+    }
+}
+LumMode CombineDialog::lumMode() const {
+    switch (m_lumCombo->currentIndex()) { case 1: return LumMode::Linear; case 2: return LumMode::Luminance; default: return LumMode::None; }
+}
+
+void CombineDialog::applyPreset(int preset) {
+    for (auto& row : m_rows) {
+        double wR, wG, wB; presetWeights(preset, row.role->currentIndex(), wR, wG, wB);
+        QSignalBlocker b1(row.wR), b2(row.wG), b3(row.wB);
+        row.wR->setValue(wR); row.wG->setValue(wG); row.wB->setValue(wB);
+    }
+    // Sensible defaults per palette.
+    const bool narrow = (preset == PreSHO || preset == PreHOO || preset == PreHSO || preset == PreBicolor);
+    { QSignalBlocker b(m_preNormCombo); m_preNormCombo->setCurrentIndex(narrow ? 1 : 0); }
+    { QSignalBlocker b(m_lumCombo); m_lumCombo->setCurrentIndex(preset == PreLRGB ? 2 : 0); }
+    { QSignalBlocker b(m_nameEdit); m_nameEdit->setText(QString("%1_combine").arg(kPresetNames[preset])); }
+    updatePreview();
+}
+
+bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes,
+                                 const float*& lum, std::vector<std::vector<float>>& scratch,
+                                 int& w, int& h, QString& err) {
+    lum = nullptr;
+    int refW = 0, refH = 0;
+    // reference dimensions = first enabled source with data
+    for (std::size_t i = 0; i < m_rows.size(); ++i)
+        if (m_rows[i].enable->isChecked() && m_sources[i].img) { refW = m_rows[i].w; refH = m_rows[i].h; break; }
+    if (refW <= 0) { err = "No channels enabled."; return false; }
+
+    // preview downsample factor
+    int dw = refW, dh = refH, stride = 1;
+    if (preview) { const int maxDim = 180; stride = std::max(1, std::max(refW, refH) / maxDim); dw = (refW + stride - 1) / stride; dh = (refH + stride - 1) / stride; }
+    w = dw; h = dh;
+
+    const bool stretched = m_domainCombo->currentIndex() == 1;
+    const PreNorm pnDummy = PreNorm::None; (void)pnDummy;
+    scratch.reserve(m_rows.size() + 2);
+
+    auto buildWorking = [&](const ImageData* img) -> const float* {
+        const float* base = img->plane<float>(0);
+        if (!preview && !stretched) return base;                 // linear full-res: use directly
+        // else materialize a (possibly downsampled) buffer
+        std::vector<float> buf; buf.resize(std::size_t(dw) * dh);
+        for (int y = 0; y < dh; ++y) {
+            const int sy = std::min(refH - 1, y * stride);
+            for (int x = 0; x < dw; ++x) {
+                const int sx = std::min(refW - 1, x * stride);
+                buf[std::size_t(y) * dw + x] = base[std::size_t(sy) * refW + sx];
+            }
+        }
+        if (stretched) { Mapper mp = makeMapper(buf.data(), buf.size()); for (auto& v : buf) v = mp.map(v); }
+        scratch.push_back(std::move(buf));
+        return scratch.back().data();
+    };
+
+    for (std::size_t i = 0; i < m_rows.size(); ++i) {
+        Row& row = m_rows[i];
+        if (!row.enable->isChecked() || !m_sources[i].img) continue;
+        if (row.w != refW || row.h != refH) { err = QString("“%1” is %2×%3 — all channels must match %4×%5.")
+                .arg(m_sources[i].name).arg(row.w).arg(row.h).arg(refW).arg(refH); return false; }
+
+        if (row.role->currentIndex() == RoleL) {                 // luminance source
+            if (!lum) lum = buildWorking(m_sources[i].img.get());
+            continue;
+        }
+        const double wR = row.wR->value(), wG = row.wG->value(), wB = row.wB->value();
+        if (std::fabs(wR) < 1e-9 && std::fabs(wG) < 1e-9 && std::fabs(wB) < 1e-9) continue;
+        CombinePlane p; p.data = buildWorking(m_sources[i].img.get()); p.wR = wR; p.wG = wG; p.wB = wB;
+        planes.push_back(p);
+    }
+    if (planes.empty() && !(lum && lumMode() != LumMode::None)) { err = "Assign at least one channel to R, G or B."; return false; }
+    return true;
+}
+
+void CombineDialog::updatePreview() {
+    std::vector<CombinePlane> planes; const float* lum = nullptr;
+    std::vector<std::vector<float>> scratch; int w = 0, h = 0; QString err;
+    if (!gatherPlanes(true, planes, lum, scratch, w, h, err)) {
+        m_preview->setText("—"); m_status->setText(err); return;
+    }
+    // For "stretched" domain the planes are already in [0,1]; combine wants raw,
+    // so pass PreNorm::None there and the chosen prenorm for linear.
+    const PreNorm pn = (m_domainCombo->currentIndex() == 1) ? PreNorm::None : preNorm();
+    CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
+    if (!res.ok) { m_preview->setText("—"); m_status->setText(QString::fromStdString(res.error)); return; }
+
+    // Auto-STF each output channel for the thumbnail.
+    QImage img(w, h, QImage::Format_RGB888);
+    Mapper mr = makeMapper(res.image.plane<float>(0), std::size_t(w)*h);
+    Mapper mg = makeMapper(res.image.plane<float>(1), std::size_t(w)*h);
+    Mapper mb = makeMapper(res.image.plane<float>(2), std::size_t(w)*h);
+    const float* pr = res.image.plane<float>(0); const float* pg = res.image.plane<float>(1); const float* pb = res.image.plane<float>(2);
+    for (int y = 0; y < h; ++y) { uchar* row = img.scanLine(y); for (int x = 0; x < w; ++x) { const std::size_t i = std::size_t(y)*w+x;
+        row[x*3+0] = uchar(mr.map(pr[i])*255+0.5f); row[x*3+1] = uchar(mg.map(pg[i])*255+0.5f); row[x*3+2] = uchar(mb.map(pb[i])*255+0.5f); } }
+    m_preview->setPixmap(QPixmap::fromImage(img).scaled(m_preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_status->setText(QString("%1 colour channel(s)%2 · %3 · output %4×%5")
+        .arg(planes.size())
+        .arg(lum ? " + L" : "")
+        .arg(m_domainCombo->currentIndex() == 1 ? "stretched" : "linear")
+        .arg(m_sources.empty() ? 0 : m_rows[0].w).arg(m_sources.empty() ? 0 : m_rows[0].h));
+}
+
+void CombineDialog::accept() {
+    std::vector<CombinePlane> planes; const float* lum = nullptr;
+    std::vector<std::vector<float>> scratch; int w = 0, h = 0; QString err;
+    if (!gatherPlanes(false, planes, lum, scratch, w, h, err)) {
+        QMessageBox::warning(this, "Combine Channels", err); return;
+    }
+    const PreNorm pn = (m_domainCombo->currentIndex() == 1) ? PreNorm::None : preNorm();
+    CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
+    if (!res.ok) { QMessageBox::warning(this, "Combine Channels", QString::fromStdString(res.error)); return; }
+    m_result = std::move(res.image);
+    QDialog::accept();
+}
+
+} // namespace astro

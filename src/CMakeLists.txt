@@ -8,6 +8,7 @@ add_library(astro_core STATIC
     core/Stretch.cpp
     core/Colormap.cpp
     core/Transform.cpp
+    core/ChannelCombine.cpp
     io/ImageReader.cpp
     io/FitsReader.cpp
     io/XisfReader.cpp
@@ -51,6 +52,7 @@ add_executable(nebulascope
     ui/HistogramPanel.cpp
     ui/ColorBar.cpp
     ui/InfoPanel.cpp
+    ui/CombineDialog.cpp
     ui/MainWindow.cpp
     ${APP_ICON_SOURCES}
 )
