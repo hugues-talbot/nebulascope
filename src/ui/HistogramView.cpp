@@ -20,6 +20,9 @@ HistogramView::HistogramView(StretchModel* model, QWidget* parent)
 
 void HistogramView::setSource(const ImageData* img) {
     m_src = img;
+    m_binSrc = nullptr;   // the ImageData lives at a fixed address (MainWindow's
+                          // member), so a new image can alias the old pointer —
+                          // always invalidate the rebin cache on source change.
     recomputeHistogram();
 }
 

@@ -306,12 +306,21 @@ void CombineDialog::updatePreview() {
     // One LINKED auto-STF across the three output channels for the thumbnail:
     // a per-channel STF would cancel out weight changes (each channel gets
     // renormalised), making the preview insensitive to the composition factors.
+    // Quantise with sub-LSB triangular dither, like the main display renderer —
+    // without it the (smooth, high-SNR) combined data bands visibly at 8 bits.
     QImage img(w, h, QImage::Format_RGB888);
     const float* pr = res.image.plane<float>(0); const float* pg = res.image.plane<float>(1); const float* pb = res.image.plane<float>(2);
     const float* pooled[3] = { pr, pg, pb };
     const Mapper mm = makeMapperPooled(pooled, 3, std::size_t(w)*h);
+    auto hashU = [](std::uint32_t x){ x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; };
+    auto dith8 = [&](float y01, std::size_t i, int c) -> uchar {
+        const float r1 = (hashU(std::uint32_t(i) * 3u + std::uint32_t(c) + 0x9e3779b9u) >> 8) * (1.0f / 16777216.0f);
+        const float r2 = (hashU(std::uint32_t(i >> 11) * 3u + std::uint32_t(c) * 2u + 0x85ebca6bu) >> 8) * (1.0f / 16777216.0f);
+        const int o = int(y01 * 255.0f + 0.5f + (r1 + r2 - 1.0f) * 0.6f);
+        return uchar(o < 0 ? 0 : (o > 255 ? 255 : o));
+    };
     for (int y = 0; y < h; ++y) { uchar* row = img.scanLine(y); for (int x = 0; x < w; ++x) { const std::size_t i = std::size_t(y)*w+x;
-        row[x*3+0] = uchar(mm.map(pr[i])*255+0.5f); row[x*3+1] = uchar(mm.map(pg[i])*255+0.5f); row[x*3+2] = uchar(mm.map(pb[i])*255+0.5f); } }
+        row[x*3+0] = dith8(mm.map(pr[i]), i, 0); row[x*3+1] = dith8(mm.map(pg[i]), i, 1); row[x*3+2] = dith8(mm.map(pb[i]), i, 2); } }
     m_preview->setPixmap(QPixmap::fromImage(img).scaled(m_preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_status->setText(QString("%1 colour channel(s)%2 · %3 · output %4×%5")
         .arg(planes.size())
