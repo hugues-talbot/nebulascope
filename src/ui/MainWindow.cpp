@@ -4,6 +4,7 @@
 #include "ui/InfoPanel.h"
 #include "ui/CombineDialog.h"
 #include "io/ImageReader.h"
+#include "app/AppInfo.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
 #include "render/DisplayRenderer.h"
@@ -163,13 +164,17 @@ void MainWindow::showAbout() {
     box.setWindowTitle("About NebulaScope");
     box.setIconPixmap(windowIcon().pixmap(96, 96));
     box.setTextFormat(Qt::RichText);
-    box.setText(
+    box.setText(QString(
         "<h2 style='margin:0'>NebulaScope</h2>"
-        "<p style='color:#9fabb8;margin:2px 0 10px'>Astronomical image inspector</p>"
-        "<p>Interactive FITS / XISF / JPEG / PNG / TIFF viewer with precise RGB"
+        "<p style='color:#9fabb8;margin:2px 0 10px'>Astronomical image inspector — v%1</p>"
+        "<p>Interactive FITS / XISF / JPEG / PNG / TIFF / WebP viewer with precise RGB"
         " histogram control, Generalised Hyperbolic Stretch, false-colour maps,"
         " and blink comparison.</p>"
-        "<p style='color:#7e8b98;font-size:11px'>Built with Qt, CFITSIO/CCfits and libXISF.</p>");
+        "<p style='color:#7e8b98;font-size:11px'>%2<br>Built with Qt, CFITSIO/CCfits and libXISF.</p>"
+        "%3")
+        .arg(QString::fromUtf8(appinfo::kVersion),
+             QString::fromUtf8(appinfo::kCopyright),
+             QString::fromUtf8(appinfo::kAboutExtraHtml)));
     box.setStandardButtons(QMessageBox::Ok);
     box.exec();
 }
