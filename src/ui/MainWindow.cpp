@@ -445,7 +445,7 @@ void MainWindow::buildMenusAndToolbar() {
 void MainWindow::openFile() {
     const QStringList paths = QFileDialog::getOpenFileNames(
         this, "Open image(s)", QString(),
-        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff);;All files (*)");
+        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)");
     if (!paths.isEmpty()) addPaths(paths);
 }
 
@@ -514,7 +514,7 @@ void MainWindow::combineChannels() {
 void MainWindow::appendToList() {
     const QStringList paths = QFileDialog::getOpenFileNames(
         this, "Append image(s)", QString(),
-        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff);;All files (*)");
+        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)");
     if (!paths.isEmpty()) addPaths(paths);
 }
 
@@ -730,7 +730,7 @@ void MainWindow::exportRegion() {
 void MainWindow::saveRenderedImage(const QImage& img, const QString& title) {
     if (img.isNull()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, title, QString(), "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff)");
+        this, title, QString(), "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)");
     if (path.isEmpty()) return;
     if (!img.save(path)) {
         QMessageBox::warning(this, "Export failed",

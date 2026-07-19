@@ -10,7 +10,7 @@ std::vector<ImageReader*> registeredReaders() {
     // Order matters only for ambiguous probes — list most-specific first.
     static FitsReader fits;
     static XisfReader xisf;
-    static QtImageReader picture;   // JPEG / PNG / TIFF
+    static QtImageReader picture;   // JPEG / PNG / TIFF / WebP (still)
     static std::vector<ImageReader*> readers { &fits, &xisf, &picture };
     return readers;
 }

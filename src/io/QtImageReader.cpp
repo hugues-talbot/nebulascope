@@ -17,7 +17,7 @@ static bool isSixteen(QImage::Format f) {
 
 bool QtImageReader::canRead(const QString& path) const {
     const QString ext = QFileInfo(path).suffix().toLower();
-    return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "tif" || ext == "tiff";
+    return ext == "jpg" || ext == "jpeg" || ext == "png" || ext == "tif" || ext == "tiff" || ext == "webp";
 }
 
 LoadResult QtImageReader::load(const QString& path, const LoadOptions& opts) const {

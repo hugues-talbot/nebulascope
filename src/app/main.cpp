@@ -56,7 +56,7 @@ static void printUsage() {
         "                        against the list file's directory).\n"
         "  -h, --help            Show this help and exit.\n"
         "\n"
-        "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff\n"
+        "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff .webp\n"
         "\n"
         "Examples:\n"
         "  nebulascope M51.fits\n"
