@@ -34,6 +34,9 @@
 #include <QFileInfo>
 #include <QShortcut>
 #include <QKeySequence>
+#include <QSettings>
+#include <QDesktopServices>
+#include <QUrl>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QSlider>
@@ -157,6 +160,42 @@ void MainWindow::applyTransform(Xform x) {
     updateDisplay();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
     if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
+}
+
+// ---- user-configurable shortcuts -------------------------------------------
+
+// Standard Qt pattern: a QSettings INI file holding "action = key sequence"
+// pairs. On first run every default is written out, so the file is a complete,
+// self-documenting template; edits override the defaults on the next start.
+// Key strings use QKeySequence portable syntax: "Ctrl+Shift+F", "F11", "Tab",
+// "Meta+Ctrl+F" (Meta = ⌘ on macOS). An empty value disables the shortcut.
+void MainWindow::applyUserShortcuts(const QHash<QString, QAction*>& acts,
+                                    const QHash<QString, QShortcut*>& keys) {
+    QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                QStringLiteral("NebulaScope"), QStringLiteral("shortcuts"));
+    m_shortcutFile = s.fileName();
+    s.beginGroup(QStringLiteral("shortcuts"));
+    for (auto it = acts.cbegin(); it != acts.cend(); ++it)
+        if (!s.contains(it.key()))
+            s.setValue(it.key(), it.value()->shortcut().toString(QKeySequence::PortableText));
+    for (auto it = keys.cbegin(); it != keys.cend(); ++it)
+        if (!s.contains(it.key()))
+            s.setValue(it.key(), it.value()->key().toString(QKeySequence::PortableText));
+    for (auto it = acts.cbegin(); it != acts.cend(); ++it)
+        it.value()->setShortcut(QKeySequence::fromString(s.value(it.key()).toString(), QKeySequence::PortableText));
+    for (auto it = keys.cbegin(); it != keys.cend(); ++it)
+        it.value()->setKey(QKeySequence::fromString(s.value(it.key()).toString(), QKeySequence::PortableText));
+    s.endGroup();
+}
+
+void MainWindow::showShortcutSettings() {
+    QMessageBox::information(this, "Configure Shortcuts",
+        QString("Shortcuts are read at startup from:<br><code>%1</code><br><br>"
+                "Edit the <b>[shortcuts]</b> section using Qt key strings \u2014 e.g. "
+                "<code>Ctrl+Shift+F</code>, <code>F11</code>, <code>Meta+Ctrl+F</code> "
+                "(Meta = \u2318 on macOS). An empty value disables a shortcut. "
+                "Restart NebulaScope to apply changes.").arg(m_shortcutFile));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(m_shortcutFile).absolutePath()));
 }
 
 void MainWindow::showAbout() {
@@ -315,15 +354,18 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
 }
 
 void MainWindow::buildMenusAndToolbar() {
+    QHash<QString, QAction*> acts;      // registry for user-configurable shortcuts
+    QHash<QString, QShortcut*> keys;
+
     // File
     QMenu* file = menuBar()->addMenu("&File");
-    file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
-    file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
-    file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
-    file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
+    acts["open"] = file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
+    acts["save_data_as"] = file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
+    acts["export_view"] = file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
+    acts["export_region"] = file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
-    file->addAction("Export Image &List…", this, &MainWindow::exportList);
-    file->addAction("&Import Image List…", this, &MainWindow::importList);
+    acts["export_list"] = file->addAction("Export Image &List…", this, &MainWindow::exportList);
+    acts["import_list"] = file->addAction("&Import Image List…", this, &MainWindow::importList);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
@@ -338,41 +380,44 @@ void MainWindow::buildMenusAndToolbar() {
     view->addAction(aLeft);
     view->addAction(aInfo);
     view->addAction(aRight);
+    acts["toggle_image_list"] = aLeft;
+    acts["toggle_info_panel"] = aInfo;
+    acts["toggle_histogram"]  = aRight;
     view->addSeparator();
-    QAction* aFit = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
-    Q_UNUSED(aFit);
-    QAction* aFull = view->addAction("&Fullscreen", QKeySequence("F11"), this, [this] {
+    acts["zoom_to_fit"] = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
+    // QKeySequence::FullScreen is the platform-correct binding (⌃⌘F on macOS —
+    // F11 there is taken by the system — and F11 on Windows/Linux).
+    acts["fullscreen"] = view->addAction("&Fullscreen", QKeySequence::FullScreen, this, [this] {
         isFullScreen() ? showNormal() : showFullScreen();
     });
-    Q_UNUSED(aFull);
-    QAction* aImageOnly = view->addAction("&Image Only", QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
-    Q_UNUSED(aImageOnly);
+    acts["image_only"] = view->addAction("&Image Only", QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 
     // Image — lossless 90° rotations and flips (applied to the pixel data).
     QMenu* image = menuBar()->addMenu("&Image");
-    image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
-    image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
+    acts["rotate_cw"]  = image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
+    acts["rotate_ccw"] = image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
     image->addSeparator();
-    image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
-    image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+    acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
+    acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
-    stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Shift+C"), this, &MainWindow::copyStretch);
-    stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Shift+V"), this, [this]{ pasteStretchToSelected(true); });
-    stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
+    acts["copy_stretch"] = stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Shift+C"), this, &MainWindow::copyStretch);
+    acts["paste_stretch_normalized"] = stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Shift+V"), this, [this]{ pasteStretchToSelected(true); });
+    acts["paste_stretch_absolute"] = stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
     stretch->addSeparator();
-    stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
+    acts["paste_stretch_all"] = stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
 
     // Tools — pixel-math utilities.
     QMenu* tools = menuBar()->addMenu("&Tools");
-    tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
+    acts["combine_channels"] = tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
     QMenu* help = menuBar()->addMenu("&Help");
+    help->addAction("Configure &Shortcuts…", this, &MainWindow::showShortcutSettings);
     QAction* about = help->addAction("&About NebulaScope", this, &MainWindow::showAbout);
     about->setMenuRole(QAction::AboutRole);
     QAction* aboutQt = help->addAction("About &Qt", qApp, &QApplication::aboutQt);
@@ -383,6 +428,10 @@ void MainWindow::buildMenusAndToolbar() {
     connect(next, &QShortcut::activated, this, &MainWindow::nextImage);
     auto* prev = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
     connect(prev, &QShortcut::activated, this, &MainWindow::prevImage);
+    keys["next_image"] = next;
+    keys["prev_image"] = prev;
+
+    applyUserShortcuts(acts, keys);     // user INI overrides the defaults above
 
     // Toolbar
     QToolBar* tb = addToolBar("Main");

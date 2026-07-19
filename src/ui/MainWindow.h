@@ -17,6 +17,7 @@ class QListWidget;
 class QLabel;
 class QComboBox;
 class QCheckBox;
+class QShortcut;
 class QSlider;
 class QWidget;
 
@@ -50,7 +51,8 @@ private slots:
     void removeSelected();      // − / Del : drop selected entries
     void exportList();          // write the list of paths to a text file
     void importList();          // read a list of paths from a text file
-    void showAbout();           // About dialog (App menu on macOS)
+    void showAbout();
+    void showShortcutSettings();           // About dialog (App menu on macOS)
     void copyStretch();         // capture current image's stretch
     void pasteStretchToSelected(bool normalized);   // apply to selected list rows
     void pasteStretchToAll(bool normalized);        // apply to every list row
@@ -69,6 +71,10 @@ protected:
 private:
     void buildUi();
     void buildMenusAndToolbar();
+    // Read/write ~/.../NebulaScope/shortcuts.ini: defaults are written on first
+    // run, user edits override the hardcoded shortcuts at startup.
+    void applyUserShortcuts(const QHash<QString, QAction*>& acts,
+                            const QHash<QString, QShortcut*>& keys);
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
     void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
@@ -106,6 +112,7 @@ private:
     // re-applied on revisit; first visit auto-stretches. Keyed by file path.
     QHash<QString, StretchModel::State> m_stfByPath;
     QString m_currentPath;
+    QString m_shortcutFile;               // path of the user shortcuts INI
     StretchModel::State m_copiedStretch;   // clipboard for Copy/Paste Stretch
     std::vector<ChannelStats> m_curStats;  // stats of the currently displayed image
 
