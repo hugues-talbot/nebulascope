@@ -59,15 +59,25 @@ struct Mapper { double lo = 0, hi = 1; ChannelStretch cs;
     }
 };
 
-static Mapper makeMapper(const float* p, std::size_t n) {
-    // robust min/max/median/mad
+// Pooled variant: one STF computed from the samples of ALL given planes. Used
+// for the preview thumbnail — a per-channel STF would renormalise each output
+// channel independently, cancelling out weight changes (scaling a channel by
+// 0.5 rescaled its own window by 0.5 → identical thumbnail). One shared
+// (linked) transfer keeps the R:G:B ratios, so weight edits are visible.
+static Mapper makeMapperPooled(const float* const* planes, int nPlanes, std::size_t n) {
     float mn = 0, mx = 0; bool any = false;
-    for (std::size_t i = 0; i < n; ++i) { const float v = p[i]; if (!std::isfinite(v)) continue;
-        if (!any) { mn = mx = v; any = true; } else { if (v<mn) mn=v; if (v>mx) mx=v; } }
+    for (int k = 0; k < nPlanes; ++k)
+        for (std::size_t i = 0; i < n; ++i) {
+            const float v = planes[k][i]; if (!std::isfinite(v)) continue;
+            if (!any) { mn = mx = v; any = true; } else { if (v<mn) mn=v; if (v>mx) mx=v; }
+        }
     Mapper m; if (!any) return m;
-    const std::size_t step = n > 120000 ? n / 120000 : 1;
-    std::vector<float> s; s.reserve(n/step+1);
-    for (std::size_t i = 0; i < n; i += step) if (std::isfinite(p[i])) s.push_back(p[i]);
+    const std::size_t total = std::size_t(nPlanes) * n;
+    const std::size_t step = total > 120000 ? total / 120000 : 1;
+    std::vector<float> s; s.reserve(total/step+1);
+    for (int k = 0; k < nPlanes; ++k)
+        for (std::size_t i = 0; i < n; i += step)
+            if (std::isfinite(planes[k][i])) s.push_back(planes[k][i]);
     float med = mn, mad = 0;
     if (!s.empty()) { const std::size_t k = s.size()/2; std::nth_element(s.begin(), s.begin()+k, s.end()); med = s[k];
         for (auto& v : s) v = std::fabs(v-med); std::nth_element(s.begin(), s.begin()+k, s.end()); mad = s[k]; }
@@ -82,13 +92,18 @@ static Mapper makeMapper(const float* p, std::size_t n) {
     return m;
 }
 
+static Mapper makeMapper(const float* p, std::size_t n) {
+    return makeMapperPooled(&p, 1, n);
+}
+
+
 // ---------------------------------------------------------------------------
 
 CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     : QDialog(parent), m_sources(std::move(monoSources)) {
     setWindowTitle("Combine Channels");
     setModal(true);
-    resize(760, 560);
+    resize(880, 680);
 
     auto* root = new QVBoxLayout(this);
 
@@ -171,7 +186,7 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
 
     // Preview + status
     auto* prevRow = new QHBoxLayout();
-    m_preview = new QLabel(); m_preview->setFixedSize(220, 160); m_preview->setStyleSheet("background:#05070a;border:1px solid #1b2530;");
+    m_preview = new QLabel(); m_preview->setFixedSize(440, 320); m_preview->setStyleSheet("background:#05070a;border:1px solid #1b2530;");
     m_preview->setAlignment(Qt::AlignCenter);
     prevRow->addWidget(m_preview);
     m_status = new QLabel("Assign roles and pick a preset."); m_status->setWordWrap(true);
@@ -233,7 +248,7 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
 
     // preview downsample factor
     int dw = refW, dh = refH, stride = 1;
-    if (preview) { const int maxDim = 180; stride = std::max(1, std::max(refW, refH) / maxDim); dw = (refW + stride - 1) / stride; dh = (refH + stride - 1) / stride; }
+    if (preview) { const int maxDim = 440; stride = std::max(1, std::max(refW, refH) / maxDim); dw = (refW + stride - 1) / stride; dh = (refH + stride - 1) / stride; }
     w = dw; h = dh;
 
     const bool stretched = m_domainCombo->currentIndex() == 1;
@@ -288,14 +303,15 @@ void CombineDialog::updatePreview() {
     CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
     if (!res.ok) { m_preview->setText("—"); m_status->setText(QString::fromStdString(res.error)); return; }
 
-    // Auto-STF each output channel for the thumbnail.
+    // One LINKED auto-STF across the three output channels for the thumbnail:
+    // a per-channel STF would cancel out weight changes (each channel gets
+    // renormalised), making the preview insensitive to the composition factors.
     QImage img(w, h, QImage::Format_RGB888);
-    Mapper mr = makeMapper(res.image.plane<float>(0), std::size_t(w)*h);
-    Mapper mg = makeMapper(res.image.plane<float>(1), std::size_t(w)*h);
-    Mapper mb = makeMapper(res.image.plane<float>(2), std::size_t(w)*h);
     const float* pr = res.image.plane<float>(0); const float* pg = res.image.plane<float>(1); const float* pb = res.image.plane<float>(2);
+    const float* pooled[3] = { pr, pg, pb };
+    const Mapper mm = makeMapperPooled(pooled, 3, std::size_t(w)*h);
     for (int y = 0; y < h; ++y) { uchar* row = img.scanLine(y); for (int x = 0; x < w; ++x) { const std::size_t i = std::size_t(y)*w+x;
-        row[x*3+0] = uchar(mr.map(pr[i])*255+0.5f); row[x*3+1] = uchar(mg.map(pg[i])*255+0.5f); row[x*3+2] = uchar(mb.map(pb[i])*255+0.5f); } }
+        row[x*3+0] = uchar(mm.map(pr[i])*255+0.5f); row[x*3+1] = uchar(mm.map(pg[i])*255+0.5f); row[x*3+2] = uchar(mm.map(pb[i])*255+0.5f); } }
     m_preview->setPixmap(QPixmap::fromImage(img).scaled(m_preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_status->setText(QString("%1 colour channel(s)%2 · %3 · output %4×%5")
         .arg(planes.size())
