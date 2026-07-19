@@ -5,9 +5,12 @@
 namespace astro {
 
 static bool numOf(const ImageHeader& h, const char* key, double& out) {
+    QString v = h.valueOf(QLatin1String(key)).trimmed();
+    if (v.startsWith('\'') && v.endsWith('\'') && v.size() >= 2)
+        v = v.mid(1, v.size() - 2).trimmed();      // defensively unquote
     bool ok = false;
-    const double v = h.valueOf(QLatin1String(key)).toDouble(&ok);
-    if (ok) out = v;
+    const double d = v.toDouble(&ok);
+    if (ok) out = d;
     return ok;
 }
 

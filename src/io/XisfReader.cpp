@@ -78,10 +78,16 @@ LoadResult XisfReader::load(const QString& path, const LoadOptions& opts) const 
         std::memcpy(img.bytes().data(), im.imageData(), n);
 
         // FITS keywords are embedded in XISF — surface them via the same header.
-        for (const auto& kw : im.fitsKeywords())
+        // Unquote/trim values (PI writes them as FITS-card strings) so numeric
+        // parsing (e.g. the WCS solution) sees clean numbers.
+        for (const auto& kw : im.fitsKeywords()) {
+            QString v = QString::fromStdString(kw.value).trimmed();
+            if (v.startsWith('\'') && v.endsWith('\'') && v.size() >= 2)
+                v = v.mid(1, v.size() - 2).trimmed();
             r.header.cards.push_back({ QString::fromStdString(kw.name),
-                                       QString::fromStdString(kw.value),
+                                       v,
                                        QString::fromStdString(kw.comment) });
+        }
 
         // Richer XISF typed properties (exposure, camera, processing history...).
         for (const auto& p : im.imageProperties())
