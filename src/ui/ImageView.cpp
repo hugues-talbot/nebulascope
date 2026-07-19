@@ -36,6 +36,13 @@ void ImageView::zoomToFit() {
     if (m_item) fitInView(m_item->boundingRect(), Qt::KeepAspectRatio);
 }
 
+void ImageView::zoomActualSize() {
+    if (!m_item) return;
+    const QPointF centre = mapToScene(viewport()->rect().center());  // keep the current view centre
+    resetTransform();                                                // scale = 1 → 1 image px per screen px
+    centerOn(centre);
+}
+
 QRect ImageView::visibleImageRect() const {
     if (!m_item) return QRect();
     // Scene coordinates map 1:1 to image pixels (pixmap at origin, unscaled item).

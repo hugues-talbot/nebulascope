@@ -385,6 +385,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["toggle_histogram"]  = aRight;
     view->addSeparator();
     acts["zoom_to_fit"] = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
+    acts["zoom_actual_size"] = view->addAction("Zoom &1:1", QKeySequence("1"), m_view, &ImageView::zoomActualSize);
     // QKeySequence::FullScreen is the platform-correct binding (⌃⌘F on macOS —
     // F11 there is taken by the system — and F11 on Windows/Linux).
     acts["fullscreen"] = view->addAction("&Fullscreen", QKeySequence::FullScreen, this, [this] {
@@ -442,6 +443,7 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addAction("Export", this, &MainWindow::exportView);
     tb->addSeparator();
     tb->addAction("Fit", m_view, &ImageView::zoomToFit);
+    tb->addAction("1:1", m_view, &ImageView::zoomActualSize);
     tb->addSeparator();
     tb->addAction("\u21bb", this, [this]{ applyTransform(Xform::RotCW); })->setToolTip("Rotate 90\u00b0 clockwise ( ] )");
     tb->addAction("\u21ba", this, [this]{ applyTransform(Xform::RotCCW); })->setToolTip("Rotate 90\u00b0 counter-clockwise ( [ )");
