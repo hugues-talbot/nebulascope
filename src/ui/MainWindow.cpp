@@ -493,7 +493,7 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addSeparator();
     tb->addAction(aLeft);
     tb->addAction(aRight);
-    tb->addAction(aImageOnly);
+    tb->addAction(acts["image_only"]);
 }
 
 void MainWindow::openFile() {
