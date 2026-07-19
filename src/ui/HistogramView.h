@@ -51,6 +51,12 @@ private:
     int m_active = -1;
     bool m_logHist = true;                    // log vs linear frequency axis
     QString m_dragHandle;                     // "", b/m/w, SP/LP/HP
+
+    // Rebin cache: recomputeHistogram() fires on every model change (each drag
+    // tick), but the bins only depend on these inputs — skip when unchanged.
+    const ImageData* m_binSrc = nullptr;
+    double m_binLo[3] = {0,0,0}, m_binHi[3] = {0,0,0};
+    double m_binA = -1, m_binB = -1;          // view window used for binning
 };
 
 } // namespace astro

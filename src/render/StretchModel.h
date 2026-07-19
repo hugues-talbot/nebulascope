@@ -90,6 +90,12 @@ public:
     // STF-style auto stretch: sets per-channel display ranges and a midtone that
     // lifts the background to ~0.25. Switches to the Linear+MTF transfer.
     void autoStretch(const std::vector<ChannelStats>& stats);
+
+    // Gentle default applied when an image is first opened: a plain linear
+    // window from the data minimum up to the 99th percentile — no black-point
+    // clip, no midtone lift. Faint structure stays untouched; only the sparse
+    // bright tail (star cores) is allowed to saturate.
+    void linearWindow(const std::vector<ChannelStats>& stats);
     void reset();
 
 signals:

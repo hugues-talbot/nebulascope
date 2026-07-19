@@ -29,14 +29,24 @@ void HistogramView::setActiveChannel(int c) {
 }
 
 void HistogramView::recomputeHistogram() {
-    m_hist.clear();
-    if (!m_src) { update(); return; }
+    if (!m_src) { m_hist.clear(); m_binSrc = nullptr; update(); return; }
     const int ch = m_src->channels();
     const int bins = 256;
     const std::size_t n = m_src->samplesPerChannel();
     const std::size_t step = n > 400000 ? n / 400000 : 1;
 
     double a, b; viewRange(a, b);   // bin only the visible window
+
+    // Skip the (expensive) rebin when nothing that feeds the bins has changed.
+    // This fires on every StretchModel::changed — e.g. per drag tick of the Mid
+    // handle or a GHS slider — where only the curve, not the bins, moved.
+    bool same = (m_binSrc == m_src && m_binA == a && m_binB == b && !m_hist.empty());
+    if (same)
+        for (int c = 0; c < ch && same; ++c)
+            same = (m_binLo[c] == m_model->lo(c) && m_binHi[c] == m_model->hi(c));
+    if (same) { update(); return; }
+
+    m_hist.clear();
     const double vspan = std::max(1e-6, b - a);
 
     for (int c = 0; c < ch; ++c) {
@@ -56,6 +66,8 @@ void HistogramView::recomputeHistogram() {
         }
         m_hist.push_back(std::move(hb));                 // RAW counts; scaled at paint
     }
+    m_binSrc = m_src; m_binA = a; m_binB = b;
+    for (int c = 0; c < 3; ++c) { m_binLo[c] = m_model->lo(c); m_binHi[c] = m_model->hi(c); }
     update();
 }
 

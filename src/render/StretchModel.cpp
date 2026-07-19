@@ -35,6 +35,25 @@ void StretchModel::autoStretch(const std::vector<ChannelStats>& stats) {
     emit changed();
 }
 
+void StretchModel::linearWindow(const std::vector<ChannelStats>& stats) {
+    m_fn = StretchFn::Linear;
+    const int n = std::min<int>(int(stats.size()), 3);
+    for (int c = 0; c < n; ++c) {
+        const double mn = stats[c].min, mx = stats[c].max;
+        const double span = std::max(1e-6, mx - mn);
+        m_lo[c] = mn;
+        m_hi[c] = mx;
+
+        ChannelStretch cs;
+        cs.black = 0.0;                                              // preserve the lowest values
+        cs.white = (double(stats[c].p99) - mn) / span;               // window top at the 99th percentile
+        cs.white = std::min(1.0, std::max(0.02, cs.white));
+        cs.mid   = 0.5 * (cs.black + cs.white);                      // MTF m = 0.5 → identity ramp
+        m_chan[c] = cs;
+    }
+    emit changed();
+}
+
 void StretchModel::reset() {
     m_fn = StretchFn::Linear;
     for (int c = 0; c < 3; ++c) m_chan[c] = ChannelStretch{};

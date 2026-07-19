@@ -653,7 +653,7 @@ void MainWindow::displayPath(const QString& path) {
         m_model.setState(st);                            // re-apply remembered/pasted STF
         m_stfByPath.insert(path, st);                    // persist finalized (flag cleared)
     } else {
-        m_model.autoStretch(stats);                      // first visit: auto STF
+        m_model.linearWindow(stats);                     // first visit: gentle linear window (min → p99)
     }
 
     m_view->setSource(&m_image);

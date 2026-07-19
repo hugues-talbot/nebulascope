@@ -14,6 +14,7 @@ struct ChannelStats {
     float max = 1.0f;
     float median = 0.0f;
     float mad = 0.0f;   // median absolute deviation (robust spread)
+    float p99 = 1.0f;   // 99th percentile — upper bound for the gentle default window
 };
 
 // Min/max are exact; median/MAD are estimated from up to `maxSamples` pixels.

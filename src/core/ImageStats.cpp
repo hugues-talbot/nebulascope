@@ -22,6 +22,7 @@ static ChannelStats statForPlane(const float* p, std::size_t n, std::size_t maxS
     if (!any) return s;            // all blank → leave zeros
     s.min = mn;
     s.max = mx;
+    s.p99 = mx;                    // fallback if sampling below comes up empty
 
     const std::size_t step = n > maxSamples ? n / maxSamples : 1;
     std::vector<float> samp;
@@ -34,6 +35,11 @@ static ChannelStats statForPlane(const float* p, std::size_t n, std::size_t maxS
     std::nth_element(samp.begin(), samp.begin() + mid, samp.end());
     const float med = samp[mid];
     s.median = med;
+
+    // 99th percentile (before samp is repurposed for the MAD below).
+    const std::size_t i99 = std::min(samp.size() - 1, std::size_t(0.99 * double(samp.size() - 1) + 0.5));
+    std::nth_element(samp.begin(), samp.begin() + i99, samp.end());
+    s.p99 = samp[i99];
 
     for (auto& v : samp) v = std::fabs(v - med);
     std::nth_element(samp.begin(), samp.begin() + mid, samp.end());
