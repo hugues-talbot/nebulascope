@@ -10,6 +10,7 @@
 #include <memory>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
+#include "core/Wcs.h"
 #include "render/StretchModel.h"
 
 class QDockWidget;
@@ -85,6 +86,7 @@ private:
 
     ImageData      m_image;
     ImageHeader    m_header;
+    Wcs            m_wcs;                 // astrometric solution of the shown image
     StretchModel   m_model;
 
     ImageView*      m_view = nullptr;

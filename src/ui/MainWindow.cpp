@@ -744,6 +744,12 @@ void MainWindow::displayPath(const QString& path) {
     m_image = std::move(loaded);
     m_header = std::move(hdr);
 
+    // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
+    // keywords in XISF). Enables the RA/Dec hover readout when present.
+    m_wcs = Wcs::fromHeader(m_header);
+    if (m_wcs.valid())
+        m_header.structure << QStringLiteral("Astrometric solution: %1").arg(m_wcs.summary());
+
     m_model.setChannelCount(m_image.channels());
     const std::vector<ChannelStats> stats = computeStats(m_image);
     m_curStats = stats;                                  // cache for Copy/Paste Stretch anchors
@@ -892,11 +898,16 @@ void MainWindow::toggleImageOnly() {
 
 void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool valid) {
     if (!valid) { m_pixelLabel->setText("—"); return; }
+    QString txt;
     if (m_image.channels() >= 3)
-        m_pixelLabel->setText(QString("(%1, %2)   R %3  G %4  B %5")
-            .arg(x).arg(y).arg(r, 0, 'g', 5).arg(g, 0, 'g', 5).arg(b, 0, 'g', 5));
+        txt = QString("(%1, %2)   R %3  G %4  B %5")
+            .arg(x).arg(y).arg(r, 0, 'g', 5).arg(g, 0, 'g', 5).arg(b, 0, 'g', 5);
     else
-        m_pixelLabel->setText(QString("(%1, %2)   %3").arg(x).arg(y).arg(r, 0, 'g', 5));
+        txt = QString("(%1, %2)   %3").arg(x).arg(y).arg(r, 0, 'g', 5);
+    double ra = 0, dec = 0;
+    if (m_wcs.pixelToSky(x, y, ra, dec))
+        txt += QStringLiteral("   ·   %1  %2").arg(Wcs::formatRa(ra), Wcs::formatDec(dec));
+    m_pixelLabel->setText(txt);
 }
 
 } // namespace astro

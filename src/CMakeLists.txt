@@ -9,6 +9,7 @@ add_library(astro_core STATIC
     core/Colormap.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
+    core/Wcs.cpp
     io/ImageReader.cpp
     io/FitsReader.cpp
     io/XisfReader.cpp
