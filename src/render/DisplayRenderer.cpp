@@ -18,14 +18,16 @@ static inline std::uint32_t hashU(std::uint32_t x) {
 // when quantising a smooth signal to 8 bits, with minimal added variance.
 static inline float triDither(std::size_t i, int c) {
     const std::uint32_t h1 = hashU(std::uint32_t(i) * 3u + std::uint32_t(c) + 0x9e3779b9u);
-    const std::uint32_t h2 = hashU(std::uint32_t(i >> 11) * 3u + std::uint32_t(c) * 2u + 0x85ebca6bu);
+    const std::uint32_t h2 = hashU(std::uint32_t(i) * 7u + std::uint32_t(c) * 131u + 0x85ebca6bu);
     const float r1 = (h1 >> 8) * (1.0f / 16777216.0f);
     const float r2 = (h2 >> 8) * (1.0f / 16777216.0f);
     return r1 + r2 - 1.0f;
 }
-// Dither amplitude, in 8-bit LSBs. ~0.6 LSB breaks bands while staying visually
-// clean; the combined result of high-SNR data no longer posterizes.
-static constexpr float kDither = 0.6f;
+// Dither amplitude, in 8-bit LSBs. A full ±1-LSB triangular dither is the
+// textbook amplitude that completely linearises the quantiser — flat regions
+// whose true values straddle a level boundary render as unbiased noise instead
+// of a hard contour.
+static constexpr float kDither = 1.0f;
 
 // Run fn(y0, y1) on row ranges across the hardware threads. The QImage buffer is
 // freshly allocated and unshared, so rows can be written concurrently.
@@ -88,7 +90,14 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
         double t = double(v) * A[ci] + B[ci];
         t += double(triDither(i, ci + 3)) * inDith[ci];  // break data quantisation
         t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
-        return lut[ci][int(t * (N - 1) + 0.5)];
+        // Interpolate the LUT: nearest-entry lookup quantises t to N steps, which
+        // in the steep toe of Log/Asinh (slope ~10) is nearly a full output LSB
+        // per step — visible as fine contours in smooth regions.
+        const double f = t * (N - 1);
+        const int i0 = int(f);
+        const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+        const float fr = float(f - i0);
+        return lut[ci][i0] * (1.0f - fr) + lut[ci][i1] * fr;
     };
     // Quantise to 8 bits with sub-LSB triangular dither so smooth gradients in
     // high-SNR data (e.g. channel combines) don't posterize on the 8-bit display.
@@ -122,8 +131,16 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
                         double t = double(v) * A[0] + B[0];
                         t += double(triDither(off + x, 3)) * inDith[0];   // break data quantisation
                         t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
-                        // Dither the colormap index so the false-colour gradient is smooth.
-                        const float ceff = l[int(t * (N - 1) + 0.5)] * (M - 1) + triDither(off + x, 0) * kDither;
+                        // Interpolated transfer (see mapNorm), then a colormap-index
+                        // dither scaled to an OUTPUT-level equivalent: the cmap has
+                        // M entries but only ~256 distinct 8-bit colours, so ±kDither
+                        // entries alone (1/16 of a colour step) blends nothing.
+                        const double f = t * (N - 1);
+                        const int i0 = int(f);
+                        const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+                        const float fr = float(f - i0);
+                        const float yv = l[i0] * (1.0f - fr) + l[i1] * fr;
+                        const float ceff = yv * (M - 1) + triDither(off + x, 0) * kDither * (float(M) / 256.0f);
                         ci = int(ceff + 0.5f);
                         ci = ci < 0 ? 0 : (ci > M - 1 ? M - 1 : ci);
                     }
