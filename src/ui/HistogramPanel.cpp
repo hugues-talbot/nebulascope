@@ -103,8 +103,12 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     // --- Auto / Reset ---
     auto* btnRow = new QHBoxLayout();
     auto* autoBtn = new QPushButton("Auto STF");
+    autoBtn->setToolTip("Per-channel auto stretch — equalises the channels (neutralises colour cast)");
+    auto* autoLinkedBtn = new QPushButton("Auto Linked");
+    autoLinkedBtn->setToolTip("One shared auto stretch for all channels — preserves colour balance");
     auto* resetBtn = new QPushButton("Reset");
     btnRow->addWidget(autoBtn);
+    btnRow->addWidget(autoLinkedBtn);
     btnRow->addWidget(resetBtn);
     btnRow->addStretch();
     root->addLayout(btnRow);
@@ -130,6 +134,9 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     });
     connect(autoBtn, &QPushButton::clicked, this, [this] {
         if (m_src) m_model->autoStretch(computeStats(*m_src));
+    });
+    connect(autoLinkedBtn, &QPushButton::clicked, this, [this] {
+        if (m_src) m_model->autoStretchLinked(computeStats(*m_src));
     });
     connect(resetBtn, &QPushButton::clicked, this, [this] { m_model->reset(); });
     connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });

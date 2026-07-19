@@ -91,6 +91,10 @@ public:
     // lifts the background to ~0.25. Switches to the Linear+MTF transfer.
     void autoStretch(const std::vector<ChannelStats>& stats);
 
+    // Linked auto stretch: ONE transfer computed from the pooled statistics and
+    // applied identically to all channels, preserving the R:G:B colour balance.
+    void autoStretchLinked(const std::vector<ChannelStats>& stats);
+
     // Gentle default applied when an image is first opened: a plain linear
     // window from the data minimum up to the 99th percentile — no black-point
     // clip, no midtone lift. Faint structure stays untouched; only the sparse
@@ -103,6 +107,7 @@ signals:
 
 private:
     static int clampC(int c) { return c < 0 ? 0 : (c > 2 ? 2 : c); }
+    static ChannelStretch stfFor(double median, double mad, double mn, double span);
 
     StretchFn m_fn = StretchFn::Asinh;
     int m_count = 3;
