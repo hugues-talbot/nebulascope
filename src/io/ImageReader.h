@@ -32,6 +32,10 @@ struct LoadOptions {
     // XISF: integer samples normalize to [0,1] by their full-scale. Float
     // sources pass through unchanged. Set false to keep the native type.
     bool promoteToFloat = true;
+
+    // FITS only: absolute HDU index (0-based, as shown in the Info panel) of the
+    // image to load. -1 = the first HDU containing a >=2-D image (default).
+    int fitsHdu = -1;
 };
 
 class ImageReader {

@@ -4,6 +4,7 @@
 #include "ui/InfoPanel.h"
 #include "ui/CombineDialog.h"
 #include "io/ImageReader.h"
+#include "io/FitsReader.h"
 #include "app/AppInfo.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
@@ -509,16 +510,58 @@ void MainWindow::openPaths(const QStringList& paths) {
     addPaths(paths);
 }
 
+// ---- multi-HDU list keys ----------------------------------------------------
+// A list row can point at one HDU inside a FITS file. The row's UserRole then
+// holds "<path>||hdu=<n>"; splitHduKey() recovers the file path and HDU index.
+static QString makeHduKey(const QString& base, int hdu) {
+    return base + QStringLiteral("||hdu=%1").arg(hdu);
+}
+static QString splitHduKey(const QString& key, int& hdu) {
+    hdu = -1;
+    const int at = key.lastIndexOf(QLatin1String("||hdu="));
+    if (at < 0) return key;
+    bool ok = false;
+    const int n = key.mid(at + 6).toInt(&ok);
+    if (!ok) return key;
+    hdu = n;
+    return key.left(at);
+}
+
 // Append entries to the list without decoding. Selecting one (here or via the
 // keyboard) is what triggers the actual load in showRow().
 void MainWindow::addPaths(const QStringList& paths) {
     QListWidgetItem* firstAdded = nullptr;
     for (const QString& p : paths) {
         if (p.isEmpty()) continue;
-        auto* it = new QListWidgetItem(QFileInfo(p).fileName(), m_fileList);
+        int hduReq = -1;
+        const QString base = splitHduKey(p, hduReq);   // re-imported lists may carry ||hdu=
+        auto* it = new QListWidgetItem(
+            hduReq < 0 ? QFileInfo(base).fileName()
+                       : QStringLiteral("%1 [HDU %2]").arg(QFileInfo(base).fileName()).arg(hduReq),
+            m_fileList);
         it->setData(Qt::UserRole, p);
         it->setToolTip(p);
         if (!firstAdded) firstAdded = it;
+
+        // Multi-extension FITS: show the file like a folder, one indented child
+        // row per image HDU. The parent row loads the first image HDU.
+        if (hduReq < 0) {
+            const QString ext = QFileInfo(base).suffix().toLower();
+            if (ext == "fits" || ext == "fit" || ext == "fts" || ext == "fz") {
+                const QList<io::FitsHduEntry> hdus = io::listFitsImageHdus(base);
+                if (hdus.size() > 1) {
+                    it->setText(it->text() + QStringLiteral("  \u25be %1 HDUs").arg(hdus.size()));
+                    for (const io::FitsHduEntry& e : hdus) {
+                        auto* child = new QListWidgetItem(
+                            QStringLiteral("    \u2937 HDU %1 \u00b7 %2").arg(e.hdu).arg(e.summary),
+                            m_fileList);
+                        child->setData(Qt::UserRole, makeHduKey(base, e.hdu));
+                        child->setToolTip(QStringLiteral("%1 \u2014 HDU %2").arg(base).arg(e.hdu));
+                        child->setForeground(QColor("#8fa3b8"));
+                    }
+                }
+            }
+        }
     }
     // If nothing is displayed yet, show the first newly added file.
     if (m_fileList->currentRow() < 0 && firstAdded)
@@ -549,7 +592,11 @@ void MainWindow::combineChannels() {
         auto syn = m_synthetic.constFind(p);
         if (syn != m_synthetic.constEnd()) img = syn.value();
         else {
-            io::LoadResult res = io::loadImage(p);
+            int hduReq = -1;
+            const QString base = splitHduKey(p, hduReq);
+            io::LoadOptions lopts;
+            lopts.fitsHdu = hduReq;
+            io::LoadResult res = io::loadImage(base, lopts);
             if (!res.ok) continue;
             img = std::make_shared<ImageData>(std::move(res.image));
         }
@@ -577,8 +624,23 @@ void MainWindow::appendToList() {
 void MainWindow::removeSelected() {
     const auto sel = m_fileList->selectedItems();
     if (sel.isEmpty()) return;
-    // Forget any per-image stretch memory for removed paths, then delete rows.
+    // Removing a file row also removes its indented HDU child rows (their keys
+    // are "<path>||hdu=N"). Collect first, then delete.
+    QList<QListWidgetItem*> doomed = sel;
     for (QListWidgetItem* it : sel) {
+        const QString p = it->data(Qt::UserRole).toString();
+        int hduDummy = -1;
+        if (splitHduKey(p, hduDummy) != p) continue;         // it's already a child row
+        const QString prefix = p + QStringLiteral("||hdu=");
+        for (int i = 0; i < m_fileList->count(); ++i) {
+            QListWidgetItem* other = m_fileList->item(i);
+            if (other != it && other->data(Qt::UserRole).toString().startsWith(prefix)
+                && !doomed.contains(other))
+                doomed.append(other);
+        }
+    }
+    // Forget any per-image stretch memory for removed paths, then delete rows.
+    for (QListWidgetItem* it : doomed) {
         const QString p = it->data(Qt::UserRole).toString();
         m_stfByPath.remove(p);
         m_synthetic.remove(p);                           // free any in-memory combine
@@ -667,7 +729,11 @@ void MainWindow::displayPath(const QString& path) {
         hdr.structure  = QStringList{ QString("RGB combine · %1×%2 · 3 channels")
                                         .arg(loaded.width()).arg(loaded.height()) };
     } else {
-        io::LoadResult res = io::loadImage(path);        // promoteToFloat = true
+        int hduReq = -1;
+        const QString base = splitHduKey(path, hduReq);
+        io::LoadOptions lopts;
+        lopts.fitsHdu = hduReq;                          // -1 = first image HDU
+        io::LoadResult res = io::loadImage(base, lopts); // promoteToFloat = true
         if (!res.ok) {
             QMessageBox::warning(this, "Open failed", res.error);
             return;

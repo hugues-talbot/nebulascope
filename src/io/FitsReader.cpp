@@ -109,6 +109,47 @@ static void extractHeader(fitsfile* fptr, ImageHeader& h, int& status) {
     }
 }
 
+QList<FitsHduEntry> listFitsImageHdus(const QString& path) {
+    QList<FitsHduEntry> out;
+    fitsfile* fptr = nullptr;
+    int status = 0;
+    fits_open_file(&fptr, path.toLocal8Bit().constData(), READONLY, &status);
+    if (status) { if (fptr) { int s2 = 0; fits_close_file(fptr, &s2); } return out; }
+
+    int nhdus = 0;
+    fits_get_num_hdus(fptr, &nhdus, &status);
+    for (int i = 1; i <= nhdus && !status; ++i) {
+        int hdutype = 0;
+        if (fits_movabs_hdu(fptr, i, &hdutype, &status)) { status = 0; continue; }
+        if (hdutype != IMAGE_HDU) continue;
+        int nd = 0;
+        fits_get_img_dim(fptr, &nd, &status);
+        if (status) { status = 0; continue; }
+        if (nd < 2) continue;
+        long dims[9] = {0};
+        fits_get_img_size(fptr, (nd > 9 ? 9 : nd), dims, &status);
+        int eq = 0; fits_get_img_equivtype(fptr, &eq, &status);
+        const bool comp = fits_is_compressed_image(fptr, &status) != 0;
+        if (status) { status = 0; continue; }
+        QString geom = QString::number(dims[0]);
+        for (int d = 1; d < nd; ++d) geom += QStringLiteral("\u00d7%1").arg(dims[d]);
+        // EXTNAME, when present, is the astronomer's label for the extension.
+        char extname[FLEN_VALUE] = {0};
+        int s3 = 0;
+        fits_read_key(fptr, TSTRING, "EXTNAME", extname, nullptr, &s3);
+        FitsHduEntry e;
+        e.hdu = i - 1;
+        e.summary = QStringLiteral("%1%2 \u00b7 %3%4")
+                        .arg(s3 == 0 && extname[0] ? QString::fromLatin1(extname) + QStringLiteral(" \u00b7 ") : QString(),
+                             geom, typeString(eq),
+                             comp ? QStringLiteral(" (compressed)") : QString());
+        out.append(e);
+    }
+    int s2 = 0;
+    fits_close_file(fptr, &s2);
+    return out;
+}
+
 bool FitsReader::canRead(const QString& path) const {
     const QString ext = QFileInfo(path).suffix().toLower();
     if (ext == "fits" || ext == "fit" || ext == "fts" || ext == "fz") return true;
@@ -142,8 +183,21 @@ LoadResult FitsReader::load(const QString& path, const LoadOptions& opts) const 
         return r;
     }
 
+    // A specific HDU may be requested (multi-extension FITS); validate it.
+    int targetHdu = firstImageHdu;                       // 1-based (CFITSIO)
+    if (opts.fitsHdu >= 0) {
+        targetHdu = opts.fitsHdu + 1;
+        int hdutype2 = 0, nd2 = 0;
+        if (fits_movabs_hdu(fptr, targetHdu, &hdutype2, &status) || hdutype2 != IMAGE_HDU ||
+            fits_get_img_dim(fptr, &nd2, &status) || nd2 < 2) {
+            r.error = QStringLiteral("HDU %1 does not contain a 2-D image").arg(opts.fitsHdu);
+            int s2 = 0; fits_close_file(fptr, &s2);
+            return r;
+        }
+    }
+
     int hdutype = 0;
-    fits_movabs_hdu(fptr, firstImageHdu, &hdutype, &status);
+    fits_movabs_hdu(fptr, targetHdu, &hdutype, &status);
     int naxis = 0;
     long naxes[9] = {0};
     fits_get_img_dim(fptr, &naxis, &status);
@@ -180,6 +234,8 @@ LoadResult FitsReader::load(const QString& path, const LoadOptions& opts) const 
     r.header.container = "FITS";
     r.header.nativeType = typeString(eqtype);
     r.header.structure = structure;
+    if (structure.size() > 1)
+        r.header.structure.prepend(QStringLiteral("Showing HDU %1").arg(targetHdu - 1));
 
     int s2 = 0;
     fits_close_file(fptr, &s2);
