@@ -66,18 +66,27 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     // Hoist the windowing out of the inner loop: windowCoord(v) is affine in v,
     //   t = ((v-lo)/(hi-lo) - black) / (white-black)  =  v*A + B  (then clamp),
     // so each pixel costs one multiply-add instead of two divisions.
-    double A[3], B[3];
+    double A[3], B[3], inDith[3];
     for (int c = 0; c < 3; ++c) {
         const ChannelStretch cs = model.channel(c);
         const double range = std::max(1e-9, model.hi(c) - model.lo(c));
         const double denomW = std::max(1e-6, cs.white - cs.black);
         A[c] = 1.0 / (range * denomW);
         B[c] = -(model.lo(c) / range + cs.black) / denomW;
+        // Input dither amplitude: ±½ of a 16-bit data quantum, expressed in
+        // windowed-t units. Integer sensor data (ADU steps) is genuinely
+        // quantised; when the display window is only tens of ADU wide, each step
+        // spans several output levels and bands. Dithering the INPUT by half a
+        // quantum breaks that staircase (the true flux lies within ±½ ADU of
+        // the recorded integer); for continuous float data the added noise is a
+        // 16-bit sub-quantum — invisible.
+        inDith[c] = 0.5 / (65535.0 * denomW);
     }
-    auto mapNorm = [&](int c, float v) -> float {
+    auto mapNorm = [&](int c, float v, std::size_t i) -> float {
         if (!std::isfinite(v)) return 0.0f;              // NaN/Inf blanks → black
         const int ci = (ch == 1) ? 0 : c;
         double t = double(v) * A[ci] + B[ci];
+        t += double(triDither(i, ci + 3)) * inDith[ci];  // break data quantisation
         t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
         return lut[ci][int(t * (N - 1) + 0.5)];
     };
@@ -111,6 +120,7 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
                     if (!std::isfinite(v)) { ci = 0; }
                     else {
                         double t = double(v) * A[0] + B[0];
+                        t += double(triDither(off + x, 3)) * inDith[0];   // break data quantisation
                         t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
                         // Dither the colormap index so the false-colour gradient is smooth.
                         const float ceff = l[int(t * (N - 1) + 0.5)] * (M - 1) + triDither(off + x, 0) * kDither;
@@ -132,9 +142,9 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
             const std::size_t off = std::size_t(y) * w;
             for (int x = 0; x < w; ++x) {
                 const std::size_t i = off + x;
-                row[x * 3 + 0] = to8(mapNorm(0, p0[i]), i, 0);
-                row[x * 3 + 1] = to8(mapNorm(1, p1[i]), i, 1);
-                row[x * 3 + 2] = to8(mapNorm(2, p2[i]), i, 2);
+                row[x * 3 + 0] = to8(mapNorm(0, p0[i], i), i, 0);
+                row[x * 3 + 1] = to8(mapNorm(1, p1[i], i), i, 1);
+                row[x * 3 + 2] = to8(mapNorm(2, p2[i], i), i, 2);
             }
         }
     });
