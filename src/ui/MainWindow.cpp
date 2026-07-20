@@ -591,6 +591,18 @@ static QString splitHduKey(const QString& key, int& hdu) {
     return key.left(at);
 }
 
+// Sidecar annotation file for an image: "<basename>_annotation.json" in the
+// image's directory (multi-HDU keys share the file's sidecar). Empty for
+// in-memory images.
+static QString annotationSidecar(const QString& key) {
+    int hdu = -1;
+    const QString base = splitHduKey(key, hdu);
+    if (base.isEmpty() || base.startsWith(QLatin1String("mem://"))) return {};
+    const QFileInfo fi(base);
+    return fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName()
+         + QStringLiteral("_annotation.json");
+}
+
 // Append entries to the list without decoding. Selecting one (here or via the
 // keyboard) is what triggers the actual load in showRow().
 void MainWindow::addPaths(const QStringList& paths) {
@@ -811,7 +823,6 @@ void MainWindow::displayPath(const QString& path) {
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
     // keywords in XISF). Enables the RA/Dec hover readout when present.
     m_wcs = Wcs::fromHeader(m_header);
-    refreshAnnotations();
     if (m_wcs.valid()) {
         m_header.structure << QStringLiteral("Astrometric solution: %1").arg(m_wcs.summary());
     } else {
@@ -830,6 +841,25 @@ void MainWindow::displayPath(const QString& path) {
     // Per-image STF memory: restore this file's last stretch, or auto-stretch on
     // first visit. Set m_currentPath first so the change handler saves correctly.
     m_currentPath = path;
+
+    // Auto-load the sidecar annotation file on the first visit to this image.
+    if (!m_annByPath.contains(path)) {
+        const QString sc = annotationSidecar(path);
+        if (!sc.isEmpty() && QFile::exists(sc)) {
+            QFile f(sc);
+            if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                std::vector<Annotation> anns =
+                    AnnotationLayer::fromJson(QJsonDocument::fromJson(f.readAll()));
+                if (!anns.empty()) {
+                    m_annByPath[path] = std::move(anns);
+                    statusBar()->showMessage(
+                        QStringLiteral("Loaded %1 annotation(s) from %2")
+                            .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName()), 3000);
+                }
+            }
+        }
+    }
+    refreshAnnotations();
     auto remembered = m_stfByPath.constFind(path);
     if (remembered != m_stfByPath.constEnd() && remembered.value().valid) {
         StretchModel::State st = remembered.value();
@@ -981,13 +1011,13 @@ void MainWindow::refreshAnnotations() {
 void MainWindow::saveAnnotations() {
     const auto& anns = m_annByPath.value(m_currentPath);
     if (anns.empty()) return;
-    // Default: sidecar next to the image ("<image>.annotations.json").
-    QString suggest = QStringLiteral("annotations.json");
-    if (!m_currentPath.startsWith(QLatin1String("mem://")))
-        suggest = QFileInfo(m_currentPath).absolutePath() + QLatin1Char('/')
-                + QFileInfo(m_currentPath).completeBaseName() + QStringLiteral(".annotations.json");
+    // Default: sidecar next to the image ("<image>_annotation.json") — the
+    // name displayPath() auto-loads on open.
+    QString suggest = QStringLiteral("annotation.json");
+    const QString sc = annotationSidecar(m_currentPath);
+    if (!sc.isEmpty()) suggest = sc;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Save annotations", suggest, "Annotations (*.annotations.json *.json)");
+        this, "Save annotations", suggest, "Annotations (*_annotation.json *.json)");
     if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -1000,7 +1030,7 @@ void MainWindow::saveAnnotations() {
 
 void MainWindow::loadAnnotations() {
     const QString path = QFileDialog::getOpenFileName(
-        this, "Load annotations", QString(), "Annotations (*.annotations.json *.json)");
+        this, "Load annotations", QString(), "Annotations (*_annotation.json *.json)");
     if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
