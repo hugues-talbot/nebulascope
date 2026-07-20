@@ -78,6 +78,8 @@ std::vector<Annotation> AnnotationLayer::fromJson(const QJsonDocument& doc, QStr
 AnnotationLayer::AnnotationLayer(QGraphicsScene* scene, QObject* parent)
     : QObject(parent), m_scene(scene) {}
 
+static QPointF handleHome(const Annotation& a, const QString& role);   // defined below
+
 void AnnotationLayer::setActive(int idx) {
     m_active = idx;
     rebuildHandles();
