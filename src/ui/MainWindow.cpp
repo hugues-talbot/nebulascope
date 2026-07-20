@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QJsonArray>
 #include <QCloseEvent>
 #include <QKeyEvent>
 #include <QUndoStack>
@@ -301,6 +302,12 @@ void MainWindow::doTransform(Xform x) {
         transformAnnotations(it.value(), x, ow, oh);
         m_annDirty.insert(m_currentPath);
     }
+    // Record the op so blink-back and the sidecar can reproduce the orientation
+    // (an op followed by its inverse cancels instead of accumulating).
+    QStringList& hist = m_xformByPath[m_currentPath];
+    const QString inv = xformName(inverseXform(x));
+    if (!hist.isEmpty() && hist.last() == inv) hist.removeLast();
+    else hist << xformName(x);
     refreshAnnotations();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
     if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
@@ -999,10 +1006,18 @@ void MainWindow::displayPath(const QString& path) {
         if (!sc.isEmpty() && QFile::exists(sc)) {
             QFile f(sc);
             if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                std::vector<Annotation> anns =
-                    AnnotationLayer::fromJson(QJsonDocument::fromJson(f.readAll()));
+                const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+                std::vector<Annotation> anns = AnnotationLayer::fromJson(doc);
                 if (!anns.empty()) {
                     m_annByPath[path] = std::move(anns);
+                    // The sidecar records the orientation the annotations were
+                    // made in; restore it so pixels and annotations line up.
+                    if (!m_xformByPath.contains(path)) {
+                        QStringList ops;
+                        for (const auto& v : doc.object()["orientation"].toArray())
+                            ops << v.toString();
+                        if (!ops.isEmpty()) m_xformByPath[path] = ops;
+                    }
                     statusBar()->showMessage(
                         QStringLiteral("Loaded %1 annotation(s) from %2")
                             .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName()), 3000);
@@ -1010,6 +1025,7 @@ void MainWindow::displayPath(const QString& path) {
             }
         }
     }
+    reapplyStoredXforms();      // image reloads unrotated from disk; catch it up
     refreshAnnotations();
     auto remembered = m_stfByPath.constFind(path);
     if (remembered != m_stfByPath.constEnd() && remembered.value().valid) {
@@ -1159,6 +1175,44 @@ void MainWindow::refreshAnnotations() {
                            m_wcs, it != m_annByPath.constEnd() ? it.value() : kNone);
 }
 
+QString MainWindow::xformName(Xform x) {
+    switch (x) {
+        case Xform::RotCW:  return QStringLiteral("rotCW");
+        case Xform::RotCCW: return QStringLiteral("rotCCW");
+        case Xform::FlipH:  return QStringLiteral("flipH");
+        default:            return QStringLiteral("flipV");
+    }
+}
+
+bool MainWindow::xformFromName(const QString& n, Xform& out) {
+    if (n == QLatin1String("rotCW"))       out = Xform::RotCW;
+    else if (n == QLatin1String("rotCCW")) out = Xform::RotCCW;
+    else if (n == QLatin1String("flipH"))  out = Xform::FlipH;
+    else if (n == QLatin1String("flipV"))  out = Xform::FlipV;
+    else return false;
+    return true;
+}
+
+// The image reloads from disk in its stored orientation; catch the pixels up
+// with any rotate/flip history recorded for this path (annotations in
+// m_annByPath are already in the transformed coordinates).
+void MainWindow::reapplyStoredXforms() {
+    const QStringList ops = m_xformByPath.value(m_currentPath);
+    if (ops.isEmpty() || !m_image.isValid()) return;
+    for (const QString& n : ops) {
+        Xform x;
+        if (!xformFromName(n, x)) continue;
+        switch (x) {
+            case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
+            case Xform::RotCCW: m_image = rotate90(m_image, false); break;
+            case Xform::FlipH:  m_image = flipHorizontal(m_image);  break;
+            case Xform::FlipV:  m_image = flipVertical(m_image);    break;
+        }
+    }
+    m_view->setSource(&m_image);
+    updateDisplay();
+}
+
 // ---- undo plumbing -----------------------------------------------------------
 
 void MainWindow::setAnnotations(const QString& path, const std::vector<Annotation>& anns) {
@@ -1267,7 +1321,18 @@ bool MainWindow::writeAnnotationsFile(const QString& path) {
         QMessageBox::warning(this, "Save failed", "Could not write " + path);
         return false;
     }
-    f.write(AnnotationLayer::toJson(anns).toJson(QJsonDocument::Indented));
+    QJsonDocument doc = AnnotationLayer::toJson(anns);
+    // Record the image orientation these annotations refer to, so a fresh
+    // session can rotate/flip the reloaded image back into agreement.
+    const QStringList ops = m_xformByPath.value(m_currentPath);
+    if (!ops.isEmpty()) {
+        QJsonObject root = doc.object();
+        QJsonArray arr;
+        for (const QString& o : ops) arr.append(o);
+        root["orientation"] = arr;
+        doc.setObject(root);
+    }
+    f.write(doc.toJson(QJsonDocument::Indented));
     m_annDirty.remove(m_currentPath);
     statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s) to %2")
                                  .arg(anns.size()).arg(QFileInfo(path).fileName()), 3000);
@@ -1321,6 +1386,13 @@ void MainWindow::loadAnnotations() {
     std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath] = std::move(anns);
     m_annDirty.remove(m_currentPath);              // matches the file just read
+    // Honour the file's recorded orientation when this image has no transforms
+    // yet this session (the displayed pixels are then still disk-oriented).
+    if (!m_xformByPath.contains(m_currentPath)) {
+        QStringList ops;
+        for (const auto& v : doc.object()["orientation"].toArray()) ops << v.toString();
+        if (!ops.isEmpty()) { m_xformByPath[m_currentPath] = ops; reapplyStoredXforms(); }
+    }
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);

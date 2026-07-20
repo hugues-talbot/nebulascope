@@ -104,6 +104,7 @@ private:
 
     AnnotationLayer* m_annotations = nullptr;
     QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
+    QHash<QString, QStringList> m_xformByPath;             // per-image rotate/flip history
     QSet<QString> m_annDirty;                              // edited since last save/load
     QUndoStack* m_undo = nullptr;
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
@@ -113,6 +114,12 @@ private:
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image
+    // Rotate/flip history per image: re-applied when the image reloads from
+    // disk (blink-back or a fresh session via the annotation sidecar), so the
+    // pixels always match annotations made in a transformed orientation.
+    static QString xformName(Xform x);
+    static bool xformFromName(const QString& n, Xform& out);
+    void reapplyStoredXforms();
     // Push an undo entry for an annotation edit already applied to m_annByPath;
     // `before` is the list as it was prior to the edit.
     void pushAnnotationEdit(const QString& text, const QString& path,
