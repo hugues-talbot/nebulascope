@@ -7,6 +7,7 @@
 //
 #include <QMainWindow>
 #include <QHash>
+#include <QSet>
 #include <memory>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
@@ -96,6 +97,7 @@ private:
 
     AnnotationLayer* m_annotations = nullptr;
     QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
+    QSet<QString> m_annDirty;                              // edited since last save/load
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
     QAction* m_toolEllipse = nullptr;
     QAction* m_toolLine = nullptr;
@@ -103,6 +105,9 @@ private:
     void refreshAnnotations();            // rebuild the overlay for the shown image
     void saveAnnotations();               // write current image's annotations to JSON
     void loadAnnotations();               // read annotations from a JSON file
+
+protected:
+    void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;

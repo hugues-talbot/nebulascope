@@ -21,6 +21,7 @@
 #include <QColorDialog>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QCloseEvent>
 #include <QFile>
 #include <QMenu>
 #include <algorithm>
@@ -102,8 +103,10 @@ void MainWindow::buildUi() {
         m_annotations->syncHandles();               // handles track a live move
     });
     connect(m_view, &ImageView::annotationsEdited, this, [this] {
-        if (m_annotations->commitMoves(m_annByPath[m_currentPath]))
+        if (m_annotations->commitMoves(m_annByPath[m_currentPath])) {
+            m_annDirty.insert(m_currentPath);
             refreshAnnotations();
+        }
     });
     connect(m_view, &ImageView::drawToolFinished, this, [this] {
         for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
@@ -1008,6 +1011,18 @@ void MainWindow::refreshAnnotations() {
                            m_wcs, it != m_annByPath.constEnd() ? it.value() : kNone);
 }
 
+// Warn when annotation edits would be lost on quit.
+void MainWindow::closeEvent(QCloseEvent* e) {
+    if (m_annDirty.isEmpty()) { e->accept(); return; }
+    const auto btn = QMessageBox::warning(this, "Unsaved annotations",
+        QStringLiteral("Annotations on %1 image(s) have not been saved.\n"
+                       "Use Save Annotations\u2026 (right-click the image) to keep them.\n\n"
+                       "Quit anyway?").arg(m_annDirty.size()),
+        QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Cancel);
+    if (btn == QMessageBox::Discard) e->accept();
+    else e->ignore();
+}
+
 void MainWindow::saveAnnotations() {
     const auto& anns = m_annByPath.value(m_currentPath);
     if (anns.empty()) return;
@@ -1025,6 +1040,7 @@ void MainWindow::saveAnnotations() {
         return;
     }
     f.write(AnnotationLayer::toJson(anns).toJson(QJsonDocument::Indented));
+    m_annDirty.remove(m_currentPath);
     statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s)").arg(anns.size()), 3000);
 }
 
@@ -1050,6 +1066,7 @@ void MainWindow::loadAnnotations() {
         return;
     }
     m_annByPath[m_currentPath] = std::move(anns);
+    m_annDirty.remove(m_currentPath);              // matches the file just read
     refreshAnnotations();
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
 }
@@ -1066,6 +1083,7 @@ void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
     an.label = label.trimmed();
     an.color = m_annColor;
     m_annByPath[m_currentPath].push_back(an);
+    m_annDirty.insert(m_currentPath);
     refreshAnnotations();
 }
 
@@ -1081,6 +1099,7 @@ void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
     an.label = label.trimmed();
     an.color = m_annColor;
     m_annByPath[m_currentPath].push_back(an);
+    m_annDirty.insert(m_currentPath);
     refreshAnnotations();
 }
 
@@ -1097,6 +1116,7 @@ void MainWindow::onTextPointPicked(double x, double y) {
     an.textSize = 12;
     an.color = m_annColor;
     m_annByPath[m_currentPath].push_back(an);
+    m_annDirty.insert(m_currentPath);
     refreshAnnotations();
 }
 
@@ -1172,6 +1192,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             // Radius ~1/40 of the frame, so markers read at fit zoom.
             a.a = a.b = std::max(12.0, m_image.width() / 40.0);
             m_annByPath[m_currentPath].push_back(a);
+            m_annDirty.insert(m_currentPath);
             refreshAnnotations();
         }
     }
@@ -1180,19 +1201,20 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         bool ok = false;
         const QString t = QInputDialog::getText(this, "Edit annotation text",
             "Text:", QLineEdit::Normal, cur.label, &ok);
-        if (ok) { cur.label = t.trimmed(); refreshAnnotations(); }
+        if (ok) { cur.label = t.trimmed(); m_annDirty.insert(m_currentPath); refreshAnnotations(); }
     }
     else if (aEditColor && chosen == aEditColor) {
         Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
         const QColor c = QColorDialog::getColor(cur.color, this, "Annotation colour");
-        if (c.isValid()) { cur.color = c; refreshAnnotations(); }
+        if (c.isValid()) { cur.color = c; m_annDirty.insert(m_currentPath); refreshAnnotations(); }
     }
     else if (aDelete && chosen == aDelete) {
         auto& anns = m_annByPath[m_currentPath];
         anns.erase(anns.begin() + annIdx);
+        m_annDirty.insert(m_currentPath);
         refreshAnnotations();
     }
-    else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); refreshAnnotations(); }
+    else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); m_annDirty.insert(m_currentPath); refreshAnnotations(); }
     else if (chosen == aSaveAnn) saveAnnotations();
     else if (chosen == aLoadAnn) loadAnnotations();
     else if (chosen == aInvAnn) {
