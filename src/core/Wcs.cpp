@@ -1,5 +1,6 @@
 #include "core/Wcs.h"
 #include <QtMath>
+#include <QRegularExpression>
 #include <cmath>
 
 namespace astro {
@@ -122,6 +123,41 @@ QString Wcs::formatDec(double decDeg) {
         .arg(dd, 2, 10, QLatin1Char('0'))
         .arg(mm, 2, 10, QLatin1Char('0'))
         .arg(ss, 4, 'f', 1, QLatin1Char('0'));
+}
+
+// "13 29 52.70" / "13:29:52.7" → degrees (factor 15 for RA hours). Sign-aware.
+static bool parseSexagesimal(QString s, double factor, double& outDeg) {
+    s = s.trimmed();
+    if (s.startsWith('\'') && s.endsWith('\'') && s.size() >= 2) s = s.mid(1, s.size() - 2).trimmed();
+    if (s.isEmpty()) return false;
+    double sign = 1.0;
+    if (s.startsWith('-')) { sign = -1.0; s.remove(0, 1); }
+    else if (s.startsWith('+')) s.remove(0, 1);
+    const QStringList parts = s.split(QRegularExpression(QStringLiteral("[\\s:]+")), Qt::SkipEmptyParts);
+    if (parts.isEmpty()) return false;
+    bool ok = false;
+    double val = 0, div = 1;
+    for (const QString& p : parts) {
+        const double x = p.toDouble(&ok);
+        if (!ok) return false;
+        val += x / div;
+        div *= 60.0;
+    }
+    outDeg = sign * val * factor;
+    return true;
+}
+
+bool Wcs::parsePointing(const ImageHeader& h, double& raDeg, double& decDeg) {
+    // Preferred: RA/DEC as decimal degrees (NINA, SGP, many drivers).
+    double ra = 0, dec = 0;
+    if (numOf(h, "RA", ra) && numOf(h, "DEC", dec)) { raDeg = ra; decDeg = dec; return true; }
+    // Sexagesimal variants: RA/DEC or OBJCTRA/OBJCTDEC as "HH MM SS" / "±DD MM SS".
+    const QString raS  = !h.valueOf(QStringLiteral("OBJCTRA")).isEmpty()
+                             ? h.valueOf(QStringLiteral("OBJCTRA"))  : h.valueOf(QStringLiteral("RA"));
+    const QString decS = !h.valueOf(QStringLiteral("OBJCTDEC")).isEmpty()
+                             ? h.valueOf(QStringLiteral("OBJCTDEC")) : h.valueOf(QStringLiteral("DEC"));
+    if (raS.isEmpty() || decS.isEmpty()) return false;
+    return parseSexagesimal(raS, 15.0, raDeg) && parseSexagesimal(decS, 1.0, decDeg);
 }
 
 QString Wcs::summary() const {

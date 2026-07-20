@@ -32,6 +32,11 @@ public:
     static QString formatRa(double raDeg);    // "HH:MM:SS.ss"
     static QString formatDec(double decDeg);  // "±DD°MM′SS.s″"
 
+    // Parse telescope-pointing keywords (RA/DEC as degrees, or OBJCTRA/OBJCTDEC
+    // as sexagesimal "HH MM SS.s" / "±DD MM SS"). These are NOT a plate
+    // solution — just one coordinate for the frame — but worth displaying.
+    static bool parsePointing(const ImageHeader& h, double& raDeg, double& decDeg);
+
     QString summary() const;           // "1.21″/px · rotation −12.3° · TAN"
 
 private:

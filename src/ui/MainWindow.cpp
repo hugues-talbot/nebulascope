@@ -747,8 +747,16 @@ void MainWindow::displayPath(const QString& path) {
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
     // keywords in XISF). Enables the RA/Dec hover readout when present.
     m_wcs = Wcs::fromHeader(m_header);
-    if (m_wcs.valid())
+    if (m_wcs.valid()) {
         m_header.structure << QStringLiteral("Astrometric solution: %1").arg(m_wcs.summary());
+    } else {
+        // No plate solution — surface the capture software's pointing keywords
+        // (RA/DEC, OBJCTRA/OBJCTDEC) so the user still sees where the frame is.
+        double ra = 0, dec = 0;
+        if (Wcs::parsePointing(m_header, ra, dec))
+            m_header.structure << QStringLiteral("Telescope pointing (no plate solution): %1 %2")
+                                      .arg(Wcs::formatRa(ra), Wcs::formatDec(dec));
+    }
 
     m_model.setChannelCount(m_image.channels());
     const std::vector<ChannelStats> stats = computeStats(m_image);
