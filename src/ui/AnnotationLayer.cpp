@@ -300,7 +300,7 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
             auto* line = new QGraphicsLineItem(a.x, a.y, a.x2, a.y2);
             line->setPen(QPen(col, 0));
             g->addToGroup(line);
-            lx = (a.x + a.x2) / 2; ly = (a.y + a.y2) / 2;
+            lx = a.x; ly = a.y;   // label at the START endpoint — the segment points at the target
         } else if (a.type == Annotation::Type::Ellipse) {
             auto* ell = new QGraphicsEllipseItem(a.x - a.a, a.y - a.b, 2 * a.a, 2 * a.b);
             ell->setPen(QPen(col, 0, Qt::SolidLine));
