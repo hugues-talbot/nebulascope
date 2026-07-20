@@ -93,15 +93,15 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
             if (p) {
                 m_itemDrag = true;
                 QGraphicsView::mousePressEvent(e);
-                // Guarantee selection lands on the annotation group — the
-                // grab-handle layer listens to selectionChanged.
                 if (!p->isSelected()) {
                     scene()->clearSelection();
                     p->setSelected(true);
                 }
+                emit annotationPressed(mapToScene(e->pos()), p->data(1).isValid());
                 return;
             }
         }
+        emit annotationPressed(mapToScene(e->pos()), false);   // empty sky → clears handles
         m_press = e->pos();
         m_banding = true;
         if (!m_band) m_band = new QRubberBand(QRubberBand::Rectangle, this);

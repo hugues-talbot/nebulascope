@@ -49,6 +49,9 @@ signals:
     void textPointPicked(double x, double y);
     void drawToolFinished();       // tool disarmed — uncheck the toolbar button
     void annotationsEdited();      // user finished dragging annotation items
+    // Left-press resolved: on an annotation item (isHandle for resize squares)
+    // or empty sky. MainWindow uses it to drive which annotation shows handles.
+    void annotationPressed(const QPointF& scenePos, bool isHandle);
 
 protected:
     void mousePressEvent(QMouseEvent*) override;

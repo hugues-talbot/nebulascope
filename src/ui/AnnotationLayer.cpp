@@ -75,11 +75,11 @@ std::vector<Annotation> AnnotationLayer::fromJson(const QJsonDocument& doc, QStr
 }
 
 AnnotationLayer::AnnotationLayer(QGraphicsScene* scene, QObject* parent)
-    : QObject(parent), m_scene(scene) {
-    // Show resize handles whenever the selection settles on an annotation.
-    connect(scene, &QGraphicsScene::selectionChanged, this, [this] {
-        if (!m_rebuilding) rebuildHandles();
-    });
+    : QObject(parent), m_scene(scene) {}
+
+void AnnotationLayer::setActive(int idx) {
+    m_active = idx;
+    rebuildHandles();
 }
 
 double AnnotationLayer::niceStepDeg(double spanDeg, int target) {
@@ -106,6 +106,7 @@ void AnnotationLayer::rebuild(int w, int h, const Wcs& wcs,
     buildAnnotations(annotations);
     m_lastAnns = annotations;
     m_rebuilding = false;
+    rebuildHandles();                             // handles survive rebuilds
 }
 
 // Handle geometry shared by rebuildHandles() and commitMoves(): where each
@@ -120,18 +121,11 @@ static QPointF handleHome(const Annotation& a, const QString& role) {
 
 void AnnotationLayer::rebuildHandles() {
     if (!m_group) return;
-    // A handle itself is being clicked/dragged — leave the set alone.
-    for (QGraphicsItem* it : m_scene->selectedItems())
-        if (it->data(1).isValid()) return;
-
     for (QGraphicsItem* h : m_handles) { m_group->removeFromGroup(h); m_scene->removeItem(h); delete h; }
     m_handles.clear();
 
-    // Exactly one selected annotation gets handles.
-    int idx = -1;
-    for (QGraphicsItem* it : m_scene->selectedItems())
-        if (it->data(0).isValid()) { idx = it->data(0).toInt(); break; }
-    if (idx < 0 || idx >= int(m_lastAnns.size())) return;
+    if (m_active < 0 || m_active >= int(m_lastAnns.size())) { m_active = -1; return; }
+    const int idx = m_active;
     const Annotation& a = m_lastAnns[std::size_t(idx)];
 
     QStringList roles;

@@ -94,6 +94,10 @@ void MainWindow::buildUi() {
     connect(m_view, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
     connect(m_view, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(m_view, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
+    connect(m_view, &ImageView::annotationPressed, this, [this](const QPointF& sp, bool isHandle) {
+        if (isHandle) return;                       // dragging a handle — keep the set
+        m_annotations->setActive(m_annotations->hitTest(sp));
+    });
     connect(m_view, &ImageView::annotationsEdited, this, [this] {
         if (m_annotations->commitMoves(m_annByPath[m_currentPath]))
             refreshAnnotations();

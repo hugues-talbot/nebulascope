@@ -64,6 +64,9 @@ public:
 
     // Index of the annotation whose items contain scenePos, or -1.
     int hitTest(const QPointF& scenePos) const;
+    // Show resize handles for this annotation index (-1 = none). Driven
+    // explicitly from clicks in the view — not from Qt selection state.
+    void setActive(int idx);
     // Fold user drags (Qt movable items) back into the data model; true if
     // anything moved. Caller rebuilds afterwards.
     bool commitMoves(std::vector<Annotation>& annotations);
@@ -81,6 +84,7 @@ private:
     QGraphicsItemGroup* m_group = nullptr;   // owns all overlay items
     std::vector<Annotation> m_lastAnns;      // model copy for handle geometry
     std::vector<QGraphicsItem*> m_handles;
+    int m_active = -1;                       // annotation index showing handles
     bool m_rebuilding = false;
     bool m_gridVisible = false;
     bool m_inverted = false;
