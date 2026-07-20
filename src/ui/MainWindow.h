@@ -107,6 +107,8 @@ private:
     QSet<QString> m_annDirty;                              // edited since last save/load
     QUndoStack* m_undo = nullptr;
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
+    Annotation m_copiedAnn;                                // clipboard for copy/paste
+    bool m_hasCopiedAnn = false;
     QAction* m_toolEllipse = nullptr;
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
@@ -115,7 +117,9 @@ private:
     // `before` is the list as it was prior to the edit.
     void pushAnnotationEdit(const QString& text, const QString& path,
                             std::vector<Annotation> before);
-    void saveAnnotations();               // write current image's annotations to JSON
+    void saveAnnotations();               // silent save to the image's sidecar
+    void saveAnnotationsAs();             // dialog for an explicit file name
+    bool writeAnnotationsFile(const QString& path);   // shared writer
     void loadAnnotations();               // read annotations from a JSON file
     void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
 

@@ -1200,25 +1200,41 @@ void MainWindow::closeEvent(QCloseEvent* e) {
     else e->ignore();
 }
 
-void MainWindow::saveAnnotations() {
+bool MainWindow::writeAnnotationsFile(const QString& path) {
     const auto& anns = m_annByPath.value(m_currentPath);
-    if (anns.empty()) return;
-    // Default: sidecar next to the image ("<image>_annotation.json") — the
-    // name displayPath() auto-loads on open.
-    QString suggest = QStringLiteral("annotation.json");
-    const QString sc = annotationSidecar(m_currentPath);
-    if (!sc.isEmpty()) suggest = sc;
-    const QString path = QFileDialog::getSaveFileName(
-        this, "Save annotations", suggest, "Annotations (*_annotation.json *.json)");
-    if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::warning(this, "Save failed", "Could not write " + path);
-        return;
+        return false;
     }
     f.write(AnnotationLayer::toJson(anns).toJson(QJsonDocument::Indented));
     m_annDirty.remove(m_currentPath);
-    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s)").arg(anns.size()), 3000);
+    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s) to %2")
+                                 .arg(anns.size()).arg(QFileInfo(path).fileName()), 3000);
+    return true;
+}
+
+// Silent save: overwrite the image's sidecar ("<image>_annotation.json") — the
+// file displayPath() auto-loads. Falls back to the dialog for in-memory images.
+void MainWindow::saveAnnotations() {
+    if (m_annByPath.value(m_currentPath).empty()) return;
+    const QString sc = annotationSidecar(m_currentPath);
+    if (sc.isEmpty()) { saveAnnotationsAs(); return; }
+    writeAnnotationsFile(sc);
+}
+
+void MainWindow::saveAnnotationsAs() {
+    if (m_annByPath.value(m_currentPath).empty()) return;
+    const QString sc = annotationSidecar(m_currentPath);
+    const QString suggest = sc.isEmpty() ? QStringLiteral("annotation.json") : sc;
+    const QString path = QFileDialog::getSaveFileName(
+        this, "Save annotations as", suggest, "Annotations (*_annotation.json *.json)");
+    if (path.isEmpty()) return;
+    if (!sc.isEmpty() && QFileInfo(path).absoluteFilePath() == QFileInfo(sc).absoluteFilePath()) {
+        QMessageBox::information(this, "Save annotations as",
+            "That is the image's default sidecar — plain Save Annotations writes it directly.");
+    }
+    writeAnnotationsFile(path);
 }
 
 void MainWindow::loadAnnotations() {
@@ -1335,6 +1351,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     // Editing actions for the annotation under the cursor, if any.
     const int annIdx = onImage ? m_annotations->hitTest(QPointF(x + 0.5, y + 0.5)) : -1;
     QAction* aEditText = nullptr; QAction* aEditColor = nullptr; QAction* aDelete = nullptr;
+    QAction* aCopyAnn = nullptr;
     if (annIdx >= 0 && annIdx < int(m_annByPath[m_currentPath].size())) {
         const Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
         const QString what = cur.label.isEmpty() ? QStringLiteral("annotation")
@@ -1342,15 +1359,20 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         aEditText  = menu.addAction(QStringLiteral("Edit Text of %1\u2026").arg(what));
         aEditColor = menu.addAction(QStringLiteral("Change Colour of %1\u2026").arg(what));
         aDelete    = menu.addAction(QStringLiteral("Delete %1").arg(what));
+        aCopyAnn   = menu.addAction(QStringLiteral("Copy %1").arg(what));
         menu.addSeparator();
     }
     QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
+    QAction* aPasteAnn = menu.addAction(QStringLiteral("Paste Annotation Here"));
+    aPasteAnn->setEnabled(onImage && m_hasCopiedAnn);
     const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
     QAction* aClearAnn = menu.addAction(QStringLiteral("Clear Annotations"));
     aClearAnn->setEnabled(hasAnn);
-    QAction* aSaveAnn = menu.addAction(QStringLiteral("Save Annotations\u2026"));
+    QAction* aSaveAnn = menu.addAction(QStringLiteral("Save Annotations"));
     aSaveAnn->setEnabled(hasAnn);
+    QAction* aSaveAnnAs = menu.addAction(QStringLiteral("Save Annotations As\u2026"));
+    aSaveAnnAs->setEnabled(hasAnn);
     QAction* aLoadAnn = menu.addAction(QStringLiteral("Load Annotations\u2026"));
     QAction* aInvAnn = menu.addAction(QStringLiteral("Invert Annotation Contrast"));
     aInvAnn->setCheckable(true);
@@ -1415,6 +1437,24 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         refreshAnnotations();
         pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
     }
+    else if (aCopyAnn && chosen == aCopyAnn) {
+        m_copiedAnn = m_annByPath[m_currentPath][std::size_t(annIdx)];
+        m_hasCopiedAnn = true;
+        // Also expose it as JSON on the system clipboard (handy for tooling).
+        QApplication::clipboard()->setText(QString::fromUtf8(
+            QJsonDocument(m_copiedAnn.toJson()).toJson(QJsonDocument::Compact)));
+    }
+    else if (chosen == aPasteAnn) {
+        Annotation a = m_copiedAnn;
+        const double dx = x - a.x, dy = y - a.y;   // anchor lands at the click point
+        a.x = x; a.y = y;
+        if (a.type == Annotation::Type::Line) { a.x2 += dx; a.y2 += dy; }
+        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+        m_annByPath[m_currentPath].push_back(a);
+        m_annDirty.insert(m_currentPath);
+        refreshAnnotations();
+        pushAnnotationEdit(QStringLiteral("paste annotation"), m_currentPath, std::move(before));
+    }
     else if (chosen == aClearAnn) {
         std::vector<Annotation> before = m_annByPath.value(m_currentPath);
         m_annByPath.remove(m_currentPath);
@@ -1423,6 +1463,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         pushAnnotationEdit(QStringLiteral("clear annotations"), m_currentPath, std::move(before));
     }
     else if (chosen == aSaveAnn) saveAnnotations();
+    else if (chosen == aSaveAnnAs) saveAnnotationsAs();
     else if (chosen == aLoadAnn) loadAnnotations();
     else if (chosen == aInvAnn) {
         m_annotations->setInvertedContrast(aInvAnn->isChecked());
