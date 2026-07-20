@@ -6,6 +6,9 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QFontDatabase>
+#include <QShortcut>
+#include <QApplication>
+#include <QClipboard>
 
 namespace astro {
 
@@ -61,6 +64,29 @@ InfoPanel::InfoPanel(StretchModel* model, QWidget* parent)
 
     connect(m_filter, &QLineEdit::textChanged, this, &InfoPanel::applyFilter);
     connect(m_model, &StretchModel::changed, this, &InfoPanel::refresh);
+
+    // Ctrl/Cmd+C copies the selected rows as tab-separated text (QTableWidget
+    // has no built-in clipboard support). Truncated values copy in full.
+    auto* copySc = new QShortcut(QKeySequence::Copy, m_table);
+    copySc->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(copySc, &QShortcut::activated, this, [this] {
+        QStringList lines;
+        for (int r = 0; r < m_table->rowCount(); ++r) {
+            if (m_table->isRowHidden(r)) continue;
+            auto* first = m_table->item(r, 0);
+            if (!first || !first->isSelected()) continue;
+            QStringList cols;
+            for (int c = 0; c < 3; ++c) {
+                auto* it = m_table->item(r, c);
+                QString t = it ? it->text() : QString();
+                if (it && it->data(Qt::UserRole).isValid())
+                    t = it->data(Qt::UserRole).toString();   // full untruncated value
+                cols << t;
+            }
+            lines << cols.join(QLatin1Char('\t'));
+        }
+        if (!lines.isEmpty()) QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
+    });
 }
 
 void InfoPanel::setData(const ImageData* img, const ImageHeader* hdr,
@@ -84,12 +110,23 @@ void InfoPanel::rebuildTable() {
         ++row;
     }
     // XISF typed properties (e.g. PCL:AstrometricSolution:*) share the same
-    // filterable table, marked in the comment column.
+    // filterable table, marked in the comment column. Huge values (spline
+    // control points, processing history) are truncated for display — rendering
+    // megabyte strings is what made the panel crawl.
     for (auto it = m_hdr->properties.constBegin(); it != m_hdr->properties.constEnd(); ++it) {
         auto* keyItem = new QTableWidgetItem(it.key());
         keyItem->setForeground(QColor("#8fa3b8"));
         m_table->setItem(row, 0, keyItem);
-        m_table->setItem(row, 1, new QTableWidgetItem(it.value().toString()));
+        QString val = it.value().toString();
+        auto* valItem = new QTableWidgetItem();
+        if (val.size() > 300) {
+            valItem->setText(val.left(300) + QStringLiteral(" … (%1 chars)").arg(val.size()));
+            valItem->setToolTip(val.left(2000));
+            valItem->setData(Qt::UserRole, val);          // full value for copy
+        } else {
+            valItem->setText(val);
+        }
+        m_table->setItem(row, 1, valItem);
         m_table->setItem(row, 2, new QTableWidgetItem(QStringLiteral("XISF property")));
         ++row;
     }

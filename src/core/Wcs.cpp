@@ -71,6 +71,10 @@ static bool propVec(const ImageHeader& h, const char* id, int n, double* out) {
         if (br < 0) return false;
         v = v.mid(br + 1);
     }
+    // libXISF serializes vectors as {a,b} and matrices as {{a,b},{c,d}} — strip
+    // the braces so both spellings (and our XML-scan "a, b" form) parse alike.
+    v.remove(QLatin1Char('{'));
+    v.remove(QLatin1Char('}'));
     const QStringList parts = v.split(QLatin1Char(','), Qt::SkipEmptyParts);
     if (parts.size() < n) return false;
     for (int i = 0; i < n; ++i) {
