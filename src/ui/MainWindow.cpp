@@ -22,6 +22,8 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QCloseEvent>
+#include <QUndoStack>
+#include <QUndoCommand>
 #include <QFile>
 #include <QMenu>
 #include <algorithm>
@@ -56,6 +58,7 @@ namespace astro {
 
 MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
+    m_undo = new QUndoStack(this);
     buildUi();
     buildMenusAndToolbar();
     setAcceptDrops(true);          // drop FITS/XISF/images onto the window to open
@@ -103,9 +106,11 @@ void MainWindow::buildUi() {
         m_annotations->syncHandles();               // handles track a live move
     });
     connect(m_view, &ImageView::annotationsEdited, this, [this] {
+        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
         if (m_annotations->commitMoves(m_annByPath[m_currentPath])) {
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
+            pushAnnotationEdit(QStringLiteral("move/resize annotation"), m_currentPath, std::move(before));
         }
     });
     connect(m_view, &ImageView::drawToolFinished, this, [this] {
@@ -178,6 +183,64 @@ void MainWindow::buildUi() {
     });
 }
 
+// ---- undo commands -----------------------------------------------------------
+// Snapshot-based: each annotation edit stores the before/after lists (cheap —
+// tens of small structs), each transform stores its own inverse. Both classes
+// skip their first redo() because the edit is applied where it happens.
+
+namespace {
+
+class AnnotationCmd : public QUndoCommand {
+public:
+    AnnotationCmd(MainWindow* w, QString path,
+                  std::vector<Annotation> before, std::vector<Annotation> after,
+                  const QString& text)
+        : m_w(w), m_path(std::move(path)),
+          m_before(std::move(before)), m_after(std::move(after)) { setText(text); }
+    void undo() override { m_w->setAnnotations(m_path, m_before); }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        m_w->setAnnotations(m_path, m_after);
+    }
+private:
+    MainWindow* m_w;
+    QString m_path;
+    std::vector<Annotation> m_before, m_after;
+    bool m_first = true;
+};
+
+MainWindow::Xform inverseXform(MainWindow::Xform x) {
+    using X = MainWindow::Xform;
+    if (x == X::RotCW)  return X::RotCCW;
+    if (x == X::RotCCW) return X::RotCW;
+    return x;                                    // flips are self-inverse
+}
+
+// Transforms only exist on the displayed image (a reload resets them), so a
+// command whose image is no longer showing marks itself obsolete instead of
+// corrupting whatever is on screen now.
+class TransformCmd : public QUndoCommand {
+public:
+    TransformCmd(MainWindow* w, QString path, MainWindow::Xform x)
+        : m_w(w), m_path(std::move(path)), m_x(x) { setText(QStringLiteral("transform image")); }
+    void undo() override {
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->doTransform(inverseXform(m_x));
+    }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->doTransform(m_x);
+    }
+private:
+    MainWindow* m_w;
+    QString m_path;
+    MainWindow::Xform m_x;
+    bool m_first = true;
+};
+
+} // namespace
+
 // Map annotation geometry through an image rotation/flip. w/h are the image
 // dimensions BEFORE the transform; pixel centres sit at integer coordinates,
 // so a flip maps x -> (w-1)-x.
@@ -207,6 +270,12 @@ static void transformAnnotations(std::vector<Annotation>& anns, MainWindow::Xfor
 }
 
 void MainWindow::applyTransform(Xform x) {
+    if (!m_image.isValid()) return;
+    doTransform(x);
+    m_undo->push(new TransformCmd(this, m_currentPath, x));   // first redo is skipped
+}
+
+void MainWindow::doTransform(Xform x) {
     if (!m_image.isValid()) return;
     const int ow = m_image.width(), oh = m_image.height();   // pre-transform dims
     switch (x) {
@@ -436,6 +505,15 @@ void MainWindow::buildMenusAndToolbar() {
     acts["import_list"] = file->addAction("&Import Image List…", this, &MainWindow::importList);
     file->addSeparator();
     file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
+
+    // Edit — undo/redo for annotation edits and image transforms.
+    QMenu* editMenu = menuBar()->addMenu("&Edit");
+    QAction* aUndo = m_undo->createUndoAction(this, "&Undo");
+    aUndo->setShortcut(QKeySequence::Undo);
+    QAction* aRedo = m_undo->createRedoAction(this, "&Redo");
+    aRedo->setShortcut(QKeySequence::Redo);
+    editMenu->addAction(aUndo);
+    editMenu->addAction(aRedo);
 
     // View
     QMenu* view = menuBar()->addMenu("&View");
@@ -1048,6 +1126,21 @@ void MainWindow::refreshAnnotations() {
                            m_wcs, it != m_annByPath.constEnd() ? it.value() : kNone);
 }
 
+// ---- undo plumbing -----------------------------------------------------------
+
+void MainWindow::setAnnotations(const QString& path, const std::vector<Annotation>& anns) {
+    if (anns.empty()) m_annByPath.remove(path);
+    else m_annByPath[path] = anns;
+    m_annDirty.insert(path);                     // disk sidecar no longer matches
+    if (path == m_currentPath) refreshAnnotations();
+}
+
+void MainWindow::pushAnnotationEdit(const QString& text, const QString& path,
+                                    std::vector<Annotation> before) {
+    m_undo->push(new AnnotationCmd(this, path, std::move(before),
+                                   m_annByPath.value(path), text));
+}
+
 // Warn when annotation edits would be lost on quit.
 void MainWindow::closeEvent(QCloseEvent* e) {
     if (m_annDirty.isEmpty()) { e->accept(); return; }
@@ -1102,9 +1195,11 @@ void MainWindow::loadAnnotations() {
         QMessageBox::warning(this, "Load failed", err.isEmpty() ? QStringLiteral("No annotations in file") : err);
         return;
     }
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath] = std::move(anns);
     m_annDirty.remove(m_currentPath);              // matches the file just read
     refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
 }
 
@@ -1119,9 +1214,11 @@ void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
     an.x = cx; an.y = cy; an.a = a; an.b = b;
     an.label = label.trimmed();
     an.color = m_annColor;
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("add ellipse"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
@@ -1135,9 +1232,11 @@ void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
     an.x = x1; an.y = y1; an.x2 = x2; an.y2 = y2;
     an.label = label.trimmed();
     an.color = m_annColor;
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("add line"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onTextPointPicked(double x, double y) {
@@ -1152,9 +1251,11 @@ void MainWindow::onTextPointPicked(double x, double y) {
     an.label = text.trimmed();
     an.textSize = 12;
     an.color = m_annColor;
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("add text"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {
@@ -1228,9 +1329,11 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             a.x = x; a.y = y;
             // Radius ~1/40 of the frame, so markers read at fit zoom.
             a.a = a.b = std::max(12.0, m_image.width() / 40.0);
+            std::vector<Annotation> before = m_annByPath.value(m_currentPath);
             m_annByPath[m_currentPath].push_back(a);
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
+            pushAnnotationEdit(QStringLiteral("add annotation"), m_currentPath, std::move(before));
         }
     }
     else if (aEditText && chosen == aEditText) {
@@ -1238,20 +1341,40 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         bool ok = false;
         const QString t = QInputDialog::getText(this, "Edit annotation text",
             "Text:", QLineEdit::Normal, cur.label, &ok);
-        if (ok) { cur.label = t.trimmed(); m_annDirty.insert(m_currentPath); refreshAnnotations(); }
+        if (ok) {
+            std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+            cur.label = t.trimmed();
+            m_annDirty.insert(m_currentPath);
+            refreshAnnotations();
+            pushAnnotationEdit(QStringLiteral("edit annotation text"), m_currentPath, std::move(before));
+        }
     }
     else if (aEditColor && chosen == aEditColor) {
         Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
         const QColor c = QColorDialog::getColor(cur.color, this, "Annotation colour");
-        if (c.isValid()) { cur.color = c; m_annDirty.insert(m_currentPath); refreshAnnotations(); }
+        if (c.isValid()) {
+            std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+            cur.color = c;
+            m_annDirty.insert(m_currentPath);
+            refreshAnnotations();
+            pushAnnotationEdit(QStringLiteral("change annotation colour"), m_currentPath, std::move(before));
+        }
     }
     else if (aDelete && chosen == aDelete) {
         auto& anns = m_annByPath[m_currentPath];
+        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
         anns.erase(anns.begin() + annIdx);
         m_annDirty.insert(m_currentPath);
         refreshAnnotations();
+        pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
     }
-    else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); m_annDirty.insert(m_currentPath); refreshAnnotations(); }
+    else if (chosen == aClearAnn) {
+        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+        m_annByPath.remove(m_currentPath);
+        m_annDirty.insert(m_currentPath);
+        refreshAnnotations();
+        pushAnnotationEdit(QStringLiteral("clear annotations"), m_currentPath, std::move(before));
+    }
     else if (chosen == aSaveAnn) saveAnnotations();
     else if (chosen == aLoadAnn) loadAnnotations();
     else if (chosen == aInvAnn) {

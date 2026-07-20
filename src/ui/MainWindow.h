@@ -16,6 +16,7 @@
 #include "render/StretchModel.h"
 
 class QDockWidget;
+class QUndoStack;
 class QListWidget;
 class QLabel;
 class QComboBox;
@@ -87,6 +88,10 @@ private:
     void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
 public:
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
+    // Undo plumbing (used by the QUndoCommand classes in MainWindow.cpp):
+    void doTransform(Xform x);                 // apply rotate/flip without pushing undo
+    void setAnnotations(const QString& path, const std::vector<Annotation>& anns);
+    const QString& currentPath() const { return m_currentPath; }
 private:
     void applyTransform(Xform x);              // lossless geometry on the current image
     void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
@@ -100,11 +105,16 @@ private:
     AnnotationLayer* m_annotations = nullptr;
     QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
     QSet<QString> m_annDirty;                              // edited since last save/load
+    QUndoStack* m_undo = nullptr;
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
     QAction* m_toolEllipse = nullptr;
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image
+    // Push an undo entry for an annotation edit already applied to m_annByPath;
+    // `before` is the list as it was prior to the edit.
+    void pushAnnotationEdit(const QString& text, const QString& path,
+                            std::vector<Annotation> before);
     void saveAnnotations();               // write current image's annotations to JSON
     void loadAnnotations();               // read annotations from a JSON file
 
