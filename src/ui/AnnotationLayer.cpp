@@ -1,5 +1,6 @@
 #include "ui/AnnotationLayer.h"
 #include <QGraphicsScene>
+#include <QGraphicsView>
 #include <QGraphicsItemGroup>
 #include <QGraphicsPathItem>
 #include <QGraphicsRectItem>
@@ -325,7 +326,12 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
 
 int AnnotationLayer::hitTest(const QPointF& scenePos) const {
     if (!m_scene || !m_group) return -1;
-    for (QGraphicsItem* it : m_scene->items(scenePos))
+    // Items with ItemIgnoresTransformations (text labels) can only be hit-tested
+    // with the view's device transform — the plain items(scenePos) overload
+    // misses them at any zoom other than 1:1.
+    QTransform vt;
+    if (!m_scene->views().isEmpty()) vt = m_scene->views().first()->viewportTransform();
+    for (QGraphicsItem* it : m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder, vt))
         for (QGraphicsItem* p = it; p; p = p->parentItem()) {
             const QVariant v = p->data(0);
             if (v.isValid()) return v.toInt();
