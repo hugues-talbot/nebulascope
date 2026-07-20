@@ -15,7 +15,7 @@ static bool numOf(const ImageHeader& h, const char* key, double& out) {
     return ok;
 }
 
-Wcs Wcs::fromHeader(const ImageHeader& h) {
+Wcs Wcs::fromFitsKeywords(const ImageHeader& h) {
     Wcs w;
 
     // Projection: accept RA---TAN (and TAN-SIP / TPV, whose linear part is what
@@ -57,6 +57,60 @@ Wcs Wcs::fromHeader(const ImageHeader& h) {
 
     if (std::fabs(w.m_cd11 * w.m_cd22 - w.m_cd12 * w.m_cd21) < 1e-20) return w;
     w.m_valid = true;
+    return w;
+}
+
+// PixInsight XISF: PCL:AstrometricSolution:* typed properties, surfaced by the
+// XISF reader's XML-header scan. Vectors arrive serialized as "a, b" and
+// matrices as "[2×2] a, b, c, d" — parse those strings.
+static bool propVec(const ImageHeader& h, const char* id, int n, double* out) {
+    QString v = h.properties.value(QLatin1String(id)).toString();
+    if (v.isEmpty()) return false;
+    if (v.startsWith(QLatin1Char('['))) {          // strip "[R×C] " dimension prefix
+        const int br = v.indexOf(QLatin1Char(']'));
+        if (br < 0) return false;
+        v = v.mid(br + 1);
+    }
+    const QStringList parts = v.split(QLatin1Char(','), Qt::SkipEmptyParts);
+    if (parts.size() < n) return false;
+    for (int i = 0; i < n; ++i) {
+        bool ok = false;
+        out[i] = parts.at(i).trimmed().toDouble(&ok);
+        if (!ok) return false;
+    }
+    return true;
+}
+
+Wcs Wcs::fromPclProperties(const ImageHeader& h) {
+    Wcs w;
+    // Only the gnomonic (TAN) projection is handled; PI names it explicitly.
+    const QString proj = h.properties.value(
+        QStringLiteral("PCL:AstrometricSolution:ProjectionSystem")).toString();
+    if (!proj.isEmpty() && !proj.contains(QLatin1String("Gnomonic"), Qt::CaseInsensitive))
+        return w;
+
+    double rc[2], ic[2], m[4];
+    if (!propVec(h, "PCL:AstrometricSolution:ReferenceCelestialCoordinates", 2, rc)) return w;
+    if (!propVec(h, "PCL:AstrometricSolution:ReferenceImageCoordinates",     2, ic)) return w;
+    if (!propVec(h, "PCL:AstrometricSolution:LinearTransformationMatrix",    4, m))  return w;
+
+    w.m_crval1 = rc[0]; w.m_crval2 = rc[1];        // degrees
+    // PI image coordinates share our top-left origin; pixelToSky() subtracts a
+    // 1-based FITS-style reference, so offset by one to reuse the same math.
+    w.m_crpix1 = ic[0] + 1.0;
+    w.m_crpix2 = ic[1] + 1.0;
+    w.m_cd11 = m[0]; w.m_cd12 = m[1];              // row-major 2×2, deg/pixel
+    w.m_cd21 = m[2]; w.m_cd22 = m[3];
+    if (std::fabs(w.m_cd11 * w.m_cd22 - w.m_cd12 * w.m_cd21) < 1e-20) return w;
+    w.m_valid = true;
+    return w;
+}
+
+Wcs Wcs::fromHeader(const ImageHeader& h) {
+    // FITS WCS keywords first (both containers can carry them); fall back to
+    // PixInsight's structured astrometric-solution properties (XISF).
+    Wcs w = fromFitsKeywords(h);
+    if (!w.valid()) w = fromPclProperties(h);
     return w;
 }
 

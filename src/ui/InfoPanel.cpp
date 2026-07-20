@@ -75,12 +75,22 @@ void InfoPanel::setData(const ImageData* img, const ImageHeader* hdr,
 void InfoPanel::rebuildTable() {
     m_table->setRowCount(0);
     if (!m_hdr) return;
-    m_table->setRowCount(int(m_hdr->cards.size()));
+    m_table->setRowCount(int(m_hdr->cards.size()) + int(m_hdr->properties.size()));
     int row = 0;
     for (const auto& c : m_hdr->cards) {
         m_table->setItem(row, 0, new QTableWidgetItem(c.key));
         m_table->setItem(row, 1, new QTableWidgetItem(c.value));
         m_table->setItem(row, 2, new QTableWidgetItem(c.comment));
+        ++row;
+    }
+    // XISF typed properties (e.g. PCL:AstrometricSolution:*) share the same
+    // filterable table, marked in the comment column.
+    for (auto it = m_hdr->properties.constBegin(); it != m_hdr->properties.constEnd(); ++it) {
+        auto* keyItem = new QTableWidgetItem(it.key());
+        keyItem->setForeground(QColor("#8fa3b8"));
+        m_table->setItem(row, 0, keyItem);
+        m_table->setItem(row, 1, new QTableWidgetItem(it.value().toString()));
+        m_table->setItem(row, 2, new QTableWidgetItem(QStringLiteral("XISF property")));
         ++row;
     }
     applyFilter(m_filter->text());

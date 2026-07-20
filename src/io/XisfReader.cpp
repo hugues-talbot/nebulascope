@@ -2,6 +2,8 @@
 
 #include <QFile>
 #include <QFileInfo>
+#include <QXmlStreamReader>
+#include <QtEndian>
 #include <algorithm>
 #include <cstring>
 #include "core/Convert.h"
@@ -38,6 +40,66 @@ static QString xisfTypeString(LibXISF::Image::SampleFormat f) {
         case SF::Float32: return "32-bit float";
         case SF::Float64: return "64-bit float";
         default:          return "unsupported sample format";
+    }
+}
+
+// This libXISF release exposes no file-level properties API and skips
+// vector/matrix property types — which is precisely what PixInsight's
+// PCL:AstrometricSolution:* uses. The monolithic XISF header is plain XML at a
+// fixed offset, so scan it ourselves: scalars from the value attribute,
+// F64Vector/F64Matrix decoded from inline base64 or attached blocks.
+static void scanXmlProperties(const QString& path, QVariantMap& props) {
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return;
+    if (f.read(8) != QByteArray("XISF0100", 8)) return;
+    quint32 hlen = 0;
+    if (f.read(reinterpret_cast<char*>(&hlen), 4) != 4) return;
+    hlen = qFromLittleEndian(hlen);
+    f.seek(16);                                    // 8 signature + 4 length + 4 reserved
+    const QByteArray xml = f.read(hlen);
+
+    QXmlStreamReader x(xml);
+    while (!x.atEnd()) {
+        if (x.readNext() != QXmlStreamReader::StartElement) continue;
+        if (x.name() != QLatin1String("Property")) continue;
+        const QXmlStreamAttributes attrs = x.attributes();
+        const QString id   = attrs.value(QLatin1String("id")).toString();
+        const QString type = attrs.value(QLatin1String("type")).toString();
+        if (id.isEmpty()) continue;
+
+        QString value = attrs.value(QLatin1String("value")).toString();
+        if (value.isEmpty()) {
+            const QString loc = attrs.value(QLatin1String("location")).toString();
+            QByteArray raw;
+            if (loc.startsWith(QLatin1String("inline"))) {
+                raw = QByteArray::fromBase64(x.readElementText().toLatin1());
+            } else if (loc.startsWith(QLatin1String("attachment:"))) {
+                const QStringList parts = loc.split(QLatin1Char(':'));
+                if (parts.size() >= 3) {
+                    const qint64 pos = parts[1].toLongLong(), size = parts[2].toLongLong();
+                    if (pos > 0 && size > 0) { f.seek(pos); raw = f.read(size); }
+                }
+            } else {
+                value = x.readElementText().trimmed();   // e.g. String element text
+            }
+            if (!raw.isEmpty()) {
+                if (type.startsWith(QLatin1String("F64"))) {         // F64Vector / F64Matrix, LE doubles
+                    const double* d = reinterpret_cast<const double*>(raw.constData());
+                    QStringList vals;
+                    for (qsizetype i = 0; i < raw.size() / 8; ++i)
+                        vals << QString::number(d[i], 'g', 13);
+                    value = vals.join(QLatin1String(", "));
+                    const QString rows = attrs.value(QLatin1String("rows")).toString();
+                    const QString cols = attrs.value(QLatin1String("columns")).toString();
+                    if (!rows.isEmpty() && !cols.isEmpty())
+                        value = QStringLiteral("[%1×%2] %3").arg(rows, cols, value);
+                } else if (type == QLatin1String("String")) {
+                    value = QString::fromUtf8(raw);
+                }
+            }
+        }
+        if (!value.isEmpty() && !props.contains(id))
+            props.insert(id, value);
     }
 }
 
@@ -93,6 +155,11 @@ LoadResult XisfReader::load(const QString& path, const LoadOptions& opts) const 
         for (const auto& p : im.imageProperties())
             r.header.properties.insert(QString::fromStdString(p.id),
                                        QString::fromStdString(p.value.toString()));
+
+        // PixInsight attaches the astrometric solution as vector/matrix typed
+        // properties, which this libXISF build does not surface — recover them
+        // (and any other missed properties) straight from the XML header.
+        scanXmlProperties(path, r.header.properties);
 
         // Promote integer images to Float32 (XISF integers normalize to [0,1]).
         if (opts.promoteToFloat && img.format() != SampleFormat::Float32)

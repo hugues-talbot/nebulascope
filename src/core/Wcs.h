@@ -40,6 +40,9 @@ public:
     QString summary() const;           // "1.21″/px · rotation −12.3° · TAN"
 
 private:
+    static Wcs fromFitsKeywords(const ImageHeader& h);
+    static Wcs fromPclProperties(const ImageHeader& h);
+
     bool   m_valid = false;
     double m_crval1 = 0, m_crval2 = 0;   // reference RA/Dec, degrees
     double m_crpix1 = 0, m_crpix2 = 0;   // reference pixel, 1-based
