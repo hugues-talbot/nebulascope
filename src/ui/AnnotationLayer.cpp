@@ -8,6 +8,7 @@
 #include <QGraphicsSimpleTextItem>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QSet>
 #include <QPainterPath>
 #include <QPen>
 #include <QFont>
@@ -80,6 +81,17 @@ AnnotationLayer::AnnotationLayer(QGraphicsScene* scene, QObject* parent)
 void AnnotationLayer::setActive(int idx) {
     m_active = idx;
     rebuildHandles();
+}
+
+void AnnotationLayer::syncHandles() {
+    if (!m_group || m_handles.empty() || m_active < 0 || m_active >= int(m_lastAnns.size())) return;
+    // Drag offset of the active annotation's sub-group (0,0 when untouched).
+    QPointF d;
+    for (QGraphicsItem* it : m_group->childItems())
+        if (it->data(0).isValid() && it->data(0).toInt() == m_active) { d = it->pos(); break; }
+    const Annotation& a = m_lastAnns[std::size_t(m_active)];
+    for (QGraphicsItem* h : m_handles)
+        h->setPos(handleHome(a, h->data(2).toString()) + d);
 }
 
 double AnnotationLayer::niceStepDeg(double spanDeg, int target) {
@@ -322,6 +334,7 @@ int AnnotationLayer::hitTest(const QPointF& scenePos) const {
 bool AnnotationLayer::commitMoves(std::vector<Annotation>& annotations) {
     if (!m_group) return false;
     bool changed = false;
+    QSet<int> movedByGroup;                       // whole-annotation drags this pass
     for (QGraphicsItem* it : m_group->childItems()) {
         // Whole-annotation drags (sub-groups tagged data(0)).
         const QVariant v = it->data(0);
@@ -333,6 +346,7 @@ bool AnnotationLayer::commitMoves(std::vector<Annotation>& annotations) {
             Annotation& a = annotations[std::size_t(idx)];
             a.x += d.x(); a.y += d.y();
             if (a.type == Annotation::Type::Line) { a.x2 += d.x(); a.y2 += d.y(); }
+            movedByGroup.insert(idx);
             changed = true;
             continue;
         }
@@ -341,6 +355,10 @@ bool AnnotationLayer::commitMoves(std::vector<Annotation>& annotations) {
         if (!hv.isValid()) continue;
         const int idx = hv.toInt();
         if (idx < 0 || idx >= int(annotations.size())) continue;
+        // The annotation itself was dragged: its handles carry a stale (or
+        // merely translated) position — interpreting that as a resize is what
+        // used to distort the shape. Skip; rebuild repositions them.
+        if (movedByGroup.contains(idx)) continue;
         Annotation& a = annotations[std::size_t(idx)];
         const QString role = it->data(2).toString();
         const QPointF now = it->pos();                // handleHome + drag offset

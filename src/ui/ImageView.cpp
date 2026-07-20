@@ -120,6 +120,11 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
+    if (m_itemDrag) {
+        QGraphicsView::mouseMoveEvent(e);         // base moves the item
+        emit annotationDragged();                 // let the handles follow live
+        return;
+    }
     if (m_drawing && m_preview) {
         const QPointF sp = mapToScene(e->pos());
         if (m_tool == DrawTool::Line) {

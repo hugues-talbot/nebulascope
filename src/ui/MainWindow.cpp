@@ -98,6 +98,9 @@ void MainWindow::buildUi() {
         if (isHandle) return;                       // dragging a handle — keep the set
         m_annotations->setActive(m_annotations->hitTest(sp));
     });
+    connect(m_view, &ImageView::annotationDragged, this, [this] {
+        m_annotations->syncHandles();               // handles track a live move
+    });
     connect(m_view, &ImageView::annotationsEdited, this, [this] {
         if (m_annotations->commitMoves(m_annByPath[m_currentPath]))
             refreshAnnotations();

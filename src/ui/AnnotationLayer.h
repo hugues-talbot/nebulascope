@@ -67,6 +67,8 @@ public:
     // Show resize handles for this annotation index (-1 = none). Driven
     // explicitly from clicks in the view — not from Qt selection state.
     void setActive(int idx);
+    // Reposition the handles to follow a live drag of the active annotation.
+    void syncHandles();
     // Fold user drags (Qt movable items) back into the data model; true if
     // anything moved. Caller rebuilds afterwards.
     bool commitMoves(std::vector<Annotation>& annotations);

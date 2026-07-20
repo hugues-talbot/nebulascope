@@ -52,6 +52,7 @@ signals:
     // Left-press resolved: on an annotation item (isHandle for resize squares)
     // or empty sky. MainWindow uses it to drive which annotation shows handles.
     void annotationPressed(const QPointF& scenePos, bool isHandle);
+    void annotationDragged();      // live item drag in progress (each move tick)
 
 protected:
     void mousePressEvent(QMouseEvent*) override;
