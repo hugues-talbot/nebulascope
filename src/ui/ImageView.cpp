@@ -120,6 +120,20 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
     QGraphicsView::mousePressEvent(e);
 }
 
+void ImageView::mouseDoubleClickEvent(QMouseEvent* e) {
+    if (e->button() == Qt::LeftButton && m_tool == DrawTool::None) {
+        if (QGraphicsItem* hit = itemAt(e->pos())) {
+            QGraphicsItem* p = hit;
+            while (p && !(p->flags() & QGraphicsItem::ItemIsSelectable)) p = p->parentItem();
+            if (p && !p->data(1).isValid()) {              // annotation, not a handle
+                emit annotationDoubleClicked(mapToScene(e->pos()));
+                return;
+            }
+        }
+    }
+    QGraphicsView::mouseDoubleClickEvent(e);
+}
+
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
     if (m_itemDrag) {
         QGraphicsView::mouseMoveEvent(e);         // base moves the item

@@ -117,6 +117,7 @@ private:
                             std::vector<Annotation> before);
     void saveAnnotations();               // write current image's annotations to JSON
     void loadAnnotations();               // read annotations from a JSON file
+    void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
 
 protected:
     void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations

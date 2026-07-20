@@ -19,6 +19,8 @@
 #include <QInputDialog>
 #include <QActionGroup>
 #include <QColorDialog>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QCloseEvent>
@@ -101,6 +103,9 @@ void MainWindow::buildUi() {
     connect(m_view, &ImageView::annotationPressed, this, [this](const QPointF& sp, bool isHandle) {
         if (isHandle) return;                       // dragging a handle — keep the set
         m_annotations->setActive(m_annotations->hitTest(sp));
+    });
+    connect(m_view, &ImageView::annotationDoubleClicked, this, [this](const QPointF& sp) {
+        editAnnotationDialog(m_annotations->hitTest(sp));
     });
     connect(m_view, &ImageView::annotationDragged, this, [this] {
         m_annotations->syncHandles();               // handles track a live move
@@ -673,12 +678,6 @@ void MainWindow::buildMenusAndToolbar() {
         }
         m_view->setDrawTool(t);
     });
-    QAction* colorAct = tb->addAction("Colour");
-    colorAct->setToolTip("Colour for new annotations");
-    connect(colorAct, &QAction::triggered, this, [this] {
-        const QColor c = QColorDialog::getColor(m_annColor, this, "Annotation colour");
-        if (c.isValid()) m_annColor = c;
-    });
 }
 
 void MainWindow::openFile() {
@@ -1139,6 +1138,53 @@ void MainWindow::pushAnnotationEdit(const QString& text, const QString& path,
                                     std::vector<Annotation> before) {
     m_undo->push(new AnnotationCmd(this, path, std::move(before),
                                    m_annByPath.value(path), text));
+}
+
+// Double-click editor: one small dialog for an annotation's text and colour.
+void MainWindow::editAnnotationDialog(int annIdx) {
+    auto it = m_annByPath.find(m_currentPath);
+    if (it == m_annByPath.end() || annIdx < 0 || annIdx >= int(it.value().size())) return;
+    Annotation& cur = it.value()[std::size_t(annIdx)];
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Edit annotation");
+    auto* form = new QVBoxLayout(&dlg);
+    auto* edit = new QLineEdit(cur.label);
+    QColor chosen = cur.color;
+    auto* colorBtn = new QPushButton();
+    auto setSwatch = [&](const QColor& c) {
+        QPixmap pm(16, 16); pm.fill(c);
+        colorBtn->setIcon(QIcon(pm));
+        colorBtn->setText(c.name());
+    };
+    setSwatch(chosen);
+    connect(colorBtn, &QPushButton::clicked, &dlg, [&] {
+        const QColor c = QColorDialog::getColor(chosen, &dlg, "Annotation colour");
+        if (c.isValid()) { chosen = c; setSwatch(c); }
+    });
+    auto* row1 = new QHBoxLayout();
+    row1->addWidget(new QLabel("Text:"));
+    row1->addWidget(edit, 1);
+    auto* row2 = new QHBoxLayout();
+    row2->addWidget(new QLabel("Colour:"));
+    row2->addWidget(colorBtn, 1);
+    form->addLayout(row1);
+    form->addLayout(row2);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    form->addWidget(bb);
+    edit->setFocus();
+
+    if (dlg.exec() != QDialog::Accepted) return;
+    const QString newLabel = edit->text().trimmed();
+    if (newLabel == cur.label && chosen == cur.color) return;   // nothing changed
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    cur.label = newLabel;
+    cur.color = chosen;
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("edit annotation"), m_currentPath, std::move(before));
 }
 
 // Warn when annotation edits would be lost on quit.

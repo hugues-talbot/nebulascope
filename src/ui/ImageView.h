@@ -53,9 +53,11 @@ signals:
     // or empty sky. MainWindow uses it to drive which annotation shows handles.
     void annotationPressed(const QPointF& scenePos, bool isHandle);
     void annotationDragged();      // live item drag in progress (each move tick)
+    void annotationDoubleClicked(const QPointF& scenePos);   // open the edit dialog
 
 protected:
     void mousePressEvent(QMouseEvent*) override;
+    void mouseDoubleClickEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void wheelEvent(QWheelEvent*) override;
