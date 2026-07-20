@@ -178,8 +178,36 @@ void MainWindow::buildUi() {
     });
 }
 
+// Map annotation geometry through an image rotation/flip. w/h are the image
+// dimensions BEFORE the transform; pixel centres sit at integer coordinates,
+// so a flip maps x -> (w-1)-x.
+static void transformAnnotations(std::vector<Annotation>& anns, Xform t, int w, int h) {
+    auto mapPt = [&](double& x, double& y) {
+        const double ox = x, oy = y;
+        switch (t) {
+            case Xform::RotCW:  x = (h - 1) - oy; y = ox; break;
+            case Xform::RotCCW: x = oy; y = (w - 1) - ox; break;
+            case Xform::FlipH:  x = (w - 1) - ox; break;
+            case Xform::FlipV:  y = (h - 1) - oy; break;
+        }
+    };
+    for (Annotation& a : anns) {
+        mapPt(a.x, a.y);
+        if (a.type == Annotation::Type::Line) mapPt(a.x2, a.y2);
+        if (a.type == Annotation::Type::Ellipse) {
+            switch (t) {
+                case Xform::RotCW:  a.angleDeg += 90; break;
+                case Xform::RotCCW: a.angleDeg -= 90; break;
+                case Xform::FlipH:  a.angleDeg = 180 - a.angleDeg; break;
+                case Xform::FlipV:  a.angleDeg = -a.angleDeg; break;
+            }
+        }
+    }
+}
+
 void MainWindow::applyTransform(Xform x) {
     if (!m_image.isValid()) return;
+    const int ow = m_image.width(), oh = m_image.height();   // pre-transform dims
     switch (x) {
         case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
         case Xform::RotCCW: m_image = rotate90(m_image, false); break;
@@ -189,6 +217,14 @@ void MainWindow::applyTransform(Xform x) {
     // Values are unchanged, so stretch/stats stay valid; only geometry differs.
     m_view->setSource(&m_image);
     updateDisplay();
+    // Annotations live in image-pixel coordinates — carry them through the
+    // same transform (and mark unsaved: the sidecar on disk is now stale).
+    auto it = m_annByPath.find(m_currentPath);
+    if (it != m_annByPath.end() && !it.value().empty()) {
+        transformAnnotations(it.value(), x, ow, oh);
+        m_annDirty.insert(m_currentPath);
+    }
+    refreshAnnotations();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
     if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
 }
