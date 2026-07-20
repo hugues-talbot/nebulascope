@@ -85,7 +85,9 @@ private:
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
     void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
+public:
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
+private:
     void applyTransform(Xform x);              // lossless geometry on the current image
     void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
     void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog

@@ -181,7 +181,8 @@ void MainWindow::buildUi() {
 // Map annotation geometry through an image rotation/flip. w/h are the image
 // dimensions BEFORE the transform; pixel centres sit at integer coordinates,
 // so a flip maps x -> (w-1)-x.
-static void transformAnnotations(std::vector<Annotation>& anns, Xform t, int w, int h) {
+static void transformAnnotations(std::vector<Annotation>& anns, MainWindow::Xform t, int w, int h) {
+    using Xform = MainWindow::Xform;
     auto mapPt = [&](double& x, double& y) {
         const double ox = x, oy = y;
         switch (t) {
