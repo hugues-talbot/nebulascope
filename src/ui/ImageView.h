@@ -72,6 +72,7 @@ private:
     DrawTool m_tool = DrawTool::None;
     bool m_drawing = false;
     bool m_itemDrag = false;               // interacting with a selectable annotation
+    bool m_handleDrag = false;             // that item is a resize handle
     QPointF m_drawStart;
     QGraphicsItem* m_preview = nullptr;    // dashed rubber shape while dragging
     const ImageData* m_src = nullptr;

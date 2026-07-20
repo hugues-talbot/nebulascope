@@ -92,6 +92,7 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
             while (p && !(p->flags() & QGraphicsItem::ItemIsSelectable)) p = p->parentItem();
             if (p) {
                 m_itemDrag = true;
+                m_handleDrag = p->data(1).isValid();
                 QGraphicsView::mousePressEvent(e);
                 if (!p->isSelected()) {
                     scene()->clearSelection();
@@ -122,7 +123,9 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
     if (m_itemDrag) {
         QGraphicsView::mouseMoveEvent(e);         // base moves the item
-        emit annotationDragged();                 // let the handles follow live
+        // Handles follow a body drag — but a HANDLE drag must not be synced,
+        // or syncHandles() would snap it straight back to its home position.
+        if (!m_handleDrag) emit annotationDragged();
         return;
     }
     if (m_drawing && m_preview) {
@@ -171,6 +174,7 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 void ImageView::mouseReleaseEvent(QMouseEvent* e) {
     if (m_itemDrag && e->button() == Qt::LeftButton) {
         m_itemDrag = false;
+        m_handleDrag = false;
         QGraphicsView::mouseReleaseEvent(e);
         emit annotationsEdited();                 // commit any drag into the model
         return;
