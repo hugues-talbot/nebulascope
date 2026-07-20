@@ -94,6 +94,10 @@ void MainWindow::buildUi() {
     connect(m_view, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
     connect(m_view, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(m_view, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
+    connect(m_view, &ImageView::annotationsEdited, this, [this] {
+        if (m_annotations->commitMoves(m_annByPath[m_currentPath]))
+            refreshAnnotations();
+    });
     connect(m_view, &ImageView::drawToolFinished, this, [this] {
         for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
             if (a) a->setChecked(false);
@@ -1086,6 +1090,18 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     aPix->setEnabled(!pixText.isEmpty());
 
     menu.addSeparator();
+    // Editing actions for the annotation under the cursor, if any.
+    const int annIdx = onImage ? m_annotations->hitTest(QPointF(x + 0.5, y + 0.5)) : -1;
+    QAction* aEditText = nullptr; QAction* aEditColor = nullptr; QAction* aDelete = nullptr;
+    if (annIdx >= 0 && annIdx < int(m_annByPath[m_currentPath].size())) {
+        const Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
+        const QString what = cur.label.isEmpty() ? QStringLiteral("annotation")
+                                                 : QStringLiteral("\u201c%1\u201d").arg(cur.label);
+        aEditText  = menu.addAction(QStringLiteral("Edit Text of %1\u2026").arg(what));
+        aEditColor = menu.addAction(QStringLiteral("Change Colour of %1\u2026").arg(what));
+        aDelete    = menu.addAction(QStringLiteral("Delete %1").arg(what));
+        menu.addSeparator();
+    }
     QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
     const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
@@ -1121,6 +1137,23 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             m_annByPath[m_currentPath].push_back(a);
             refreshAnnotations();
         }
+    }
+    else if (aEditText && chosen == aEditText) {
+        Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
+        bool ok = false;
+        const QString t = QInputDialog::getText(this, "Edit annotation text",
+            "Text:", QLineEdit::Normal, cur.label, &ok);
+        if (ok) { cur.label = t.trimmed(); refreshAnnotations(); }
+    }
+    else if (aEditColor && chosen == aEditColor) {
+        Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
+        const QColor c = QColorDialog::getColor(cur.color, this, "Annotation colour");
+        if (c.isValid()) { cur.color = c; refreshAnnotations(); }
+    }
+    else if (aDelete && chosen == aDelete) {
+        auto& anns = m_annByPath[m_currentPath];
+        anns.erase(anns.begin() + annIdx);
+        refreshAnnotations();
     }
     else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); refreshAnnotations(); }
     else if (chosen == aSaveAnn) saveAnnotations();

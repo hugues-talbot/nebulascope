@@ -48,6 +48,7 @@ signals:
     void lineDrawn(double x1, double y1, double x2, double y2);
     void textPointPicked(double x, double y);
     void drawToolFinished();       // tool disarmed — uncheck the toolbar button
+    void annotationsEdited();      // user finished dragging annotation items
 
 protected:
     void mousePressEvent(QMouseEvent*) override;
@@ -66,6 +67,7 @@ private:
     QPoint m_panStart;
     DrawTool m_tool = DrawTool::None;
     bool m_drawing = false;
+    bool m_itemDrag = false;               // interacting with a selectable annotation
     QPointF m_drawStart;
     QGraphicsItem* m_preview = nullptr;    // dashed rubber shape while dragging
     const ImageData* m_src = nullptr;

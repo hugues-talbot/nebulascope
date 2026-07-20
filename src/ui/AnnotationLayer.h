@@ -61,6 +61,12 @@ public:
     static QJsonDocument toJson(const std::vector<Annotation>& annotations);
     static std::vector<Annotation> fromJson(const QJsonDocument& doc, QString* err = nullptr);
 
+    // Index of the annotation whose items contain scenePos, or -1.
+    int hitTest(const QPointF& scenePos) const;
+    // Fold user drags (Qt movable items) back into the data model; true if
+    // anything moved. Caller rebuilds afterwards.
+    bool commitMoves(std::vector<Annotation>& annotations);
+
 private:
     void buildGrid(int w, int h, const Wcs& wcs);
     void buildAnnotations(const std::vector<Annotation>& annotations);

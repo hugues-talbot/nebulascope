@@ -86,6 +86,16 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
         return;
     }
     if (e->button() == Qt::LeftButton) {
+        // Click on a selectable annotation → Qt select/move, not the zoom band.
+        if (QGraphicsItem* hit = itemAt(e->pos())) {
+            QGraphicsItem* p = hit;
+            while (p && !(p->flags() & QGraphicsItem::ItemIsSelectable)) p = p->parentItem();
+            if (p) {
+                m_itemDrag = true;
+                QGraphicsView::mousePressEvent(e);
+                return;
+            }
+        }
         m_press = e->pos();
         m_banding = true;
         if (!m_band) m_band = new QRubberBand(QRubberBand::Rectangle, this);
@@ -148,6 +158,12 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent* e) {
+    if (m_itemDrag && e->button() == Qt::LeftButton) {
+        m_itemDrag = false;
+        QGraphicsView::mouseReleaseEvent(e);
+        emit annotationsEdited();                 // commit any drag into the model
+        return;
+    }
     if (m_drawing && e->button() == Qt::LeftButton) {
         const QPointF sp = mapToScene(e->pos());
         const DrawTool tool = m_tool;

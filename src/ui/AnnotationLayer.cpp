@@ -214,7 +214,8 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
 }
 
 void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotations) {
-    for (const Annotation& a : annotations) {
+    for (std::size_t idx = 0; idx < annotations.size(); ++idx) {
+        const Annotation& a = annotations[idx];
         // Inverted contrast: complement the stroke colour so dark strokes sit on
         // bright fields; the user's chosen hue stays recognisable as its inverse.
         const QColor col = m_inverted
@@ -224,11 +225,17 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
         f.setPointSizeF(a.textSize);
         f.setBold(true);
 
+        // One sub-group per annotation: shape + label move/select as a unit.
+        auto* g = new QGraphicsItemGroup();
+        g->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+        g->setData(0, int(idx));                  // index into the data model
+        m_group->addToGroup(g);
+
         double lx = a.x, ly = a.y;                // label anchor
         if (a.type == Annotation::Type::Line) {
             auto* line = new QGraphicsLineItem(a.x, a.y, a.x2, a.y2);
             line->setPen(QPen(col, 0));
-            m_group->addToGroup(line);
+            g->addToGroup(line);
             lx = (a.x + a.x2) / 2; ly = (a.y + a.y2) / 2;
         } else if (a.type == Annotation::Type::Ellipse) {
             auto* ell = new QGraphicsEllipseItem(a.x - a.a, a.y - a.b, 2 * a.a, 2 * a.b);
@@ -238,7 +245,7 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
                 ell->setTransformOriginPoint(a.x, a.y);
                 ell->setRotation(a.angleDeg);
             }
-            m_group->addToGroup(ell);
+            g->addToGroup(ell);
             lx = a.x + a.a * 0.7071; ly = a.y - a.b * 0.7071;   // NE of the ellipse
         }
         // Text: for Type::Text the label IS the annotation, at (x, y).
@@ -248,9 +255,37 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
             label->setFont(f);
             label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
             label->setPos(lx, ly);
-            m_group->addToGroup(label);
+            g->addToGroup(label);
         }
     }
+}
+
+int AnnotationLayer::hitTest(const QPointF& scenePos) const {
+    if (!m_scene || !m_group) return -1;
+    for (QGraphicsItem* it : m_scene->items(scenePos))
+        for (QGraphicsItem* p = it; p; p = p->parentItem()) {
+            const QVariant v = p->data(0);
+            if (v.isValid()) return v.toInt();
+        }
+    return -1;
+}
+
+bool AnnotationLayer::commitMoves(std::vector<Annotation>& annotations) {
+    if (!m_group) return false;
+    bool changed = false;
+    for (QGraphicsItem* it : m_group->childItems()) {
+        const QVariant v = it->data(0);
+        if (!v.isValid()) continue;
+        const QPointF d = it->pos();              // drag offset (0,0 if untouched)
+        if (d.isNull()) continue;
+        const int idx = v.toInt();
+        if (idx < 0 || idx >= int(annotations.size())) continue;
+        Annotation& a = annotations[std::size_t(idx)];
+        a.x += d.x(); a.y += d.y();
+        if (a.type == Annotation::Type::Line) { a.x2 += d.x(); a.y2 += d.y(); }
+        changed = true;
+    }
+    return changed;
 }
 
 } // namespace astro
