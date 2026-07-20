@@ -145,6 +145,32 @@ bool Wcs::pixelToSky(double x, double y, double& raDeg, double& decDeg) const {
     return true;
 }
 
+bool Wcs::skyToPixel(double raDeg, double decDeg, double& x, double& y) const {
+    if (!m_valid) return false;
+    const double ra   = qDegreesToRadians(raDeg);
+    const double dec  = qDegreesToRadians(decDeg);
+    const double ra0  = qDegreesToRadians(m_crval1);
+    const double dec0 = qDegreesToRadians(m_crval2);
+    const double cosd = std::cos(dec0), sind = std::sin(dec0);
+    const double dra  = ra - ra0;
+
+    // Forward gnomonic projection to tangent-plane offsets (radians).
+    const double cosc = sind * std::sin(dec) + cosd * std::cos(dec) * std::cos(dra);
+    if (cosc <= 1e-9) return false;                       // far hemisphere
+    const double xi  = std::cos(dec) * std::sin(dra) / cosc;
+    const double eta = (cosd * std::sin(dec) - sind * std::cos(dec) * std::cos(dra)) / cosc;
+
+    // Invert the 2×2 CD matrix (degrees/pixel).
+    const double det = m_cd11 * m_cd22 - m_cd12 * m_cd21;
+    if (std::fabs(det) < 1e-20) return false;
+    const double xiD = qRadiansToDegrees(xi), etaD = qRadiansToDegrees(eta);
+    const double dx = ( m_cd22 * xiD - m_cd12 * etaD) / det;
+    const double dy = (-m_cd21 * xiD + m_cd11 * etaD) / det;
+    x = m_crpix1 + dx - 1.0;                              // back to 0-based
+    y = m_crpix2 + dy - 1.0;
+    return true;
+}
+
 double Wcs::pixelScaleArcsec() const {
     if (!m_valid) return 0.0;
     return std::sqrt(std::fabs(m_cd11 * m_cd22 - m_cd12 * m_cd21)) * 3600.0;

@@ -16,6 +16,7 @@
 #include <QListWidget>
 #include <QApplication>
 #include <QClipboard>
+#include <QInputDialog>
 #include <QMenu>
 #include <algorithm>
 #include <QMimeData>
@@ -82,6 +83,7 @@ void MainWindow::buildUi() {
     m_view = new ImageView(this);
     m_view->setSource(&m_image);
     setCentralWidget(m_view);
+    m_annotations = new AnnotationLayer(m_view->scene(), this);
     connect(m_view, &ImageView::pixelHovered, this, &MainWindow::onPixelHovered);
     connect(m_view, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
 
@@ -395,6 +397,13 @@ void MainWindow::buildMenusAndToolbar() {
         isFullScreen() ? showNormal() : showFullScreen();
     });
     acts["image_only"] = view->addAction("&Image Only", QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
+    view->addSeparator();
+    QAction* aGrid = view->addAction("Coordinate &Grid", QKeySequence("G"), this, [this](bool) {
+        m_annotations->setGridVisible(!m_annotations->gridVisible());
+        refreshAnnotations();
+    });
+    aGrid->setCheckable(true);
+    acts["toggle_grid"] = aGrid;
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 
@@ -749,6 +758,7 @@ void MainWindow::displayPath(const QString& path) {
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
     // keywords in XISF). Enables the RA/Dec hover readout when present.
     m_wcs = Wcs::fromHeader(m_header);
+    refreshAnnotations();
     if (m_wcs.valid()) {
         m_header.structure << QStringLiteral("Astrometric solution: %1").arg(m_wcs.summary());
     } else {
@@ -906,6 +916,15 @@ void MainWindow::toggleImageOnly() {
     }
 }
 
+void MainWindow::refreshAnnotations() {
+    if (!m_annotations) return;
+    static const std::vector<Annotation> kNone;
+    const auto it = m_annByPath.constFind(m_currentPath);
+    m_annotations->rebuild(m_image.isValid() ? m_image.width() : 0,
+                           m_image.isValid() ? m_image.height() : 0,
+                           m_wcs, it != m_annByPath.constEnd() ? it.value() : kNone);
+}
+
 void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {
     QMenu menu(this);
 
@@ -933,6 +952,13 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     aPix->setEnabled(!pixText.isEmpty());
 
     menu.addSeparator();
+    QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
+    aAnnotate->setEnabled(onImage);
+    const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
+    QAction* aClearAnn = menu.addAction(QStringLiteral("Clear Annotations"));
+    aClearAnn->setEnabled(hasAnn);
+
+    menu.addSeparator();
     QAction* aFit = menu.addAction(QStringLiteral("Zoom to Fit"));
     QAction* a11  = menu.addAction(QStringLiteral("Zoom 1:1"));
 
@@ -940,6 +966,23 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     if (!chosen) return;
     if (chosen == aSky)      QApplication::clipboard()->setText(raS + QLatin1Char(' ') + decS);
     else if (chosen == aPix) QApplication::clipboard()->setText(pixText);
+    else if (chosen == aAnnotate) {
+        bool ok = false;
+        const QString label = QInputDialog::getText(this, "Annotate",
+            sky ? QStringLiteral("Label for %1 %2:").arg(raS, decS)
+                : QStringLiteral("Label for pixel (%1, %2):").arg(x).arg(y),
+            QLineEdit::Normal, QString(), &ok);
+        if (ok && !label.trimmed().isEmpty()) {
+            Annotation a;
+            a.label = label.trimmed();
+            a.x = x; a.y = y;
+            // Radius ~1/40 of the frame, so markers read at fit zoom.
+            a.rx = a.ry = std::max(12.0, m_image.width() / 40.0);
+            m_annByPath[m_currentPath].push_back(a);
+            refreshAnnotations();
+        }
+    }
+    else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); refreshAnnotations(); }
     else if (chosen == aFit) m_view->zoomToFit();
     else if (chosen == a11)  m_view->zoomActualSize();
 }

@@ -11,6 +11,7 @@
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
 #include "core/Wcs.h"
+#include "ui/AnnotationLayer.h"
 #include "render/StretchModel.h"
 
 class QDockWidget;
@@ -89,6 +90,10 @@ private:
     ImageHeader    m_header;
     Wcs            m_wcs;                 // astrometric solution of the shown image
     StretchModel   m_model;
+
+    AnnotationLayer* m_annotations = nullptr;
+    QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
+    void refreshAnnotations();            // rebuild the overlay for the shown image
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;

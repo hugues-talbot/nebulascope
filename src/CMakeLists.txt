@@ -53,6 +53,7 @@ add_executable(nebulascope
     ui/HistogramPanel.cpp
     ui/ColorBar.cpp
     ui/InfoPanel.cpp
+    ui/AnnotationLayer.cpp
     ui/CombineDialog.cpp
     ui/MainWindow.cpp
     ${APP_ICON_SOURCES}

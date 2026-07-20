@@ -25,6 +25,9 @@ public:
     // 0-based pixel coordinates (as used by the hover readout; FITS CRPIX is
     // 1-based and this converts internally). Returns false when !valid().
     bool pixelToSky(double x, double y, double& raDeg, double& decDeg) const;
+    // Inverse: RA/Dec (degrees) → 0-based pixel. Returns false when !valid()
+    // or the point is on the far hemisphere. Used by the grid overlay.
+    bool skyToPixel(double raDeg, double decDeg, double& x, double& y) const;
 
     double pixelScaleArcsec() const;   // mean scale, arcsec/pixel
     double rotationDeg() const;        // position angle of +Y axis, approx.
