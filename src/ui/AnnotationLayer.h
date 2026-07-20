@@ -15,20 +15,29 @@
 #include <QObject>
 #include <QString>
 #include <QColor>
+#include <QJsonObject>
 #include <vector>
 #include "core/Wcs.h"
 
 class QGraphicsScene;
 class QGraphicsItemGroup;
+class QJsonDocument;
 
 namespace astro {
 
 struct Annotation {
-    QString label;                 // e.g. "M81", "Holmberg IX"
-    double  x = 0, y = 0;          // centre, image pixels
-    double  rx = 40, ry = 40;      // ellipse radii, image pixels
-    double  angleDeg = 0;          // ellipse rotation
+    enum class Type { Ellipse, Line, Text };
+    Type    type = Type::Ellipse;
+    QString label;                 // text content (Text) or marker name (Ellipse/Line)
+    double  x = 0, y = 0;          // centre (Ellipse/Text) or first endpoint (Line), image px
+    double  x2 = 0, y2 = 0;        // second endpoint (Line)
+    double  a = 40, b = 40;        // semi-major / semi-minor axes (Ellipse), image px
+    double  angleDeg = 0;          // ellipse rotation, degrees
+    double  textSize = 10;         // label point size (screen points)
     QColor  color = QColor("#8fc0f5");
+
+    QJsonObject toJson() const;
+    static Annotation fromJson(const QJsonObject& o);
 };
 
 class AnnotationLayer : public QObject {
@@ -43,6 +52,15 @@ public:
     void setGridVisible(bool on) { m_gridVisible = on; }
     bool gridVisible() const { return m_gridVisible; }
 
+    // Inverted contrast: light backing chips with complement-coloured strokes,
+    // for annotations sitting on bright fields.
+    void setInvertedContrast(bool on) { m_inverted = on; }
+    bool invertedContrast() const { return m_inverted; }
+
+    // JSON (de)serialization of a whole annotation list.
+    static QJsonDocument toJson(const std::vector<Annotation>& annotations);
+    static std::vector<Annotation> fromJson(const QJsonDocument& doc, QString* err = nullptr);
+
 private:
     void buildGrid(int w, int h, const Wcs& wcs);
     void buildAnnotations(const std::vector<Annotation>& annotations);
@@ -52,6 +70,7 @@ private:
     QGraphicsScene* m_scene = nullptr;
     QGraphicsItemGroup* m_group = nullptr;   // owns all overlay items
     bool m_gridVisible = false;
+    bool m_inverted = false;
 };
 
 } // namespace astro

@@ -17,6 +17,9 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QInputDialog>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QFile>
 #include <QMenu>
 #include <algorithm>
 #include <QMimeData>
@@ -925,6 +928,52 @@ void MainWindow::refreshAnnotations() {
                            m_wcs, it != m_annByPath.constEnd() ? it.value() : kNone);
 }
 
+void MainWindow::saveAnnotations() {
+    const auto& anns = m_annByPath.value(m_currentPath);
+    if (anns.empty()) return;
+    // Default: sidecar next to the image ("<image>.annotations.json").
+    QString suggest = QStringLiteral("annotations.json");
+    if (!m_currentPath.startsWith(QLatin1String("mem://")))
+        suggest = QFileInfo(m_currentPath).absolutePath() + QLatin1Char('/')
+                + QFileInfo(m_currentPath).completeBaseName() + QStringLiteral(".annotations.json");
+    const QString path = QFileDialog::getSaveFileName(
+        this, "Save annotations", suggest, "Annotations (*.annotations.json *.json)");
+    if (path.isEmpty()) return;
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Save failed", "Could not write " + path);
+        return;
+    }
+    f.write(AnnotationLayer::toJson(anns).toJson(QJsonDocument::Indented));
+    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s)").arg(anns.size()), 3000);
+}
+
+void MainWindow::loadAnnotations() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, "Load annotations", QString(), "Annotations (*.annotations.json *.json)");
+    if (path.isEmpty()) return;
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, "Load failed", "Could not read " + path);
+        return;
+    }
+    QJsonParseError perr;
+    const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &perr);
+    if (perr.error != QJsonParseError::NoError) {
+        QMessageBox::warning(this, "Load failed", "JSON error: " + perr.errorString());
+        return;
+    }
+    QString err;
+    std::vector<Annotation> anns = AnnotationLayer::fromJson(doc, &err);
+    if (anns.empty()) {
+        QMessageBox::warning(this, "Load failed", err.isEmpty() ? QStringLiteral("No annotations in file") : err);
+        return;
+    }
+    m_annByPath[m_currentPath] = std::move(anns);
+    refreshAnnotations();
+    statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
+}
+
 void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {
     QMenu menu(this);
 
@@ -957,6 +1006,12 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
     QAction* aClearAnn = menu.addAction(QStringLiteral("Clear Annotations"));
     aClearAnn->setEnabled(hasAnn);
+    QAction* aSaveAnn = menu.addAction(QStringLiteral("Save Annotations\u2026"));
+    aSaveAnn->setEnabled(hasAnn);
+    QAction* aLoadAnn = menu.addAction(QStringLiteral("Load Annotations\u2026"));
+    QAction* aInvAnn = menu.addAction(QStringLiteral("Invert Annotation Contrast"));
+    aInvAnn->setCheckable(true);
+    aInvAnn->setChecked(m_annotations->invertedContrast());
 
     menu.addSeparator();
     QAction* aFit = menu.addAction(QStringLiteral("Zoom to Fit"));
@@ -977,12 +1032,18 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             a.label = label.trimmed();
             a.x = x; a.y = y;
             // Radius ~1/40 of the frame, so markers read at fit zoom.
-            a.rx = a.ry = std::max(12.0, m_image.width() / 40.0);
+            a.a = a.b = std::max(12.0, m_image.width() / 40.0);
             m_annByPath[m_currentPath].push_back(a);
             refreshAnnotations();
         }
     }
     else if (chosen == aClearAnn) { m_annByPath.remove(m_currentPath); refreshAnnotations(); }
+    else if (chosen == aSaveAnn) saveAnnotations();
+    else if (chosen == aLoadAnn) loadAnnotations();
+    else if (chosen == aInvAnn) {
+        m_annotations->setInvertedContrast(aInvAnn->isChecked());
+        refreshAnnotations();
+    }
     else if (chosen == aFit) m_view->zoomToFit();
     else if (chosen == a11)  m_view->zoomActualSize();
 }

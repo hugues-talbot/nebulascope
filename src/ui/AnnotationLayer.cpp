@@ -3,8 +3,11 @@
 #include <QGraphicsItemGroup>
 #include <QGraphicsPathItem>
 #include <QGraphicsRectItem>
+#include <QGraphicsLineItem>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsSimpleTextItem>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QPainterPath>
 #include <QPen>
 #include <QFont>
@@ -15,6 +18,61 @@ namespace astro {
 
 static const QColor kGridColor(143, 192, 245, 90);
 static const QColor kGridLabel(143, 192, 245, 200);
+static const QColor kGridColorInv(20, 34, 52, 150);
+static const QColor kGridLabelInv(10, 20, 32, 230);
+
+// ---- Annotation JSON ---------------------------------------------------------
+
+QJsonObject Annotation::toJson() const {
+    QJsonObject o;
+    o["type"] = type == Type::Line ? "line" : (type == Type::Text ? "text" : "ellipse");
+    o["x"] = x; o["y"] = y;
+    if (type == Type::Line) { o["x2"] = x2; o["y2"] = y2; }
+    if (type == Type::Ellipse) { o["a"] = a; o["b"] = b; o["angle"] = angleDeg; }
+    if (!label.isEmpty()) o["label"] = label;
+    o["size"] = textSize;
+    o["color"] = color.name(QColor::HexRgb);
+    return o;
+}
+
+Annotation Annotation::fromJson(const QJsonObject& o) {
+    Annotation a;
+    const QString t = o["type"].toString(QStringLiteral("ellipse"));
+    a.type = t == QLatin1String("line") ? Type::Line
+           : t == QLatin1String("text") ? Type::Text : Type::Ellipse;
+    a.x = o["x"].toDouble(); a.y = o["y"].toDouble();
+    a.x2 = o["x2"].toDouble(); a.y2 = o["y2"].toDouble();
+    a.a = o["a"].toDouble(40); a.b = o["b"].toDouble(40);
+    a.angleDeg = o["angle"].toDouble();
+    a.label = o["label"].toString();
+    a.textSize = o["size"].toDouble(10);
+    const QColor c(o["color"].toString(QStringLiteral("#8fc0f5")));
+    if (c.isValid()) a.color = c;
+    return a;
+}
+
+QJsonDocument AnnotationLayer::toJson(const std::vector<Annotation>& annotations) {
+    QJsonArray arr;
+    for (const Annotation& a : annotations) arr.append(a.toJson());
+    QJsonObject root;
+    root["format"] = "nebulascope-annotations";
+    root["version"] = 1;
+    root["annotations"] = arr;
+    return QJsonDocument(root);
+}
+
+std::vector<Annotation> AnnotationLayer::fromJson(const QJsonDocument& doc, QString* err) {
+    std::vector<Annotation> out;
+    if (!doc.isObject()) { if (err) *err = QStringLiteral("Not a JSON object"); return out; }
+    const QJsonObject root = doc.object();
+    if (root["format"].toString() != QLatin1String("nebulascope-annotations")) {
+        if (err) *err = QStringLiteral("Not a NebulaScope annotation file");
+        return out;
+    }
+    for (const auto& v : root["annotations"].toArray())
+        if (v.isObject()) out.push_back(Annotation::fromJson(v.toObject()));
+    return out;
+}
 
 AnnotationLayer::AnnotationLayer(QGraphicsScene* scene, QObject* parent)
     : QObject(parent), m_scene(scene) {}
@@ -42,7 +100,10 @@ void AnnotationLayer::rebuild(int w, int h, const Wcs& wcs,
 }
 
 void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
-    QPen pen(kGridColor, 0);                      // width 0 = cosmetic (1px at any zoom)
+    const QColor gridCol  = m_inverted ? kGridColorInv : kGridColor;
+    const QColor gridLab  = m_inverted ? kGridLabelInv : kGridLabel;
+    const QColor chipCol  = m_inverted ? QColor(235, 240, 246, 170) : QColor(5, 7, 10, 150);
+    QPen pen(gridCol, 0);                         // width 0 = cosmetic (1px at any zoom)
 
     if (!wcs.valid()) {
         // Pixel-grid fallback: lines every ~1/8 of the larger dimension.
@@ -111,7 +172,7 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
         }
         if (path.isEmpty()) return;
         auto* item = new QGraphicsPathItem(path);
-        item->setPen(QPen(kGridColor, 0));
+        item->setPen(QPen(gridCol, 0));
         m_group->addToGroup(item);
 
         if (firstX >= 0) {
@@ -124,11 +185,11 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
             // along the grid line (rotation applies in device space because of
             // ItemIgnoresTransformations, which is exactly what we want).
             auto* label = new QGraphicsSimpleTextItem(text);
-            label->setBrush(kGridLabel);
+            label->setBrush(gridLab);
             label->setFont(labelFont);
             const QRectF tb = label->boundingRect().adjusted(-3, -1, 3, 1);
             auto* chip = new QGraphicsRectItem(tb);
-            chip->setBrush(QColor(5, 7, 10, 150));
+            chip->setBrush(chipCol);
             chip->setPen(Qt::NoPen);
             for (QGraphicsItem* it : { (QGraphicsItem*)chip, (QGraphicsItem*)label }) {
                 it->setFlag(QGraphicsItem::ItemIgnoresTransformations);
@@ -153,25 +214,40 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
 }
 
 void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotations) {
-    QFont f;
-    f.setPointSizeF(10.0);
-    f.setBold(true);
     for (const Annotation& a : annotations) {
-        auto* ell = new QGraphicsEllipseItem(a.x - a.rx, a.y - a.ry, 2 * a.rx, 2 * a.ry);
-        ell->setPen(QPen(a.color, 0, Qt::SolidLine));
-        ell->setBrush(Qt::NoBrush);
-        if (std::fabs(a.angleDeg) > 1e-6) {
-            ell->setTransformOriginPoint(a.x, a.y);
-            ell->setRotation(a.angleDeg);
-        }
-        m_group->addToGroup(ell);
+        // Inverted contrast: complement the stroke colour so dark strokes sit on
+        // bright fields; the user's chosen hue stays recognisable as its inverse.
+        const QColor col = m_inverted
+            ? QColor(255 - a.color.red(), 255 - a.color.green(), 255 - a.color.blue())
+            : a.color;
+        QFont f;
+        f.setPointSizeF(a.textSize);
+        f.setBold(true);
 
+        double lx = a.x, ly = a.y;                // label anchor
+        if (a.type == Annotation::Type::Line) {
+            auto* line = new QGraphicsLineItem(a.x, a.y, a.x2, a.y2);
+            line->setPen(QPen(col, 0));
+            m_group->addToGroup(line);
+            lx = (a.x + a.x2) / 2; ly = (a.y + a.y2) / 2;
+        } else if (a.type == Annotation::Type::Ellipse) {
+            auto* ell = new QGraphicsEllipseItem(a.x - a.a, a.y - a.b, 2 * a.a, 2 * a.b);
+            ell->setPen(QPen(col, 0, Qt::SolidLine));
+            ell->setBrush(Qt::NoBrush);
+            if (std::fabs(a.angleDeg) > 1e-6) {
+                ell->setTransformOriginPoint(a.x, a.y);
+                ell->setRotation(a.angleDeg);
+            }
+            m_group->addToGroup(ell);
+            lx = a.x + a.a * 0.7071; ly = a.y - a.b * 0.7071;   // NE of the ellipse
+        }
+        // Text: for Type::Text the label IS the annotation, at (x, y).
         if (!a.label.isEmpty()) {
             auto* label = new QGraphicsSimpleTextItem(a.label);
-            label->setBrush(a.color);
+            label->setBrush(col);
             label->setFont(f);
             label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-            label->setPos(a.x + a.rx * 0.7071, a.y - a.ry * 0.7071);   // NE of the ellipse
+            label->setPos(lx, ly);
             m_group->addToGroup(label);
         }
     }
