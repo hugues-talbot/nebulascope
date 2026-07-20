@@ -21,6 +21,7 @@
 #include <QColorDialog>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QCloseEvent>
