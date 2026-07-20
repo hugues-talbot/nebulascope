@@ -93,6 +93,12 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
             if (p) {
                 m_itemDrag = true;
                 QGraphicsView::mousePressEvent(e);
+                // Guarantee selection lands on the annotation group — the
+                // grab-handle layer listens to selectionChanged.
+                if (!p->isSelected()) {
+                    scene()->clearSelection();
+                    p->setSelected(true);
+                }
                 return;
             }
         }
