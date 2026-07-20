@@ -583,13 +583,18 @@ void MainWindow::buildMenusAndToolbar() {
     QAction* aboutQt = help->addAction("About &Qt", qApp, &QApplication::aboutQt);
     aboutQt->setMenuRole(QAction::AboutQtRole);
 
-    // Walk the loaded-image list: Space = next, Backspace = previous.
+    // Walk the loaded-image list: Space = next, Shift+Space = previous.
     auto* next = new QShortcut(QKeySequence(Qt::Key_Space), this);
     connect(next, &QShortcut::activated, this, &MainWindow::nextImage);
-    auto* prev = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+    auto* prev = new QShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Space), this);
     connect(prev, &QShortcut::activated, this, &MainWindow::prevImage);
     keys["next_image"] = next;
     keys["prev_image"] = prev;
+    // Delete (Backspace on macOS) removes the selected annotation — or, with
+    // nothing selected, the most recently added one. Undoable.
+    auto* delAnn = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+    connect(delAnn, &QShortcut::activated, this, &MainWindow::deleteActiveAnnotation);
+    keys["delete_annotation"] = delAnn;
 
     applyUserShortcuts(acts, keys);     // user INI overrides the defaults above
 
@@ -1139,6 +1144,21 @@ void MainWindow::pushAnnotationEdit(const QString& text, const QString& path,
                                     std::vector<Annotation> before) {
     m_undo->push(new AnnotationCmd(this, path, std::move(before),
                                    m_annByPath.value(path), text));
+}
+
+// Delete key: remove the selected annotation (handles showing), or the most
+// recently added one when nothing is selected.
+void MainWindow::deleteActiveAnnotation() {
+    auto it = m_annByPath.find(m_currentPath);
+    if (it == m_annByPath.end() || it.value().empty()) return;
+    int idx = m_annotations->activeIndex();
+    if (idx < 0 || idx >= int(it.value().size()))
+        idx = int(it.value().size()) - 1;            // latest
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    it.value().erase(it.value().begin() + idx);
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
 }
 
 // Double-click editor: one small dialog for an annotation's text and colour.
