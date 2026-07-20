@@ -70,6 +70,7 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
     if (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton) {  // pan
         m_panning = true;
         m_panLast = e->pos();
+        m_panStart = e->pos();
         setCursor(Qt::ClosedHandCursor);
         return;
     }
@@ -112,6 +113,16 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
     if (m_panning && (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton)) {
         m_panning = false;
         unsetCursor();
+        // A right-click that never really moved is a context-menu request, not a pan.
+        if (e->button() == Qt::RightButton &&
+            (e->pos() - m_panStart).manhattanLength() < 4) {
+            const QPointF sp = mapToScene(e->pos());
+            const int x = int(std::floor(sp.x()));
+            const int y = int(std::floor(sp.y()));
+            const bool onImage = m_src && x >= 0 && y >= 0 &&
+                                 x < m_src->width() && y < m_src->height();
+            emit contextMenuRequested(e->globalPosition().toPoint(), x, y, onImage);
+        }
         return;
     }
     // End a Shift-pan: hand the release to the base class while still in

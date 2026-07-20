@@ -4,7 +4,7 @@
 // inspection interactions from the mockup:
 //   * left-drag a rectangle  -> zoom to that region
 //   * wheel                  -> zoom in / out at cursor
-//   * right-drag or middle-drag -> pan
+//   * right-drag or middle-drag -> pan (right-click without drag -> context menu)
 //   * Shift + left-drag      -> pan
 //   * hover                  -> emit the pixel value under the cursor
 //
@@ -33,6 +33,9 @@ public:
 
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);
+    // Right-click without drag. x/y are image pixels; onImage says whether the
+    // click landed inside the image bounds.
+    void contextMenuRequested(const QPoint& globalPos, int x, int y, bool onImage);
 
 protected:
     void mousePressEvent(QMouseEvent*) override;
@@ -48,6 +51,7 @@ private:
     bool m_banding = false;
     bool m_panning = false;
     QPoint m_panLast;
+    QPoint m_panStart;
     const ImageData* m_src = nullptr;
 };
 

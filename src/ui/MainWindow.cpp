@@ -15,6 +15,7 @@
 #include <QDockWidget>
 #include <QListWidget>
 #include <QApplication>
+#include <QClipboard>
 #include <QMenu>
 #include <algorithm>
 #include <QMimeData>
@@ -82,6 +83,7 @@ void MainWindow::buildUi() {
     m_view->setSource(&m_image);
     setCentralWidget(m_view);
     connect(m_view, &ImageView::pixelHovered, this, &MainWindow::onPixelHovered);
+    connect(m_view, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
 
     // left dock: open images (with an append / remove / export button bar)
     m_leftDock = new QDockWidget("Open Images", this);
@@ -902,6 +904,44 @@ void MainWindow::toggleImageOnly() {
         statusBar()->show();
         for (QToolBar* tb : findChildren<QToolBar*>()) tb->show();
     }
+}
+
+void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {
+    QMenu menu(this);
+
+    double ra = 0, dec = 0;
+    const bool sky = onImage && m_wcs.pixelToSky(x, y, ra, dec);
+    const QString raS = sky ? Wcs::formatRa(ra) : QString();
+    const QString decS = sky ? Wcs::formatDec(dec) : QString();
+    QAction* aSky = menu.addAction(sky ? QStringLiteral("Copy RA/Dec \u2014 %1 %2").arg(raS, decS)
+                                       : QStringLiteral("Copy RA/Dec (no astrometric solution)"));
+    aSky->setEnabled(sky);
+
+    QString pixText;
+    if (onImage && m_image.isValid()) {
+        const std::size_t i = std::size_t(y) * m_image.width() + x;
+        if (m_image.channels() >= 3)
+            pixText = QStringLiteral("(%1, %2)  R %3  G %4  B %5").arg(x).arg(y)
+                          .arg(m_image.plane<float>(0)[i], 0, 'g', 6)
+                          .arg(m_image.plane<float>(1)[i], 0, 'g', 6)
+                          .arg(m_image.plane<float>(2)[i], 0, 'g', 6);
+        else
+            pixText = QStringLiteral("(%1, %2)  %3").arg(x).arg(y)
+                          .arg(m_image.plane<float>(0)[i], 0, 'g', 6);
+    }
+    QAction* aPix = menu.addAction(QStringLiteral("Copy Pixel Value"));
+    aPix->setEnabled(!pixText.isEmpty());
+
+    menu.addSeparator();
+    QAction* aFit = menu.addAction(QStringLiteral("Zoom to Fit"));
+    QAction* a11  = menu.addAction(QStringLiteral("Zoom 1:1"));
+
+    QAction* chosen = menu.exec(globalPos);
+    if (!chosen) return;
+    if (chosen == aSky)      QApplication::clipboard()->setText(raS + QLatin1Char(' ') + decS);
+    else if (chosen == aPix) QApplication::clipboard()->setText(pixText);
+    else if (chosen == aFit) m_view->zoomToFit();
+    else if (chosen == a11)  m_view->zoomActualSize();
 }
 
 void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool valid) {

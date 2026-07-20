@@ -45,6 +45,7 @@ private slots:
     void updateDisplay();
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
+    void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
     void showRow(int row);      // decode + display the list item at row
     void nextImage();           // Space
     void prevImage();           // Backspace
