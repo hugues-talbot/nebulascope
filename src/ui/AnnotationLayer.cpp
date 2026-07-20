@@ -8,6 +8,7 @@
 #include <QPainterPath>
 #include <QPen>
 #include <QFont>
+#include <QtMath>
 #include <cmath>
 
 namespace astro {
@@ -74,13 +75,14 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
     const double raStep  = niceStepDeg((raMax - raMin), 6);
     const double decStep = niceStepDeg(decMax - decMin, 6);
     QFont labelFont;
-    labelFont.setPointSizeF(9.0);
+    labelFont.setPointSizeF(7.0);
 
     auto addCurve = [&](bool isoRa, double fixed, double from, double to, double step) {
         QPainterPath path;
         bool pen0 = false;
         const int SAMPLES = 120;
-        double firstX = -1, firstY = -1;
+        double firstX = -1, firstY = -1, labelAngle = 0;
+        double prevX = 0, prevY = 0; bool havePrev = false, needAngle = false;
         for (int i = 0; i <= SAMPLES; ++i) {
             const double v = from + (to - from) * i / SAMPLES;
             double px, py;
@@ -88,13 +90,24 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
                                   : wcs.skyToPixel(v, fixed, px, py);
             if (!ok || px < -w * 0.2 || px > w * 1.2 || py < -h * 0.2 || py > h * 1.2) {
                 pen0 = false;
+                havePrev = false;
                 continue;
             }
             if (!pen0) { path.moveTo(px, py); pen0 = true; }
             else path.lineTo(px, py);
             // First sample actually inside the frame anchors the label — on ANY
-            // sample, not just pen-down (most curves enter from outside).
-            if (firstX < 0 && px >= 0 && px < w && py >= 0 && py < h) { firstX = px; firstY = py; }
+            // sample, not just pen-down (most curves enter from outside). The
+            // label is set along the curve: take its direction from the
+            // neighbouring sample (previous if available, else the next one).
+            if (firstX < 0 && px >= 0 && px < w && py >= 0 && py < h) {
+                firstX = px; firstY = py;
+                if (havePrev) labelAngle = qRadiansToDegrees(std::atan2(py - prevY, px - prevX));
+                else needAngle = true;
+            } else if (needAngle) {
+                labelAngle = qRadiansToDegrees(std::atan2(py - firstY, px - firstX));
+                needAngle = false;
+            }
+            prevX = px; prevY = py; havePrev = true;
         }
         if (path.isEmpty()) return;
         auto* item = new QGraphicsPathItem(path);
@@ -103,19 +116,25 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
 
         if (firstX >= 0) {
             const QString text = isoRa ? Wcs::formatRa(fixed) : Wcs::formatDec(fixed);
-            // Text + dark chip behind it, both fixed screen size, nudged in from
-            // the frame edge so labels don't sit half outside.
+            // Keep text upright: flip directions pointing left.
+            double ang = labelAngle;
+            if (ang > 90)  ang -= 180;
+            if (ang < -90) ang += 180;
+            // Text + dark chip behind it, fixed screen size, rotated to run
+            // along the grid line (rotation applies in device space because of
+            // ItemIgnoresTransformations, which is exactly what we want).
             auto* label = new QGraphicsSimpleTextItem(text);
             label->setBrush(kGridLabel);
             label->setFont(labelFont);
-            const QRectF tb = label->boundingRect().adjusted(-4, -2, 4, 2);
+            const QRectF tb = label->boundingRect().adjusted(-3, -1, 3, 1);
             auto* chip = new QGraphicsRectItem(tb);
-            chip->setBrush(QColor(5, 7, 10, 170));
+            chip->setBrush(QColor(5, 7, 10, 150));
             chip->setPen(Qt::NoPen);
-            chip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-            chip->setPos(firstX, firstY);
-            label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-            label->setPos(firstX, firstY);
+            for (QGraphicsItem* it : { (QGraphicsItem*)chip, (QGraphicsItem*)label }) {
+                it->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+                it->setPos(firstX, firstY);
+                it->setRotation(ang);
+            }
             chip->setZValue(1);
             label->setZValue(2);
             m_group->addToGroup(chip);
