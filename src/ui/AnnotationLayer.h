@@ -20,6 +20,7 @@
 #include "core/Wcs.h"
 
 class QGraphicsScene;
+class QGraphicsItem;
 class QGraphicsItemGroup;
 class QJsonDocument;
 
