@@ -75,7 +75,12 @@ std::vector<Annotation> AnnotationLayer::fromJson(const QJsonDocument& doc, QStr
 }
 
 AnnotationLayer::AnnotationLayer(QGraphicsScene* scene, QObject* parent)
-    : QObject(parent), m_scene(scene) {}
+    : QObject(parent), m_scene(scene) {
+    // Show resize handles whenever the selection settles on an annotation.
+    connect(scene, &QGraphicsScene::selectionChanged, this, [this] {
+        if (!m_rebuilding) rebuildHandles();
+    });
+}
 
 double AnnotationLayer::niceStepDeg(double spanDeg, int target) {
     const double raw = spanDeg / std::max(1, target);
@@ -89,6 +94,8 @@ double AnnotationLayer::niceStepDeg(double spanDeg, int target) {
 
 void AnnotationLayer::rebuild(int w, int h, const Wcs& wcs,
                               const std::vector<Annotation>& annotations) {
+    m_rebuilding = true;
+    m_handles.clear();                            // children of m_group, deleted with it
     if (m_group) { m_scene->removeItem(m_group); delete m_group; m_group = nullptr; }
     m_group = new QGraphicsItemGroup();
     m_group->setZValue(10);                       // above the pixmap (z 0)
@@ -97,6 +104,54 @@ void AnnotationLayer::rebuild(int w, int h, const Wcs& wcs,
 
     if (m_gridVisible && w > 0 && h > 0) buildGrid(w, h, wcs);
     buildAnnotations(annotations);
+    m_lastAnns = annotations;
+    m_rebuilding = false;
+}
+
+// Handle geometry shared by rebuildHandles() and commitMoves(): where each
+// handle sits in scene coordinates for a given annotation.
+static QPointF handleHome(const Annotation& a, const QString& role) {
+    if (role == QLatin1String("p1")) return { a.x, a.y };
+    if (role == QLatin1String("p2")) return { a.x2, a.y2 };
+    const double th = qDegreesToRadians(a.angleDeg);
+    if (role == QLatin1String("a")) return { a.x + a.a * std::cos(th), a.y + a.a * std::sin(th) };
+    return { a.x - a.b * std::sin(th), a.y + a.b * std::cos(th) };   // "b": perpendicular
+}
+
+void AnnotationLayer::rebuildHandles() {
+    if (!m_group) return;
+    // A handle itself is being clicked/dragged — leave the set alone.
+    for (QGraphicsItem* it : m_scene->selectedItems())
+        if (it->data(1).isValid()) return;
+
+    for (QGraphicsItem* h : m_handles) { m_group->removeFromGroup(h); m_scene->removeItem(h); delete h; }
+    m_handles.clear();
+
+    // Exactly one selected annotation gets handles.
+    int idx = -1;
+    for (QGraphicsItem* it : m_scene->selectedItems())
+        if (it->data(0).isValid()) { idx = it->data(0).toInt(); break; }
+    if (idx < 0 || idx >= int(m_lastAnns.size())) return;
+    const Annotation& a = m_lastAnns[std::size_t(idx)];
+
+    QStringList roles;
+    if (a.type == Annotation::Type::Ellipse) roles = { "a", "b" };
+    else if (a.type == Annotation::Type::Line) roles = { "p1", "p2" };
+    else return;                                   // text: move only
+
+    for (const QString& role : roles) {
+        auto* h = new QGraphicsRectItem(-4, -4, 8, 8);
+        h->setBrush(QColor(255, 255, 255, 230));
+        h->setPen(QPen(QColor(10, 16, 24), 1));
+        h->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+        h->setFlags(h->flags() | QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
+        h->setZValue(30);
+        h->setData(1, idx);
+        h->setData(2, role);
+        h->setPos(handleHome(a, role));
+        m_group->addToGroup(h);
+        m_handles.push_back(h);
+    }
 }
 
 void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
@@ -274,15 +329,37 @@ bool AnnotationLayer::commitMoves(std::vector<Annotation>& annotations) {
     if (!m_group) return false;
     bool changed = false;
     for (QGraphicsItem* it : m_group->childItems()) {
+        // Whole-annotation drags (sub-groups tagged data(0)).
         const QVariant v = it->data(0);
-        if (!v.isValid()) continue;
-        const QPointF d = it->pos();              // drag offset (0,0 if untouched)
-        if (d.isNull()) continue;
-        const int idx = v.toInt();
+        if (v.isValid()) {
+            const QPointF d = it->pos();              // drag offset (0,0 if untouched)
+            if (d.isNull()) continue;
+            const int idx = v.toInt();
+            if (idx < 0 || idx >= int(annotations.size())) continue;
+            Annotation& a = annotations[std::size_t(idx)];
+            a.x += d.x(); a.y += d.y();
+            if (a.type == Annotation::Type::Line) { a.x2 += d.x(); a.y2 += d.y(); }
+            changed = true;
+            continue;
+        }
+        // Resize-handle drags (tagged data(1) = index, data(2) = role).
+        const QVariant hv = it->data(1);
+        if (!hv.isValid()) continue;
+        const int idx = hv.toInt();
         if (idx < 0 || idx >= int(annotations.size())) continue;
         Annotation& a = annotations[std::size_t(idx)];
-        a.x += d.x(); a.y += d.y();
-        if (a.type == Annotation::Type::Line) { a.x2 += d.x(); a.y2 += d.y(); }
+        const QString role = it->data(2).toString();
+        const QPointF now = it->pos();                // handleHome + drag offset
+        if (now == handleHome(a, role)) continue;
+        if (role == QLatin1String("p1")) { a.x = now.x(); a.y = now.y(); }
+        else if (role == QLatin1String("p2")) { a.x2 = now.x(); a.y2 = now.y(); }
+        else if (role == QLatin1String("a")) {
+            const double dx = now.x() - a.x, dy = now.y() - a.y;
+            a.a = std::max(2.0, std::hypot(dx, dy));
+            a.angleDeg = qRadiansToDegrees(std::atan2(dy, dx));   // a-handle also rotates
+        } else {                                       // "b": perpendicular semi-axis, length only
+            a.b = std::max(2.0, std::hypot(now.x() - a.x, now.y() - a.y));
+        }
         changed = true;
     }
     return changed;

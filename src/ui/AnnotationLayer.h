@@ -70,11 +70,17 @@ public:
 private:
     void buildGrid(int w, int h, const Wcs& wcs);
     void buildAnnotations(const std::vector<Annotation>& annotations);
+    // Resize grab-handles for the currently selected annotation (ellipse axes,
+    // line endpoints). Rebuilt on every scene selection change.
+    void rebuildHandles();
     // Pick a "nice" grid step in degrees for roughly `target` lines across span.
     static double niceStepDeg(double spanDeg, int target);
 
     QGraphicsScene* m_scene = nullptr;
     QGraphicsItemGroup* m_group = nullptr;   // owns all overlay items
+    std::vector<Annotation> m_lastAnns;      // model copy for handle geometry
+    std::vector<QGraphicsItem*> m_handles;
+    bool m_rebuilding = false;
     bool m_gridVisible = false;
     bool m_inverted = false;
 };
