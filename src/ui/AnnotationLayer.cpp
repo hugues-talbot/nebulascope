@@ -13,6 +13,7 @@
 #include <QPainterPath>
 #include <QPen>
 #include <QFont>
+#include <QTransform>
 #include <QtMath>
 #include <cmath>
 
@@ -319,6 +320,19 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
             label->setFont(f);
             label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
             label->setPos(lx, ly);
+            if (a.type == Annotation::Type::Line) {
+                // Keep the text clear of the segment: centre the text box just
+                // beyond the start endpoint, opposite the segment's direction.
+                // Offsets are in DEVICE pixels (the label ignores view zoom), so
+                // the clearance holds at any zoom level.
+                const QRectF tb = label->boundingRect();
+                double dx = a.x2 - a.x, dy = a.y2 - a.y;
+                const double len = std::hypot(dx, dy);
+                if (len > 1e-9) { dx /= len; dy /= len; } else { dx = 1; dy = 0; }
+                const double r = 6.0 + 0.5 * std::hypot(tb.width(), tb.height());
+                label->setTransform(QTransform::fromTranslate(-dx * r - tb.width() / 2.0,
+                                                              -dy * r - tb.height() / 2.0));
+            }
             g->addToGroup(label);
         }
     }
