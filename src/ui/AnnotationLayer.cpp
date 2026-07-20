@@ -2,6 +2,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsItemGroup>
 #include <QGraphicsPathItem>
+#include <QGraphicsRectItem>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsSimpleTextItem>
 #include <QPainterPath>
@@ -89,8 +90,11 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
                 pen0 = false;
                 continue;
             }
-            if (!pen0) { path.moveTo(px, py); pen0 = true; if (firstX < 0 && px >= 0 && px < w && py >= 0 && py < h) { firstX = px; firstY = py; } }
+            if (!pen0) { path.moveTo(px, py); pen0 = true; }
             else path.lineTo(px, py);
+            // First sample actually inside the frame anchors the label — on ANY
+            // sample, not just pen-down (most curves enter from outside).
+            if (firstX < 0 && px >= 0 && px < w && py >= 0 && py < h) { firstX = px; firstY = py; }
         }
         if (path.isEmpty()) return;
         auto* item = new QGraphicsPathItem(path);
@@ -99,11 +103,22 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
 
         if (firstX >= 0) {
             const QString text = isoRa ? Wcs::formatRa(fixed) : Wcs::formatDec(fixed);
+            // Text + dark chip behind it, both fixed screen size, nudged in from
+            // the frame edge so labels don't sit half outside.
             auto* label = new QGraphicsSimpleTextItem(text);
             label->setBrush(kGridLabel);
             label->setFont(labelFont);
-            label->setFlag(QGraphicsItem::ItemIgnoresTransformations);   // constant screen size
+            const QRectF tb = label->boundingRect().adjusted(-4, -2, 4, 2);
+            auto* chip = new QGraphicsRectItem(tb);
+            chip->setBrush(QColor(5, 7, 10, 170));
+            chip->setPen(Qt::NoPen);
+            chip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+            chip->setPos(firstX, firstY);
+            label->setFlag(QGraphicsItem::ItemIgnoresTransformations);
             label->setPos(firstX, firstY);
+            chip->setZValue(1);
+            label->setZValue(2);
+            m_group->addToGroup(chip);
             m_group->addToGroup(label);
         }
     };
