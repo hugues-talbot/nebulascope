@@ -57,6 +57,7 @@ public:
     // for annotations sitting on bright fields.
     void setInvertedContrast(bool on) { m_inverted = on; }
     bool invertedContrast() const { return m_inverted; }
+    int activeIndex() const { return m_active; }   // annotation showing handles, -1 = none
 
     // JSON (de)serialization of a whole annotation list.
     static QJsonDocument toJson(const std::vector<Annotation>& annotations);

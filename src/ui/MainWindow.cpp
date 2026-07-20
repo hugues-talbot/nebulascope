@@ -1359,8 +1359,17 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         aEditText  = menu.addAction(QStringLiteral("Edit Text of %1\u2026").arg(what));
         aEditColor = menu.addAction(QStringLiteral("Change Colour of %1\u2026").arg(what));
         aDelete    = menu.addAction(QStringLiteral("Delete %1").arg(what));
-        aCopyAnn   = menu.addAction(QStringLiteral("Copy %1").arg(what));
         menu.addSeparator();
+    }
+    // Copy targets the SELECTED annotation (the one showing handles) when there
+    // is one; otherwise whatever sits under the cursor. Labels can overhang
+    // their neighbours, so the cursor hit alone was unreliable.
+    const int copyIdx = (m_annotations->activeIndex() >= 0) ? m_annotations->activeIndex() : annIdx;
+    if (copyIdx >= 0 && copyIdx < int(m_annByPath[m_currentPath].size())) {
+        const Annotation& cc = m_annByPath[m_currentPath][std::size_t(copyIdx)];
+        const QString ccName = cc.label.isEmpty() ? QStringLiteral("annotation")
+                                                  : QStringLiteral("\u201c%1\u201d").arg(cc.label);
+        aCopyAnn = menu.addAction(QStringLiteral("Copy %1").arg(ccName));
     }
     QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
@@ -1438,7 +1447,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
     }
     else if (aCopyAnn && chosen == aCopyAnn) {
-        m_copiedAnn = m_annByPath[m_currentPath][std::size_t(annIdx)];
+        m_copiedAnn = m_annByPath[m_currentPath][std::size_t(copyIdx)];
         m_hasCopiedAnn = true;
         // Also expose it as JSON on the system clipboard (handy for tooling).
         QApplication::clipboard()->setText(QString::fromUtf8(
