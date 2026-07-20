@@ -122,9 +122,11 @@ private:
     bool writeAnnotationsFile(const QString& path);   // shared writer
     void loadAnnotations();               // read annotations from a JSON file
     void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
+    void deleteActiveAnnotation();           // Delete key: selected (or latest) annotation
 
 protected:
     void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations
+    void keyPressEvent(QKeyEvent* e) override;  // fallback for the Delete key
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;

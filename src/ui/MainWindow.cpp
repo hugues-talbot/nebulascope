@@ -25,6 +25,7 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QCloseEvent>
+#include <QKeyEvent>
 #include <QUndoStack>
 #include <QUndoCommand>
 #include <QFile>
@@ -318,16 +319,40 @@ void MainWindow::applyUserShortcuts(const QHash<QString, QAction*>& acts,
                 QStringLiteral("NebulaScope"), QStringLiteral("shortcuts"));
     m_shortcutFile = s.fileName();
     s.beginGroup(QStringLiteral("shortcuts"));
+
+    // Code-side defaults; entries missing from the INI are written out so the
+    // file stays a complete, self-documenting template.
+    QHash<QString, QString> defs, vals;
     for (auto it = acts.cbegin(); it != acts.cend(); ++it)
-        if (!s.contains(it.key()))
-            s.setValue(it.key(), it.value()->shortcut().toString(QKeySequence::PortableText));
+        defs[it.key()] = it.value()->shortcut().toString(QKeySequence::PortableText);
     for (auto it = keys.cbegin(); it != keys.cend(); ++it)
-        if (!s.contains(it.key()))
-            s.setValue(it.key(), it.value()->key().toString(QKeySequence::PortableText));
+        defs[it.key()] = it.value()->key().toString(QKeySequence::PortableText);
+    for (auto it = defs.cbegin(); it != defs.cend(); ++it) {
+        if (!s.contains(it.key())) s.setValue(it.key(), it.value());
+        vals[it.key()] = s.value(it.key()).toString();
+    }
+
+    // Resolve clashes: a stale INI can still bind a key that a NEW default now
+    // uses (e.g. Backspace was prev_image before delete_annotation existed).
+    // Ambiguous Qt shortcuts fire nothing at all, so every entry involved in a
+    // clash reverts to its code default — defaults are clash-free by design.
+    QHash<QString, QStringList> bySeq;
+    for (auto it = vals.cbegin(); it != vals.cend(); ++it) {
+        const QString seq = QKeySequence::fromString(it.value(), QKeySequence::PortableText)
+                                .toString(QKeySequence::PortableText);
+        if (!seq.isEmpty()) bySeq[seq] << it.key();
+    }
+    for (auto it = bySeq.cbegin(); it != bySeq.cend(); ++it)
+        if (it.value().size() > 1)
+            for (const QString& name : it.value()) {
+                vals[name] = defs[name];
+                s.setValue(name, defs[name]);
+            }
+
     for (auto it = acts.cbegin(); it != acts.cend(); ++it)
-        it.value()->setShortcut(QKeySequence::fromString(s.value(it.key()).toString(), QKeySequence::PortableText));
+        it.value()->setShortcut(QKeySequence::fromString(vals[it.key()], QKeySequence::PortableText));
     for (auto it = keys.cbegin(); it != keys.cend(); ++it)
-        it.value()->setKey(QKeySequence::fromString(s.value(it.key()).toString(), QKeySequence::PortableText));
+        it.value()->setKey(QKeySequence::fromString(vals[it.key()], QKeySequence::PortableText));
     s.endGroup();
 }
 
@@ -594,6 +619,9 @@ void MainWindow::buildMenusAndToolbar() {
     // nothing selected, the most recently added one. Undoable.
     auto* delAnn = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
     connect(delAnn, &QShortcut::activated, this, &MainWindow::deleteActiveAnnotation);
+    // If some other binding still collides, Qt reports the press as "ambiguous"
+    // instead of activating — treat that as a plain activation.
+    connect(delAnn, &QShortcut::activatedAmbiguously, this, &MainWindow::deleteActiveAnnotation);
     keys["delete_annotation"] = delAnn;
 
     applyUserShortcuts(acts, keys);     // user INI overrides the defaults above
@@ -1206,6 +1234,18 @@ void MainWindow::editAnnotationDialog(int annIdx) {
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("edit annotation"), m_currentPath, std::move(before));
+}
+
+// Fallback path for the Delete (Backspace) key: reaches here only when no
+// focused widget consumed it and no shortcut matched — covers INI configs that
+// bound the key elsewhere or shortcut-system quirks.
+void MainWindow::keyPressEvent(QKeyEvent* e) {
+    if (e->key() == Qt::Key_Backspace && e->modifiers() == Qt::NoModifier) {
+        deleteActiveAnnotation();
+        e->accept();
+        return;
+    }
+    QMainWindow::keyPressEvent(e);
 }
 
 // Warn when annotation edits would be lost on quit.
