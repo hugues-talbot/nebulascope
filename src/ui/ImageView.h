@@ -31,11 +31,23 @@ public:
     // the image bounds (empty if nothing is shown). Used for region export.
     QRect visibleImageRect() const;
 
+    // Annotation drawing tools: while a tool is armed, left-drag draws the
+    // shape (dashed preview) instead of the zoom rectangle; Text is a single
+    // click. The tool disarms itself after each shape.
+    enum class DrawTool { None, Ellipse, Line, Text };
+    void setDrawTool(DrawTool t);
+    DrawTool drawTool() const { return m_tool; }
+
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);
     // Right-click without drag. x/y are image pixels; onImage says whether the
     // click landed inside the image bounds.
     void contextMenuRequested(const QPoint& globalPos, int x, int y, bool onImage);
+    // Drawing-tool results, in image-pixel coordinates.
+    void ellipseDrawn(double cx, double cy, double a, double b);
+    void lineDrawn(double x1, double y1, double x2, double y2);
+    void textPointPicked(double x, double y);
+    void drawToolFinished();       // tool disarmed — uncheck the toolbar button
 
 protected:
     void mousePressEvent(QMouseEvent*) override;
@@ -52,6 +64,10 @@ private:
     bool m_panning = false;
     QPoint m_panLast;
     QPoint m_panStart;
+    DrawTool m_tool = DrawTool::None;
+    bool m_drawing = false;
+    QPointF m_drawStart;
+    QGraphicsItem* m_preview = nullptr;    // dashed rubber shape while dragging
     const ImageData* m_src = nullptr;
 };
 

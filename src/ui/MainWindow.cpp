@@ -17,6 +17,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QInputDialog>
+#include <QActionGroup>
+#include <QColorDialog>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QFile>
@@ -89,6 +91,13 @@ void MainWindow::buildUi() {
     m_annotations = new AnnotationLayer(m_view->scene(), this);
     connect(m_view, &ImageView::pixelHovered, this, &MainWindow::onPixelHovered);
     connect(m_view, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
+    connect(m_view, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
+    connect(m_view, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
+    connect(m_view, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
+    connect(m_view, &ImageView::drawToolFinished, this, [this] {
+        for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
+            if (a) a->setChecked(false);
+    });
 
     // left dock: open images (with an append / remove / export button bar)
     m_leftDock = new QDockWidget("Open Images", this);
@@ -511,6 +520,36 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addAction(aLeft);
     tb->addAction(aRight);
     tb->addAction(acts["image_only"]);
+
+    // Annotation drawing tools: exclusive-optional, one shape per arm.
+    tb->addSeparator();
+    auto* toolGroup = new QActionGroup(this);
+    toolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
+    m_toolEllipse = tb->addAction("\u25ef Ellipse");
+    m_toolEllipse->setToolTip("Draw an ellipse annotation — drag outward from the centre");
+    m_toolLine = tb->addAction("\u2571 Line");
+    m_toolLine->setToolTip("Draw a line annotation — drag from start to end");
+    m_toolText = tb->addAction("T Text");
+    m_toolText->setToolTip("Place a text annotation — click the anchor point");
+    for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText }) {
+        a->setCheckable(true);
+        toolGroup->addAction(a);
+    }
+    connect(toolGroup, &QActionGroup::triggered, this, [this](QAction* a) {
+        ImageView::DrawTool t = ImageView::DrawTool::None;
+        if (a->isChecked()) {
+            if (a == m_toolEllipse)   t = ImageView::DrawTool::Ellipse;
+            else if (a == m_toolLine) t = ImageView::DrawTool::Line;
+            else                      t = ImageView::DrawTool::Text;
+        }
+        m_view->setDrawTool(t);
+    });
+    QAction* colorAct = tb->addAction("Colour");
+    colorAct->setToolTip("Colour for new annotations");
+    connect(colorAct, &QAction::triggered, this, [this] {
+        const QColor c = QColorDialog::getColor(m_annColor, this, "Annotation colour");
+        if (c.isValid()) m_annColor = c;
+    });
 }
 
 void MainWindow::openFile() {
@@ -972,6 +1011,52 @@ void MainWindow::loadAnnotations() {
     m_annByPath[m_currentPath] = std::move(anns);
     refreshAnnotations();
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
+}
+
+void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
+    if (!m_image.isValid()) return;
+    bool ok = false;
+    const QString label = QInputDialog::getText(this, "Ellipse annotation",
+        "Label (optional):", QLineEdit::Normal, QString(), &ok);
+    if (!ok) return;                              // cancelled — discard the shape
+    Annotation an;
+    an.type = Annotation::Type::Ellipse;
+    an.x = cx; an.y = cy; an.a = a; an.b = b;
+    an.label = label.trimmed();
+    an.color = m_annColor;
+    m_annByPath[m_currentPath].push_back(an);
+    refreshAnnotations();
+}
+
+void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
+    if (!m_image.isValid()) return;
+    bool ok = false;
+    const QString label = QInputDialog::getText(this, "Line annotation",
+        "Label (optional):", QLineEdit::Normal, QString(), &ok);
+    if (!ok) return;
+    Annotation an;
+    an.type = Annotation::Type::Line;
+    an.x = x1; an.y = y1; an.x2 = x2; an.y2 = y2;
+    an.label = label.trimmed();
+    an.color = m_annColor;
+    m_annByPath[m_currentPath].push_back(an);
+    refreshAnnotations();
+}
+
+void MainWindow::onTextPointPicked(double x, double y) {
+    if (!m_image.isValid()) return;
+    bool ok = false;
+    const QString text = QInputDialog::getText(this, "Text annotation",
+        "Text:", QLineEdit::Normal, QString(), &ok);
+    if (!ok || text.trimmed().isEmpty()) return;
+    Annotation an;
+    an.type = Annotation::Type::Text;
+    an.x = x; an.y = y;
+    an.label = text.trimmed();
+    an.textSize = 12;
+    an.color = m_annColor;
+    m_annByPath[m_currentPath].push_back(an);
+    refreshAnnotations();
 }
 
 void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {

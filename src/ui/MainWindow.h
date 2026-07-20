@@ -47,6 +47,9 @@ private slots:
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
     void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
+    void onEllipseDrawn(double cx, double cy, double a, double b);
+    void onLineDrawn(double x1, double y1, double x2, double y2);
+    void onTextPointPicked(double x, double y);
     void showRow(int row);      // decode + display the list item at row
     void nextImage();           // Space
     void prevImage();           // Backspace
@@ -93,6 +96,10 @@ private:
 
     AnnotationLayer* m_annotations = nullptr;
     QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
+    QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
+    QAction* m_toolEllipse = nullptr;
+    QAction* m_toolLine = nullptr;
+    QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image
     void saveAnnotations();               // write current image's annotations to JSON
     void loadAnnotations();               // read annotations from a JSON file

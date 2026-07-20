@@ -52,11 +52,37 @@ QRect ImageView::visibleImageRect() const {
     return inter.toRect();
 }
 
+void ImageView::setDrawTool(DrawTool t) {
+    m_tool = t;
+    if (m_preview) { scene()->removeItem(m_preview); delete m_preview; m_preview = nullptr; }
+    m_drawing = false;
+    if (t == DrawTool::None) unsetCursor();
+    else setCursor(Qt::CrossCursor);
+}
+
 void ImageView::mousePressEvent(QMouseEvent* e) {
     // Shift + left-drag pans the canvas (instead of rubber-band zoom).
     if (e->button() == Qt::LeftButton && (e->modifiers() & Qt::ShiftModifier)) {
         setDragMode(QGraphicsView::ScrollHandDrag);
         QGraphicsView::mousePressEvent(e);              // base class drives the pan
+        return;
+    }
+    if (e->button() == Qt::LeftButton && m_tool != DrawTool::None) {
+        const QPointF sp = mapToScene(e->pos());
+        if (m_tool == DrawTool::Text) {
+            const double tx = sp.x(), ty = sp.y();
+            setDrawTool(DrawTool::None);
+            emit textPointPicked(tx, ty);
+            emit drawToolFinished();
+            return;
+        }
+        m_drawing = true;
+        m_drawStart = sp;
+        QPen pen(QColor("#8fc0f5"), 0, Qt::DashLine);
+        m_preview = (m_tool == DrawTool::Line)
+            ? static_cast<QGraphicsItem*>(scene()->addLine(QLineF(sp, sp), pen))
+            : static_cast<QGraphicsItem*>(scene()->addEllipse(QRectF(sp, sp), pen));
+        m_preview->setZValue(20);
         return;
     }
     if (e->button() == Qt::LeftButton) {
@@ -78,6 +104,18 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
+    if (m_drawing && m_preview) {
+        const QPointF sp = mapToScene(e->pos());
+        if (m_tool == DrawTool::Line) {
+            static_cast<QGraphicsLineItem*>(m_preview)->setLine(QLineF(m_drawStart, sp));
+        } else {
+            const double a = std::fabs(sp.x() - m_drawStart.x());
+            const double b = std::fabs(sp.y() - m_drawStart.y());
+            static_cast<QGraphicsEllipseItem*>(m_preview)->setRect(
+                m_drawStart.x() - a, m_drawStart.y() - b, 2 * a, 2 * b);
+        }
+        return;
+    }
     if (m_banding && m_band) m_band->setGeometry(QRect(m_press, e->pos()).normalized());
 
     if (m_panning) {                                 // right/middle-button pan
@@ -110,6 +148,22 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void ImageView::mouseReleaseEvent(QMouseEvent* e) {
+    if (m_drawing && e->button() == Qt::LeftButton) {
+        const QPointF sp = mapToScene(e->pos());
+        const DrawTool tool = m_tool;
+        setDrawTool(DrawTool::None);                 // clears preview + m_drawing
+        if (tool == DrawTool::Line) {
+            if (QLineF(m_drawStart, sp).length() > 3)
+                emit lineDrawn(m_drawStart.x(), m_drawStart.y(), sp.x(), sp.y());
+        } else {
+            const double a = std::fabs(sp.x() - m_drawStart.x());
+            const double b = std::fabs(sp.y() - m_drawStart.y());
+            if (a > 2 || b > 2)
+                emit ellipseDrawn(m_drawStart.x(), m_drawStart.y(), std::max(a, 2.0), std::max(b, 2.0));
+        }
+        emit drawToolFinished();
+        return;
+    }
     if (m_panning && (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton)) {
         m_panning = false;
         unsetCursor();
