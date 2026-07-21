@@ -274,7 +274,9 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
 }
 
 void ImageView::wheelEvent(QWheelEvent* e) {
-    const double f = e->angleDelta().y() > 0 ? 1.2 : (1.0 / 1.2);
+    // Shift = fine zoom for precise framing (e.g. before calibration-linking).
+    const double step = (e->modifiers() & Qt::ShiftModifier) ? 1.04 : 1.2;
+    const double f = e->angleDelta().y() > 0 ? step : (1.0 / step);
     scale(f, f);
     if (!m_adopting) emit viewNavigated();
 }
