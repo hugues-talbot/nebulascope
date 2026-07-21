@@ -59,6 +59,7 @@
 #include <QSettings>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QSlider>
@@ -1648,6 +1649,23 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
                                                   : QStringLiteral("\u201c%1\u201d").arg(cc.label);
         aCopyAnn = menu.addAction(QStringLiteral("Copy %1").arg(ccName));
     }
+    // Aladin Lite lookup — needs an astrometric solution. Targets the selected/
+    // hit annotation's centre, else the clicked pixel.
+    QAction* aAladin = nullptr;
+    double alRa = 0, alDec = 0, alFovDeg = 0.25;
+    if (m_wcs.valid() && onImage) {
+        double cx = x, cy = y;
+        if (copyIdx >= 0 && copyIdx < int(m_annByPath[m_currentPath].size())) {
+            const Annotation& ta = m_annByPath[m_currentPath][std::size_t(copyIdx)];
+            cx = ta.x; cy = ta.y;
+            // FOV ~10× the ellipse size so the object sits in context.
+            const double scaleDeg = m_wcs.pixelScaleArcsec() / 3600.0;
+            alFovDeg = qBound(0.03, 10.0 * std::max(ta.a, ta.b) * scaleDeg, 5.0);
+        }
+        if (m_wcs.pixelToSky(cx, cy, alRa, alDec))
+            aAladin = menu.addAction(QStringLiteral("Look up in Aladin — %1 %2")
+                .arg(Wcs::formatRa(alRa), Wcs::formatDec(alDec)));
+    }
     QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
     QAction* aPasteAnn = menu.addAction(QStringLiteral("Paste Annotation Here"));
@@ -1722,6 +1740,16 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         m_annDirty.insert(m_currentPath);
         refreshAnnotations();
         pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
+    }
+    else if (aAladin && chosen == aAladin) {
+        QUrl url(QStringLiteral("https://aladin.cds.unistra.fr/AladinLite/"));
+        QUrlQuery q;
+        q.addQueryItem(QStringLiteral("target"), QStringLiteral("%1 %2")
+            .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
+        q.addQueryItem(QStringLiteral("fov"), QString::number(alFovDeg, 'f', 3));
+        q.addQueryItem(QStringLiteral("survey"), QStringLiteral("P/DSS2/color"));
+        url.setQuery(q);
+        QDesktopServices::openUrl(url);
     }
     else if (aCopyAnn && chosen == aCopyAnn) {
         m_copiedAnn = m_annByPath[m_currentPath][std::size_t(copyIdx)];
