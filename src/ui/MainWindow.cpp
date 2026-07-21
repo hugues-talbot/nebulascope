@@ -38,6 +38,7 @@
 #include <QFile>
 #include <QMenu>
 #include <algorithm>
+#include <cmath>
 #include <QMimeData>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -225,6 +226,39 @@ private:
     bool m_first = true;
 };
 
+// Arbitrary rotation is resampling: undoing by rotating back would interpolate
+// a second time and grow the canvas again, so this command snapshots the exact
+// pre-rotation state (image, annotations, WCS, orientation history) instead.
+class RotateCmd : public QUndoCommand {
+public:
+    RotateCmd(MainWindow* w, QString path, double angleDeg,
+              ImageData before, std::vector<Annotation> annBefore,
+              Wcs wcsBefore, QStringList histBefore)
+        : m_w(w), m_path(std::move(path)), m_angle(angleDeg),
+          m_img(std::move(before)), m_anns(std::move(annBefore)),
+          m_wcs(std::move(wcsBefore)), m_hist(std::move(histBefore)) {
+        setText(QStringLiteral("rotate %1\u00b0").arg(angleDeg));
+    }
+    void undo() override {
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->restoreImageState(m_path, m_img, m_anns, m_wcs, m_hist);
+    }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->doRotateArbitrary(m_angle);
+    }
+private:
+    MainWindow* m_w;
+    QString m_path;
+    double m_angle;
+    ImageData m_img;
+    std::vector<Annotation> m_anns;
+    Wcs m_wcs;
+    QStringList m_hist;
+    bool m_first = true;
+};
+
 MainWindow::Xform inverseXform(MainWindow::Xform x) {
     using X = MainWindow::Xform;
     if (x == X::RotCW)  return X::RotCCW;
@@ -285,6 +319,27 @@ static void transformAnnotations(std::vector<Annotation>& anns, MainWindow::Xfor
     }
 }
 
+// Map annotation geometry through an arbitrary rotation — the same forward map
+// as the pixels and the WCS: p' = M(p - cOld) + cNew, M = [[c,s],[-s,c]],
+// positive angle = visually CCW. Ellipse/text angles turn with the image.
+static void rotateAnnotationsBy(std::vector<Annotation>& anns, double angleDeg,
+                                int w, int h, int nw, int nh) {
+    const double th = angleDeg * M_PI / 180.0;
+    const double c = std::cos(th), s = std::sin(th);
+    const double cox = (w - 1) / 2.0,  coy = (h - 1) / 2.0;
+    const double cnx = (nw - 1) / 2.0, cny = (nh - 1) / 2.0;
+    auto mapPt = [&](double& x, double& y) {
+        const double dx = x - cox, dy = y - coy;
+        x =  c * dx + s * dy + cnx;
+        y = -s * dx + c * dy + cny;
+    };
+    for (Annotation& a : anns) {
+        mapPt(a.x, a.y);
+        if (a.type == Annotation::Type::Line) mapPt(a.x2, a.y2);
+        if (a.type == Annotation::Type::Ellipse) a.angleDeg -= angleDeg;
+    }
+}
+
 void MainWindow::applyTransform(Xform x) {
     if (!m_image.isValid()) return;
     doTransform(x);
@@ -327,6 +382,51 @@ void MainWindow::doTransform(Xform x) {
     refreshAnnotations();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
     if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
+}
+
+// Arbitrary rotation: same pipeline as doTransform, but resampling. History
+// records "rot:<deg>"; consecutive rotations merge (and cancel near 0°/360°).
+void MainWindow::doRotateArbitrary(double angleDeg) {
+    if (!m_image.isValid()) return;
+    const int ow = m_image.width(), oh = m_image.height();
+    m_image = rotateArbitrary(m_image, angleDeg);
+    const int nw = m_image.width(), nh = m_image.height();
+    m_view->setSource(&m_image);
+    updateDisplay();
+    auto it = m_annByPath.find(m_currentPath);
+    if (it != m_annByPath.end() && !it.value().empty()) {
+        rotateAnnotationsBy(it.value(), angleDeg, ow, oh, nw, nh);
+        m_annDirty.insert(m_currentPath);
+    }
+    if (m_wcs.valid()) m_wcs = m_wcs.rotated(angleDeg, ow, oh, nw, nh);
+    QStringList& hist = m_xformByPath[m_currentPath];
+    double total = angleDeg;
+    if (!hist.isEmpty() && hist.last().startsWith(QLatin1String("rot:")))
+        total += hist.takeLast().mid(4).toDouble();
+    total = std::fmod(total, 360.0);
+    if (std::fabs(total) > 1e-6)
+        hist << QStringLiteral("rot:%1").arg(total, 0, 'f', 4);
+    refreshAnnotations();
+    m_view->zoomToFit();
+    m_lastW = nw; m_lastH = nh;
+    statusBar()->showMessage(
+        QStringLiteral("Rotated %1\u00b0 — resampled onto %2\u00d7%3 (corners are blank)")
+            .arg(angleDeg).arg(nw).arg(nh), 4000);
+}
+
+void MainWindow::restoreImageState(const QString& path, const ImageData& img,
+                                   const std::vector<Annotation>& anns,
+                                   const Wcs& wcs, const QStringList& xformHist) {
+    m_image = img;
+    m_view->setSource(&m_image);
+    updateDisplay();
+    m_annByPath[path] = anns;
+    m_annDirty.insert(path);
+    m_wcs = wcs;
+    m_xformByPath[path] = xformHist;
+    refreshAnnotations();
+    m_view->zoomToFit();
+    m_lastW = m_image.width(); m_lastH = m_image.height();
 }
 
 // ---- user-configurable shortcuts -------------------------------------------
@@ -613,6 +713,21 @@ void MainWindow::buildMenusAndToolbar() {
     QMenu* image = menuBar()->addMenu("&Image");
     acts["rotate_cw"]  = image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
     acts["rotate_ccw"] = image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
+    acts["rotate_by_angle"] = image->addAction("Rotate by &Angle\u2026", QKeySequence("Ctrl+R"), this, [this]{
+        if (!m_image.isValid()) return;
+        bool ok = false;
+        const double a = QInputDialog::getDouble(this, QStringLiteral("Rotate by angle"),
+            QStringLiteral("Angle in degrees (positive = counter-clockwise).\n"
+                           "The image is resampled; blank corners become NaN."),
+            0.0, -360.0, 360.0, 2, &ok);
+        if (!ok || std::fabs(a) < 1e-6) return;
+        // Snapshot BEFORE rotating — undo restores it exactly (no re-resampling).
+        RotateCmd* cmd = new RotateCmd(this, m_currentPath, a, m_image,
+                                       m_annByPath.value(m_currentPath), m_wcs,
+                                       m_xformByPath.value(m_currentPath));
+        doRotateArbitrary(a);
+        m_undo->push(cmd);   // first redo() is skipped
+    });
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
@@ -1239,6 +1354,15 @@ void MainWindow::reapplyStoredXforms() {
     const QStringList ops = m_xformByPath.value(m_currentPath);
     if (ops.isEmpty() || !m_image.isValid()) return;
     for (const QString& n : ops) {
+        // Arbitrary rotations are stored as "rot:<deg>".
+        if (n.startsWith(QLatin1String("rot:"))) {
+            const double a = n.mid(4).toDouble();
+            const int ow = m_image.width(), oh = m_image.height();
+            m_image = rotateArbitrary(m_image, a);
+            if (m_wcs.valid())
+                m_wcs = m_wcs.rotated(a, ow, oh, m_image.width(), m_image.height());
+            continue;
+        }
         Xform x;
         if (!xformFromName(n, x)) continue;
         const int ow = m_image.width(), oh = m_image.height();

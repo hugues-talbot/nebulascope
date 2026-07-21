@@ -35,6 +35,11 @@ public:
     enum class PixelXform { RotCW, RotCCW, FlipH, FlipV };
     Wcs transformed(PixelXform op, int w, int h) const;
 
+    // Rebase onto an arbitrarily rotated image (positive = visually CCW, same
+    // convention as the pixel transform). w/h are the pre-rotation dimensions,
+    // newW/newH the expanded canvas.
+    Wcs rotated(double angleDeg, int w, int h, int newW, int newH) const;
+
     double pixelScaleArcsec() const;   // mean scale, arcsec/pixel
     double rotationDeg() const;        // position angle of +Y axis, approx.
 

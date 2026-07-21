@@ -90,6 +90,12 @@ public:
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
     // Undo plumbing (used by the QUndoCommand classes in MainWindow.cpp):
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
+    void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push
+    // Exact restore for RotateCmd::undo — an inverse rotation would re-resample
+    // AND re-grow the canvas, so the command snapshots the state instead.
+    void restoreImageState(const QString& path, const ImageData& img,
+                           const std::vector<Annotation>& anns,
+                           const Wcs& wcs, const QStringList& xformHist);
     void setAnnotations(const QString& path, const std::vector<Annotation>& anns);
     const QString& currentPath() const { return m_currentPath; }
 private:

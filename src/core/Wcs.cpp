@@ -203,6 +203,25 @@ Wcs Wcs::transformed(PixelXform op, int w, int h) const {
     return t;
 }
 
+Wcs Wcs::rotated(double angleDeg, int w, int h, int newW, int newH) const {
+    Wcs t = *this;
+    if (!m_valid) return t;
+    const double th = angleDeg * M_PI / 180.0;
+    const double c = std::cos(th), s = std::sin(th);
+    const double cox = (w - 1) / 2.0,     coy = (h - 1) / 2.0;
+    const double cnx = (newW - 1) / 2.0,  cny = (newH - 1) / 2.0;
+    // Reference pixel follows the forward map p' = M(p - cOld) + cNew.
+    const double px = (m_crpix1 - 1.0) - cox, py = (m_crpix2 - 1.0) - coy;
+    t.m_crpix1 = ( c * px + s * py) + cnx + 1.0;
+    t.m_crpix2 = (-s * px + c * py) + cny + 1.0;
+    // CD' = CD · J with J = d(old)/d(new) = M^T = [[c,-s],[s,c]].
+    t.m_cd11 =  m_cd11 * c + m_cd12 * s;
+    t.m_cd12 = -m_cd11 * s + m_cd12 * c;
+    t.m_cd21 =  m_cd21 * c + m_cd22 * s;
+    t.m_cd22 = -m_cd21 * s + m_cd22 * c;
+    return t;
+}
+
 double Wcs::pixelScaleArcsec() const {
     if (!m_valid) return 0.0;
     return std::sqrt(std::fabs(m_cd11 * m_cd22 - m_cd12 * m_cd21)) * 3600.0;
