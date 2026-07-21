@@ -40,6 +40,8 @@
 #include <QMenu>
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <QtMath>
 #include <QMimeData>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -744,7 +746,27 @@ void MainWindow::buildMenusAndToolbar() {
         // Small preview of the current display for the dialog's live thumbnail.
         const QImage thumb = DisplayRenderer::render(m_image, m_model)
             .scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        RotateDialog dlg(thumb, currentRotationAngle(), this);
+        // North-up preset: measure the screen direction of celestial north at
+        // the image centre; the rotation that sends it to "up" (screen angle
+        // -90°, with visual-CCW positive) is rel = phi + 90.
+        double northUp = std::numeric_limits<double>::quiet_NaN();
+        if (m_wcs.valid()) {
+            const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
+            double ra = 0, dec = 0, nx = 0, ny = 0;
+            if (m_wcs.pixelToSky(cx, cy, ra, dec)) {
+                const bool south = dec > 89.0;               // sample away from the pole
+                const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
+                if (m_wcs.skyToPixel(ra, dec + dd, nx, ny)) {
+                    double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
+                    if (south) phi += 180.0;
+                    double t = currentRotationAngle() + phi + 90.0;
+                    while (t > 180.0) t -= 360.0;
+                    while (t < -180.0) t += 360.0;
+                    northUp = t;
+                }
+            }
+        }
+        RotateDialog dlg(thumb, currentRotationAngle(), northUp, this);
         connect(&dlg, &RotateDialog::applyRequested, this, [this](double a){ pushRotateTo(a); });
         if (dlg.exec() == QDialog::Accepted) pushRotateTo(dlg.angle());
     });

@@ -45,7 +45,9 @@ class RotateDialog : public QDialog {
 public:
     // thumb: a small rendering of the CURRENT display (already rotated by
     // currentDeg); the preview rotates it by the delta to the knob angle.
-    RotateDialog(const QImage& thumb, double currentDeg, QWidget* parent = nullptr);
+    // northUpDeg: absolute angle that puts celestial north up (NAN = no WCS).
+    RotateDialog(const QImage& thumb, double currentDeg, double northUpDeg,
+                 QWidget* parent = nullptr);
     double angle() const;
 signals:
     void applyRequested(double totalDeg);         // Apply — dialog stays open

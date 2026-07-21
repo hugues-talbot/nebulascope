@@ -94,7 +94,8 @@ void AngleKnob::paintEvent(QPaintEvent*) {
 
 // ---- RotateDialog -----------------------------------------------------------
 
-RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, QWidget* parent)
+RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northUpDeg,
+                           QWidget* parent)
     : QDialog(parent), m_thumb(thumb), m_baseDeg(currentDeg) {
     setWindowTitle(QStringLiteral("Rotate Image"));
     setModal(true);
@@ -127,6 +128,17 @@ RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, QWidget* pare
     spinRow->addWidget(m_spin);
     spinRow->addStretch();
     side->addLayout(spinRow);
+
+    // WCS-derived preset: rotate so the central Dec line is horizontal and
+    // north points up — the standard orientation for comparing telescopes/sessions.
+    if (std::isfinite(northUpDeg)) {
+        auto* northBtn = new QPushButton(QStringLiteral("\u2B06 North Up (%1\u00b0)")
+                                             .arg(northUpDeg, 0, 'f', 2));
+        northBtn->setToolTip(QStringLiteral("Set the angle that puts celestial north up at the image centre"));
+        connect(northBtn, &QPushButton::clicked, this,
+                [this, northUpDeg] { setAngle(northUpDeg, false); });
+        side->addWidget(northBtn);
+    }
 
     auto* hint = new QLabel(QStringLiteral(
         "Total rotation of this image.\nPositive = counter-clockwise.\n"
