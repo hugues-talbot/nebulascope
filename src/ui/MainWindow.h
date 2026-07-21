@@ -110,6 +110,8 @@ private:
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
     Annotation m_copiedAnn;                                // clipboard for copy/paste
     bool m_hasCopiedAnn = false;
+    int m_hoverX = 0, m_hoverY = 0;                        // last hovered image pixel
+    bool m_hoverValid = false;
     QAction* m_toolEllipse = nullptr;
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
@@ -131,6 +133,8 @@ private:
     void importSexCatalog();              // SExtractor catalog -> ellipse annotations
     void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
     void deleteActiveAnnotation();           // Delete key: selected (or latest) annotation
+    void copySelectedAnnotation();           // Ctrl/Cmd+Shift+C
+    void pasteAnnotationAtCursor();          // Ctrl/Cmd+Shift+V — at hover position
 
 protected:
     void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations

@@ -610,8 +610,8 @@ void MainWindow::buildMenusAndToolbar() {
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
-    acts["copy_stretch"] = stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Shift+C"), this, &MainWindow::copyStretch);
-    acts["paste_stretch_normalized"] = stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Shift+V"), this, [this]{ pasteStretchToSelected(true); });
+    acts["copy_stretch"] = stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
+    acts["paste_stretch_normalized"] = stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Alt+V"), this, [this]{ pasteStretchToSelected(true); });
     acts["paste_stretch_absolute"] = stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
     stretch->addSeparator();
     acts["paste_stretch_all"] = stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
@@ -653,6 +653,13 @@ void MainWindow::buildMenusAndToolbar() {
     // instead of activating — treat that as a plain activation.
     connect(delAnn, &QShortcut::activatedAmbiguously, this, &MainWindow::deleteActiveAnnotation);
     keys["delete_annotation"] = delAnn;
+    // Copy the selected annotation / paste it at the cursor position.
+    auto* copyAnn = new QShortcut(QKeySequence("Ctrl+Shift+C"), this);
+    connect(copyAnn, &QShortcut::activated, this, &MainWindow::copySelectedAnnotation);
+    keys["copy_annotation"] = copyAnn;
+    auto* pasteAnn = new QShortcut(QKeySequence("Ctrl+Shift+V"), this);
+    connect(pasteAnn, &QShortcut::activated, this, &MainWindow::pasteAnnotationAtCursor);
+    keys["paste_annotation"] = pasteAnn;
 
     applyUserShortcuts(acts, keys);     // user INI overrides the defaults above
 
@@ -1251,6 +1258,39 @@ void MainWindow::pushAnnotationEdit(const QString& text, const QString& path,
                                    m_annByPath.value(path), text));
 }
 
+// Ctrl/Cmd+Shift+C: copy the selected annotation (the one showing handles).
+void MainWindow::copySelectedAnnotation() {
+    const auto& anns = m_annByPath.value(m_currentPath);
+    const int idx = m_annotations->activeIndex();
+    if (idx < 0 || idx >= int(anns.size())) {
+        statusBar()->showMessage(QStringLiteral("Click an annotation first to copy it"), 3000);
+        return;
+    }
+    m_copiedAnn = anns[std::size_t(idx)];
+    m_hasCopiedAnn = true;
+    QApplication::clipboard()->setText(QString::fromUtf8(
+        QJsonDocument(m_copiedAnn.toJson()).toJson(QJsonDocument::Compact)));
+    statusBar()->showMessage(QStringLiteral("Copied %1")
+        .arg(m_copiedAnn.label.isEmpty() ? QStringLiteral("annotation") : m_copiedAnn.label), 3000);
+}
+
+// Ctrl/Cmd+Shift+V: paste at the pointer's image position (image centre if the
+// pointer is off the image).
+void MainWindow::pasteAnnotationAtCursor() {
+    if (!m_hasCopiedAnn || !m_image.isValid()) return;
+    const double px = m_hoverValid ? m_hoverX : m_image.width() / 2.0;
+    const double py = m_hoverValid ? m_hoverY : m_image.height() / 2.0;
+    Annotation a = m_copiedAnn;
+    const double dx = px - a.x, dy = py - a.y;
+    a.x = px; a.y = py;
+    if (a.type == Annotation::Type::Line) { a.x2 += dx; a.y2 += dy; }
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    m_annByPath[m_currentPath].push_back(a);
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("paste annotation"), m_currentPath, std::move(before));
+}
+
 // Delete key: remove the selected annotation (handles showing), or the most
 // recently added one when nothing is selected.
 void MainWindow::deleteActiveAnnotation() {
@@ -1720,6 +1760,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
 }
 
 void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool valid) {
+    m_hoverX = x; m_hoverY = y; m_hoverValid = valid;   // paste-at-cursor anchor
     if (!valid) { m_pixelLabel->setText("—"); return; }
     QString txt;
     if (m_image.channels() >= 3)
