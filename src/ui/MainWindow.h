@@ -142,6 +142,8 @@ private:
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image
+    void ensureAnnotationsVisible();      // force the overlay on (load/import)
+    QAction* m_annVisAct = nullptr;       // View ▸ Show Annotations (kept in sync)
     // Rotate/flip history per image: re-applied when the image reloads from
     // disk (blink-back or a fresh session via the annotation sidecar), so the
     // pixels always match annotations made in a transformed orientation.

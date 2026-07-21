@@ -742,6 +742,7 @@ void MainWindow::buildMenusAndToolbar() {
     });
     aAnnVis->setCheckable(true);
     aAnnVis->setChecked(true);
+    m_annVisAct = aAnnVis;
     acts["toggle_annotations"] = aAnnVis;
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
@@ -1372,6 +1373,12 @@ void MainWindow::toggleImageOnly() {
     }
 }
 
+void MainWindow::ensureAnnotationsVisible() {
+    if (!m_annotations || m_annotations->annotationsVisible()) return;
+    m_annotations->setAnnotationsVisible(true);
+    if (m_annVisAct) m_annVisAct->setChecked(true);   // keep the menu in sync
+}
+
 void MainWindow::refreshAnnotations() {
     if (!m_annotations) return;
     static const std::vector<Annotation> kNone;
@@ -1704,6 +1711,7 @@ void MainWindow::importSexCatalog() {
     auto& anns = m_annByPath[m_currentPath];
     anns.insert(anns.end(), fresh.begin(), fresh.end());
     m_annDirty.insert(m_currentPath);
+    ensureAnnotationsVisible();                    // importing implies wanting to see them
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("import SExtractor catalog"), m_currentPath, std::move(before));
     statusBar()->showMessage(QStringLiteral("Imported %1 source(s)%2")
@@ -1802,6 +1810,7 @@ void MainWindow::loadAnnotations() {
     mapAnnotationsFromDiskFrame(anns);             // no-op for an untransformed view
     m_annByPath[m_currentPath] = std::move(anns);
     m_annDirty.remove(m_currentPath);              // matches the file just read
+    ensureAnnotationsVisible();                    // loading implies wanting to see them
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
