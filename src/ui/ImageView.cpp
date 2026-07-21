@@ -29,10 +29,20 @@ QSizeF ImageView::imageSize() const {
 }
 
 void ImageView::adoptNavigation(const ImageView* src) {
+    adoptNavigationCalibrated(src, QTransform(), QTransform());
+}
+
+void ImageView::adoptNavigationCalibrated(const ImageView* src, const QTransform& srcWorld,
+                                          const QTransform& dstWorld) {
     if (m_adopting || !m_item) return;
     m_adopting = true;
-    setTransform(src->transform());
-    centerOn(src->mapToScene(src->viewport()->rect().center()));
+    // Qt composition applies the LEFT factor first. The shared-frame condition
+    // "a world point lands at the same viewport position in both views" gives
+    //   dstWorld^-1 * V_dst == srcWorld^-1 * V_src
+    // so the desired scene->viewport map for this view is:
+    const QTransform M = dstWorld * srcWorld.inverted() * src->viewportTransform();
+    setTransform(QTransform(M.m11(), M.m12(), M.m21(), M.m22(), 0, 0));
+    centerOn(M.inverted().map(QPointF(viewport()->rect().center())));
     m_adopting = false;
 }
 

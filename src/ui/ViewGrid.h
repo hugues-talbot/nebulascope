@@ -13,6 +13,7 @@
 //
 #include <QFrame>
 #include <QWidget>
+#include <QTransform>
 #include <vector>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
@@ -52,8 +53,14 @@ public:
     bool hasStretch = false;
     std::vector<ChannelStats> stats;
 
+    // Calibrated linking: maps this cell's scene onto the link group's shared
+    // frame. Identity + !calibrated = the automatic same-size link.
+    QTransform world;
+    bool calibrated = false;
+
 signals:
     void pressed(ViewCell* self);         // any mouse press inside → activate
+    void linkToggled(ViewCell* self, bool on);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override;
@@ -86,8 +93,16 @@ signals:
     // old cell's state and adopt the new cell's. Not emitted for the first cell.
     void aboutToActivate(ViewCell* current, ViewCell* next);
     void viewCreated(ImageView* v);       // hook up app-level signals once per view
+    void linkMessage(const QString& text);  // calibration feedback for the status bar
+
+public:
+    // Rotating/flipping the active image changes its scene coordinates, which
+    // invalidates a manual calibration — drop it (the user re-links after).
+    void dropActiveCalibration();
 
 private:
+    static bool linkablePair(const ViewCell* a, const ViewCell* b);
+    void onLinkToggled(ViewCell* c, bool on);
     ViewCell* makeCell();
     void relayout();
     void onNavigated(ViewCell* c);        // propagate zoom/pan to linked cells

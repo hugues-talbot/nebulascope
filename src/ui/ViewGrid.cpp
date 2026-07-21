@@ -28,7 +28,11 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
     m_linkBtn->setText(QStringLiteral("\u21c4"));
     m_linkBtn->setCheckable(true);
     m_linkBtn->setChecked(true);
-    m_linkBtn->setToolTip(QStringLiteral("Linked navigation \u2014 same-size images pan/zoom together"));
+    m_linkBtn->setToolTip(QStringLiteral(
+        "Linked navigation.\nSame-size images link automatically.\nDifferent sizes: align both views as desired,\n"
+        "then tick \u21c4 here to calibrate-link them at this alignment."));
+    connect(m_linkBtn, &QToolButton::toggled, this,
+            [this](bool on) { emit linkToggled(this, on); });
     m_linkBtn->setStyleSheet(QStringLiteral(
         "QToolButton{color:#5b6876;background:rgba(10,15,21,0.7);border:1px solid #1f2b37;border-radius:4px;padding:1px 5px;}"
         "QToolButton:checked{color:#8fc0f5;border-color:#2a557e;}"));
@@ -83,6 +87,7 @@ ViewGrid::ViewGrid(QWidget* parent) : QWidget(parent) {
 ViewCell* ViewGrid::makeCell() {
     auto* c = new ViewCell(int(m_cells.size()), this);
     connect(c, &ViewCell::pressed, this, &ViewGrid::activate);
+    connect(c, &ViewCell::linkToggled, this, &ViewGrid::onLinkToggled);
     connect(c->view(), &ImageView::viewNavigated, this, [this, c] { onNavigated(c); });
     m_cells.push_back(c);
     emit viewCreated(c->view());
@@ -130,17 +135,57 @@ void ViewGrid::activate(ViewCell* c) {
     c->refreshChrome();
 }
 
+bool ViewGrid::linkablePair(const ViewCell* a, const ViewCell* b) {
+    if (!a->linkEnabled() || !b->linkEnabled() || !a->occupied() || !b->occupied()) return false;
+    if (a->view()->imageSize() == b->view()->imageSize()) return true;   // automatic
+    return a->calibrated && b->calibrated;                               // manual, calibrated
+}
+
+// Ticking ⇄ on a cell whose image differs in size from another linked cell
+// captures the CURRENT relative view state as the calibration: "what both
+// views show right now corresponds". Unticking forgets it.
+void ViewGrid::onLinkToggled(ViewCell* c, bool on) {
+    if (!on) {
+        if (c->calibrated) emit linkMessage(QStringLiteral("View unlinked — calibration forgotten"));
+        c->calibrated = false;
+        c->world = QTransform();
+        return;
+    }
+    if (!c->occupied()) return;
+    // Anchor: prefer the active cell, else the first other linked occupied cell.
+    ViewCell* anchor = nullptr;
+    if (activeCell() != c && activeCell() && activeCell()->occupied() && activeCell()->linkEnabled())
+        anchor = activeCell();
+    const std::size_t shown = std::size_t(m_rows) * m_cols;
+    for (std::size_t i = 0; !anchor && i < m_cells.size() && i < shown; ++i) {
+        ViewCell* o = m_cells[i];
+        if (o != c && o->occupied() && o->linkEnabled()) anchor = o;
+    }
+    if (!anchor || anchor->view()->imageSize() == c->view()->imageSize()) return;   // same-size: automatic
+    // Shared frame X = anchorWorld^-1 * V_anchor; calibrate so V_c == world_c * X.
+    const QTransform X = anchor->world.inverted() * anchor->view()->viewportTransform();
+    c->world = c->view()->viewportTransform() * X.inverted();
+    c->calibrated = true;
+    anchor->calibrated = true;            // keeps its current world (identity or prior)
+    emit linkMessage(QStringLiteral("Views calibration-linked at the current alignment"));
+}
+
+void ViewGrid::dropActiveCalibration() {
+    ViewCell* c = activeCell();
+    if (!c || !c->calibrated) return;
+    c->calibrated = false;
+    c->world = QTransform();
+    emit linkMessage(QStringLiteral("Image geometry changed — calibration link dropped (re-tick ⇄ to relink)"));
+}
+
 void ViewGrid::onNavigated(ViewCell* c) {
     c->refreshChrome();
     if (!c->linkEnabled() || !c->occupied()) return;
-    const QSizeF dims = c->view()->imageSize();
-    if (dims.isEmpty()) return;
     const std::size_t shown = std::size_t(m_rows) * m_cols;
     for (std::size_t i = 0; i < m_cells.size() && i < shown; ++i) {
         ViewCell* o = m_cells[i];
-        if (o == c || !o->occupied() || !o->linkEnabled()) continue;
-        if (o->view()->imageSize() != dims) continue;   // link same-size only
-        o->view()->adoptNavigation(c->view());
+        if (o == c || !linkablePair(c, o)) continue;
+        o->view()->adoptNavigationCalibrated(c->view(), c->world, o->world);
     }
 }
 

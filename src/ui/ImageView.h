@@ -42,6 +42,11 @@ public:
     QSizeF imageSize() const;             // scene-rect size (image pixels)
     // Copy another view's zoom + centre (linked navigation); re-emission guarded.
     void adoptNavigation(const ImageView* src);
+    // Calibrated variant: worlds map each view's scene onto a shared reference
+    // frame; the correspondence captured at link time is maintained under any
+    // zoom/pan of `src`. Identity worlds reduce to adoptNavigation.
+    void adoptNavigationCalibrated(const ImageView* src, const QTransform& srcWorld,
+                                   const QTransform& dstWorld);
 
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);

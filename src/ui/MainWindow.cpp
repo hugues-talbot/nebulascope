@@ -115,6 +115,8 @@ void MainWindow::buildUi() {
     connect(m_grid, &ViewGrid::viewCreated, this, &MainWindow::connectViewSignals);
     connect(m_grid, &ViewGrid::aboutToActivate, this, &MainWindow::onCellSwap);
     m_grid->setGrid(1, 1);
+    connect(m_grid, &ViewGrid::linkMessage, this,
+            [this](const QString& t) { statusBar()->showMessage(t, 5000); });
     m_view = m_grid->activeCell()->view();
     m_annotations = m_grid->activeCell()->layer();
     m_view->setSource(&m_image);
@@ -325,6 +327,7 @@ void MainWindow::applyTransform(Xform x) {
 void MainWindow::doTransform(Xform x) {
     if (!m_image.isValid()) return;
     m_rotBasePath.clear();     // 90°/flip changes geometry — next rotation re-bases
+    m_grid->dropActiveCalibration();   // scene coords change — manual link is stale
     const int ow = m_image.width(), oh = m_image.height();   // pre-transform dims
     switch (x) {
         case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
@@ -365,6 +368,7 @@ void MainWindow::doTransform(Xform x) {
 // records "rot:<deg>"; consecutive rotations merge (and cancel near 0°/360°).
 void MainWindow::doRotateArbitrary(double angleDeg) {
     if (!m_image.isValid()) return;
+    m_grid->dropActiveCalibration();   // scene coords change — manual link is stale
     const int ow = m_image.width(), oh = m_image.height();
     m_image = rotateArbitrary(m_image, angleDeg);
     const int nw = m_image.width(), nh = m_image.height();
