@@ -395,13 +395,12 @@ void MainWindow::doRotateArbitrary(double angleDeg) {
         m_annDirty.insert(m_currentPath);
     }
     if (m_wcs.valid()) m_wcs = m_wcs.rotated(angleDeg, ow, oh, nw, nh);
-    QStringList& hist = m_xformByPath[m_currentPath];
-    double total = angleDeg;
-    if (!hist.isEmpty() && hist.last().startsWith(QLatin1String("rot:")))
-        total += hist.takeLast().mid(4).toDouble();
-    total = std::fmod(total, 360.0);
-    if (std::fabs(total) > 1e-6)
-        hist << QStringLiteral("rot:%1").arg(total, 0, 'f', 4);
+    // Record the op EXACTLY as applied — never merged. rot:a then rot:-a is NOT
+    // the identity for the pixels (the canvas expands both times), so a merged
+    // or cancelled entry would desynchronize the history from the pixels and
+    // break disk-frame imports. rotateToAngle() keeps the chain short anyway by
+    // restoring the base history before appending its single op.
+    m_xformByPath[m_currentPath] << QStringLiteral("rot:%1").arg(angleDeg, 0, 'f', 4);
     refreshAnnotations();
     m_view->zoomToFit();
     m_lastW = nw; m_lastH = nh;
@@ -411,10 +410,12 @@ void MainWindow::doRotateArbitrary(double angleDeg) {
 }
 
 double MainWindow::currentRotationAngle() const {
-    const QStringList hist = m_xformByPath.value(m_currentPath);
-    if (!hist.isEmpty() && hist.last().startsWith(QLatin1String("rot:")))
-        return hist.last().mid(4).toDouble();
-    return 0.0;
+    // User-facing total: the sum of all rotation ops in the history. (Ops are
+    // recorded individually because they are not pixel-wise mergeable.)
+    double total = 0.0;
+    for (const QString& n : m_xformByPath.value(m_currentPath))
+        if (n.startsWith(QLatin1String("rot:"))) total += n.mid(4).toDouble();
+    return std::remainder(total, 360.0);
 }
 
 // Absolute rotation from the stashed base. The base is the image state before
