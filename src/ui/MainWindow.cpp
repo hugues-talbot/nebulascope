@@ -1,6 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
+#include "ui/RotateDialog.h"
 #include "ui/InfoPanel.h"
 #include "ui/CombineDialog.h"
 #include "io/ImageReader.h"
@@ -226,36 +227,28 @@ private:
     bool m_first = true;
 };
 
-// Arbitrary rotation is resampling: undoing by rotating back would interpolate
-// a second time and grow the canvas again, so this command snapshots the exact
-// pre-rotation state (image, annotations, WCS, orientation history) instead.
-class RotateCmd : public QUndoCommand {
+// Arbitrary rotation is absolute (a total angle) and always re-applied from the
+// stashed pre-rotation base, so undo/redo only needs the two angles — no image
+// snapshots, and both directions are a single exact resample from the base.
+class RotateAngleCmd : public QUndoCommand {
 public:
-    RotateCmd(MainWindow* w, QString path, double angleDeg,
-              ImageData before, std::vector<Annotation> annBefore,
-              Wcs wcsBefore, QStringList histBefore)
-        : m_w(w), m_path(std::move(path)), m_angle(angleDeg),
-          m_img(std::move(before)), m_anns(std::move(annBefore)),
-          m_wcs(std::move(wcsBefore)), m_hist(std::move(histBefore)) {
-        setText(QStringLiteral("rotate %1\u00b0").arg(angleDeg));
+    RotateAngleCmd(MainWindow* w, QString path, double prevDeg, double nextDeg)
+        : m_w(w), m_path(std::move(path)), m_prev(prevDeg), m_next(nextDeg) {
+        setText(QStringLiteral("rotate to %1\u00b0").arg(nextDeg));
     }
     void undo() override {
         if (m_w->currentPath() != m_path) { setObsolete(true); return; }
-        m_w->restoreImageState(m_path, m_img, m_anns, m_wcs, m_hist);
+        m_w->rotateToAngle(m_prev);
     }
     void redo() override {
         if (m_first) { m_first = false; return; }
         if (m_w->currentPath() != m_path) { setObsolete(true); return; }
-        m_w->doRotateArbitrary(m_angle);
+        m_w->rotateToAngle(m_next);
     }
 private:
     MainWindow* m_w;
     QString m_path;
-    double m_angle;
-    ImageData m_img;
-    std::vector<Annotation> m_anns;
-    Wcs m_wcs;
-    QStringList m_hist;
+    double m_prev, m_next;
     bool m_first = true;
 };
 
@@ -348,6 +341,7 @@ void MainWindow::applyTransform(Xform x) {
 
 void MainWindow::doTransform(Xform x) {
     if (!m_image.isValid()) return;
+    m_rotBasePath.clear();     // 90°/flip changes geometry — next rotation re-bases
     const int ow = m_image.width(), oh = m_image.height();   // pre-transform dims
     switch (x) {
         case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
@@ -412,6 +406,38 @@ void MainWindow::doRotateArbitrary(double angleDeg) {
     statusBar()->showMessage(
         QStringLiteral("Rotated %1\u00b0 — resampled onto %2\u00d7%3 (corners are blank)")
             .arg(angleDeg).arg(nw).arg(nh), 4000);
+}
+
+double MainWindow::currentRotationAngle() const {
+    const QStringList hist = m_xformByPath.value(m_currentPath);
+    if (!hist.isEmpty() && hist.last().startsWith(QLatin1String("rot:")))
+        return hist.last().mid(4).toDouble();
+    return 0.0;
+}
+
+// Absolute rotation from the stashed base. The base is the image state before
+// the FIRST arbitrary rotation (captured lazily), so successive rotations are
+// always one resample from the original data — never rotation-of-rotation.
+void MainWindow::rotateToAngle(double totalDeg) {
+    if (!m_image.isValid()) return;
+    if (m_rotBasePath != m_currentPath || !m_rotBase.isValid()) {
+        m_rotBase = m_image;
+        m_rotBaseAnns = m_annByPath.value(m_currentPath);
+        m_rotBaseWcs = m_wcs;
+        m_rotBaseHist = m_xformByPath.value(m_currentPath);
+        m_rotBasePath = m_currentPath;
+        m_rotBaseAngle = currentRotationAngle();
+    }
+    restoreImageState(m_currentPath, m_rotBase, m_rotBaseAnns, m_rotBaseWcs, m_rotBaseHist);
+    const double rel = totalDeg - m_rotBaseAngle;
+    if (std::fabs(rel) > 1e-6) doRotateArbitrary(rel);
+}
+
+void MainWindow::pushRotateTo(double totalDeg) {
+    const double cur = currentRotationAngle();
+    if (std::fabs(totalDeg - cur) < 1e-4) return;
+    rotateToAngle(totalDeg);
+    m_undo->push(new RotateAngleCmd(this, m_currentPath, cur, totalDeg));  // first redo skipped
 }
 
 void MainWindow::restoreImageState(const QString& path, const ImageData& img,
@@ -715,18 +741,12 @@ void MainWindow::buildMenusAndToolbar() {
     acts["rotate_ccw"] = image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
     acts["rotate_by_angle"] = image->addAction("Rotate by &Angle\u2026", QKeySequence("Ctrl+R"), this, [this]{
         if (!m_image.isValid()) return;
-        bool ok = false;
-        const double a = QInputDialog::getDouble(this, QStringLiteral("Rotate by angle"),
-            QStringLiteral("Angle in degrees (positive = counter-clockwise).\n"
-                           "The image is resampled; blank corners become NaN."),
-            0.0, -360.0, 360.0, 2, &ok);
-        if (!ok || std::fabs(a) < 1e-6) return;
-        // Snapshot BEFORE rotating — undo restores it exactly (no re-resampling).
-        RotateCmd* cmd = new RotateCmd(this, m_currentPath, a, m_image,
-                                       m_annByPath.value(m_currentPath), m_wcs,
-                                       m_xformByPath.value(m_currentPath));
-        doRotateArbitrary(a);
-        m_undo->push(cmd);   // first redo() is skipped
+        // Small preview of the current display for the dialog's live thumbnail.
+        const QImage thumb = DisplayRenderer::render(m_image, m_model)
+            .scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        RotateDialog dlg(thumb, currentRotationAngle(), this);
+        connect(&dlg, &RotateDialog::applyRequested, this, [this](double a){ pushRotateTo(a); });
+        if (dlg.exec() == QDialog::Accepted) pushRotateTo(dlg.angle());
     });
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });

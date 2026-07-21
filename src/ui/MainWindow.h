@@ -91,6 +91,11 @@ public:
     // Undo plumbing (used by the QUndoCommand classes in MainWindow.cpp):
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
     void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push
+    // Absolute rotation: restores the stashed pre-rotation base, then applies
+    // ONE resample. Hunting for the right angle never degrades the image, and
+    // undo/redo is exact (rotate back to the previous total from the same base).
+    void rotateToAngle(double totalDeg);
+    double currentRotationAngle() const;       // the "rot:" total in the history
     // Exact restore for RotateCmd::undo — an inverse rotation would re-resample
     // AND re-grow the canvas, so the command snapshots the state instead.
     void restoreImageState(const QString& path, const ImageData& img,
@@ -100,6 +105,15 @@ public:
     const QString& currentPath() const { return m_currentPath; }
 private:
     void applyTransform(Xform x);              // lossless geometry on the current image
+    void pushRotateTo(double totalDeg);        // rotateToAngle + undo command
+    // Pre-rotation base for rotateToAngle — captured lazily on the first
+    // arbitrary rotation of an image, dropped on 90°/flip or image switch.
+    ImageData m_rotBase;
+    std::vector<Annotation> m_rotBaseAnns;
+    Wcs m_rotBaseWcs;
+    QStringList m_rotBaseHist;
+    QString m_rotBasePath;
+    double m_rotBaseAngle = 0.0;
     void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
     void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog
 

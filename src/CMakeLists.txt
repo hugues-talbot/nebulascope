@@ -58,6 +58,7 @@ add_executable(nebulascope
     ui/AnnotationLayer.cpp
     ui/CombineDialog.cpp
     ui/MainWindow.cpp
+    ui/RotateDialog.cpp
     ui/PreferencesDialog.cpp
     ${APP_ICON_SOURCES}
 )
