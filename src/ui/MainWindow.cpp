@@ -1665,23 +1665,6 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
                                                   : QStringLiteral("\u201c%1\u201d").arg(cc.label);
         aCopyAnn = menu.addAction(QStringLiteral("Copy %1").arg(ccName));
     }
-    // Aladin Lite lookup — needs an astrometric solution. Targets the selected/
-    // hit annotation's centre, else the clicked pixel.
-    QAction* aAladin = nullptr;
-    double alRa = 0, alDec = 0, alFovDeg = 0.25;
-    if (m_wcs.valid() && onImage) {
-        double cx = x, cy = y;
-        if (copyIdx >= 0 && copyIdx < int(m_annByPath[m_currentPath].size())) {
-            const Annotation& ta = m_annByPath[m_currentPath][std::size_t(copyIdx)];
-            cx = ta.x; cy = ta.y;
-            // FOV ~10× the ellipse size so the object sits in context.
-            const double scaleDeg = m_wcs.pixelScaleArcsec() / 3600.0;
-            alFovDeg = qBound(0.03, 10.0 * std::max(ta.a, ta.b) * scaleDeg, 5.0);
-        }
-        if (m_wcs.pixelToSky(cx, cy, alRa, alDec))
-            aAladin = menu.addAction(QStringLiteral("Look up in Aladin — %1 %2")
-                .arg(Wcs::formatRa(alRa), Wcs::formatDec(alDec)));
-    }
     QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
     QAction* aPasteAnn = menu.addAction(QStringLiteral("Paste Annotation Here"));
@@ -1697,6 +1680,31 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     QAction* aInvAnn = menu.addAction(QStringLiteral("Invert Annotation Contrast"));
     aInvAnn->setCheckable(true);
     aInvAnn->setChecked(m_annotations->invertedContrast());
+
+    // --- lookup section (needs an astrometric solution) ---
+    menu.addSeparator();
+    QAction* aAladin = nullptr;
+    QAction* aSimbad = nullptr;
+    double alRa = 0, alDec = 0, alFovDeg = 0.25;
+    if (m_wcs.valid() && onImage) {
+        // Target the selected/hit annotation's centre, else the clicked pixel.
+        double cx = x, cy = y;
+        double radiusArcmin = 2.0;                     // SIMBAD cone-search radius
+        if (copyIdx >= 0 && copyIdx < int(m_annByPath[m_currentPath].size())) {
+            const Annotation& ta = m_annByPath[m_currentPath][std::size_t(copyIdx)];
+            cx = ta.x; cy = ta.y;
+            const double scaleDeg = m_wcs.pixelScaleArcsec() / 3600.0;
+            // Aladin FOV ~10× the ellipse; SIMBAD radius ~2× (identify, not survey).
+            alFovDeg = qBound(0.03, 10.0 * std::max(ta.a, ta.b) * scaleDeg, 5.0);
+            radiusArcmin = qBound(0.2, 2.0 * std::max(ta.a, ta.b) * scaleDeg * 60.0, 30.0);
+        }
+        if (m_wcs.pixelToSky(cx, cy, alRa, alDec)) {
+            const QString where = QStringLiteral("%1 %2").arg(Wcs::formatRa(alRa), Wcs::formatDec(alDec));
+            aAladin = menu.addAction(QStringLiteral("Look up in Aladin — %1").arg(where));
+            aSimbad = menu.addAction(QStringLiteral("Identify in SIMBAD — %1").arg(where));
+            aSimbad->setData(radiusArcmin);
+        }
+    }
 
     menu.addSeparator();
     QAction* aFit = menu.addAction(QStringLiteral("Zoom to Fit"));
@@ -1764,6 +1772,17 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
         q.addQueryItem(QStringLiteral("fov"), QString::number(alFovDeg, 'f', 3));
         q.addQueryItem(QStringLiteral("survey"), QStringLiteral("P/DSS2/color"));
+        url.setQuery(q);
+        QDesktopServices::openUrl(url);
+    }
+    else if (aSimbad && chosen == aSimbad) {
+        // SIMBAD coordinate (cone) query around the target.
+        QUrl url(QStringLiteral("https://simbad.cds.unistra.fr/simbad/sim-coo"));
+        QUrlQuery q;
+        q.addQueryItem(QStringLiteral("Coord"), QStringLiteral("%1 %2")
+            .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
+        q.addQueryItem(QStringLiteral("Radius"), QString::number(aSimbad->data().toDouble(), 'f', 2));
+        q.addQueryItem(QStringLiteral("Radius.unit"), QStringLiteral("arcmin"));
         url.setQuery(q);
         QDesktopServices::openUrl(url);
     }
