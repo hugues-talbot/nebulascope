@@ -171,6 +171,38 @@ bool Wcs::skyToPixel(double raDeg, double decDeg, double& x, double& y) const {
     return true;
 }
 
+Wcs Wcs::transformed(PixelXform op, int w, int h) const {
+    Wcs t = *this;
+    if (!m_valid) return t;
+    // 0-based reference pixel.
+    const double cx = m_crpix1 - 1.0, cy = m_crpix2 - 1.0;
+    double nx = cx, ny = cy;
+    // CD' = CD · J, where J = d(old pixel)/d(new pixel).
+    switch (op) {
+        case PixelXform::RotCW:                       // x' = (h-1)-y, y' = x
+            nx = (h - 1) - cy; ny = cx;
+            t.m_cd11 = -m_cd12; t.m_cd12 = m_cd11;    // J = [[0,1],[-1,0]]
+            t.m_cd21 = -m_cd22; t.m_cd22 = m_cd21;
+            break;
+        case PixelXform::RotCCW:                      // x' = y, y' = (w-1)-x
+            nx = cy; ny = (w - 1) - cx;
+            t.m_cd11 = m_cd12;  t.m_cd12 = -m_cd11;   // J = [[0,-1],[1,0]]
+            t.m_cd21 = m_cd22;  t.m_cd22 = -m_cd21;
+            break;
+        case PixelXform::FlipH:                       // x' = (w-1)-x
+            nx = (w - 1) - cx;
+            t.m_cd11 = -m_cd11; t.m_cd21 = -m_cd21;   // J = [[-1,0],[0,1]]
+            break;
+        case PixelXform::FlipV:                       // y' = (h-1)-y
+            ny = (h - 1) - cy;
+            t.m_cd12 = -m_cd12; t.m_cd22 = -m_cd22;   // J = [[1,0],[0,-1]]
+            break;
+    }
+    t.m_crpix1 = nx + 1.0;
+    t.m_crpix2 = ny + 1.0;
+    return t;
+}
+
 double Wcs::pixelScaleArcsec() const {
     if (!m_valid) return 0.0;
     return std::sqrt(std::fabs(m_cd11 * m_cd22 - m_cd12 * m_cd21)) * 3600.0;

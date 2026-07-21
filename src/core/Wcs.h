@@ -29,6 +29,12 @@ public:
     // or the point is on the far hemisphere. Used by the grid overlay.
     bool skyToPixel(double raDeg, double decDeg, double& x, double& y) const;
 
+    // Rebase the solution onto a rotated/flipped image. w/h are the image
+    // dimensions BEFORE the transform (0-based pixel-centre convention, same as
+    // the annotation transform).
+    enum class PixelXform { RotCW, RotCCW, FlipH, FlipV };
+    Wcs transformed(PixelXform op, int w, int h) const;
+
     double pixelScaleArcsec() const;   // mean scale, arcsec/pixel
     double rotationDeg() const;        // position angle of +Y axis, approx.
 

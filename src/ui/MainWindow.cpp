@@ -310,6 +310,14 @@ void MainWindow::doTransform(Xform x) {
         transformAnnotations(it.value(), x, ow, oh);
         m_annDirty.insert(m_currentPath);
     }
+    // The astrometric solution follows the same pixel remap.
+    if (m_wcs.valid()) {
+        const Wcs::PixelXform px =
+            x == Xform::RotCW  ? Wcs::PixelXform::RotCW  :
+            x == Xform::RotCCW ? Wcs::PixelXform::RotCCW :
+            x == Xform::FlipH  ? Wcs::PixelXform::FlipH  : Wcs::PixelXform::FlipV;
+        m_wcs = m_wcs.transformed(px, ow, oh);
+    }
     // Record the op so blink-back and the sidecar can reproduce the orientation
     // (an op followed by its inverse cancels instead of accumulating).
     QStringList& hist = m_xformByPath[m_currentPath];
@@ -1233,11 +1241,19 @@ void MainWindow::reapplyStoredXforms() {
     for (const QString& n : ops) {
         Xform x;
         if (!xformFromName(n, x)) continue;
+        const int ow = m_image.width(), oh = m_image.height();
         switch (x) {
             case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
             case Xform::RotCCW: m_image = rotate90(m_image, false); break;
             case Xform::FlipH:  m_image = flipHorizontal(m_image);  break;
             case Xform::FlipV:  m_image = flipVertical(m_image);    break;
+        }
+        if (m_wcs.valid()) {                     // solution follows each replayed op
+            const Wcs::PixelXform px =
+                x == Xform::RotCW  ? Wcs::PixelXform::RotCW  :
+                x == Xform::RotCCW ? Wcs::PixelXform::RotCCW :
+                x == Xform::FlipH  ? Wcs::PixelXform::FlipH  : Wcs::PixelXform::FlipV;
+            m_wcs = m_wcs.transformed(px, ow, oh);
         }
     }
     m_view->setSource(&m_image);
