@@ -6,6 +6,7 @@ add_library(astro_core STATIC
     core/Convert.cpp
     core/ImageStats.cpp
     core/Stretch.cpp
+    core/SexCatalog.cpp
     core/Colormap.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp

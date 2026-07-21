@@ -8,6 +8,7 @@
 #include "app/AppInfo.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
+#include "core/SexCatalog.h"
 #include "render/DisplayRenderer.h"
 #include "core/Colormap.h"
 #include "core/Transform.h"
@@ -21,6 +22,9 @@
 #include <QColorDialog>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+#include <QComboBox>
+#include <QCheckBox>
 #include <QPushButton>
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -605,6 +609,7 @@ void MainWindow::buildMenusAndToolbar() {
     // Tools — pixel-math utilities.
     QMenu* tools = menuBar()->addMenu("&Tools");
     acts["combine_channels"] = tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
+    acts["import_sextractor"] = tools->addAction("Import &SExtractor Catalog…", this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
@@ -1300,6 +1305,88 @@ void MainWindow::keyPressEvent(QKeyEvent* e) {
         return;
     }
     QMainWindow::keyPressEvent(e);
+}
+
+// Tools ▸ Import SExtractor Catalog… — one ellipse annotation per detection.
+// Needs X_IMAGE/Y_IMAGE; uses A/B/THETA_IMAGE for the shape when present.
+void MainWindow::importSexCatalog() {
+    if (!m_image.isValid()) return;
+    const QString path = QFileDialog::getOpenFileName(
+        this, "Import SExtractor catalog", QString(),
+        "SExtractor catalogs (*.cat *.txt);;All files (*)");
+    if (path.isEmpty()) return;
+
+    QString err;
+    const SexCatalog cat = SexCatalog::parse(path, &err);
+    if (!cat.isValid()) { QMessageBox::warning(this, "Import failed", err); return; }
+    if (!cat.has("X_IMAGE") || !cat.has("Y_IMAGE")) {
+        QMessageBox::warning(this, "Import failed",
+            "Catalog has no X_IMAGE/Y_IMAGE columns — add them to default.param.");
+        return;
+    }
+
+    // Options dialog.
+    QDialog dlg(this);
+    dlg.setWindowTitle("Import SExtractor catalog");
+    auto* form = new QVBoxLayout(&dlg);
+    form->addWidget(new QLabel(QStringLiteral("%1 source(s), %2")
+        .arg(cat.rowCount()).arg(QFileInfo(path).fileName())));
+    auto* scaleRow = new QHBoxLayout();
+    scaleRow->addWidget(new QLabel("Ellipse scale × A/B_IMAGE:"));
+    auto* scale = new QDoubleSpinBox();
+    scale->setRange(0.5, 20.0); scale->setSingleStep(0.5); scale->setValue(3.0);
+    scaleRow->addWidget(scale, 1);
+    form->addLayout(scaleRow);
+    auto* labelRow = new QHBoxLayout();
+    labelRow->addWidget(new QLabel("Label with:"));
+    auto* labelBy = new QComboBox();
+    labelBy->addItem("None");
+    if (cat.has("NUMBER"))   labelBy->addItem("NUMBER");
+    if (cat.has("MAG_AUTO")) labelBy->addItem("MAG_AUTO");
+    labelRow->addWidget(labelBy, 1);
+    form->addLayout(labelRow);
+    auto* cleanOnly = new QCheckBox("Skip flagged sources (FLAGS ≠ 0)");
+    cleanOnly->setEnabled(cat.has("FLAGS"));
+    form->addWidget(cleanOnly);
+    auto* classColor = new QCheckBox("Colour stars gold (CLASS_STAR > 0.9)");
+    classColor->setEnabled(cat.has("CLASS_STAR"));
+    classColor->setChecked(cat.has("CLASS_STAR"));
+    form->addWidget(classColor);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    form->addWidget(bb);
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    auto& anns = m_annByPath[m_currentPath];
+    const double k = scale->value();
+    const QString lab = labelBy->currentText();
+    int added = 0, skipped = 0;
+    for (int r = 0; r < cat.rowCount(); ++r) {
+        if (cleanOnly->isChecked() && cat.value(r, "FLAGS") != 0.0) { ++skipped; continue; }
+        Annotation a;
+        a.type = Annotation::Type::Ellipse;
+        a.x = cat.value(r, "X_IMAGE") - 1.0;          // FITS 1-based -> 0-based
+        a.y = cat.value(r, "Y_IMAGE") - 1.0;
+        a.a = std::max(2.0, k * cat.value(r, "A_IMAGE", 2.0));
+        a.b = std::max(2.0, k * cat.value(r, "B_IMAGE", 2.0));
+        a.angleDeg = -cat.value(r, "THETA_IMAGE");    // CCW/x (y-up) -> y-down scene
+        if (lab == QLatin1String("NUMBER"))
+            a.label = QString::number(int(cat.value(r, "NUMBER")));
+        else if (lab == QLatin1String("MAG_AUTO"))
+            a.label = QString::number(cat.value(r, "MAG_AUTO"), 'f', 2);
+        a.textSize = 8;
+        a.color = (classColor->isChecked() && cat.value(r, "CLASS_STAR") > 0.9)
+                      ? QColor("#ffd27f") : m_annColor;
+        anns.push_back(a);
+        ++added;
+    }
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(QStringLiteral("import SExtractor catalog"), m_currentPath, std::move(before));
+    statusBar()->showMessage(QStringLiteral("Imported %1 source(s)%2")
+        .arg(added).arg(skipped ? QStringLiteral(", skipped %1 flagged").arg(skipped) : QString()), 4000);
 }
 
 // Warn when annotation edits would be lost on quit.

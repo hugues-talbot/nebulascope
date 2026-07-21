@@ -128,6 +128,7 @@ private:
     void saveAnnotationsAs();             // dialog for an explicit file name
     bool writeAnnotationsFile(const QString& path);   // shared writer
     void loadAnnotations();               // read annotations from a JSON file
+    void importSexCatalog();              // SExtractor catalog -> ellipse annotations
     void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
     void deleteActiveAnnotation();           // Delete key: selected (or latest) annotation
 
