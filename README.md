@@ -1,13 +1,29 @@
 # NebulaScope
 
-A cross-platform **Qt6** desktop viewer for astronomical images, focused on the
-thing most tools do poorly: **precise, draggable RGB-histogram control** —
-including a Generalised Hyperbolic Stretch (GHS) for pulling faint galaxy signal
-out of a high-dynamic-range background without blowing out cores and stars.
+A cross-platform **Qt6** desktop tool for **inspecting and annotating
+astronomical images**, focused on the thing most tools do poorly: **precise,
+draggable RGB-histogram control** — including a Generalised Hyperbolic Stretch
+(GHS) for pulling faint galaxy signal out of a high-dynamic-range background
+without blowing out cores and stars.
 
-Reads **FITS** (incl. multi-HDU and tile-compressed), PixInsight **XISF**, and
-ordinary **JPEG / PNG / TIFF**. Everything downstream of loading consumes one
-`astro::ImageData` model and never needs to know the source format.
+Reads **FITS** (incl. multi-HDU and tile-compressed), PixInsight **XISF**
+(including PCL astrometric solutions), and ordinary **JPEG / PNG / TIFF /
+WebP**. Everything downstream of loading consumes one `astro::ImageData` model
+and never needs to know the source format.
+
+> **Where it fits:** between viewers like SAOImage DS9 (regions, WCS readout,
+> but dated stretch ergonomics) and processing suites like PixInsight/Siril
+> (powerful stretches, but not fast annotation-centric inspectors). NebulaScope
+> combines modern histogram manipulation, blink comparison with per-image
+> stretch memory, and an editable, undoable vector annotation layer that can be
+> fed from SExtractor catalogs — e.g. for building machine-learning training
+> sets.
+
+<!-- TODO: screenshots — suggested set:
+     1. Main window: M81 with histogram dock + GHS curve
+     2. Annotation layer: SExtractor import over a dense field + RA/Dec grid
+     3. Combine Channels dialog (SHO palette)
+     docs/img/*.png, referenced here. -->
 
 ## Features
 
@@ -30,13 +46,29 @@ ordinary **JPEG / PNG / TIFF**. Everything downstream of loading consumes one
 - **Inspection** — drag-rectangle zoom, wheel zoom, right-drag (or Shift/middle)
   pan, hover pixel readout; auto-stretch (STF) on open; an Info panel with data
   range, statistics, FITS structure and a searchable header.
+- **Astrometry** — WCS from FITS keywords (TAN) *and* PixInsight's
+  `PCL:AstrometricSolution` XISF properties; live RA/Dec hover readout,
+  copyable coordinates, RA/Dec coordinate grid overlay with labelled lines,
+  telescope-pointing fallback for unsolved frames.
+- **Annotations** — a vector overlay (never rasterized into the data):
+  ellipses, line segments, and text with per-annotation colour and size. Draw
+  with toolbar tools, move/resize with grab-handles, double-click to edit,
+  copy/paste, full undo/redo. Persisted as JSON sidecars
+  (`<image>_annotation.json`, auto-loaded, orientation-aware), and importable
+  from **SExtractor** ASCII catalogs (scaled A/B/THETA ellipses, FLAGS
+  filtering, CLASS_STAR colouring) — handy for building NN training sets.
+- **Channel combination** — up to 7 mono inputs (LRGB + SHO) merged through a
+  linear-combination dialog with palette presets (SHO/Hubble, HOO, LRGB…),
+  per-channel normalization, and a live preview.
 - **Sessions** — multi-image list (append / remove / drag-reorder / export +
-  import); **Space/Backspace** blink between images (looping), with per-image
-  stretch memory and zoom held across same-size frames.
+  import); **Space/Shift+Space** blink between images (looping), with per-image
+  stretch memory and zoom held across same-size frames; copy/paste stretches
+  between images (normalized or absolute).
 - **Export** — *Save Data As* (FITS/XISF/16-bit TIFF) and *Export View As* /
   *Export Zoomed Region As* (stretched + colormapped PNG/JPEG/TIFF).
 - **Layout** — dockable image-list, info, and histogram panels (F2/F4/F3),
-  image-only mode (Tab), fullscreen (F11).
+  image-only mode (Tab), fullscreen, user-configurable shortcuts
+  (`shortcuts.ini`), undo/redo for annotations and image transforms.
 
 ## Repository layout
 
@@ -88,13 +120,19 @@ under the application menu. Command-line use still works via the inner binary
 optional — the app builds without it, just without a custom dock icon.
 
 Files passed on the command line are registered instantly; each is decoded only
-when you view it. Walk the loaded set with **Space** (next) / **Backspace**
+when you view it. Walk the loaded set with **Space** (next) / **Shift+Space**
 (previous), or click entries in the Open Images list.
 
 macOS specifics (Homebrew, building libXISF, common link errors) are in
 **[docs/BUILDING-macos.md](docs/BUILDING-macos.md)**; see also
 **[docs/BUILDING-linux.md](docs/BUILDING-linux.md)** and
 **[docs/BUILDING-windows.md](docs/BUILDING-windows.md)**.
+
+## Citing
+
+If NebulaScope is useful in your research, please cite it — citation metadata
+is in [CITATION.cff](CITATION.cff) (GitHub renders a “Cite this repository”
+button from it).
 
 ## License
 

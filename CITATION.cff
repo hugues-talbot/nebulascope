@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use NebulaScope in your research, please cite it as below."
+type: software
+title: "NebulaScope: an astronomical image inspector with precise histogram control and vector annotations"
+authors:
+  - family-names: "Talbot"
+    given-names: "Hugues"
+repository-code: "https://github.com/hugues-talbot/nebulascope"
+url: "https://github.com/hugues-talbot/nebulascope"
+abstract: >-
+  NebulaScope is a cross-platform (Qt6) desktop tool for inspecting and
+  annotating astronomical images. It reads FITS (multi-HDU, tile-compressed)
+  and PixInsight XISF (including PCL astrometric-solution properties), and
+  provides draggable per-channel RGB histogram control with Linear/Log/Asinh
+  and Generalised Hyperbolic Stretch transfer functions, false-colour maps,
+  blink comparison with per-image stretch memory, WCS-based RA/Dec readout and
+  coordinate grids, and an editable vector annotation layer (ellipses, lines,
+  text) with JSON sidecar persistence and SExtractor catalog import.
+keywords:
+  - astronomy
+  - FITS
+  - XISF
+  - image-inspection
+  - histogram-stretch
+  - annotation
+  - Qt
+version: "0.11"
+date-released: "2026-07-21"
