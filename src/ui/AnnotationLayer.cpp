@@ -307,13 +307,17 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
             g->addToGroup(line);
             lx = a.x; ly = a.y;   // label at the START endpoint — the segment points at the target
         } else if (a.type == Annotation::Type::Ellipse) {
-            auto* ell = new QGraphicsEllipseItem(a.x - a.a, a.y - a.b, 2 * a.a, 2 * a.b);
+            // Build in local coords centred on the origin and place with an
+            // explicit QTransform. setRotation()+setTransformOriginPoint() is
+            // NOT reliably mapped by addToGroup() (QTBUG-22335) — invisible at
+            // ±90°/180° (ellipse symmetry) but obvious at arbitrary angles.
+            auto* ell = new QGraphicsEllipseItem(-a.a, -a.b, 2 * a.a, 2 * a.b);
             ell->setPen(stroke);
             ell->setBrush(Qt::NoBrush);
-            if (std::fabs(a.angleDeg) > 1e-6) {
-                ell->setTransformOriginPoint(a.x, a.y);
-                ell->setRotation(a.angleDeg);
-            }
+            QTransform tr;
+            tr.translate(a.x, a.y);
+            tr.rotate(a.angleDeg);
+            ell->setTransform(tr);
             g->addToGroup(ell);
             lx = a.x + a.a * 0.7071; ly = a.y - a.b * 0.7071;   // NE of the ellipse
         }
