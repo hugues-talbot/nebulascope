@@ -38,8 +38,14 @@ public:
     void setDrawTool(DrawTool t);
     DrawTool drawTool() const { return m_tool; }
 
+    bool hasImage() const { return m_item != nullptr; }
+    QSizeF imageSize() const;             // scene-rect size (image pixels)
+    // Copy another view's zoom + centre (linked navigation); re-emission guarded.
+    void adoptNavigation(const ImageView* src);
+
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);
+    void viewNavigated();                 // user zoomed/panned/fit this view
     // Right-click without drag. x/y are image pixels; onImage says whether the
     // click landed inside the image bounds.
     void contextMenuRequested(const QPoint& globalPos, int x, int y, bool onImage);
@@ -78,6 +84,7 @@ private:
     QPointF m_drawStart;
     QGraphicsItem* m_preview = nullptr;    // dashed rubber shape while dragging
     const ImageData* m_src = nullptr;
+    bool m_adopting = false;               // suppress viewNavigated during adoptNavigation
 };
 
 } // namespace astro

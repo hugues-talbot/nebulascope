@@ -1,0 +1,140 @@
+#include "ui/ViewGrid.h"
+#include "ui/ImageView.h"
+#include "ui/AnnotationLayer.h"
+#include <QGridLayout>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QToolButton>
+#include <QEvent>
+
+namespace astro {
+
+// ---- ViewCell ---------------------------------------------------------------
+
+ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) {
+    auto* lay = new QVBoxLayout(this);
+    lay->setContentsMargins(2, 2, 2, 2);
+    m_view = new ImageView(this);
+    m_layer = new AnnotationLayer(m_view->scene(), this);
+    lay->addWidget(m_view);
+
+    m_placeholder = new QLabel(QStringLiteral("Click here, then pick an image\nfrom the Open Images list"), this);
+    m_placeholder->setAlignment(Qt::AlignCenter);
+    m_placeholder->setStyleSheet(QStringLiteral("color:#3f4c5a;font-size:12px;background:transparent;border:none;"));
+
+    m_linkBtn = new QToolButton(this);
+    m_linkBtn->setText(QStringLiteral("\u21c4"));
+    m_linkBtn->setCheckable(true);
+    m_linkBtn->setChecked(true);
+    m_linkBtn->setToolTip(QStringLiteral("Linked navigation \u2014 same-size images pan/zoom together"));
+    m_linkBtn->setStyleSheet(QStringLiteral(
+        "QToolButton{color:#5b6876;background:rgba(10,15,21,0.7);border:1px solid #1f2b37;border-radius:4px;padding:1px 5px;}"
+        "QToolButton:checked{color:#8fc0f5;border-color:#2a557e;}"));
+
+    m_view->viewport()->installEventFilter(this);
+    setActive(false);
+    refreshChrome();
+}
+
+bool ViewCell::occupied() const { return m_view->hasImage(); }
+bool ViewCell::linkEnabled() const { return m_linkBtn->isChecked(); }
+
+void ViewCell::setActive(bool on) {
+    m_active = on;
+    setStyleSheet(QStringLiteral("astro--ViewCell{border:%1;}")
+                      .arg(on ? QStringLiteral("2px solid #2a557e")
+                              : QStringLiteral("1px solid #18222d")));
+}
+
+void ViewCell::refreshChrome() {
+    m_placeholder->setVisible(!occupied());
+    m_linkBtn->setVisible(occupied());
+}
+
+bool ViewCell::eventFilter(QObject* obj, QEvent* ev) {
+    if (obj == m_view->viewport() && ev->type() == QEvent::MouseButtonPress)
+        emit pressed(this);               // activate BEFORE the view handles it
+    return false;
+}
+
+void ViewCell::resizeEvent(QResizeEvent* e) {
+    QFrame::resizeEvent(e);
+    m_placeholder->setGeometry(rect());
+    m_linkBtn->move(width() - m_linkBtn->sizeHint().width() - 8, 8);
+    m_linkBtn->resize(m_linkBtn->sizeHint());
+    m_linkBtn->raise();
+}
+
+// ---- ViewGrid ---------------------------------------------------------------
+
+ViewGrid::ViewGrid(QWidget* parent) : QWidget(parent) {
+    m_lay = new QGridLayout(this);
+    m_lay->setContentsMargins(0, 0, 0, 0);
+    m_lay->setSpacing(3);
+}
+
+ViewCell* ViewGrid::makeCell() {
+    auto* c = new ViewCell(int(m_cells.size()), this);
+    connect(c, &ViewCell::pressed, this, &ViewGrid::activate);
+    connect(c->view(), &ImageView::viewNavigated, this, [this, c] { onNavigated(c); });
+    m_cells.push_back(c);
+    emit viewCreated(c->view());
+    return c;
+}
+
+void ViewGrid::setGrid(int rows, int cols) {
+    m_rows = std::max(1, std::min(5, rows));
+    m_cols = std::max(1, std::min(5, cols));
+    const std::size_t need = std::size_t(m_rows) * m_cols;
+    const bool first = m_cells.empty();
+    while (m_cells.size() < need) makeCell();
+    if (first) { m_active = 0; m_cells[0]->setActive(true); }
+    // A shrink can hide the active cell — move activity to the top-left first.
+    if (m_active >= need) activate(m_cells[0]);
+    relayout();
+}
+
+void ViewGrid::relayout() {
+    // Remove everything, then re-place the first rows*cols cells; hide extras
+    // (they keep their images, so growing the grid back restores them).
+    while (QLayoutItem* it = m_lay->takeAt(0)) delete it;
+    const std::size_t shown = std::size_t(m_rows) * m_cols;
+    for (std::size_t i = 0; i < m_cells.size(); ++i) {
+        if (i < shown) {
+            m_lay->addWidget(m_cells[i], int(i) / m_cols, int(i) % m_cols);
+            m_cells[i]->show();
+            m_cells[i]->refreshChrome();
+        } else {
+            m_cells[i]->hide();
+        }
+    }
+    for (int r = 0; r < m_rows; ++r) m_lay->setRowStretch(r, 1);
+    for (int c = 0; c < m_cols; ++c) m_lay->setColumnStretch(c, 1);
+}
+
+void ViewGrid::activate(ViewCell* c) {
+    if (!c || c == activeCell()) return;
+    ViewCell* old = activeCell();
+    emit aboutToActivate(old, c);         // MainWindow swaps its state now
+    if (old) old->setActive(false);
+    for (std::size_t i = 0; i < m_cells.size(); ++i)
+        if (m_cells[i] == c) m_active = i;
+    c->setActive(true);
+    c->refreshChrome();
+}
+
+void ViewGrid::onNavigated(ViewCell* c) {
+    c->refreshChrome();
+    if (!c->linkEnabled() || !c->occupied()) return;
+    const QSizeF dims = c->view()->imageSize();
+    if (dims.isEmpty()) return;
+    const std::size_t shown = std::size_t(m_rows) * m_cols;
+    for (std::size_t i = 0; i < m_cells.size() && i < shown; ++i) {
+        ViewCell* o = m_cells[i];
+        if (o == c || !o->occupied() || !o->linkEnabled()) continue;
+        if (o->view()->imageSize() != dims) continue;   // link same-size only
+        o->view()->adoptNavigation(c->view());
+    }
+}
+
+} // namespace astro

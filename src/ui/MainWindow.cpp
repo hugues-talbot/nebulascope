@@ -2,6 +2,7 @@
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
 #include "ui/RotateDialog.h"
+#include "ui/ViewGrid.h"
 #include "ui/InfoPanel.h"
 #include "ui/CombineDialog.h"
 #include "io/ImageReader.h"
@@ -106,37 +107,17 @@ void MainWindow::dropEvent(QDropEvent* e) {
 }
 
 void MainWindow::buildUi() {
-    m_view = new ImageView(this);
+    // Central widget: the split-view grid. MainWindow's m_view/m_annotations
+    // always point at the ACTIVE cell's view/layer; onCellSwap moves the
+    // current-image state between cells on activation.
+    m_grid = new ViewGrid(this);
+    setCentralWidget(m_grid);
+    connect(m_grid, &ViewGrid::viewCreated, this, &MainWindow::connectViewSignals);
+    connect(m_grid, &ViewGrid::aboutToActivate, this, &MainWindow::onCellSwap);
+    m_grid->setGrid(1, 1);
+    m_view = m_grid->activeCell()->view();
+    m_annotations = m_grid->activeCell()->layer();
     m_view->setSource(&m_image);
-    setCentralWidget(m_view);
-    m_annotations = new AnnotationLayer(m_view->scene(), this);
-    connect(m_view, &ImageView::pixelHovered, this, &MainWindow::onPixelHovered);
-    connect(m_view, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
-    connect(m_view, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
-    connect(m_view, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
-    connect(m_view, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
-    connect(m_view, &ImageView::annotationPressed, this, [this](const QPointF& sp, bool isHandle) {
-        if (isHandle) return;                       // dragging a handle — keep the set
-        m_annotations->setActive(m_annotations->hitTest(sp));
-    });
-    connect(m_view, &ImageView::annotationDoubleClicked, this, [this](const QPointF& sp) {
-        editAnnotationDialog(m_annotations->hitTest(sp));
-    });
-    connect(m_view, &ImageView::annotationDragged, this, [this] {
-        m_annotations->syncHandles();               // handles track a live move
-    });
-    connect(m_view, &ImageView::annotationsEdited, this, [this] {
-        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
-        if (m_annotations->commitMoves(m_annByPath[m_currentPath])) {
-            m_annDirty.insert(m_currentPath);
-            refreshAnnotations();
-            pushAnnotationEdit(QStringLiteral("move/resize annotation"), m_currentPath, std::move(before));
-        }
-    });
-    connect(m_view, &ImageView::drawToolFinished, this, [this] {
-        for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
-            if (a) a->setChecked(false);
-    });
 
     // left dock: open images (with an append / remove / export button bar)
     m_leftDock = new QDockWidget("Open Images", this);
@@ -681,6 +662,96 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     else if (chosen == aRemove) removeSelected();
 }
 
+// One-time wiring for every view the grid creates. Handlers act on the ACTIVE
+// cell's state (m_view/m_annotations/m_currentPath); a press inside any cell
+// activates it BEFORE these signals fire (ViewCell's event filter), so by the
+// time a press-derived signal arrives, sender == m_view. Hover is the one
+// signal that arrives without a press — gate it to the active view.
+void MainWindow::connectViewSignals(ImageView* v) {
+    connect(v, &ImageView::pixelHovered, this,
+            [this, v](int x, int y, double r, double g, double b, bool valid) {
+        if (v == m_view) onPixelHovered(x, y, r, g, b, valid);
+    });
+    connect(v, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
+    connect(v, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
+    connect(v, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
+    connect(v, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
+    connect(v, &ImageView::annotationPressed, this, [this](const QPointF& sp, bool isHandle) {
+        if (isHandle) return;                       // dragging a handle — keep the set
+        m_annotations->setActive(m_annotations->hitTest(sp));
+    });
+    connect(v, &ImageView::annotationDoubleClicked, this, [this](const QPointF& sp) {
+        editAnnotationDialog(m_annotations->hitTest(sp));
+    });
+    connect(v, &ImageView::annotationDragged, this, [this] {
+        m_annotations->syncHandles();               // handles track a live move
+    });
+    connect(v, &ImageView::annotationsEdited, this, [this] {
+        std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+        if (m_annotations->commitMoves(m_annByPath[m_currentPath])) {
+            m_annDirty.insert(m_currentPath);
+            refreshAnnotations();
+            pushAnnotationEdit(QStringLiteral("move/resize annotation"), m_currentPath, std::move(before));
+        }
+    });
+    connect(v, &ImageView::drawToolFinished, this, [this] {
+        for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
+            if (a) a->setChecked(false);
+    });
+}
+
+// Move the current-image state into the deactivating cell and adopt the newly
+// activated cell's. All per-path machinery (stretch memory, annotations,
+// orientation history, undo) is keyed by m_currentPath, so it follows along.
+void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
+    if (!newC || oldC == newC) return;
+    if (oldC) {
+        oldC->image = std::move(m_image);
+        m_image = ImageData();
+        oldC->header = m_header;
+        oldC->path = m_currentPath;
+        oldC->wcs = m_wcs;
+        oldC->stats = m_curStats;
+        oldC->stretch = m_model.state();
+        oldC->hasStretch = oldC->image.isValid();
+        if (!oldC->path.isEmpty()) m_stfByPath[oldC->path] = oldC->stretch;
+        oldC->view()->setSource(&oldC->image);      // pixel readout keeps working
+    }
+    m_image = std::move(newC->image);
+    newC->image = ImageData();
+    m_header = newC->header;
+    m_currentPath = newC->path;
+    m_wcs = newC->wcs;
+    m_curStats = newC->stats;
+    m_view = newC->view();
+    m_annotations = newC->layer();
+    m_view->setSource(&m_image);
+    m_hist->setSource(&m_image);
+    m_info->setData(&m_image, &m_header, m_curStats);
+    // Keep the file list's highlight on the active cell's image (block the
+    // currentRowChanged → showRow round trip; the image is already decoded).
+    if (m_fileList) {
+        QSignalBlocker blk(m_fileList);
+        for (int i = 0; i < m_fileList->count(); ++i)
+            if (m_fileList->item(i)->data(Qt::UserRole).toString() == m_currentPath)
+                m_fileList->setCurrentRow(i);
+    }
+    if (m_image.isValid()) {
+        m_model.setChannelCount(m_image.channels());
+        m_lastW = m_image.width();
+        m_lastH = m_image.height();
+    }
+    if (newC->hasStretch) m_model.setState(newC->stretch);   // changed() re-renders this view
+    if (m_cmapCombo) {
+        const bool mono = m_image.isValid() && m_image.channels() == 1;
+        m_cmapCombo->setEnabled(mono);
+        QSignalBlocker blk(m_cmapCombo);
+        m_cmapCombo->setCurrentIndex(int(mono ? m_model.colormap() : Colormap::Gray));
+        if (m_invertCheck) m_invertCheck->setEnabled(mono);
+    }
+    refreshAnnotations();
+}
+
 void MainWindow::buildMenusAndToolbar() {
     QHash<QString, QAction*> acts;      // registry for user-configurable shortcuts
     QHash<QString, QShortcut*> keys;
@@ -744,6 +815,28 @@ void MainWindow::buildMenusAndToolbar() {
     aAnnVis->setChecked(true);
     m_annVisAct = aAnnVis;
     acts["toggle_annotations"] = aAnnVis;
+
+    // Split main view — compare several decoded images side by side. Same-size
+    // images pan/zoom together (each cell's ⇄ button opts out).
+    QMenu* split = view->addMenu("Split &View");
+    auto addPreset = [&](const QString& label, int r, int c) {
+        split->addAction(label, this, [this, r, c] { m_grid->setGrid(r, c); });
+    };
+    addPreset(QStringLiteral("Single"), 1, 1);
+    addPreset(QStringLiteral("1 \u00d7 2 (side by side)"), 1, 2);
+    addPreset(QStringLiteral("2 \u00d7 1 (stacked)"), 2, 1);
+    addPreset(QStringLiteral("2 \u00d7 2"), 2, 2);
+    split->addSeparator();
+    split->addAction(QStringLiteral("Custom\u2026"), this, [this] {
+        bool ok = false;
+        const int r = QInputDialog::getInt(this, QStringLiteral("Split view"),
+            QStringLiteral("Rows (1\u20135):"), m_grid->rows(), 1, 5, 1, &ok);
+        if (!ok) return;
+        const int c = QInputDialog::getInt(this, QStringLiteral("Split view"),
+            QStringLiteral("Columns (1\u20135):"), m_grid->cols(), 1, 5, 1, &ok);
+        if (ok) m_grid->setGrid(r, c);
+    });
+
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 

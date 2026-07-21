@@ -18,6 +18,22 @@ ImageView::ImageView(QWidget* parent) : QGraphicsView(parent) {
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::NoDrag);
+    // Any scrollbar motion (wheel, pans, zoom side-effects) counts as navigation.
+    auto nav = [this] { if (!m_adopting) emit viewNavigated(); };
+    connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, nav);
+    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, nav);
+}
+
+QSizeF ImageView::imageSize() const {
+    return m_item ? m_item->boundingRect().size() : QSizeF();
+}
+
+void ImageView::adoptNavigation(const ImageView* src) {
+    if (m_adopting || !m_item) return;
+    m_adopting = true;
+    setTransform(src->transform());
+    centerOn(src->mapToScene(src->viewport()->rect().center()));
+    m_adopting = false;
 }
 
 void ImageView::setDisplayImage(const QImage& img) {
@@ -34,6 +50,7 @@ void ImageView::setDisplayImage(const QImage& img) {
 
 void ImageView::zoomToFit() {
     if (m_item) fitInView(m_item->boundingRect(), Qt::KeepAspectRatio);
+    if (!m_adopting) emit viewNavigated();     // scale change may not move scrollbars
 }
 
 void ImageView::zoomActualSize() {
@@ -41,6 +58,7 @@ void ImageView::zoomActualSize() {
     const QPointF centre = mapToScene(viewport()->rect().center());  // keep the current view centre
     resetTransform();                                                // scale = 1 → 1 image px per screen px
     centerOn(centre);
+    if (!m_adopting) emit viewNavigated();
 }
 
 QRect ImageView::visibleImageRect() const {
@@ -238,6 +256,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
         if (r.width() > 8 && r.height() > 8) {                       // drag = zoom to box
             const QRectF sr = mapToScene(r).boundingRect();
             fitInView(sr, Qt::KeepAspectRatio);
+            if (!m_adopting) emit viewNavigated();
         }
         return;
     }
@@ -247,6 +266,7 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
 void ImageView::wheelEvent(QWheelEvent* e) {
     const double f = e->angleDelta().y() > 0 ? 1.2 : (1.0 / 1.2);
     scale(f, f);
+    if (!m_adopting) emit viewNavigated();
 }
 
 } // namespace astro

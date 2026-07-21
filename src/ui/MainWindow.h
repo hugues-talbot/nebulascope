@@ -29,6 +29,8 @@ namespace astro {
 
 class ImageView;
 class HistogramPanel;
+class ViewGrid;
+class ViewCell;
 class InfoPanel;
 
 class MainWindow : public QMainWindow {
@@ -142,6 +144,9 @@ private:
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image
+    void connectViewSignals(ImageView* v);           // per-view wiring (grid cells)
+    void onCellSwap(ViewCell* oldC, ViewCell* newC); // active-cell state exchange
+    ViewGrid* m_grid = nullptr;
     void ensureAnnotationsVisible();      // force the overlay on (load/import)
     QAction* m_annVisAct = nullptr;       // View ▸ Show Annotations (kept in sync)
     // Rotate/flip history per image: re-applied when the image reloads from
