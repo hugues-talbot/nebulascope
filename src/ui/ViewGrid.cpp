@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QToolButton>
 #include <QEvent>
+#include <QMouseEvent>
 
 namespace astro {
 
@@ -21,6 +22,7 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
     m_placeholder = new QLabel(QStringLiteral("Click here, then pick an image\nfrom the Open Images list"), this);
     m_placeholder->setAlignment(Qt::AlignCenter);
     m_placeholder->setStyleSheet(QStringLiteral("color:#3f4c5a;font-size:12px;background:transparent;border:none;"));
+    m_placeholder->setAttribute(Qt::WA_TransparentForMouseEvents);   // clicks reach the view
 
     m_linkBtn = new QToolButton(this);
     m_linkBtn->setText(QStringLiteral("\u21c4"));
@@ -63,6 +65,11 @@ void ViewCell::resizeEvent(QResizeEvent* e) {
     m_linkBtn->move(width() - m_linkBtn->sizeHint().width() - 8, 8);
     m_linkBtn->resize(m_linkBtn->sizeHint());
     m_linkBtn->raise();
+}
+
+void ViewCell::mousePressEvent(QMouseEvent* e) {
+    emit pressed(this);                  // clicks on the frame/border also activate
+    QFrame::mousePressEvent(e);
 }
 
 // ---- ViewGrid ---------------------------------------------------------------
