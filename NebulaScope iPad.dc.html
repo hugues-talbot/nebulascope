@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#05070a;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  *{box-sizing:border-box;}
+  @keyframes ants{to{stroke-dashoffset:-14;}}
+</style>
+</helmet>
+
+<div style="padding:56px;display:flex;flex-direction:column;align-items:center;gap:26px;min-height:100vh;">
+
+  <div style="display:flex;gap:14px;align-items:baseline;color:#e7eef5;">
+    <span style="font-weight:700;font-size:22px;letter-spacing:.01em;">NebulaScope for iPad</span>
+    <span style="font-size:13px;color:#5f6c7a;font-family:'IBM Plex Mono';">touch-first inspection · 12.9″ landscape · 1366×1024pt</span>
+  </div>
+
+  <!-- iPad bezel -->
+  <div style="width:1366px;height:1024px;flex:0 0 auto;border-radius:38px;background:#0b0d10;padding:13px;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 2px #1a1d22,inset 0 0 0 2px #000;position:relative;">
+    <!-- front camera -->
+    <div style="position:absolute;left:50%;top:20px;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#05070a;box-shadow:inset 0 0 0 1px #22262c;"></div>
+
+    <!-- screen -->
+    <div data-screen-label="iPad Inspector" style="width:100%;height:100%;border-radius:26px;overflow:hidden;background:#0a0e13;display:flex;flex-direction:column;color:#c8d2dc;position:relative;">
+
+      <!-- status bar -->
+      <div style="height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:13px;font-weight:600;color:#c8d2dc;background:#0a0e13;">
+        <span style="font-family:'IBM Plex Mono';">9:41</span>
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#8492a0;">
+          <span>NGC 4565</span>
+          <span style="width:22px;height:11px;border:1.4px solid #6b7886;border-radius:3px;position:relative;display:inline-block;"><span style="position:absolute;inset:1.5px;right:6px;background:#7fe0a6;border-radius:1px;"></span></span>
+        </div>
+      </div>
+
+      <!-- top toolbar -->
+      <div style="height:60px;flex:0 0 60px;display:flex;align-items:center;gap:14px;padding:0 20px;background:#0c1117;border-bottom:1px solid #18222d;">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#5aa9ff,#8a6cff);"></div>
+          <span style="font-weight:700;font-size:16px;color:#e7eef5;">NebulaScope</span>
+        </div>
+        <div style="width:1px;height:26px;background:#1d2833;margin:0 4px;"></div>
+        <!-- tool pills, 48px hit targets -->
+        <div style="display:flex;gap:8px;">{{ tools }}</div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;padding:0 16px;height:44px;border-radius:11px;background:#111820;border:1px solid #1f2b37;font-family:'IBM Plex Mono';font-size:12px;">
+            <span style="color:#5b6876;">R</span><span style="color:#ff8a8a;">38211</span>
+            <span style="color:#5b6876;">G</span><span style="color:#7fe0a6;">29044</span>
+            <span style="color:#5b6876;">B</span><span style="color:#8fc0f5;">41902</span>
+          </div>
+          <div style="width:44px;height:44px;border-radius:11px;background:#111820;border:1px solid #1f2b37;display:flex;align-items:center;justify-content:center;color:#8fc0f5;font-size:18px;">⤒</div>
+        </div>
+      </div>
+
+      <!-- main row -->
+      <div style="flex:1;display:flex;min-height:0;">
+
+        <!-- image canvas -->
+        <div style="flex:1;position:relative;min-width:0;background:#05070a;overflow:hidden;">
+          <canvas id="ipadgal" style="position:absolute;inset:0;width:100%;height:100%;display:block;"></canvas>
+
+          <!-- pinch-zoom hint chip -->
+          <div style="position:absolute;left:18px;top:18px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:9px;background:#0a121cd0;border:1px solid #223344;border-radius:12px;padding:9px 13px;font-size:12.5px;color:#aeb9c4;backdrop-filter:blur(4px);">
+              <span style="font-size:15px;">👌</span> Pinch to zoom · two-finger pan
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;background:#0a121cd0;border:1px solid #223344;border-radius:12px;padding:9px 13px;font-size:12.5px;color:#aeb9c4;backdrop-filter:blur(4px);">
+              <span style="font-size:15px;">✎</span> Apple Pencil drags histogram handles
+            </div>
+          </div>
+
+          <!-- loupe -->
+          <div style="position:absolute;right:20px;top:20px;width:118px;height:118px;border-radius:50%;border:2px solid #2a557e;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);background:#05070a;">
+            <canvas id="ipadloupe" style="width:100%;height:100%;display:block;"></canvas>
+            <div style="position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px #8fc0f5;"></div>
+            <div style="position:absolute;left:50%;top:50%;width:11px;height:11px;transform:translate(-50%,-50%);border:1px solid #8fc0f5;border-radius:2px;"></div>
+          </div>
+
+          <!-- scale + zoom -->
+          <div style="position:absolute;left:18px;bottom:16px;display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono';font-size:12px;color:#8492a0;background:#0a121caa;padding:6px 11px;border-radius:9px;"><div style="width:64px;height:3px;background:#cdd7e1;border-radius:2px;"></div>30″</div>
+          <div style="position:absolute;right:20px;bottom:16px;font-family:'IBM Plex Mono';font-size:12px;color:#8492a0;background:#0a121caa;padding:6px 11px;border-radius:9px;">142%</div>
+        </div>
+
+        <!-- histogram side sheet -->
+        <div style="width:452px;flex:0 0 452px;background:#0b1016;border-left:1px solid #18222d;display:flex;flex-direction:column;">{{ panel }}</div>
+      </div>
+
+      <!-- bottom filmstrip (image list) -->
+      <div style="height:118px;flex:0 0 118px;background:#0c1117;border-top:1px solid #18222d;display:flex;align-items:center;gap:14px;padding:0 20px;">
+        <div style="font-size:11px;letter-spacing:.14em;color:#5b6876;font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg);height:78px;display:flex;align-items:center;">LIBRARY</div>
+        <div style="flex:1;display:flex;gap:13px;overflow:hidden;align-items:center;">{{ filmstrip }}</div>
+        <div style="width:64px;height:82px;border-radius:14px;border:2px dashed #26333f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#5b6876;flex:0 0 64px;">
+          <span style="font-size:24px;font-weight:300;line-height:1;">+</span>
+          <span style="font-size:10px;">Import</span>
+        </div>
+      </div>
+
+      <!-- home indicator -->
+      <div style="position:absolute;left:50%;bottom:7px;transform:translateX(-50%);width:150px;height:5px;border-radius:3px;background:#3a4654;"></div>
+    </div>
+  </div>
+
+  <div style="max-width:1200px;font-size:13.5px;line-height:1.75;color:#7e8b98;text-align:center;">
+    Touch-first reworking of the desktop inspector. The <span style="color:#aeb9c4;">core / io / render C++ stays untouched</span>; only this UI layer changes. Hit targets are ≥44pt, mouse gestures become <span style="color:#aeb9c4;">pinch-zoom / two-finger pan</span>, the image list becomes a swipeable <span style="color:#aeb9c4;">filmstrip</span>, and the histogram handles are oversized pucks you drag with finger or <span style="color:#aeb9c4;">Apple Pencil</span>. Menus collapse into the tool row and a share/export button.
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.COL = { R:'#ff6b6b', G:'#3fd07f', B:'#5aa9ff' };
+    this.state = {
+      stretch:'asinh', channel:'RGB', logHist:true,
+      chan:{ R:{b:0.070,m:0.200,w:0.60}, G:{b:0.058,m:0.180,w:0.575}, B:{b:0.048,m:0.162,w:0.545} },
+      cmap:'gray'
+    };
+    this.hist = { R:this.genHist(0.012), G:this.genHist(0), B:this.genHist(-0.014) };
+    this.drag = null;
+  }
+  h(){ return React.createElement.apply(React, arguments); }
+  gauss(x,mu,sd){ const d=(x-mu)/sd; return Math.exp(-0.5*d*d); }
+  genHist(shift){
+    const N=200, raw=[]; let mx=0;
+    for(let i=0;i<N;i++){
+      const x=i/(N-1);
+      let v = 1.00*this.gauss(x,0.105+shift,0.022)
+            + 0.165*this.gauss(x,0.30+shift,0.105)
+            + 0.020*Math.exp(-Math.max(0,x-0.42)*3.4)
+            + 0.010*this.gauss(x,0.70,0.05)
+            + 0.006*this.gauss(x,0.88,0.04);
+      const y = Math.log(1+v*80)/Math.log(81);
+      raw.push(y); if(y>mx) mx=y;
+    }
+    return raw.map(y=>y/mx);
+  }
+  areaPath(arr,H,logMode){
+    let d='M0,'+H;
+    for(let i=0;i<arr.length;i++){
+      let val=arr[i];
+      if(!logMode) val=Math.pow(val,2.4); // linear freq axis compresses low end
+      d+=' L'+((i/(arr.length-1))*1000).toFixed(1)+','+(H-val*(H-6)).toFixed(1);
+    }
+    d+=' L1000,'+H+' Z'; return d;
+  }
+  mtf(x,m){ if(x<=0)return 0; if(x>=1)return 1; if(m<=0)return 1; if(m>=1)return 0; if(Math.abs(x-m)<1e-9)return .5; return ((m-1)*x)/(((2*m-1)*x)-m); }
+  base(t,fn){ t=Math.max(0,Math.min(1,t)); if(fn==='log')return Math.log(1+t*500)/Math.log(501); if(fn==='asinh')return Math.asinh(t*50)/Math.asinh(50); return t; }
+  curvePath(cs,fn,H){
+    let d=''; const S=110;
+    const denom=Math.max(1e-4,cs.white-cs.black);
+    const m=Math.min(.999,Math.max(.001,(cs.mid-cs.black)/denom));
+    for(let i=0;i<=S;i++){ const t=i/S; const y=this.mtf(this.base(t,fn),m); d+=(i?' L':'M')+(t*1000).toFixed(1)+','+(H-y*(H-6)).toFixed(1); }
+    return d;
+  }
+  f16(f){ return Math.round(f*65535).toLocaleString('en-US'); }
+  clampSet(o,handle,val){
+    const e=0.006; let {b,m,w}={...o};
+    if(handle==='b') b=Math.max(0,Math.min(val,m-e));
+    else if(handle==='m') m=Math.max(b+e,Math.min(val,w-e));
+    else w=Math.max(m+e,Math.min(val,1));
+    return {b,m,w};
+  }
+  activeCh(){ return this.state.channel==='RGB' ? 'G' : this.state.channel; }
+  startDrag(e,handle){
+    e.preventDefault(); e.stopPropagation();
+    const track=e.currentTarget.closest('[data-track]');
+    if(track) this.drag={handle,track};
+  }
+  onMove(e){
+    if(!this.drag) return;
+    const {handle,track}=this.drag;
+    const r=track.getBoundingClientRect();
+    const pt = e.touches ? e.touches[0] : e;
+    let f=(pt.clientX-r.left)/r.width; f=Math.max(0,Math.min(1,f));
+    if(this.state.channel==='RGB'){
+      const cur=this.state.chan.G[handle], delta=f-cur, nc={};
+      ['R','G','B'].forEach(k=>{ nc[k]=this.clampSet(this.state.chan[k],handle,this.state.chan[k][handle]+delta); });
+      this.setState({chan:nc});
+    } else {
+      const k=this.state.channel;
+      this.setState({chan:{...this.state.chan,[k]:this.clampSet(this.state.chan[k],handle,f)}});
+    }
+  }
+  onUp(){ this.drag=null; }
+  componentDidMount(){
+    this._mv=this.onMove.bind(this); this._up=this.onUp.bind(this);
+    window.addEventListener('pointermove',this._mv);
+    window.addEventListener('pointerup',this._up);
+    // Retry until the flex layout has given the canvas a real size (in
+    // design-canvas mode the first frame can measure 0), then keep it crisp.
+    let tries=0;
+    const tryDraw=()=>{ const el=document.getElementById('ipadgal');
+      if(el && el.getBoundingClientRect().width>1){ this.drawGalaxy(); }
+      else if(tries++<30){ requestAnimationFrame(tryDraw); } };
+    requestAnimationFrame(tryDraw);
+    this._ro=new ResizeObserver(()=>this.drawGalaxy());
+    const host=document.getElementById('ipadgal');
+    if(host&&host.parentElement) this._ro.observe(host.parentElement);
+  }
+  componentWillUnmount(){
+    window.removeEventListener('pointermove',this._mv);
+    window.removeEventListener('pointerup',this._up);
+    if(this._ro) this._ro.disconnect();
+  }
+  mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  drawGalaxy(){
+    const el=document.getElementById('ipadgal'); if(!el) return;
+    const r=el.getBoundingClientRect(); if(!r.width) return;
+    const w=el.width=Math.round(r.width), hh=el.height=Math.round(r.height);
+    const ctx=el.getContext('2d'); const rng=this.mulberry32(7);
+    let g=ctx.createLinearGradient(0,0,w,hh); g.addColorStop(0,'#04060a'); g.addColorStop(1,'#070912'); ctx.fillStyle=g; ctx.fillRect(0,0,w,hh);
+    for(let i=0;i<6;i++){ const x=rng()*w,y=rng()*hh,rad=140+rng()*300; const gg=ctx.createRadialGradient(x,y,0,x,y,rad); gg.addColorStop(0,'rgba(60,80,120,0.05)'); gg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=gg; ctx.fillRect(0,0,w,hh); }
+    const cx=w*0.5, cy=hh*0.46, R=Math.min(w,hh)*0.72;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.42); ctx.scale(1,0.28);
+    let halo=ctx.createRadialGradient(0,0,0,0,0,R);
+    halo.addColorStop(0,'rgba(255,240,214,0.95)'); halo.addColorStop(0.10,'rgba(255,224,182,0.72)'); halo.addColorStop(0.32,'rgba(212,180,150,0.30)'); halo.addColorStop(0.64,'rgba(120,134,176,0.12)'); halo.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(cx,cy); let core=ctx.createRadialGradient(0,0,0,0,0,R*0.11); core.addColorStop(0,'rgba(255,252,244,1)'); core.addColorStop(0.5,'rgba(255,238,210,0.85)'); core.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,R*0.11,0,7); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(-0.42); ctx.scale(1,0.28); ctx.fillStyle='rgba(20,12,16,0.5)'; ctx.beginPath(); ctx.ellipse(0,R*0.11,R*0.94,R*0.045,0,0,7); ctx.fill(); ctx.restore();
+    for(let i=0;i<680;i++){ const x=rng()*w,y=rng()*hh,b=Math.pow(rng(),3.2); const rad=0.4+b*2.6,a=0.28+b*0.72; const tint=b>0.7?'255,236,224':(rng()>0.5?'226,234,255':'255,255,255'); ctx.fillStyle='rgba('+tint+','+a+')'; ctx.beginPath(); ctx.arc(x,y,rad,0,7); ctx.fill();
+      if(b>0.87){ const gl=ctx.createRadialGradient(x,y,0,x,y,rad*7); gl.addColorStop(0,'rgba(255,255,255,0.5)'); gl.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(x,y,rad*7,0,7); ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=0.7; ctx.beginPath(); ctx.moveTo(x-rad*6,y); ctx.lineTo(x+rad*6,y); ctx.moveTo(x,y-rad*6); ctx.lineTo(x,y+rad*6); ctx.stroke(); } }
+    let vg=ctx.createRadialGradient(w/2,hh/2,Math.min(w,hh)*0.3,w/2,hh/2,Math.max(w,hh)*0.72); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); ctx.fillStyle=vg; ctx.fillRect(0,0,w,hh);
+    // loupe = zoomed core
+    const lp=document.getElementById('ipadloupe'); if(lp){ const lr=lp.getBoundingClientRect(); const lw=lp.width=Math.round(lr.width),lhh=lp.height=Math.round(lr.height); const lc=lp.getContext('2d'); const src=Math.min(w,hh)*0.14; lc.imageSmoothingEnabled=true; lc.drawImage(el, cx-src/2, cy-src/2, src, src, 0,0, lw,lhh); }
+  }
+  // ---- panel ----
+  toolPill(icon,label,active){
+    return this.h('div',{key:label,title:label,style:{width:'48px',height:'48px',borderRadius:'13px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'19px',cursor:'pointer',color:active?'#8fc0f5':'#8492a0',background:active?'#13202e':'#111820',border:'1px solid '+(active?'#2a557e':'#1f2b37')}},icon);
+  }
+  buildTools(){
+    return [
+      this.toolPill('⤢','Fit',false),
+      this.toolPill('1:1','Actual',false),
+      this.toolPill('✋','Pan',true),
+      this.toolPill('◫','Panels',false),
+      this.toolPill('⛶','Full screen',false)
+    ];
+  }
+  seg(items,active,onPick){
+    return this.h('div',{style:{display:'flex',gap:'3px',background:'#0a0f15',border:'1px solid #1c2733',borderRadius:'13px',padding:'4px'}},
+      items.map(it=>this.h('div',{key:it.k,onClick:()=>onPick(it.k),style:{flex:1,textAlign:'center',cursor:'pointer',padding:'11px 0',fontSize:'14px',fontWeight:600,borderRadius:'9px',color:active===it.k?'#06080b':'#9fabb8',background:active===it.k?'#5aa9ff':'transparent'}},it.t)));
+  }
+  handle(handle,frac,color,letter){
+    // big touch puck
+    const grip=this.h('div',{style:{position:'absolute',top:'-15px',left:'50%',transform:'translateX(-50%)',width:'34px',height:'34px',borderRadius:'11px',background:color,color:'#06080b',fontSize:'13px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 3px 10px rgba(0,0,0,.55)',fontFamily:"'IBM Plex Mono'",touchAction:'none'}},letter);
+    const line=this.h('div',{style:{position:'absolute',top:'18px',bottom:0,left:'50%',width:'2px',transform:'translateX(-1px)',background:color,opacity:.9}});
+    return this.h('div',{key:handle,onPointerDown:(e)=>this.startDrag(e,handle),style:{position:'absolute',top:0,bottom:0,left:(frac*100)+'%',width:'44px',marginLeft:'-22px',cursor:'ew-resize',touchAction:'none',zIndex:3}},grip,line);
+  }
+  plot(H){
+    const ch=this.activeCh();
+    const cs=this.state.chan[ch];
+    const rgb=this.state.channel==='RGB';
+    const kids=[];
+    kids.push(this.h('rect',{key:'bg',x:0,y:0,width:1000,height:H,fill:'#070b10'}));
+    [0.25,0.5,0.75].forEach((gx,i)=>kids.push(this.h('line',{key:'g'+i,x1:gx*1000,y1:0,x2:gx*1000,y2:H,stroke:'#121b24',strokeWidth:1})));
+    kids.push(this.h('rect',{key:'reg',x:cs.b*1000,y:0,width:(cs.w-cs.b)*1000,height:H,fill:'#5aa9ff',opacity:0.06}));
+    if(rgb){ ['R','G','B'].forEach(k=>kids.push(this.h('path',{key:'h'+k,d:this.areaPath(this.hist[k],H,this.state.logHist),fill:this.COL[k],opacity:0.20,stroke:this.COL[k],strokeWidth:1.1,strokeOpacity:0.6}))); }
+    else kids.push(this.h('path',{key:'h',d:this.areaPath(this.hist[ch],H,this.state.logHist),fill:this.COL[ch],opacity:0.30,stroke:this.COL[ch],strokeWidth:1.3,strokeOpacity:0.85}));
+    kids.push(this.h('path',{key:'cv',d:this.curvePath({black:cs.b,mid:cs.m,white:cs.w},this.state.stretch,H),fill:'none',stroke:'#eef3f8',strokeWidth:2,opacity:0.92}));
+    const svg=this.h('svg',{viewBox:'0 0 1000 '+H,preserveAspectRatio:'none',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},kids);
+    const accent=rgb?'#cdd7e1':this.COL[ch];
+    const handles=[ this.handle('b',cs.b,accent,'B'), this.handle('m',cs.m,'#cdd7e1','M'), this.handle('w',cs.w,accent,'W') ];
+    return this.h('div',{'data-track':'1',style:{position:'relative',height:H+'px',borderRadius:'12px',overflow:'hidden',border:'1px solid #18222d',marginTop:'8px'}},svg,this.h('div',{style:{position:'absolute',inset:0}},handles));
+  }
+  chip(k,label,color){
+    const active=this.state.channel===k;
+    return this.h('div',{key:k,onClick:()=>this.setState({channel:k}),style:{cursor:'pointer',minWidth:'54px',textAlign:'center',padding:'10px 0',borderRadius:'11px',fontSize:'14px',fontWeight:700,fontFamily:"'IBM Plex Mono'",color:active?'#06080b':(color||'#9fabb8'),background:active?(color||'#cdd7e1'):'#0d141c',border:'1px solid #1c2733'}},label);
+  }
+  cmapChip(k,label,grad){
+    const active=this.state.cmap===k;
+    return this.h('div',{key:k,onClick:()=>this.setState({cmap:k}),style:{cursor:'pointer',display:'flex',flexDirection:'column',gap:'6px',alignItems:'center'}},
+      this.h('div',{style:{width:'62px',height:'30px',borderRadius:'9px',background:grad,border:'2px solid '+(active?'#8fc0f5':'#1c2733')}}),
+      this.h('span',{style:{fontSize:'11px',color:active?'#8fc0f5':'#7e8b98',fontWeight:600}},label));
+  }
+  valBox(lab,v){
+    return this.h('div',{key:lab,style:{flex:1,display:'flex',flexDirection:'column',gap:'3px',alignItems:'center',padding:'9px 0',background:'#0d141c',border:'1px solid #1c2733',borderRadius:'10px'}},
+      this.h('span',{style:{fontSize:'10px',color:'#5b6876',fontWeight:600,letterSpacing:'.06em'}},lab),
+      this.h('span',{style:{fontFamily:"'IBM Plex Mono'",fontSize:'14px',color:'#dce5ee'}},v));
+  }
+  buildPanel(){
+    const ch=this.activeCh(); const cs=this.state.chan[ch];
+    const head=this.h('div',{style:{padding:'18px 20px 14px',borderBottom:'1px solid #141d26'}},
+      this.h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'15px'}},
+        this.h('span',{style:{fontSize:'17px',fontWeight:700,color:'#e7eef5'}},'Histogram'),
+        this.h('div',{onClick:()=>this.setState({logHist:!this.state.logHist}),style:{cursor:'pointer',fontSize:'12px',fontWeight:600,color:this.state.logHist?'#8fc0f5':'#7e8b98',padding:'8px 13px',borderRadius:'20px',border:'1px solid '+(this.state.logHist?'#2a557e':'#27323e'),background:this.state.logHist?'#13202e':'transparent'}},this.state.logHist?'Log axis':'Linear axis')),
+      this.seg([{k:'linear',t:'Linear'},{k:'log',t:'Log'},{k:'asinh',t:'Asinh'},{k:'ghs',t:'GHS'}],this.state.stretch,k=>this.setState({stretch:k})));
+    const chips=this.h('div',{style:{padding:'16px 20px 6px',display:'flex',gap:'8px'}},
+      this.chip('RGB','RGB'),this.chip('R','R',this.COL.R),this.chip('G','G',this.COL.G),this.chip('B','B',this.COL.B));
+    const plotWrap=this.h('div',{style:{padding:'6px 20px 4px'}},this.plot(190));
+    const vals=this.h('div',{style:{padding:'14px 20px 4px',display:'flex',gap:'10px'}},
+      this.valBox('BLACK',this.f16(cs.b)),this.valBox('MID',this.f16(cs.m)),this.valBox('WHITE',this.f16(cs.w)));
+    const cmaps=this.h('div',{style:{padding:'20px 20px 6px',borderTop:'1px solid #141d26',marginTop:'12px'}},
+      this.h('div',{style:{fontSize:'11px',letterSpacing:'.13em',color:'#5b6876',fontWeight:600,marginBottom:'14px'}},'COLORMAP'),
+      this.h('div',{style:{display:'flex',gap:'14px',flexWrap:'wrap'}},
+        this.cmapChip('gray','Gray','linear-gradient(90deg,#000,#fff)'),
+        this.cmapChip('heat','Heat','linear-gradient(90deg,#000,#7a0402,#e8500a,#ffd84d,#fff)'),
+        this.cmapChip('viridis','Viridis','linear-gradient(90deg,#440154,#3b528b,#21918c,#5ec962,#fde725)'),
+        this.cmapChip('split','Split','linear-gradient(90deg,#fff,#888,#111 49%,#111 51%,#333,#ccc,#fff)')));
+    const foot=this.h('div',{style:{marginTop:'auto',padding:'16px 20px',borderTop:'1px solid #141d26',display:'flex',gap:'10px'}},
+      this.h('div',{style:{flex:1,textAlign:'center',padding:'14px 0',borderRadius:'12px',background:'#13202e',border:'1px solid #2a557e',color:'#8fc0f5',fontWeight:700,fontSize:'14px'}},'Auto STF'),
+      this.h('div',{style:{flex:1,textAlign:'center',padding:'14px 0',borderRadius:'12px',border:'1px solid #27323e',color:'#9fabb8',fontWeight:700,fontSize:'14px'}},'Reset'));
+    return this.h('div',{style:{display:'flex',flexDirection:'column',height:'100%'}},head,chips,plotWrap,vals,cmaps,foot);
+  }
+  buildFilmstrip(){
+    const items=[
+      {n:'NGC4565',g:'radial-gradient(circle at 55% 45%,#d8c39a,#3a2f3d 55%,#0b0d14)',a:true},
+      {n:'M51 Ha',g:'radial-gradient(circle at 50% 50%,#8fa0c0,#20263a 60%,#0b0d14)'},
+      {n:'M81 RGB',g:'radial-gradient(circle at 40% 60%,#c2a07a,#2a1f28 60%,#0b0d14)'},
+      {n:'M104',g:'radial-gradient(circle at 50% 50%,#cbb89a,#332a2f 58%,#0b0d14)'},
+      {n:'NGC891',g:'radial-gradient(circle at 60% 40%,#b7c4dd,#232a3a 60%,#0b0d14)'},
+      {n:'M63',g:'radial-gradient(circle at 45% 55%,#d3c4a0,#2f2733 58%,#0b0d14)'},
+      {n:'M101',g:'radial-gradient(circle at 50% 50%,#9fb0cf,#222a3a 60%,#0b0d14)'}
+    ];
+    return items.map((it,i)=>this.h('div',{key:i,style:{display:'flex',flexDirection:'column',gap:'6px',alignItems:'center',flex:'0 0 auto'}},
+      this.h('div',{style:{width:'112px',height:'70px',borderRadius:'12px',background:it.g,border:'2px solid '+(it.a?'#5aa9ff':'#1c2733'),boxShadow:it.a?'0 0 0 3px rgba(90,169,255,0.18)':'none'}}),
+      this.h('span',{style:{fontSize:'11px',color:it.a?'#dce5ee':'#7e8b98',fontFamily:"'IBM Plex Mono'",fontWeight:it.a?600:400}},it.n)));
+  }
+  renderVals(){ return { tools:this.buildTools(), panel:this.buildPanel(), filmstrip:this.buildFilmstrip() }; }
+}
+</script>
+</body>
+</html>
