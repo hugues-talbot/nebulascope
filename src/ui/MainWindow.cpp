@@ -845,6 +845,14 @@ void MainWindow::buildMenusAndToolbar() {
     aAnnVis->setChecked(true);
     m_annVisAct = aAnnVis;
     acts["toggle_annotations"] = aAnnVis;
+    // Hide the scrollbars ("elevators") for a clean canvas — pans still work
+    // (right-drag / Shift-drag / middle-drag). Applies to every split cell.
+    QAction* aScroll = view->addAction("Hide Scroll&bars", QKeySequence("H"), this, [this] {
+        m_grid->setScrollBarsVisible(!m_grid->scrollBarsVisible());
+    });
+    aScroll->setCheckable(true);
+    aScroll->setChecked(false);
+    acts["toggle_scrollbars"] = aScroll;
 
     // Split main view — compare several decoded images side by side. Same-size
     // images pan/zoom together (each cell's ⇄ button opts out).

@@ -87,6 +87,10 @@ public:
     ViewCell* activeCell() const { return m_cells.empty() ? nullptr : m_cells[m_active]; }
     ViewCell* cellAt(int i) const { return (i >= 0 && i < int(m_cells.size())) ? m_cells[std::size_t(i)] : nullptr; }
     void activate(ViewCell* c);
+    // Show/hide the views' scrollbars ("elevators") — panning still works via
+    // right-drag / Shift-drag; applies to every cell, current and future.
+    void setScrollBarsVisible(bool on);
+    bool scrollBarsVisible() const { return m_scrollbars; }
 
 signals:
     // Emitted BEFORE the active highlight moves, so MainWindow can stash the
@@ -113,6 +117,7 @@ private:
     std::vector<ViewCell*> m_cells;       // persists across regrids (content kept)
     int m_rows = 1, m_cols = 1;
     std::size_t m_active = 0;
+    bool m_scrollbars = true;
 };
 
 } // namespace astro

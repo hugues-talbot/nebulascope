@@ -86,6 +86,9 @@ ViewGrid::ViewGrid(QWidget* parent) : QWidget(parent) {
 
 ViewCell* ViewGrid::makeCell() {
     auto* c = new ViewCell(int(m_cells.size()), this);
+    const Qt::ScrollBarPolicy pol = m_scrollbars ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
+    c->view()->setHorizontalScrollBarPolicy(pol);
+    c->view()->setVerticalScrollBarPolicy(pol);
     connect(c, &ViewCell::pressed, this, &ViewGrid::activate);
     connect(c, &ViewCell::linkToggled, this, &ViewGrid::onLinkToggled);
     connect(c->view(), &ImageView::viewNavigated, this, [this, c] { onNavigated(c); });
@@ -122,6 +125,15 @@ void ViewGrid::relayout() {
     }
     for (int r = 0; r < m_rows; ++r) m_lay->setRowStretch(r, 1);
     for (int c = 0; c < m_cols; ++c) m_lay->setColumnStretch(c, 1);
+}
+
+void ViewGrid::setScrollBarsVisible(bool on) {
+    m_scrollbars = on;
+    const Qt::ScrollBarPolicy pol = on ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
+    for (ViewCell* c : m_cells) {
+        c->view()->setHorizontalScrollBarPolicy(pol);
+        c->view()->setVerticalScrollBarPolicy(pol);
+    }
 }
 
 void ViewGrid::activate(ViewCell* c) {
