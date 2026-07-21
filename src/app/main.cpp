@@ -54,6 +54,9 @@ static void printUsage() {
         "  -l, --list <file>     Load a saved image list (one path per line; blank\n"
         "                        lines and #-comments ignored; relative paths resolved\n"
         "                        against the list file's directory).\n"
+        "      --split <RxC>     Split the view into R rows \u00d7 C columns (max 5x5) and\n"
+        "                        assign the first R*C images to the cells in raster\n"
+        "                        order, e.g. --split 2x1.\n"
         "  -h, --help            Show this help and exit.\n"
         "\n"
         "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff .webp\n"
@@ -61,7 +64,8 @@ static void printUsage() {
         "Examples:\n"
         "  nebulascope M51.fits\n"
         "  nebulascope *.fits\n"
-        "  nebulascope --list tonight.txt\n");
+        "  nebulascope --list tonight.txt\n"
+        "  nebulascope --split 1x2 lum.fits ha.fits\n");
 }
 
 // Dark "astro tool" theme, roughly matching the mockup.
@@ -130,6 +134,7 @@ int main(int argc, char** argv) {
     // Command line:  nebulascope *.fits        (files; shell usually globs)
     //                nebulascope --list set.txt (a saved image list)
     QStringList files;
+    int splitR = 0, splitC = 0;
     const QStringList args = app.arguments().mid(1);
     for (int i = 0; i < args.size(); ++i) {
         const QString& a = args[i];
@@ -142,6 +147,16 @@ int main(int argc, char** argv) {
         }
         if ((a == "--list" || a == "-l") && i + 1 < args.size()) {
             w.importListFile(args[++i]);            // load a saved list file
+        } else if (a == "--split" && i + 1 < args.size()) {
+            // --split "2x1": split the view, assign the first N files in raster order.
+            const QStringList parts = args[++i].toLower().split(QLatin1Char('x'));
+            bool okR = false, okC = false;
+            if (parts.size() == 2) { splitR = parts[0].toInt(&okR); splitC = parts[1].toInt(&okC); }
+            if (!okR || !okC || splitR < 1 || splitR > 5 || splitC < 1 || splitC > 5) {
+                std::fprintf(stderr, "Bad --split argument (expected e.g. \"2x1\", max 5x5)\n");
+                printUsage();
+                return 2;
+            }
         } else if (a.startsWith('-')) {
             std::fprintf(stderr, "Unknown option: %s\n", a.toLocal8Bit().constData());
             printUsage();
@@ -156,6 +171,7 @@ int main(int argc, char** argv) {
         }
     }
     if (!files.isEmpty()) w.openPaths(files);
+    if (splitR > 0) w.applySplitLayout(splitR, splitC);
 
     return app.exec();
 }

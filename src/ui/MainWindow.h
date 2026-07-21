@@ -73,6 +73,9 @@ public:
     // Load a list file (one path per line; blanks and #-comments ignored) and
     // append its entries. Used by File▸Import List and the --list CLI flag.
     void importListFile(const QString& listPath);
+    // Split the main view and assign the first rows*cols list entries to the
+    // cells in raster order. Used by the --split CLI flag.
+    void applySplitLayout(int rows, int cols);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* e) override;   // accept file drops

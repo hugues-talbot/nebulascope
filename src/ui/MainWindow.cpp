@@ -1209,6 +1209,16 @@ void MainWindow::importList() {
     if (!path.isEmpty()) importListFile(path);
 }
 
+void MainWindow::applySplitLayout(int rows, int cols) {
+    m_grid->setGrid(rows, cols);
+    const int n = std::min(rows * cols, m_fileList->count());
+    for (int i = 0; i < n; ++i) {                 // raster order: row-major cells
+        m_grid->activate(m_grid->cellAt(i));      // swap state into cell i
+        showRow(i);                               // decode list row i into it
+    }
+    if (n > 0) m_grid->activate(m_grid->cellAt(0));
+}
+
 void MainWindow::importListFile(const QString& listPath) {
     QFile f(listPath);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {

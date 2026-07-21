@@ -78,6 +78,7 @@ public:
     int rows() const { return m_rows; }
     int cols() const { return m_cols; }
     ViewCell* activeCell() const { return m_cells.empty() ? nullptr : m_cells[m_active]; }
+    ViewCell* cellAt(int i) const { return (i >= 0 && i < int(m_cells.size())) ? m_cells[std::size_t(i)] : nullptr; }
     void activate(ViewCell* c);
 
 signals:
