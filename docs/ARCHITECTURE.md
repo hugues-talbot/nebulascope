@@ -1,134 +1,93 @@
-# Architecture
+# NebulaScope — Architecture
 
-## Data flow
+Developer-facing map of the codebase (v0.70). The user-facing feature guide is
+[MANUAL.md](MANUAL.md).
+
+## Layers
 
 ```
-file (.fits/.xisf)
-  → io::loadImage()            sniff format, decode, promote to Float32
-  → core::ImageData            native-planar pixel buffer + ImageHeader
-  → core::computeStats()       per-channel min/max/median/MAD
-  → render::StretchModel       shared display parameters (the source of truth)
-  → render::DisplayRenderer    ImageData + model → 8-bit QImage (per-channel LUT)
-  → ui::ImageView              shows the QImage; emits hovered pixel values
+core/    pure C++ (no widgets): pixel model, math, geometry
+io/      format backends behind abstract reader/writer registries
+render/  display state + rasterization (QtGui only)
+ui/      Qt Widgets application
+app/     entry point, theme, resources, user-maintained AppInfo.h
 ```
 
-The histogram UI (`ui::HistogramView` / `HistogramPanel`) writes into the **same**
-`StretchModel`; its `changed()` signal triggers a re-render. Nothing else holds
-display state.
+### core/
+- **ImageData** — planar pixel container, native sample formats
+  (UInt8…Float64); the loader promotes everything to Float32
+  (`Convert`), so downstream code assumes one type. NaN = blank.
+- **ImageHeader** — unified metadata (FITS cards + XISF properties).
+- **ImageStats** — sampled min/max/median/MAD per channel (auto-stretch,
+  normalized stretch-paste anchors).
+- **Stretch** — transfer shapes: Linear+MTF midtone, Log, Asinh, and GHS
+  (slope-integral formulation with SP/LP/HP). `buildLut()` returns the shape
+  over the *windowed* coordinate t∈[0,1]; `windowCoord()` does the black/white
+  windowing per pixel in float. This split is what prevents posterization for
+  narrow windows — never re-window inside the LUT.
+- **Colormap** — anchor-interpolated maps + composable `inv()` / `split(t)`
+  modifiers applied at LUT build time.
+- **Transform** — lossless 90°/flip ops; `rotateArbitrary()` (bilinear,
+  bbox-expanded canvas, NaN corners, weight-renormalized sampling).
+- **Wcs** — TAN projection from FITS keywords or PCL XISF properties;
+  `transformed()` / `rotated()` rebase CRPIX + CD through any pixel remap.
 
-## The shared-model design
+### io/
+Abstract `ImageReader`/`ImageWriter` registries (`readerForFile()` by magic +
+extension). Backends: FITS (CCfits/CFITSIO; multi-HDU enumeration, tile
+compression, BSCALE/BZERO), XISF (libXISF; properties incl. astrometric
+solution), Qt image formats (JPEG/PNG/TIFF/WebP read; 16-bit TIFF write).
 
-`StretchModel` holds the per-channel Black/Mid/White points, the active stretch
-function, the GHS parameters, and each channel's display range `[lo,hi]`.
+### render/
+- **StretchModel** — the single source of truth for display params (function,
+  per-channel window points, GHS, colormap); emits `changed()`. Snapshots as
+  `StretchModel::State` power per-image stretch memory and copy/paste.
+- **DisplayRenderer** — ImageData + StretchModel → dithered 8-bit QImage
+  through per-channel windowed LUTs (GHS shares one master curve).
 
-- `HistogramView` mutates it on every handle drag.
-- `DisplayRenderer` reads it to repaint the image.
-- `MainWindow` connects `StretchModel::changed` → `updateDisplay`.
+### ui/
+- **MainWindow** — owns the *active* image state (`m_image`, `m_currentPath`,
+  `m_wcs`, `m_header`, stats) and all per-path maps: stretch memory
+  (`m_stfByPath`), annotations (`m_annByPath`), orientation history
+  (`m_xformByPath`), disk dimensions (`m_diskSizeByPath`).
+- **ViewGrid / ViewCell** — the split main view (≤5×5). One active cell;
+  activation swaps the whole current-image state in/out of the cell
+  (`onCellSwap`), so every per-path mechanism works unchanged. Inactive cells
+  keep their decoded image + rendered pixmap.
+- **ImageView** — QGraphicsView canvas: rubber-band zoom, pans, wheel
+  (Shift=fine), pixel hover, drawing tools, `viewNavigated` /
+  `adoptNavigationCalibrated` for linked navigation.
+- **AnnotationLayer** — vector overlay + RA/Dec grid; rebuilds from plain
+  `Annotation` data. Ellipse rotation uses explicit QTransforms
+  (QTBUG-22335: `setRotation` is unreliable inside item groups).
+- **HistogramPanel/View, ColorBar, InfoPanel, CombineDialog, RotateDialog,
+  PreferencesDialog** — all drive/read the shared StretchModel or MainWindow
+  state; no widget owns pixel data.
 
-Because both the plot and the picture talk to one object, they can never
-disagree. Adding a second histogram presentation (e.g. the stacked per-channel
-layout from the design mockup) is just another widget bound to the same model —
-no new state, no synchronization code.
+## Key invariants
 
-## Stretch math (`core/Stretch`)
+1. **The orientation history is truthful.** `m_xformByPath[path]` replayed
+   from the disk image *exactly* reproduces the displayed pixels (ops are
+   recorded verbatim, never merged — rot:+θ then rot:−θ is not identity for
+   the canvas). Annotation imports (`mapAnnotationsFromDiskFrame`) and sidecar
+   replay depend on this.
+2. **One geometry map per operation.** Every pixel remap (90°, flip,
+   arbitrary rotation, base-restore) applies the same forward affine to
+   pixels, annotations, WCS (CD·J), and view-link calibrations
+   (`W ← F⁻¹·W`). If you add a geometric op, feed all four consumers.
+3. **Arbitrary rotation is absolute.** `rotateToAngle()` restores a stashed
+   pristine base and applies ONE resample; undo/redo is an angle pair, not a
+   snapshot. Annotations travel via exact inverse affines (vector data).
+4. **Windowing is per-pixel float; LUTs hold only the shape** (see Stretch).
+5. **Display is disposable.** Nothing downstream of DisplayRenderer feeds
+   back into data; Save Data As writes `m_image` (post-orientation), exports
+   write the rendered QImage.
+6. **Linked navigation** — the shared-frame condition
+   `W_dst⁻¹·V_dst == W_src⁻¹·V_src` (Qt left-first composition); same-size
+   auto-links are the identity-world special case.
 
-- **Linear/Log/Asinh** share a base shape on the black/white-normalized input,
-  then a PixInsight-style **MTF** midtone places the mid handle.
-- **GHS** is the integral of a bell-shaped slope function centred at `SP`
-  (max contrast there, falling off both directions), with linear
-  shadow/highlight protection below `LP` / above `HP`. The result is normalized
-  to (0,0)→(1,1) and cached as a LUT. `b` selects the regime: `b<0` logarithmic,
-  `b≈0` exponential, `b≈1` harmonic, `b>1` hyperbolic.
+## Undo model
 
-All transfers are sampled into a lookup table once per render; pixel mapping is
-then a table read.
-
----
-
-# IO layer
-
-Format-agnostic loading/saving. Everything downstream consumes one
-`astro::ImageData` and never needs to know the source format.
-
-## Loading
-
-```cpp
-#include "io/ImageReader.h"
-
-astro::io::LoadResult res = astro::io::loadImage("/path/to/NGC4565.xisf");
-if (!res.ok) { qWarning() << res.error; return; }
-
-const astro::ImageData&  img = res.image;   // res.image.plane<float>(0), ...
-const astro::ImageHeader& hdr = res.header; // hdr.valueOf("EXPTIME")
-```
-
-`loadImage` sniffs by extension and magic bytes (`SIMPLE` for FITS, `XISF0100`
-for XISF), picks the matching reader, and decodes. Add a format by subclassing
-`ImageReader` and registering it in `registeredReaders()` — no caller changes.
-
-### Float32 promotion (default)
-
-`LoadOptions::promoteToFloat` is `true` by default, so every image arrives as
-`Float32`:
-
-```cpp
-auto res = astro::io::loadImage(path);                              // Float32
-auto raw = astro::io::loadImage(path, { .promoteToFloat = false }); // native type
-```
-
-- **FITS** is read through CCfits as float, applying `BSCALE`/`BZERO` — so
-  unsigned-16 (`BZERO=32768`) and scaled integer images come back as correct
-  physical values (ADU).
-- **XISF** integer samples are normalized to **[0,1]** by full-scale; floats
-  pass through.
-
-The two conventions differ in range (FITS ADU vs XISF [0,1]); that's fine
-because the stretch pipeline drives off computed black/white points and image
-statistics, not a fixed [0,1] assumption.
-
-## Saving
-
-`saveImage` mirrors `loadImage`: sniff the output extension, pick the
-`ImageWriter`, serialize `ImageData` (+ `ImageHeader`). Whatever sample type the
-image carries is written — the promoted Float32 workflow saves as `BITPIX=-32`
-FITS or Float32 XISF.
-
-```cpp
-#include "io/ImageWriter.h"
-
-astro::io::SaveOptions opt;
-opt.xisfCompression = astro::io::SaveOptions::Compression::LZ4;  // XISF only
-
-auto sr = astro::io::saveImage("/out/NGC4565.xisf", img, hdr, opt);
-if (!sr.ok) qWarning() << sr.error;
-```
-
-- **FITS** — `SampleFormat` maps to BITPIX (`USHORT_IMG`/`ULONG_IMG` carry the
-  BZERO offset so unsigned data round-trips); structural keywords are filtered
-  before re-emitting `header.cards`. Existing files are overwritten.
-- **XISF** — planar data copied straight in; embedded FITS keywords written from
-  `header.cards`; data-block compression via `SaveOptions`. libXISF implements
-  None/Zlib/LZ4/LZ4HC (no zstd — the `Zstd` option falls back to LZ4HC).
-
-## Dependencies
-
-- **CFITSIO + CCfits** — FITS. CFITSIO via pkg-config; CCfits on top.
-- **libXISF** — XISF (XML header, planar blocks, zlib/LZ4 compression,
-  checksums). https://gitea.nouspiro.space/nou/libXISF
-
-## Known follow-ups
-
-- **libXISF API drift.** Method/enum spellings vary across releases; the marked
-  lines in `XisfReader.cpp` / `XisfWriter.cpp` may need adjusting. The
-  abstraction boundary keeps any change local.
-- **Multi-HDU / multi-image.** Both backends load the primary/first image only.
-  Extend `LoadResult` to a list for all HDUs / XISF images.
-- **Native-type round-trip.** The Float32 pipeline saves float. To write the
-  original integer type, load with `promoteToFloat = false`. XISF has no
-  signed-integer sample types — promote signed data to float before writing.
-- **XISF property write-back.** The writer emits embedded FITS keywords only;
-  mapping typed `header.properties` back to XISF `<Property>` elements is TODO.
-- **Preview-while-dragging.** Full-res re-render on each drag is fine for
-  moderate images; large mosaics want a downsampled preview during interaction.
-- **Image-list switching.** The left dock lists opened files but doesn't yet
-  switch the active image.
+QUndoStack commands guard on `currentPath()` and mark themselves obsolete if
+their image is no longer active. Annotation edits snapshot before/after
+vectors; 90°/flips apply inverses; arbitrary rotation stores angle pairs.

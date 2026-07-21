@@ -128,6 +128,13 @@ macOS specifics (Homebrew, building libXISF, common link errors) are in
 **[docs/BUILDING-linux.md](docs/BUILDING-linux.md)** and
 **[docs/BUILDING-windows.md](docs/BUILDING-windows.md)**.
 
+## Documentation
+
+- **[docs/MANUAL.md](docs/MANUAL.md)** — the complete user manual: every
+  feature, shortcut, dialog, and file format.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — developer map: layers,
+  data flow, and the geometry/windowing invariants to preserve when extending.
+
 ## Citing
 
 If NebulaScope is useful in your research, please cite it — citation metadata
