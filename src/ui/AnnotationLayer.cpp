@@ -1,4 +1,5 @@
 #include "ui/AnnotationLayer.h"
+#include "core/Preferences.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGraphicsItemGroup>
@@ -198,8 +199,8 @@ void AnnotationLayer::buildGrid(int w, int h, const Wcs& wcs) {
     }
     if (raMin > raMax || decMin > decMax) return;
 
-    const double raStep  = niceStepDeg((raMax - raMin), 6);
-    const double decStep = niceStepDeg(decMax - decMin, 6);
+    const double raStep  = niceStepDeg((raMax - raMin), Preferences::get().gridTargetLines);
+    const double decStep = niceStepDeg(decMax - decMin, Preferences::get().gridTargetLines);
     QFont labelFont;
     labelFont.setPointSizeF(7.0);
 
@@ -289,6 +290,9 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
         QFont f;
         f.setPointSizeF(a.textSize);
         f.setBold(true);
+        // Stroke width in screen pixels at any zoom (cosmetic pen; 0 = hairline).
+        QPen stroke(col, Preferences::get().annLineWidth);
+        stroke.setCosmetic(true);
 
         // One sub-group per annotation: shape + label move/select as a unit.
         auto* g = new QGraphicsItemGroup();
@@ -299,12 +303,12 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
         double lx = a.x, ly = a.y;                // label anchor
         if (a.type == Annotation::Type::Line) {
             auto* line = new QGraphicsLineItem(a.x, a.y, a.x2, a.y2);
-            line->setPen(QPen(col, 0));
+            line->setPen(stroke);
             g->addToGroup(line);
             lx = a.x; ly = a.y;   // label at the START endpoint — the segment points at the target
         } else if (a.type == Annotation::Type::Ellipse) {
             auto* ell = new QGraphicsEllipseItem(a.x - a.a, a.y - a.b, 2 * a.a, 2 * a.b);
-            ell->setPen(QPen(col, 0, Qt::SolidLine));
+            ell->setPen(stroke);
             ell->setBrush(Qt::NoBrush);
             if (std::fabs(a.angleDeg) > 1e-6) {
                 ell->setTransformOriginPoint(a.x, a.y);

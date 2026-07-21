@@ -7,6 +7,7 @@ add_library(astro_core STATIC
     core/ImageStats.cpp
     core/Stretch.cpp
     core/SexCatalog.cpp
+    core/Preferences.cpp
     core/Colormap.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
@@ -57,6 +58,7 @@ add_executable(nebulascope
     ui/AnnotationLayer.cpp
     ui/CombineDialog.cpp
     ui/MainWindow.cpp
+    ui/PreferencesDialog.cpp
     ${APP_ICON_SOURCES}
 )
 

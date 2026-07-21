@@ -9,6 +9,8 @@
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
 #include "core/SexCatalog.h"
+#include "core/Preferences.h"
+#include "ui/PreferencesDialog.h"
 #include "render/DisplayRenderer.h"
 #include "core/Colormap.h"
 #include "core/Transform.h"
@@ -68,6 +70,7 @@ namespace astro {
 MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
     m_undo = new QUndoStack(this);
+    m_annColor = Preferences::get().annColor;   // user default for new annotations
     buildUi();
     buildMenusAndToolbar();
     setAcceptDrops(true);          // drop FITS/XISF/images onto the window to open
@@ -615,6 +618,14 @@ void MainWindow::buildMenusAndToolbar() {
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
     QMenu* help = menuBar()->addMenu("&Help");
     help->addAction("Configure &Shortcuts…", this, &MainWindow::showShortcutSettings);
+    QAction* prefsAct = help->addAction("&Preferences…", this, [this] {
+        PreferencesDialog dlg(this);
+        if (dlg.exec() == QDialog::Accepted) {
+            m_annColor = Preferences::get().annColor;   // new-annotation default
+            refreshAnnotations();                       // grid density, stroke width
+        }
+    });
+    prefsAct->setMenuRole(QAction::PreferencesRole);   // macOS: app menu ▸ Settings…
     QAction* about = help->addAction("&About NebulaScope", this, &MainWindow::showAbout);
     about->setMenuRole(QAction::AboutRole);
     QAction* aboutQt = help->addAction("About &Qt", qApp, &QApplication::aboutQt);
@@ -1006,7 +1017,7 @@ void MainWindow::displayPath(const QString& path) {
     m_currentPath = path;
 
     // Auto-load the sidecar annotation file on the first visit to this image.
-    if (!m_annByPath.contains(path)) {
+    if (Preferences::get().autoLoadSidecar && !m_annByPath.contains(path)) {
         const QString sc = annotationSidecar(path);
         if (!sc.isEmpty() && QFile::exists(sc)) {
             QFile f(sc);
@@ -1531,7 +1542,7 @@ void MainWindow::onTextPointPicked(double x, double y) {
     an.type = Annotation::Type::Text;
     an.x = x; an.y = y;
     an.label = text.trimmed();
-    an.textSize = 12;
+    an.textSize = Preferences::get().annTextSize;
     an.color = m_annColor;
     std::vector<Annotation> before = m_annByPath.value(m_currentPath);
     m_annByPath[m_currentPath].push_back(an);
@@ -1624,8 +1635,8 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             Annotation a;
             a.label = label.trimmed();
             a.x = x; a.y = y;
-            // Radius ~1/40 of the frame, so markers read at fit zoom.
-            a.a = a.b = std::max(12.0, m_image.width() / 40.0);
+            // Marker radius from Preferences (default ~1/40 of the frame).
+            a.a = a.b = std::max(12.0, m_image.width() / Preferences::get().markerFrac);
             std::vector<Annotation> before = m_annByPath.value(m_currentPath);
             m_annByPath[m_currentPath].push_back(a);
             m_annDirty.insert(m_currentPath);
