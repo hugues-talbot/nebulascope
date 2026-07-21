@@ -170,12 +170,19 @@ void ViewGrid::onLinkToggled(ViewCell* c, bool on) {
     emit linkMessage(QStringLiteral("Views calibration-linked at the current alignment"));
 }
 
-void ViewGrid::dropActiveCalibration() {
+void ViewGrid::remapActiveScene(const QTransform& forward) {
     ViewCell* c = activeCell();
-    if (!c || !c->calibrated) return;
-    c->calibrated = false;
-    c->world = QTransform();
-    emit linkMessage(QStringLiteral("Image geometry changed — calibration link dropped (re-tick ⇄ to relink)"));
+    if (!c) return;
+    // Promote live same-size auto-links to calibrated links (identity worlds
+    // ARE their correspondence) — after the remap the sizes will differ.
+    const std::size_t shown = std::size_t(m_rows) * m_cols;
+    for (std::size_t i = 0; i < m_cells.size() && i < shown; ++i) {
+        ViewCell* o = m_cells[i];
+        if (o == c || !linkablePair(c, o)) continue;
+        if (!(c->calibrated && o->calibrated)) { c->calibrated = true; o->calibrated = true; }
+    }
+    if (c->calibrated)
+        c->world = forward.inverted() * c->world;   // w = W_old(F⁻¹(p_new))
 }
 
 void ViewGrid::onNavigated(ViewCell* c) {

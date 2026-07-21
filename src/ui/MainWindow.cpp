@@ -318,6 +318,27 @@ static void rotateAnnotationsBy(std::vector<Annotation>& anns, double angleDeg,
     }
 }
 
+// Forward pixel maps (old scene → new scene) as QTransforms, matching the
+// annotation/WCS maps exactly — used to carry view-link calibrations through.
+static QTransform rotForwardTransform(double angleDeg, int w, int h, int nw, int nh) {
+    const double th = angleDeg * M_PI / 180.0;
+    const double c = std::cos(th), s = std::sin(th);
+    const double cox = (w - 1) / 2.0,  coy = (h - 1) / 2.0;
+    const double cnx = (nw - 1) / 2.0, cny = (nh - 1) / 2.0;
+    // x' = c(x-cox)+s(y-coy)+cnx ; y' = -s(x-cox)+c(y-coy)+cny
+    return QTransform(c, -s, s, c, cnx - c * cox - s * coy, cny + s * cox - c * coy);
+}
+static QTransform xformForwardTransform(MainWindow::Xform x, int w, int h) {
+    using X = MainWindow::Xform;
+    switch (x) {
+        case X::RotCW:  return QTransform(0, 1, -1, 0, h - 1.0, 0);      // x'=(h-1)-y, y'=x
+        case X::RotCCW: return QTransform(0, -1, 1, 0, 0, w - 1.0);      // x'=y, y'=(w-1)-x
+        case X::FlipH:  return QTransform(-1, 0, 0, 1, w - 1.0, 0);
+        case X::FlipV:  return QTransform(1, 0, 0, -1, 0, h - 1.0);
+    }
+    return QTransform();
+}
+
 void MainWindow::applyTransform(Xform x) {
     if (!m_image.isValid()) return;
     doTransform(x);
@@ -327,7 +348,6 @@ void MainWindow::applyTransform(Xform x) {
 void MainWindow::doTransform(Xform x) {
     if (!m_image.isValid()) return;
     m_rotBasePath.clear();     // 90°/flip changes geometry — next rotation re-bases
-    m_grid->dropActiveCalibration();   // scene coords change — manual link is stale
     const int ow = m_image.width(), oh = m_image.height();   // pre-transform dims
     switch (x) {
         case Xform::RotCW:  m_image = rotate90(m_image, true);  break;
@@ -359,6 +379,7 @@ void MainWindow::doTransform(Xform x) {
     const QString inv = xformName(inverseXform(x));
     if (!hist.isEmpty() && hist.last() == inv) hist.removeLast();
     else hist << xformName(x);
+    m_grid->remapActiveScene(xformForwardTransform(x, ow, oh));   // links survive
     refreshAnnotations();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
     if (rotated) { m_view->zoomToFit(); m_lastW = m_image.width(); m_lastH = m_image.height(); }
@@ -368,10 +389,10 @@ void MainWindow::doTransform(Xform x) {
 // records "rot:<deg>"; consecutive rotations merge (and cancel near 0°/360°).
 void MainWindow::doRotateArbitrary(double angleDeg) {
     if (!m_image.isValid()) return;
-    m_grid->dropActiveCalibration();   // scene coords change — manual link is stale
     const int ow = m_image.width(), oh = m_image.height();
     m_image = rotateArbitrary(m_image, angleDeg);
     const int nw = m_image.width(), nh = m_image.height();
+    m_grid->remapActiveScene(rotForwardTransform(angleDeg, ow, oh, nw, nh));   // links survive
     m_view->setSource(&m_image);
     updateDisplay();
     auto it = m_annByPath.find(m_currentPath);
@@ -424,6 +445,11 @@ void MainWindow::rotateToAngle(double totalDeg) {
     if (std::fabs(relOld) > 1e-6)
         rotateAnnotationsBy(anns, -relOld, m_image.width(), m_image.height(),
                             m_rotBase.width(), m_rotBase.height());
+    // The base restore itself is a scene remap (inverse of the rotation that
+    // produced the current state) — carry the link calibration through it too.
+    if (std::fabs(relOld) > 1e-6)
+        m_grid->remapActiveScene(rotForwardTransform(relOld, m_rotBase.width(), m_rotBase.height(),
+                                                     m_image.width(), m_image.height()).inverted());
     restoreImageState(m_currentPath, m_rotBase, anns, m_rotBaseWcs, m_rotBaseHist);
     const double rel = totalDeg - m_rotBaseAngle;
     if (std::fabs(rel) > 1e-6) doRotateArbitrary(rel);

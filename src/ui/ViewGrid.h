@@ -96,9 +96,11 @@ signals:
     void linkMessage(const QString& text);  // calibration feedback for the status bar
 
 public:
-    // Rotating/flipping the active image changes its scene coordinates, which
-    // invalidates a manual calibration — drop it (the user re-links after).
-    void dropActiveCalibration();
+    // The active image's pixels were remapped by `forward` (old scene → new
+    // scene: rotate/flip). Carry any link calibration through it instead of
+    // breaking the link; same-size auto-links are promoted to calibrated ones
+    // first (identity worlds) so they survive the dimension change.
+    void remapActiveScene(const QTransform& forward);
 
 private:
     static bool linkablePair(const ViewCell* a, const ViewCell* b);
