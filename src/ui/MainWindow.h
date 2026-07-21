@@ -109,11 +109,13 @@ private:
     // Map annotations given in the DISK (as-loaded) pixel frame through this
     // image's orientation history, so imports line up with a rotated view.
     void mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns);
+    // Inverse: take annotations expressed in the frame described by `ops` back
+    // to the disk frame (walk the op chain backwards with exact inverses).
+    void unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, const QStringList& ops);
     QHash<QString, QSize> m_diskSizeByPath;    // as-decoded dims, pre-orientation
     // Pre-rotation base for rotateToAngle — captured lazily on the first
     // arbitrary rotation of an image, dropped on 90°/flip or image switch.
     ImageData m_rotBase;
-    std::vector<Annotation> m_rotBaseAnns;
     Wcs m_rotBaseWcs;
     QStringList m_rotBaseHist;
     QString m_rotBasePath;
