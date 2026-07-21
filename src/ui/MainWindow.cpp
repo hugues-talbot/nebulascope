@@ -590,6 +590,13 @@ void MainWindow::buildMenusAndToolbar() {
     });
     aGrid->setCheckable(true);
     acts["toggle_grid"] = aGrid;
+    QAction* aAnnVis = view->addAction("Show &Annotations", QKeySequence("A"), this, [this] {
+        m_annotations->setAnnotationsVisible(!m_annotations->annotationsVisible());
+        refreshAnnotations();
+    });
+    aAnnVis->setCheckable(true);
+    aAnnVis->setChecked(true);
+    acts["toggle_annotations"] = aAnnVis;
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 

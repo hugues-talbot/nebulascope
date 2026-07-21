@@ -2,6 +2,12 @@
 #include "core/Preferences.h"
 #include <QVBoxLayout>
 #include <QFormLayout>
+#include <QTabWidget>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QKeySequenceEdit>
+#include <QSettings>
+#include <QLabel>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
@@ -18,8 +24,13 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     Preferences& p = Preferences::get();
 
     auto* root = new QVBoxLayout(this);
-    auto* form = new QFormLayout();
-    root->addLayout(form);
+    auto* tabs = new QTabWidget();
+    root->addWidget(tabs, 1);
+
+    // ---- Defaults tab ----
+    auto* defaultsTab = new QWidget();
+    auto* form = new QFormLayout(defaultsTab);
+    tabs->addTab(defaultsTab, "Defaults");
 
     auto* grid = new QSpinBox();
     grid->setRange(3, 20);
@@ -71,6 +82,44 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     sidecar->setChecked(p.autoLoadSidecar);
     form->addRow(QString(), sidecar);
 
+    // ---- Shortcuts tab ----
+    // Edits the same INI the startup shortcut loader reads (Help ▸ Configure
+    // Shortcuts… opens it in a file manager). New actions appear here after
+    // their first launch, since defaults are written to the INI at startup.
+    auto* shortcutsTab = new QWidget();
+    auto* sv = new QVBoxLayout(shortcutsTab);
+    auto* table = new QTableWidget(0, 2);
+    table->setHorizontalHeaderLabels({ "Action", "Shortcut" });
+    table->horizontalHeader()->setStretchLastSection(true);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    table->verticalHeader()->setVisible(false);
+    table->setSelectionMode(QAbstractItemView::NoSelection);
+    {
+        QSettings sc(QSettings::IniFormat, QSettings::UserScope,
+                     QStringLiteral("NebulaScope"), QStringLiteral("shortcuts"));
+        sc.beginGroup(QStringLiteral("shortcuts"));
+        QStringList names = sc.allKeys();
+        names.sort();
+        table->setRowCount(names.size());
+        for (int r = 0; r < names.size(); ++r) {
+            auto* nameItem = new QTableWidgetItem(names[r]);
+            nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
+            table->setItem(r, 0, nameItem);
+            auto* edit = new QKeySequenceEdit(QKeySequence::fromString(
+                sc.value(names[r]).toString(), QKeySequence::PortableText));
+            edit->setClearButtonEnabled(true);
+            table->setCellWidget(r, 1, edit);
+        }
+        sc.endGroup();
+    }
+    auto* note = new QLabel("Backspace in a field clears it (shortcut disabled). "
+                            "Changes apply at the next launch.");
+    note->setWordWrap(true);
+    sv->addWidget(table, 1);
+    sv->addWidget(note);
+    tabs->addTab(shortcutsTab, "Shortcuts");
+    resize(520, 480);
+
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel
                                     | QDialogButtonBox::RestoreDefaults);
     root->addWidget(bb);
@@ -93,6 +142,16 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.markerFrac      = marker->value();
         p.autoLoadSidecar = sidecar->isChecked();
         p.save();
+        // Persist the shortcut edits back to the INI the startup loader reads.
+        QSettings sc(QSettings::IniFormat, QSettings::UserScope,
+                     QStringLiteral("NebulaScope"), QStringLiteral("shortcuts"));
+        sc.beginGroup(QStringLiteral("shortcuts"));
+        for (int r = 0; r < table->rowCount(); ++r) {
+            auto* edit = qobject_cast<QKeySequenceEdit*>(table->cellWidget(r, 1));
+            if (edit) sc.setValue(table->item(r, 0)->text(),
+                                  edit->keySequence().toString(QKeySequence::PortableText));
+        }
+        sc.endGroup();
         accept();
     });
 }

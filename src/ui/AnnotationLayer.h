@@ -53,6 +53,10 @@ public:
     void setGridVisible(bool on) { m_gridVisible = on; }
     bool gridVisible() const { return m_gridVisible; }
 
+    // Annotation visibility, independent of the grid ("A" in the View menu).
+    void setAnnotationsVisible(bool on) { m_annVisible = on; if (!on) m_active = -1; }
+    bool annotationsVisible() const { return m_annVisible; }
+
     // Inverted contrast: light backing chips with complement-coloured strokes,
     // for annotations sitting on bright fields.
     void setInvertedContrast(bool on) { m_inverted = on; }
@@ -90,6 +94,7 @@ private:
     int m_active = -1;                       // annotation index showing handles
     bool m_rebuilding = false;
     bool m_gridVisible = false;
+    bool m_annVisible = true;
     bool m_inverted = false;
 };
 

@@ -120,7 +120,7 @@ void AnnotationLayer::rebuild(int w, int h, const Wcs& wcs,
     m_scene->addItem(m_group);
 
     if (m_gridVisible && w > 0 && h > 0) buildGrid(w, h, wcs);
-    buildAnnotations(annotations);
+    if (m_annVisible) buildAnnotations(annotations);
     m_lastAnns = annotations;
     m_rebuilding = false;
     rebuildHandles();                             // handles survive rebuilds
