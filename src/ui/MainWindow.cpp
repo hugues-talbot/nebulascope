@@ -1221,6 +1221,7 @@ void MainWindow::displayPath(const QString& path) {
             }
         }
     }
+    m_diskSizeByPath[path] = QSize(m_image.width(), m_image.height());  // pre-orientation dims
     reapplyStoredXforms();      // image reloads unrotated from disk; catch it up
     refreshAnnotations();
     auto remembered = m_stfByPath.constFind(path);
@@ -1392,6 +1393,34 @@ bool MainWindow::xformFromName(const QString& n, Xform& out) {
 // The image reloads from disk in its stored orientation; catch the pixels up
 // with any rotate/flip history recorded for this path (annotations in
 // m_annByPath are already in the transformed coordinates).
+// Imported annotations (SExtractor catalogs, plain JSON without an orientation
+// record) are in the disk pixel frame; replay this image's orientation history
+// over them — same ops, same order, same dimension tracking as the pixels.
+void MainWindow::mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns) {
+    const QStringList ops = m_xformByPath.value(m_currentPath);
+    if (ops.isEmpty() || anns.empty()) return;
+    const QSize d = m_diskSizeByPath.value(m_currentPath,
+                                           QSize(m_image.width(), m_image.height()));
+    int w = d.width(), h = d.height();
+    for (const QString& n : ops) {
+        if (n.startsWith(QLatin1String("rot:"))) {
+            const double a = n.mid(4).toDouble();
+            const double th = a * M_PI / 180.0;
+            const double c = std::cos(th), s = std::sin(th);
+            // Same expanded-canvas formula as rotateArbitrary().
+            const int nw = std::max(1, int(std::ceil(w * std::fabs(c) + h * std::fabs(s))));
+            const int nh = std::max(1, int(std::ceil(w * std::fabs(s) + h * std::fabs(c))));
+            rotateAnnotationsBy(anns, a, w, h, nw, nh);
+            w = nw; h = nh;
+        } else {
+            Xform x;
+            if (!xformFromName(n, x)) continue;
+            transformAnnotations(anns, x, w, h);
+            if (x == Xform::RotCW || x == Xform::RotCCW) std::swap(w, h);
+        }
+    }
+}
+
 void MainWindow::reapplyStoredXforms() {
     const QStringList ops = m_xformByPath.value(m_currentPath);
     if (ops.isEmpty() || !m_image.isValid()) return;
@@ -1600,7 +1629,7 @@ void MainWindow::importSexCatalog() {
     if (dlg.exec() != QDialog::Accepted) return;
 
     std::vector<Annotation> before = m_annByPath.value(m_currentPath);
-    auto& anns = m_annByPath[m_currentPath];
+    std::vector<Annotation> fresh;                 // catalog rows, in DISK coords
     const double k = scale->value();
     const QString lab = labelBy->currentText();
     int added = 0, skipped = 0;
@@ -1620,9 +1649,14 @@ void MainWindow::importSexCatalog() {
         a.textSize = 8;
         a.color = (classColor->isChecked() && cat.value(r, "CLASS_STAR") > 0.9)
                       ? QColor("#ffd27f") : m_annColor;
-        anns.push_back(a);
+        fresh.push_back(a);
         ++added;
     }
+    // Catalog coordinates refer to the file on disk — carry the detections
+    // through any rotation/flip applied to the view this session, then append.
+    mapAnnotationsFromDiskFrame(fresh);
+    auto& anns = m_annByPath[m_currentPath];
+    anns.insert(anns.end(), fresh.begin(), fresh.end());
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("import SExtractor catalog"), m_currentPath, std::move(before));
@@ -1712,15 +1746,27 @@ void MainWindow::loadAnnotations() {
         return;
     }
     std::vector<Annotation> before = m_annByPath.value(m_currentPath);
-    m_annByPath[m_currentPath] = std::move(anns);
-    m_annDirty.remove(m_currentPath);              // matches the file just read
-    // Honour the file's recorded orientation when this image has no transforms
-    // yet this session (the displayed pixels are then still disk-oriented).
-    if (!m_xformByPath.contains(m_currentPath)) {
-        QStringList ops;
-        for (const auto& v : doc.object()["orientation"].toArray()) ops << v.toString();
-        if (!ops.isEmpty()) { m_xformByPath[m_currentPath] = ops; reapplyStoredXforms(); }
+    // Reconcile frames: the file records the orientation its annotations were
+    // made in; the view may have its own transforms this session.
+    QStringList fileOps;
+    for (const auto& v : doc.object()["orientation"].toArray()) fileOps << v.toString();
+    const QStringList curOps = m_xformByPath.value(m_currentPath);
+    if (curOps.isEmpty()) {
+        // Displayed pixels are still disk-oriented; adopt the file's orientation.
+        m_annByPath[m_currentPath] = std::move(anns);
+        if (!fileOps.isEmpty()) { m_xformByPath[m_currentPath] = fileOps; reapplyStoredXforms(); }
+    } else if (fileOps == curOps) {
+        m_annByPath[m_currentPath] = std::move(anns);   // already in the view's frame
+    } else if (fileOps.isEmpty()) {
+        // Disk-frame annotations onto a transformed view: replay our ops.
+        mapAnnotationsFromDiskFrame(anns);
+        m_annByPath[m_currentPath] = std::move(anns);
+    } else {
+        m_annByPath[m_currentPath] = std::move(anns);
+        statusBar()->showMessage(QStringLiteral(
+            "Warning: annotation file was saved in a different orientation than the current view"), 6000);
     }
+    m_annDirty.remove(m_currentPath);              // matches the file just read
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);

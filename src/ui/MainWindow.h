@@ -106,6 +106,10 @@ public:
 private:
     void applyTransform(Xform x);              // lossless geometry on the current image
     void pushRotateTo(double totalDeg);        // rotateToAngle + undo command
+    // Map annotations given in the DISK (as-loaded) pixel frame through this
+    // image's orientation history, so imports line up with a rotated view.
+    void mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns);
+    QHash<QString, QSize> m_diskSizeByPath;    // as-decoded dims, pre-orientation
     // Pre-rotation base for rotateToAngle — captured lazily on the first
     // arbitrary rotation of an image, dropped on 90°/flip or image switch.
     ImageData m_rotBase;
