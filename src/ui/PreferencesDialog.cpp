@@ -85,7 +85,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         sidecar->setChecked(d.autoLoadSidecar);
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    connect(bb, &QDialogButtonBox::accepted, this, [=, this, &p] {
+    connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
         p.gridTargetLines = grid->value();
         p.annColor        = colorBtn->property("color").value<QColor>();
         p.annTextSize     = textSize->value();
