@@ -136,7 +136,7 @@ RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northU
                                              .arg(northUpDeg, 0, 'f', 2));
         northBtn->setToolTip(QStringLiteral("Set the angle that puts celestial north up at the image centre"));
         connect(northBtn, &QPushButton::clicked, this,
-                [this, northUpDeg] { setAngle(northUpDeg, false); });
+                [this, northUpDeg] { m_spin->setValue(northUpDeg); });   // syncs knob+preview via valueChanged
         side->addWidget(northBtn);
     }
 
