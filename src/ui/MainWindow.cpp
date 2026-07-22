@@ -914,6 +914,8 @@ void MainWindow::buildMenusAndToolbar() {
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+    image->addSeparator();
+    acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
@@ -1298,6 +1300,29 @@ void MainWindow::prevImage() {
     if (n == 0) return;
     const int row = m_fileList->currentRow();
     m_fileList->setCurrentRow((row - 1 + n) % n);        // wrap to bottom before first
+}
+
+// Discard the stored rotate/flip history for the current image: annotations
+// walk back to the disk pixel frame with the exact inverse of that history,
+// then the pixels are re-decoded from disk (no inverse resampling — a true
+// restore). The cleared orientation persists on the next annotation save, and
+// the undo stack is reset (its recorded frames no longer exist).
+void MainWindow::resetOrientation() {
+    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
+    const QStringList ops = m_xformByPath.value(m_currentPath);
+    if (ops.isEmpty()) { statusBar()->showMessage("No stored orientation for this image", 3000); return; }
+    auto it = m_annByPath.find(m_currentPath);
+    if (it != m_annByPath.end() && !it.value().empty()) {
+        unmapAnnotationsToDiskFrame(it.value(), ops);
+        m_annDirty.insert(m_currentPath);
+    }
+    m_xformByPath.remove(m_currentPath);
+    m_rotBasePath.clear();                    // stale rotation-dialog base
+    m_rotBase = ImageData();
+    m_undo->clear();
+    displayPath(m_currentPath);               // fresh decode; replay is now a no-op
+    statusBar()->showMessage(QStringLiteral("Orientation reset — showing disk pixels (%1\u00d7%2)")
+                                 .arg(m_image.width()).arg(m_image.height()), 4000);
 }
 
 void MainWindow::displayPath(const QString& path) {
