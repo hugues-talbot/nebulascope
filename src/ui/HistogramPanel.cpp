@@ -4,6 +4,7 @@
 #include "core/ImageStats.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QPushButton>
 #include <QButtonGroup>
 #include <QSlider>
@@ -78,6 +79,41 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     }
     pGrid->addStretch();
     root->addLayout(pGrid);
+
+    // --- RGB images: 3×3 per-channel grid (rows R/G/B × cols Black/Mid/White) ---
+    m_rgbBox = new QWidget();
+    {
+        auto* gl2 = new QGridLayout(m_rgbBox);
+        gl2->setContentsMargins(0, 0, 0, 0);
+        gl2->setHorizontalSpacing(8);
+        gl2->setVerticalSpacing(3);
+        const char* cols[3] = { "Black", "Mid", "White" };
+        const char* rows[3] = { "R", "G", "B" };
+        const char* rowCol[3] = { "#ff6b6b", "#3fd07f", "#5aa9ff" };
+        for (int j = 0; j < 3; ++j) {
+            m_rgbColLbl[j] = new QLabel(cols[j]);
+            m_rgbColLbl[j]->setStyleSheet("color:#7e8b98; font-size:10px;");
+            gl2->addWidget(m_rgbColLbl[j], 0, j + 1);
+        }
+        for (int c = 0; c < 3; ++c) {
+            auto* rl2 = new QLabel(rows[c]);
+            rl2->setStyleSheet(QStringLiteral("color:%1; font-size:11px; font-weight:600;").arg(rowCol[c]));
+            gl2->addWidget(rl2, c + 1, 0);
+            for (int j = 0; j < 3; ++j) {
+                auto* e = new QLineEdit();
+                auto* dv2 = new QDoubleValidator(this);
+                dv2->setLocale(QLocale::c());
+                e->setValidator(dv2);
+                e->setLocale(QLocale::c());
+                e->setMaximumWidth(90);
+                gl2->addWidget(e, c + 1, j + 1);
+                m_rgbEdit[c][j] = e;
+                connect(e, &QLineEdit::editingFinished, this, [this, c, j] { onRgbEdited(c, j); });
+            }
+        }
+        gl2->setColumnStretch(4, 1);
+    }
+    root->addWidget(m_rgbBox);
 
     // --- GHS sliders (shown only in GHS mode) ---
     m_ghsBox = new QWidget();
@@ -172,16 +208,37 @@ void HistogramPanel::syncFromModel() {
     };
     if (ghs) {
         const GHSParams g = m_model->ghs();
+        m_rgbBox->setVisible(false);
         setField(0, "SP", g.SP, 4);
         setField(1, "LP", g.LP, 4);
         setField(2, "HP", g.HP, 4);
         setField(3, "D",  g.D,  4);
         setField(4, "b",  g.b,  4);
     } else {
+        const bool linear = m_model->fn() == StretchFn::Linear;
+        const bool rgb = m_src && m_src->channels() >= 3;
+        m_rgbBox->setVisible(rgb);
+        if (rgb) {
+            // 3×3 grid in RAW data values; B/W columns only meaningful in Linear.
+            for (int c = 0; c < 3; ++c) {
+                const double lo = m_model->lo(c), hi = m_model->hi(c);
+                const ChannelStretch cc = m_model->channel(c);
+                const double vals[3] = { lo + cc.black * (hi - lo),
+                                         lo + cc.mid   * (hi - lo),
+                                         lo + cc.white * (hi - lo) };
+                for (int j = 0; j < 3; ++j) {
+                    m_rgbEdit[c][j]->setVisible(j == 1 || linear);
+                    if (!m_rgbEdit[c][j]->hasFocus())
+                        m_rgbEdit[c][j]->setText(QString::number(vals[j], 'g', 6));
+                }
+            }
+            for (int j = 0; j < 3; ++j) m_rgbColLbl[j]->setVisible(j == 1 || linear);
+            for (int i = 0; i < kParamFields; ++i) m_pRow[i]->setVisible(false);
+            return;
+        }
         const int ec = editChannel();
         const double lo = m_model->lo(ec), hi = m_model->hi(ec);
         const ChannelStretch cs = m_model->channel(ec);
-        const bool linear = m_model->fn() == StretchFn::Linear;
         setField(0, "Black", lo + cs.black * (hi - lo), 6);
         setField(1, "Mid",   lo + cs.mid   * (hi - lo), 6);
         setField(2, "White", lo + cs.white * (hi - lo), 6);
@@ -231,6 +288,23 @@ void HistogramPanel::onParamEdited(int idx) {
         for (int c = 0; c < m_model->channelCount(); ++c) applyChan(c);
     else
         applyChan(editChannel());
+}
+
+void HistogramPanel::onRgbEdited(int c, int idx) {
+    bool ok = false;
+    QString txt = m_rgbEdit[c][idx]->text().trimmed();
+    txt.replace(',', '.');
+    const double val = txt.toDouble(&ok);
+    if (!ok) { syncFromModel(); return; }
+    const double eps = 0.006;
+    const double lo = m_model->lo(c), hi = m_model->hi(c);
+    double nv = (val - lo) / std::max(1e-12, hi - lo);
+    nv = nv < 0 ? 0.0 : (nv > 1 ? 1.0 : nv);
+    ChannelStretch cs = m_model->channel(c);
+    if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(0.0, nv));
+    else if (idx == 1) cs.mid   = std::min(cs.white - eps, std::max(cs.black + eps, nv));
+    else               cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
+    m_model->setChannel(c, cs);
 }
 
 } // namespace astro

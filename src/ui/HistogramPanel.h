@@ -27,6 +27,7 @@ public:
 private slots:
     void syncFromModel();
     void onParamEdited(int idx);
+    void onRgbEdited(int c, int idx);   // 3×3 grid: channel c, 0=B 1=M 2=W
 
 private:
     int  editChannel() const;
@@ -45,6 +46,11 @@ private:
     QWidget*   m_pRow[kParamFields] = {};
     QLabel*    m_pLbl[kParamFields] = {};
     QLineEdit* m_pEdit[kParamFields] = {};
+    // RGB images: per-channel 3×3 grid (R/G/B × Black/Mid/White) instead of the
+    // single linked row above.
+    QWidget*   m_rgbBox = nullptr;
+    QLineEdit* m_rgbEdit[3][3] = {};
+    QLabel*    m_rgbColLbl[3] = {};
 };
 
 } // namespace astro
