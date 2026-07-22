@@ -183,6 +183,7 @@ protected:
     void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations
     void keyPressEvent(QKeyEvent* e) override;  // fallback for the Delete key
     void resizeEvent(QResizeEvent* e) override; // reposition overlay panels
+    bool eventFilter(QObject* o, QEvent* e) override;   // overlay edge-drag resize
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;
@@ -196,6 +197,11 @@ protected:
     QWidget* m_ovInfo = nullptr;
     QWidget* m_ovHist = nullptr;
     QWidget* m_listContent = nullptr;   // the left dock's content widget (list + buttons)
+    // Overlay geometry (user-resizable by edge drag; persisted per session)
+    int m_ovLeftW = 0;                  // 0 = auto
+    int m_ovHistW = 0;
+    double m_ovSplit = 0.55;            // list share of the left column
+    int m_ovDrag = 0;                   // 0 none, 1 left width, 2 hist width, 3 split
     QDockWidget*    m_leftDock = nullptr;
     QDockWidget*    m_rightDock = nullptr;
     QDockWidget*    m_infoDock = nullptr;

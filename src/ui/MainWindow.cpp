@@ -868,6 +868,7 @@ void MainWindow::buildMenusAndToolbar() {
     });
     aOverlay->setCheckable(true);
     aOverlay->setChecked(false);
+    aOverlay->setShortcutContext(Qt::ApplicationShortcut);
     acts["overlay_panels"] = aOverlay;
     // In overlay mode the L/P/F3 dock toggles are intercepted: the dock briefly
     // becomes visible, we re-hide it and flip the matching overlay box instead.
@@ -1389,6 +1390,8 @@ QWidget* MainWindow::makeOverlayBox(QWidget* content) {
     auto* l = new QVBoxLayout(box);
     l->setContentsMargins(7, 7, 7, 7);
     l->addWidget(content);
+    box->setMouseTracking(true);
+    box->installEventFilter(this);      // edge-drag resizing
     box->hide();
     return box;
 }
@@ -1423,18 +1426,58 @@ void MainWindow::layoutOverlayPanels() {
     if (!m_overlay || !centralWidget()) return;
     const QRect r = centralWidget()->rect();
     const int m = 14, gap = 10;
-    const int lw = std::min(280, std::max(200, r.width() / 5));
-    const int hw = std::min(430, std::max(300, r.width() / 3));
+    if (m_ovLeftW <= 0) m_ovLeftW = std::min(280, std::max(200, r.width() / 5));
+    if (m_ovHistW <= 0) m_ovHistW = std::min(430, std::max(300, r.width() / 3));
+    const int lw = std::min(m_ovLeftW, r.width() / 2);
+    const int hw = std::min(m_ovHistW, r.width() / 2);
     const int fullH = r.height() - 2 * m;
     const bool listOn = m_ovList && m_ovList->isVisible();
     const bool infoOn = m_ovInfo && m_ovInfo->isVisible();
-    const int listH = infoOn && listOn ? fullH * 11 / 20 : fullH;
+    const int listH = infoOn && listOn ? int(fullH * m_ovSplit) : fullH;
     if (listOn) m_ovList->setGeometry(m, m, lw, listH);
     if (infoOn) m_ovInfo->setGeometry(m, listOn ? m + listH + gap : m, lw,
                                       listOn ? fullH - listH - gap : fullH);
     if (m_ovHist && m_ovHist->isVisible())
         m_ovHist->setGeometry(r.width() - m - hw, m, hw, fullH);
     for (QWidget* b : { m_ovList, m_ovInfo, m_ovHist }) if (b) b->raise();
+}
+
+// Edge-drag resizing for the overlay boxes: right edge of the left column,
+// left edge of the histogram, and the seam under the list (list/info split).
+bool MainWindow::eventFilter(QObject* o, QEvent* e) {
+    auto* box = qobject_cast<QWidget*>(o);
+    const bool isLeft = box && (box == m_ovList || box == m_ovInfo);
+    const bool isHist = box && box == m_ovHist;
+    if (m_overlay && (isLeft || isHist)) {
+        const int grip = 8;
+        auto* me = static_cast<QMouseEvent*>(e);
+        switch (e->type()) {
+        case QEvent::MouseMove: {
+            const QPoint p = me->position().toPoint();
+            const bool onW = isLeft ? (box->width() - p.x() <= grip) : (p.x() <= grip);
+            const bool onS = (box == m_ovList) && m_ovInfo && m_ovInfo->isVisible()
+                             && (box->height() - p.y() <= grip);
+            if (m_ovDrag == 1) { m_ovLeftW = std::max(160, me->globalPosition().toPoint().x() - centralWidget()->mapToGlobal(QPoint(14,0)).x()); layoutOverlayPanels(); return true; }
+            if (m_ovDrag == 2) { m_ovHistW = std::max(240, centralWidget()->mapToGlobal(QPoint(centralWidget()->width()-14,0)).x() - me->globalPosition().toPoint().x()); layoutOverlayPanels(); return true; }
+            if (m_ovDrag == 3) { const int fullH = centralWidget()->height() - 28; m_ovSplit = qBound(0.15, double(me->globalPosition().toPoint().y() - centralWidget()->mapToGlobal(QPoint(0,14)).y()) / std::max(1, fullH), 0.85); layoutOverlayPanels(); return true; }
+            box->setCursor(onS ? Qt::SplitVCursor : (onW ? Qt::SizeHorCursor : Qt::ArrowCursor));
+            break;
+        }
+        case QEvent::MouseButtonPress:
+            if (me->button() == Qt::LeftButton) {
+                const QPoint p = me->position().toPoint();
+                if ((box == m_ovList) && m_ovInfo && m_ovInfo->isVisible() && box->height() - p.y() <= grip) { m_ovDrag = 3; return true; }
+                if (isLeft && box->width() - p.x() <= grip) { m_ovDrag = 1; return true; }
+                if (isHist && p.x() <= grip) { m_ovDrag = 2; return true; }
+            }
+            break;
+        case QEvent::MouseButtonRelease:
+            if (m_ovDrag) { m_ovDrag = 0; return true; }
+            break;
+        default: break;
+        }
+    }
+    return QMainWindow::eventFilter(o, e);
 }
 
 void MainWindow::resizeEvent(QResizeEvent* e) {
