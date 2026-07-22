@@ -867,9 +867,14 @@ void MainWindow::buildMenusAndToolbar() {
         setOverlayPanels(!m_overlay);
     });
     aOverlay->setCheckable(true);
-    aOverlay->setChecked(false);
+    aOverlay->setChecked(true);
     aOverlay->setShortcutContext(Qt::ApplicationShortcut);
     acts["overlay_panels"] = aOverlay;
+    // Overlay is the default layout; docked panels remain one 'O' away.
+    QTimer::singleShot(0, this, [this, aOverlay] {
+        setOverlayPanels(true);
+        aOverlay->setChecked(true);
+    });
     // In overlay mode the L/P/F3 dock toggles are intercepted: the dock briefly
     // becomes visible, we re-hide it and flip the matching overlay box instead.
     auto hookDock = [this](QDockWidget* d, QWidget* MainWindow::* box) {
@@ -1689,19 +1694,36 @@ void MainWindow::updateDisplay() {
 void MainWindow::toggleImageOnly() {
     m_imageOnly = !m_imageOnly;
     if (m_imageOnly) {
-        m_savedLeft = m_leftDock->isVisible();
-        m_savedRight = m_rightDock->isVisible();
-        m_savedInfo = m_infoDock->isVisible();
-        m_leftDock->hide();
-        m_rightDock->hide();
-        m_infoDock->hide();
+        if (m_overlay) {
+            // Overlay mode: remember which boxes were up, hide them all.
+            m_savedLeft  = m_ovList && m_ovList->isVisible();
+            m_savedInfo  = m_ovInfo && m_ovInfo->isVisible();
+            m_savedRight = m_ovHist && m_ovHist->isVisible();
+            if (m_ovList) m_ovList->hide();
+            if (m_ovInfo) m_ovInfo->hide();
+            if (m_ovHist) m_ovHist->hide();
+        } else {
+            m_savedLeft = m_leftDock->isVisible();
+            m_savedRight = m_rightDock->isVisible();
+            m_savedInfo = m_infoDock->isVisible();
+            m_leftDock->hide();
+            m_rightDock->hide();
+            m_infoDock->hide();
+        }
         menuBar()->hide();
         statusBar()->hide();
         for (QToolBar* tb : findChildren<QToolBar*>()) tb->hide();
     } else {
-        m_leftDock->setVisible(m_savedLeft);
-        m_rightDock->setVisible(m_savedRight);
-        m_infoDock->setVisible(m_savedInfo);
+        if (m_overlay) {
+            if (m_ovList) m_ovList->setVisible(m_savedLeft);
+            if (m_ovInfo) m_ovInfo->setVisible(m_savedInfo);
+            if (m_ovHist) m_ovHist->setVisible(m_savedRight);
+            layoutOverlayPanels();
+        } else {
+            m_leftDock->setVisible(m_savedLeft);
+            m_rightDock->setVisible(m_savedRight);
+            m_infoDock->setVisible(m_savedInfo);
+        }
         menuBar()->show();
         statusBar()->show();
         for (QToolBar* tb : findChildren<QToolBar*>()) tb->show();
