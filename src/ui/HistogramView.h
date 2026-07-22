@@ -51,6 +51,7 @@ private:
     int m_active = -1;
     bool m_logHist = true;                    // log vs linear frequency axis
     QString m_dragHandle;                     // "", b/m/w, SP/LP/HP
+    int m_dragChannel = -1;                   // Linear RGB: drag one channel's line (-1 = linked)
 
     // Rebin cache: recomputeHistogram() fires on every model change (each drag
     // tick), but the bins only depend on these inputs — skip when unchanged.

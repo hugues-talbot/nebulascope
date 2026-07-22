@@ -810,17 +810,26 @@ void MainWindow::buildMenusAndToolbar() {
     // View
     QMenu* view = menuBar()->addMenu("&View");
     QAction* aLeft = m_leftDock->toggleViewAction();
-    aLeft->setShortcut(QKeySequence("F2"));
+    aLeft->setShortcuts({ QKeySequence("F2"), QKeySequence("L") });
     QAction* aRight = m_rightDock->toggleViewAction();
     aRight->setShortcut(QKeySequence("F3"));
     QAction* aInfo = m_infoDock->toggleViewAction();
-    aInfo->setShortcut(QKeySequence("F4"));
+    aInfo->setShortcuts({ QKeySequence("F4"), QKeySequence("P") });
     view->addAction(aLeft);
     view->addAction(aInfo);
     view->addAction(aRight);
     acts["toggle_image_list"] = aLeft;
     acts["toggle_info_panel"] = aInfo;
     acts["toggle_histogram"]  = aRight;
+    acts["close_image"] = view->addAction("&Close Current Image", QKeySequence("C"), this, [this] {
+        // Remove the displayed image from the list, reusing removeSelected()'s
+        // cleanup (stretch memory, annotations, HDU children, next-row pick).
+        QListWidgetItem* it = m_fileList->currentItem();
+        if (!it) return;
+        m_fileList->clearSelection();
+        it->setSelected(true);
+        removeSelected();
+    });
     view->addSeparator();
     acts["zoom_to_fit"] = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
     acts["zoom_actual_size"] = view->addAction("Zoom &1:1", QKeySequence("1"), m_view, &ImageView::zoomActualSize);

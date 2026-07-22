@@ -190,6 +190,23 @@ void HistogramView::paintEvent(QPaintEvent*) {
         drawHandle(wv(gp.HP), QColor("#7e8b98"), "HP", false);
         // B/W (the window) are set in Linear mode; not shown here.
     } else if (m_model->fn() == StretchFn::Linear) {
+        // RGB mode: each channel keeps its own B/M/W (auto-STF sets them apart).
+        // Show all three as thin channel-coloured lines (M dashed), draggable
+        // individually from the plot body; the labelled grips on top stay the
+        // LINKED handles (drag all three together).
+        if (m_active < 0 && ch >= 3) {
+            for (int c = 0; c < 3; ++c) {
+                const ChannelStretch cc = m_model->channel(c);
+                QColor col = CH_COL[c]; col.setAlpha(170);
+                QPen thin(col, 1.2);
+                g.setPen(thin);
+                g.drawLine(QPointF(valToX(cc.black), r.top() + 8), QPointF(valToX(cc.black), r.bottom()));
+                g.drawLine(QPointF(valToX(cc.white), r.top() + 8), QPointF(valToX(cc.white), r.bottom()));
+                thin.setStyle(Qt::DashLine);
+                g.setPen(thin);
+                g.drawLine(QPointF(valToX(cc.mid), r.top() + 8), QPointF(valToX(cc.mid), r.bottom()));
+            }
+        }
         const ChannelStretch cs = m_model->channel(curveCh);
         const QColor hc = (m_active < 0 || ch == 1) ? QColor("#cdd7e1") : CH_COL[curveCh];
         drawHandle(cs.black, hc, "B", false);
@@ -207,6 +224,7 @@ void HistogramView::mousePressEvent(QMouseEvent* e) {
     auto near = [&](double v) { return std::fabs(px - valToX(v)) < 10.0; };
 
     m_dragHandle.clear();
+    m_dragChannel = -1;
     if (ghs) {
         const GHSParams gp = m_model->ghs();
         const ChannelStretch wc = m_model->channel(0);
@@ -216,11 +234,29 @@ void HistogramView::mousePressEvent(QMouseEvent* e) {
         else if (near(wv(gp.LP))) m_dragHandle = "LP";
         else if (near(wv(gp.HP))) m_dragHandle = "HP";
     } else if (m_model->fn() == StretchFn::Linear) {
-        const int c = (m_active < 0) ? 0 : m_active;
-        const ChannelStretch cs = m_model->channel(c);
-        if (near(cs.mid)) m_dragHandle = "m";
-        else if (near(cs.black)) m_dragHandle = "b";
-        else if (near(cs.white)) m_dragHandle = "w";
+        const int nch = m_src ? m_src->channels() : 1;
+        // RGB mode, click in the plot body: grab the nearest per-channel line.
+        // Clicks on the top grip strip keep the linked-drag behaviour.
+        if (m_active < 0 && nch >= 3 && e->position().y() > plotRect().top() + 12.0) {
+            double best = 6.0; int bc = -1; QString bh;
+            for (int c = 0; c < 3; ++c) {
+                const ChannelStretch cc = m_model->channel(c);
+                const struct { const char* h; double v; } cand[3] =
+                    { {"b", cc.black}, {"m", cc.mid}, {"w", cc.white} };
+                for (const auto& k : cand) {
+                    const double d = std::fabs(px - valToX(k.v));
+                    if (d < best) { best = d; bc = c; bh = QLatin1String(k.h); }
+                }
+            }
+            if (bc >= 0) { m_dragChannel = bc; m_dragHandle = bh; }
+        }
+        if (m_dragHandle.isEmpty()) {
+            const int c = (m_active < 0) ? 0 : m_active;
+            const ChannelStretch cs = m_model->channel(c);
+            if (near(cs.mid)) m_dragHandle = "m";
+            else if (near(cs.black)) m_dragHandle = "b";
+            else if (near(cs.white)) m_dragHandle = "w";
+        }
     } else {   // Log / Asinh: only the midtone is adjustable here
         const int c = (m_active < 0) ? 0 : m_active;
         if (near(m_model->channel(c).mid)) m_dragHandle = "m";
@@ -234,6 +270,7 @@ void HistogramView::mouseMoveEvent(QMouseEvent* e) {
 
 void HistogramView::mouseReleaseEvent(QMouseEvent*) {
     m_dragHandle.clear();
+    m_dragChannel = -1;
 }
 
 void HistogramView::applyDrag(double v) {
@@ -260,7 +297,9 @@ void HistogramView::applyDrag(double v) {
         return cs;
     };
 
-    if (m_active < 0) {                          // RGB: move all channels together
+    if (m_active < 0 && m_dragChannel >= 0) {    // one channel's line, grabbed in the plot
+        m_model->setChannel(m_dragChannel, clampSet(m_model->channel(m_dragChannel)));
+    } else if (m_active < 0) {                   // RGB: move all channels together
         const int n = m_model->channelCount();
         const double cur = (m_dragHandle == "b") ? m_model->channel(0).black
                          : (m_dragHandle == "m") ? m_model->channel(0).mid
