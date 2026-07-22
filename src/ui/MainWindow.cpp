@@ -791,6 +791,7 @@ void MainWindow::buildMenusAndToolbar() {
     QMenu* file = menuBar()->addMenu("&File");
     acts["open"] = file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
     acts["save_data_as"] = file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
+    acts["save_stretched_as"] = file->addAction("Save Stretc&hed As…", this, &MainWindow::saveStretched);
     acts["export_view"] = file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
     acts["export_region"] = file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
@@ -1642,6 +1643,25 @@ void MainWindow::displayPath(const QString& path) {
     statusBar()->showMessage(QStringLiteral("%1   %2\u00d7%3   %4 ch   [%5/%6]")
         .arg(name).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels())
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count()), 4000);
+}
+
+// Save the CURRENT VIEW's non-linear edit as data: the stretch (window +
+// transfer + colormap for mono) is baked into Float32 [0,1] pixels at full
+// precision — unlike Export View As…, which quantises to 8-bit for pictures.
+void MainWindow::saveStretched() {
+    if (!m_image.isValid()) return;
+    const QString path = QFileDialog::getSaveFileName(
+        this, "Save stretched image", QString(),
+        "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
+    if (path.isEmpty()) return;
+    ImageData baked = DisplayRenderer::renderFloat(m_image, m_model);
+    if (!baked.isValid()) { QMessageBox::warning(this, "Save failed", "Could not bake the stretch."); return; }
+    ImageHeader hdr = m_header;
+    hdr.cards.push_back({ QStringLiteral("HISTORY"),
+                          QStringLiteral("NebulaScope: baked display stretch"), QString() });
+    io::SaveResult sr = io::saveImage(path, baked, hdr);
+    if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);
+    else statusBar()->showMessage("Saved stretched " + QFileInfo(path).fileName(), 3000);
 }
 
 void MainWindow::saveFile() {

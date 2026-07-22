@@ -168,4 +168,81 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     return out;
 }
 
+// Bake the stretch into Float32 [0,1] planes at full precision — same transfer
+// path as the display (windowing, LUT interpolation) but with no 8-bit
+// quantisation and no dither. Mono input stays mono; an active colormap turns
+// it into a 3-channel RGB bake.
+ImageData DisplayRenderer::renderFloat(const ImageData& img, const StretchModel& model) {
+    const int w = img.width(), h = img.height();
+    const int ch = img.channels();
+    if (w <= 0 || h <= 0) return ImageData();
+    const int N = 4096;
+
+    std::vector<float> lut[3];
+    if (model.fn() == StretchFn::GHS) {
+        lut[0] = buildLut(StretchFn::GHS, model.channel(0), model.ghs(), N);
+        lut[1] = lut[0];
+        lut[2] = lut[0];
+    } else {
+        for (int c = 0; c < 3; ++c)
+            lut[c] = buildLut(model.fn(), model.channel(c), model.ghs(), N);
+    }
+    double A[3], B[3];
+    for (int c = 0; c < 3; ++c) {
+        const ChannelStretch cs = model.channel(c);
+        const double range = std::max(1e-9, model.hi(c) - model.lo(c));
+        const double denomW = std::max(1e-6, cs.white - cs.black);
+        A[c] = 1.0 / (range * denomW);
+        B[c] = -(model.lo(c) / range + cs.black) / denomW;
+    }
+    auto mapF = [&](int ci, float v) -> float {
+        if (!std::isfinite(v)) return 0.0f;
+        double t = double(v) * A[ci] + B[ci];
+        t = t < 0.0 ? 0.0 : (t > 1.0 ? 1.0 : t);
+        const double f = t * (N - 1);
+        const int i0 = int(f);
+        const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+        const float fr = float(f - i0);
+        return lut[ci][i0] * (1.0f - fr) + lut[ci][i1] * fr;
+    };
+
+    const bool falseColor = (ch == 1) && colormapActive(model.colormap(), model.cmapMods());
+    const int outCh = (ch >= 3 || falseColor) ? 3 : 1;
+    ImageData out(w, h, outCh, SampleFormat::Float32,
+                  outCh == 3 ? ColorSpace::RGB : ColorSpace::Gray);
+    const std::size_t n = std::size_t(w) * h;
+
+    if (falseColor) {
+        const int M = 4096;
+        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
+        const float* p = img.plane<float>(0);
+        float* o0 = out.plane<float>(0);
+        float* o1 = out.plane<float>(1);
+        float* o2 = out.plane<float>(2);
+        parallelRows(h, [&](int y0, int y1) {
+            for (std::size_t i = std::size_t(y0) * w, e = std::size_t(y1) * w; i < e; ++i) {
+                const float yv = mapF(0, p[i]);
+                int ci = int(yv * (M - 1) + 0.5f);
+                ci = ci < 0 ? 0 : (ci > M - 1 ? M - 1 : ci);
+                o0[i] = cmap[ci * 3 + 0] / 255.0f;   // colormap is 8-bit-defined by nature
+                o1[i] = cmap[ci * 3 + 1] / 255.0f;
+                o2[i] = cmap[ci * 3 + 2] / 255.0f;
+            }
+        });
+        return out;
+    }
+
+    for (int c = 0; c < outCh; ++c) {
+        const float* p = img.plane<float>(ch >= 3 ? c : 0);
+        float* o = out.plane<float>(c);
+        const int ci = (ch == 1) ? 0 : c;
+        parallelRows(h, [&](int y0, int y1) {
+            for (std::size_t i = std::size_t(y0) * w, e = std::size_t(y1) * w; i < e; ++i)
+                o[i] = mapF(ci, p[i]);
+        });
+    }
+    (void)n;
+    return out;
+}
+
 } // namespace astro

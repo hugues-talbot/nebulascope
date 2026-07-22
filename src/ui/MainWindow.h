@@ -45,6 +45,7 @@ public:
 private slots:
     void openFile();
     void saveFile();
+    void saveStretched();   // bake the current stretch into Float32 data, save
     void exportView();
     void exportRegion();
     void updateDisplay();
