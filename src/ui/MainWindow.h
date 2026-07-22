@@ -157,6 +157,10 @@ private:
     // pixels always match annotations made in a transformed orientation.
     static QString xformName(Xform x);
     static bool xformFromName(const QString& n, Xform& out);
+    // Collapse an orientation history into a minimal equivalent (merge adjacent
+    // rotations, drop whole turns, cancel inverse pairs) — replaying a literal
+    // rotate/counter-rotate pair from disk would bake in dead black borders.
+    static QStringList canonicalXforms(QStringList ops);
     void reapplyStoredXforms();
     // Push an undo entry for an annotation edit already applied to m_annByPath;
     // `before` is the list as it was prior to the edit.

@@ -73,8 +73,6 @@
 
 namespace astro {
 
-static QStringList canonicalXforms(QStringList ops);   // defined near reapplyStoredXforms
-
 MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
     m_undo = new QUndoStack(this);
@@ -1640,7 +1638,7 @@ void MainWindow::unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, cons
 // from disk bakes those expansions in — e.g. rot:+a, rot:-a reloads as an
 // upright image padded to (w + h·sin2a) × (h + w·sin2a). Replaying the
 // canonical list reproduces the same geometry without the dead borders.
-static QStringList canonicalXforms(QStringList ops) {
+QStringList MainWindow::canonicalXforms(QStringList ops) {
     bool changed = true;
     while (changed) {
         changed = false;
