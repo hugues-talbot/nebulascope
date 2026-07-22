@@ -916,6 +916,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
     image->addSeparator();
     acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
+    acts["apply_saved_orientation"] = image->addAction("Apply &Saved Orientation", this, &MainWindow::applySavedOrientation);
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
@@ -1325,6 +1326,26 @@ void MainWindow::resetOrientation() {
                                  .arg(m_image.width()).arg(m_image.height()), 4000);
 }
 
+// Replay the orientation stashed from the annotation sidecar on the current
+// image, through the SAME machinery as manual transforms (pixels, annotations,
+// WCS, view links, and history recording all stay consistent — so a later
+// annotation save re-records it).
+void MainWindow::applySavedOrientation() {
+    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
+    const QStringList ops = m_sidecarOrientByPath.value(m_currentPath);
+    if (ops.isEmpty()) {
+        statusBar()->showMessage("No saved orientation for this image", 3000);
+        return;
+    }
+    for (const QString& n : ops) {
+        if (n.startsWith(QLatin1String("rot:"))) doRotateArbitrary(n.mid(4).toDouble());
+        else { Xform x; if (xformFromName(n, x)) doTransform(x); }
+    }
+    m_sidecarOrientByPath.remove(m_currentPath);   // now carried by the live history
+    statusBar()->showMessage(QStringLiteral("Saved orientation applied (%1×%2)")
+                                 .arg(m_image.width()).arg(m_image.height()), 4000);
+}
+
 void MainWindow::displayPath(const QString& path) {
     ImageData loaded; ImageHeader hdr;
     auto syn = m_synthetic.constFind(path);
@@ -1382,33 +1403,26 @@ void MainWindow::displayPath(const QString& path) {
                 std::vector<Annotation> anns = AnnotationLayer::fromJson(doc);
                 if (!anns.empty()) {
                     // The sidecar records the orientation the annotations were
-                    // made in — as the LITERAL op sequence of that session. Do
-                    // not replay it verbatim: canonicalize it (merging the
-                    // canvas-expanding rotate/counter-rotate pairs away) and
-                    // move the annotations from the literal frame to the disk
-                    // frame, then forward through the canonical history.
+                    // made in — as the LITERAL op sequence of that session. The
+                    // image itself is always shown as stored on disk: walk the
+                    // annotations back to the disk frame and only STASH the
+                    // (canonicalized) orientation. It is applied on demand via
+                    // Image ▸ Apply Saved Orientation, never automatically.
                     QStringList fileOps;
                     for (const auto& v : doc.object()["orientation"].toArray())
                         fileOps << v.toString();
-                    const bool adoptOps = !m_xformByPath.contains(path);
                     m_diskSizeByPath[path] = QSize(m_image.width(), m_image.height());
                     if (!fileOps.isEmpty())
                         unmapAnnotationsToDiskFrame(anns, fileOps);   // exact inverse walk
-                    if (adoptOps) {
-                        const QStringList canon = canonicalXforms(fileOps);
-                        if (!canon.isEmpty()) m_xformByPath[path] = canon;
-                    } else {
-                        // Canonicalize the in-session history NOW so the forward
-                        // walk below matches the (also canonicalized) pixel replay.
-                        auto it = m_xformByPath.find(path);
-                        it.value() = canonicalXforms(it.value());
-                        if (it.value().isEmpty()) m_xformByPath.erase(it);
-                    }
+                    const QStringList canon = canonicalXforms(fileOps);
+                    if (!canon.isEmpty()) m_sidecarOrientByPath[path] = canon;
                     m_annByPath[path] = std::move(anns);
-                    mapAnnotationsFromDiskFrame(m_annByPath[path]);   // canonical forward walk
+                    mapAnnotationsFromDiskFrame(m_annByPath[path]);   // through in-session ops, if any
                     statusBar()->showMessage(
-                        QStringLiteral("Loaded %1 annotation(s) from %2")
-                            .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName()), 3000);
+                        QStringLiteral("Loaded %1 annotation(s) from %2%3")
+                            .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName(),
+                                 canon.isEmpty() ? QString()
+                                 : QStringLiteral(" — saved orientation available (Image ▸ Apply Saved Orientation)")), 6000);
                 }
             }
         }

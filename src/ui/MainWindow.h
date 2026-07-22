@@ -97,6 +97,7 @@ public:
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
     void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push
     void resetOrientation();                   // drop stored rotate/flip history, re-decode
+    void applySavedOrientation();              // replay the sidecar's orientation on demand
     // Absolute rotation: restores the stashed pre-rotation base, then applies
     // ONE resample. Hunting for the right angle never degrades the image, and
     // undo/redo is exact (rotate back to the previous total from the same base).
@@ -137,6 +138,7 @@ private:
     AnnotationLayer* m_annotations = nullptr;
     QHash<QString, std::vector<Annotation>> m_annByPath;   // per-image annotations
     QHash<QString, QStringList> m_xformByPath;             // per-image rotate/flip history
+    QHash<QString, QStringList> m_sidecarOrientByPath;     // sidecar orientation, NOT auto-applied
     QSet<QString> m_annDirty;                              // edited since last save/load
     QUndoStack* m_undo = nullptr;
     QColor m_annColor = QColor("#8fc0f5");                 // colour for new annotations
