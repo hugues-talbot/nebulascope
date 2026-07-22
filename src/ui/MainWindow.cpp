@@ -73,6 +73,8 @@
 
 namespace astro {
 
+static QStringList canonicalXforms(QStringList ops);   // defined near reapplyStoredXforms
+
 MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
     m_undo = new QUndoStack(this);
@@ -1356,15 +1358,31 @@ void MainWindow::displayPath(const QString& path) {
                 const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
                 std::vector<Annotation> anns = AnnotationLayer::fromJson(doc);
                 if (!anns.empty()) {
-                    m_annByPath[path] = std::move(anns);
                     // The sidecar records the orientation the annotations were
-                    // made in; restore it so pixels and annotations line up.
-                    if (!m_xformByPath.contains(path)) {
-                        QStringList ops;
-                        for (const auto& v : doc.object()["orientation"].toArray())
-                            ops << v.toString();
-                        if (!ops.isEmpty()) m_xformByPath[path] = ops;
+                    // made in — as the LITERAL op sequence of that session. Do
+                    // not replay it verbatim: canonicalize it (merging the
+                    // canvas-expanding rotate/counter-rotate pairs away) and
+                    // move the annotations from the literal frame to the disk
+                    // frame, then forward through the canonical history.
+                    QStringList fileOps;
+                    for (const auto& v : doc.object()["orientation"].toArray())
+                        fileOps << v.toString();
+                    const bool adoptOps = !m_xformByPath.contains(path);
+                    m_diskSizeByPath[path] = QSize(m_image.width(), m_image.height());
+                    if (!fileOps.isEmpty())
+                        unmapAnnotationsToDiskFrame(anns, fileOps);   // exact inverse walk
+                    if (adoptOps) {
+                        const QStringList canon = canonicalXforms(fileOps);
+                        if (!canon.isEmpty()) m_xformByPath[path] = canon;
+                    } else {
+                        // Canonicalize the in-session history NOW so the forward
+                        // walk below matches the (also canonicalized) pixel replay.
+                        auto it = m_xformByPath.find(path);
+                        it.value() = canonicalXforms(it.value());
+                        if (it.value().isEmpty()) m_xformByPath.erase(it);
                     }
+                    m_annByPath[path] = std::move(anns);
+                    mapAnnotationsFromDiskFrame(m_annByPath[path]);   // canonical forward walk
                     statusBar()->showMessage(
                         QStringLiteral("Loaded %1 annotation(s) from %2")
                             .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName()), 3000);
@@ -1615,7 +1633,55 @@ void MainWindow::unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, cons
     }
 }
 
+// Collapse an orientation history into an equivalent minimal one: adjacent
+// arbitrary rotations merge into their sum, whole-turn rotations vanish, and
+// adjacent inverse 90°/flip pairs cancel. A literal history is exact for the
+// live pixels (each resample really expanded the canvas), but REPLAYING it
+// from disk bakes those expansions in — e.g. rot:+a, rot:-a reloads as an
+// upright image padded to (w + h·sin2a) × (h + w·sin2a). Replaying the
+// canonical list reproduces the same geometry without the dead borders.
+static QStringList canonicalXforms(QStringList ops) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int i = 0; i < ops.size(); ) {          // whole-turn rotations are identity
+            if (ops[i].startsWith(QLatin1String("rot:")) &&
+                std::fabs(std::remainder(ops[i].mid(4).toDouble(), 360.0)) < 1e-4) {
+                ops.removeAt(i); changed = true;
+            } else ++i;
+        }
+        for (int i = 0; i + 1 < ops.size(); ) {
+            const QString a = ops[i], b = ops[i + 1];
+            const bool ra = a.startsWith(QLatin1String("rot:"));
+            const bool rb = b.startsWith(QLatin1String("rot:"));
+            if (ra && rb) {                          // merge adjacent rotations
+                const double sum = a.mid(4).toDouble() + b.mid(4).toDouble();
+                ops.removeAt(i + 1);
+                ops[i] = QStringLiteral("rot:%1").arg(sum, 0, 'f', 4);
+                changed = true; continue;
+            }
+            Xform xa, xb;
+            if (!ra && !rb && xformFromName(a, xa) && xformFromName(b, xb) &&
+                xb == inverseXform(xa)) {            // cancel inverse 90°/flip pairs
+                ops.removeAt(i + 1); ops.removeAt(i);
+                changed = true; continue;
+            }
+            ++i;
+        }
+    }
+    return ops;
+}
+
 void MainWindow::reapplyStoredXforms() {
+    // Canonicalize before replaying — a rotate/counter-rotate pair from a past
+    // session must not bake dead black borders into the reloaded image.
+    {
+        auto it = m_xformByPath.find(m_currentPath);
+        if (it != m_xformByPath.end()) {
+            it.value() = canonicalXforms(it.value());
+            if (it.value().isEmpty()) m_xformByPath.erase(it);
+        }
+    }
     const QStringList ops = m_xformByPath.value(m_currentPath);
     if (ops.isEmpty() || !m_image.isValid()) return;
     for (const QString& n : ops) {
