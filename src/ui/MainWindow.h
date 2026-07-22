@@ -182,10 +182,20 @@ private:
 protected:
     void closeEvent(QCloseEvent* e) override;   // warn about unsaved annotations
     void keyPressEvent(QKeyEvent* e) override;  // fallback for the Delete key
+    void resizeEvent(QResizeEvent* e) override; // reposition overlay panels
 
     ImageView*      m_view = nullptr;
     HistogramPanel* m_hist = nullptr;
     InfoPanel*      m_info = nullptr;
+    // Overlay-panel mode: the dock contents float translucently over the image.
+    void setOverlayPanels(bool on);
+    void layoutOverlayPanels();
+    QWidget* makeOverlayBox(QWidget* content);
+    bool m_overlay = false;
+    QWidget* m_ovList = nullptr;
+    QWidget* m_ovInfo = nullptr;
+    QWidget* m_ovHist = nullptr;
+    QWidget* m_listContent = nullptr;   // the left dock's content widget (list + buttons)
     QDockWidget*    m_leftDock = nullptr;
     QDockWidget*    m_rightDock = nullptr;
     QDockWidget*    m_infoDock = nullptr;

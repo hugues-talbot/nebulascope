@@ -39,6 +39,7 @@
 #include <QUndoCommand>
 #include <QFile>
 #include <QMenu>
+#include <QTimer>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -862,6 +863,27 @@ void MainWindow::buildMenusAndToolbar() {
     aScroll->setCheckable(true);
     aScroll->setChecked(false);
     acts["toggle_scrollbars"] = aScroll;
+    QAction* aOverlay = view->addAction("&Overlay Panels", QKeySequence("O"), this, [this] {
+        setOverlayPanels(!m_overlay);
+    });
+    aOverlay->setCheckable(true);
+    aOverlay->setChecked(false);
+    acts["overlay_panels"] = aOverlay;
+    // In overlay mode the L/P/F3 dock toggles are intercepted: the dock briefly
+    // becomes visible, we re-hide it and flip the matching overlay box instead.
+    auto hookDock = [this](QDockWidget* d, QWidget* MainWindow::* box) {
+        connect(d, &QDockWidget::visibilityChanged, this, [this, d, box](bool vis) {
+            if (!m_overlay || !vis) return;
+            QTimer::singleShot(0, this, [this, d, box] {
+                if (!m_overlay) return;
+                d->hide();
+                if (QWidget* b = this->*box) { b->setVisible(!b->isVisible()); layoutOverlayPanels(); }
+            });
+        });
+    };
+    hookDock(m_leftDock,  &MainWindow::m_ovList);
+    hookDock(m_infoDock,  &MainWindow::m_ovInfo);
+    hookDock(m_rightDock, &MainWindow::m_ovHist);
 
     // Split main view — compare several decoded images side by side. Same-size
     // images pan/zoom together (each cell's ⇄ button opts out).
@@ -1353,6 +1375,71 @@ void MainWindow::applySavedOrientation() {
     m_sidecarOrientByPath.remove(m_currentPath);   // now carried by the live history
     statusBar()->showMessage(QStringLiteral("Saved orientation applied (%1×%2)")
                                  .arg(m_image.width()).arg(m_image.height()), 4000);
+}
+
+// ---- Overlay panels --------------------------------------------------------
+// Overlay mode lifts the three dock contents out of their docks and floats
+// them over the image canvas in translucent boxes, so the panels stop
+// displacing the display. Toggling back re-docks the SAME widgets — nothing
+// is rebuilt, all state (list, histogram, info) survives.
+QWidget* MainWindow::makeOverlayBox(QWidget* content) {
+    auto* box = new QWidget(centralWidget());
+    box->setAttribute(Qt::WA_StyledBackground, true);
+    box->setStyleSheet("background: rgba(9,14,19,0.84); border: 1px solid #22303e; border-radius: 10px;");
+    auto* l = new QVBoxLayout(box);
+    l->setContentsMargins(7, 7, 7, 7);
+    l->addWidget(content);
+    box->hide();
+    return box;
+}
+
+void MainWindow::setOverlayPanels(bool on) {
+    if (on == m_overlay) return;
+    m_overlay = on;
+    if (on) {
+        if (!m_listContent) m_listContent = m_leftDock->widget();
+        m_ovList = makeOverlayBox(m_listContent);
+        m_ovInfo = makeOverlayBox(m_info);
+        m_ovHist = makeOverlayBox(m_hist);
+        m_listContent->setStyleSheet("QListWidget { background: transparent; }");
+        m_leftDock->hide(); m_infoDock->hide(); m_rightDock->hide();
+        m_ovList->show(); m_ovInfo->show(); m_ovHist->show();
+        layoutOverlayPanels();
+    } else {
+        // Re-dock the contents first (setWidget reparents them out of the
+        // boxes), THEN delete the empty boxes.
+        m_listContent->setStyleSheet(QString());
+        m_leftDock->setWidget(m_listContent);
+        m_infoDock->setWidget(m_info);
+        m_rightDock->setWidget(m_hist);
+        delete m_ovList;  m_ovList = nullptr;
+        delete m_ovInfo;  m_ovInfo = nullptr;
+        delete m_ovHist;  m_ovHist = nullptr;
+        m_leftDock->show(); m_infoDock->show(); m_rightDock->show();
+    }
+}
+
+void MainWindow::layoutOverlayPanels() {
+    if (!m_overlay || !centralWidget()) return;
+    const QRect r = centralWidget()->rect();
+    const int m = 14, gap = 10;
+    const int lw = std::min(280, std::max(200, r.width() / 5));
+    const int hw = std::min(430, std::max(300, r.width() / 3));
+    const int fullH = r.height() - 2 * m;
+    const bool listOn = m_ovList && m_ovList->isVisible();
+    const bool infoOn = m_ovInfo && m_ovInfo->isVisible();
+    const int listH = infoOn && listOn ? fullH * 11 / 20 : fullH;
+    if (listOn) m_ovList->setGeometry(m, m, lw, listH);
+    if (infoOn) m_ovInfo->setGeometry(m, listOn ? m + listH + gap : m, lw,
+                                      listOn ? fullH - listH - gap : fullH);
+    if (m_ovHist && m_ovHist->isVisible())
+        m_ovHist->setGeometry(r.width() - m - hw, m, hw, fullH);
+    for (QWidget* b : { m_ovList, m_ovInfo, m_ovHist }) if (b) b->raise();
+}
+
+void MainWindow::resizeEvent(QResizeEvent* e) {
+    QMainWindow::resizeEvent(e);
+    if (m_overlay) layoutOverlayPanels();
 }
 
 void MainWindow::displayPath(const QString& path) {
