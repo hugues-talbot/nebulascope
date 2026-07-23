@@ -1829,8 +1829,31 @@ void MainWindow::saveFile() {
         this, "Save image", QString(), "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
     if (path.isEmpty()) return;
     io::SaveResult sr = io::saveImage(path, m_image, m_header);
-    if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);
-    else statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
+    if (!sr.ok) { QMessageBox::warning(this, "Save failed", sr.error); return; }
+    statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
+
+    // A synthetic (in-memory) image that was just written to disk becomes that
+    // file: rebrand its list row and migrate per-image state to the new key, so
+    // the entry's identifier is the saved name from here on.
+    if (m_currentPath.startsWith(QLatin1String("mem://"))) {
+        const QString oldKey = m_currentPath;
+        for (int i = 0; i < m_fileList->count(); ++i) {
+            QListWidgetItem* it = m_fileList->item(i);
+            if (it->data(Qt::UserRole).toString() != oldKey) continue;
+            it->setData(Qt::UserRole, path);
+            it->setText(QFileInfo(path).fileName());
+            it->setToolTip(path);
+            break;
+        }
+        if (m_stfByPath.contains(oldKey))      m_stfByPath.insert(path, m_stfByPath.take(oldKey));
+        if (m_annByPath.contains(oldKey))      m_annByPath.insert(path, m_annByPath.take(oldKey));
+        if (m_annDirty.remove(oldKey))         m_annDirty.insert(path);
+        if (m_xformByPath.contains(oldKey))    m_xformByPath.insert(path, m_xformByPath.take(oldKey));
+        if (m_diskSizeByPath.contains(oldKey)) m_diskSizeByPath.insert(path, m_diskSizeByPath.take(oldKey));
+        m_synthetic.remove(oldKey);            // future loads come from the file
+        m_currentPath = path;
+        rememberRecent(QStringLiteral("recentImages"), path, Preferences::get().recentImagesMax);
+    }
 }
 
 // Float [0,1] render -> 16-bit-per-channel QImage (for 16-bit PNG/TIFF export).
