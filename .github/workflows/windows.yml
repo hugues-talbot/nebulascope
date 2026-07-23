@@ -108,8 +108,8 @@ jobs:
         run: |
           cmake -B build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
-            -DCMAKE_PREFIX_PATH="$env:DEPS" `
+            "-DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET" `
+            "-DCMAKE_PREFIX_PATH=$env:DEPS" `
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
