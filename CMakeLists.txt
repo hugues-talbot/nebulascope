@@ -112,7 +112,7 @@ if(UNIX AND NOT APPLE)
 
     set(CPACK_GENERATOR DEB)
     set(CPACK_PACKAGE_NAME "nebulascope")
-    set(CPACK_PACKAGE_VERSION "0.82")           # keep in step with src/app/AppInfo.h
+    set(CPACK_PACKAGE_VERSION "0.83")           # keep in step with src/app/AppInfo.h
     set(CPACK_PACKAGE_CONTACT "Hugues Talbot")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
         "Astronomical image inspector (FITS/XISF) with precise histogram control")
