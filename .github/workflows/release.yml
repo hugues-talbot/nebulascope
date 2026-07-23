@@ -55,6 +55,7 @@ jobs:
           ls -R
           # Each artifact lands as a directory; zip the two that aren't already zips.
           [ -d NebulaScope-windows-x64 ] && (cd NebulaScope-windows-x64 && zip -r ../NebulaScope-windows-x64.zip .)
+          [ -d NebulaScope-linux-x64 ]   && mv NebulaScope-linux-x64/NebulaScope/*.deb . 2>/dev/null || true
           [ -d NebulaScope-linux-x64 ]   && (cd NebulaScope-linux-x64   && zip -r ../NebulaScope-linux-x64.zip .)
           # macOS artifact already contains NebulaScope-macos-arm64.zip — lift it out.
           [ -d NebulaScope-macos-arm64 ] && mv NebulaScope-macos-arm64/*.zip . || true
@@ -73,4 +74,7 @@ jobs:
             | macOS (Apple Silicon) | `NebulaScope-macos-arm64.zip` | Unsigned — right-click ▸ Open on first launch |
             | Windows (x64) | `NebulaScope-windows-x64.zip` | Unzip and run `nebulascope.exe` |
             | Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |
-          files: artifacts/*.zip
+            | Ubuntu/Debian | `nebulascope_*_amd64.deb` | `sudo apt install ./nebulascope_*.deb` (deps auto-resolved) |
+          files: |
+            artifacts/*.zip
+            artifacts/*.deb
