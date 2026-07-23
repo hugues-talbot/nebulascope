@@ -1187,9 +1187,19 @@ void MainWindow::addPaths(const QStringList& paths) {
             }
         }
     }
-    // If nothing is displayed yet, show the first newly added file.
-    if (m_fileList->currentRow() < 0 && firstAdded)
-        m_fileList->setCurrentItem(firstAdded);   // fires currentRowChanged -> showRow
+    // Show the first newly added file: in the first empty view if one exists
+    // (multi-view workflow), else the active view. Selecting the row fires
+    // currentRowChanged -> showRow -> displayPath into the active cell.
+    if (firstAdded) {
+        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+        if (m_fileList->currentItem() == firstAdded) {
+            // Row already current (e.g. sole entry re-opened): the row-change
+            // signal won't fire, so display explicitly into the new cell.
+            displayPath(firstAdded->data(Qt::UserRole).toString());
+        } else {
+            m_fileList->setCurrentItem(firstAdded);
+        }
+    }
 }
 
 // Register an in-memory image (e.g. a channel combine) and show it. It gets a
