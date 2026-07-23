@@ -43,7 +43,7 @@ jobs:
 
       # ---- NebulaScope -------------------------------------------------------
       - name: App icon
-        run: ./icon/make_icns.sh || echo "icon generation failed — building without custom icon"
+        run: sh ./icon/make_icns.sh || echo "icon generation failed — building without custom icon"
 
       - name: Configure
         run: |
