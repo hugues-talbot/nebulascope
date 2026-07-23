@@ -1,0 +1,79 @@
+name: Linux build
+
+# Ubuntu build: Qt6 + CFITSIO + CCfits from apt, libXISF from source (cached).
+# Packages the binary + docs as an artifact. GUI runtime testing still needs a
+# human; this proves compilation with GCC/libstdc++ and gives testers a build.
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    env:
+      DEPS: ${{ github.workspace }}/deps        # install prefix for libXISF
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: apt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            qt6-base-dev libcfitsio-dev libccfits-dev \
+            zlib1g-dev liblz4-dev libpugixml-dev
+
+      # ---- libXISF from source, cached --------------------------------------
+      - name: Cache libXISF
+        id: depcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPS }}
+          key: deps-${{ runner.os }}-24.04-libxisf-${{ hashFiles('.github/workflows/linux.yml') }}
+
+      - name: Build libXISF
+        if: steps.depcache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://gitea.nouspiro.space/nou/libXISF
+          cmake -S libXISF -B libxisf-build -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_BUILD_TYPE=Release
+          cmake --build libxisf-build
+          cmake --install libxisf-build
+
+      # ---- NebulaScope -------------------------------------------------------
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_PREFIX_PATH="$DEPS" \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      # ---- Package -----------------------------------------------------------
+      - name: Package
+        run: |
+          mkdir -p package/NebulaScope/lib
+          cp build/src/nebulascope package/NebulaScope/
+          cp "$DEPS"/lib/libXISF.so* package/NebulaScope/lib/ 2>/dev/null || true
+          cp README.md package/NebulaScope/
+          cat > package/NebulaScope/run.sh <<'EOF'
+          #!/bin/sh
+          # Run NebulaScope with the bundled libXISF; system Qt6/cfitsio/ccfits required:
+          #   sudo apt install qt6-base-dev libcfitsio10t64 libccfits0v5   (names vary by distro)
+          HERE="$(dirname "$(readlink -f "$0")")"
+          LD_LIBRARY_PATH="$HERE/lib:$LD_LIBRARY_PATH" exec "$HERE/nebulascope" "$@"
+          EOF
+          chmod +x package/NebulaScope/run.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NebulaScope-linux-x64
+          path: package
+          retention-days: 30
