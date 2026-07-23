@@ -93,6 +93,7 @@ private:
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
     void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
+public:
     // Undo/redo backing for synthetic entries (combine, colour transport).
     void removeSyntheticEntry(const QString& key);
     void restoreSyntheticEntry(const QString& key, const QString& name,
