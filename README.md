@@ -70,6 +70,22 @@ and never needs to know the source format.
   image-only mode (Tab), fullscreen, user-configurable shortcuts
   (`shortcuts.ini`), undo/redo for annotations and image transforms.
 
+## Download
+
+Prebuilt binaries for every tagged version are on the
+[**Releases page**](https://github.com/hugues-talbot/nebulascope/releases):
+
+- **macOS (Apple Silicon)** — `NebulaScope-macos-arm64.zip`: self-contained
+  `.app`. Unsigned, so on first launch right-click ▸ Open (or
+  `xattr -cr NebulaScope.app`).
+- **Windows (x64)** — `NebulaScope-windows-x64.zip`: unzip anywhere, run
+  `nebulascope.exe` (Qt and all DLLs included).
+- **Linux (x64)** — `NebulaScope-linux-x64.zip`: run `./run.sh`; needs system
+  Qt6 / cfitsio / ccfits (one `apt install`, see the script's comment).
+
+Every push to `main` also builds all three platforms (GitHub Actions); the
+per-commit artifacts are on the Actions tab.
+
 ## Repository layout
 
 ```
