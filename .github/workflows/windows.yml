@@ -85,10 +85,19 @@ jobs:
         if: steps.depcache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
+          # libXISF's CMakeLists uses pkg_check_modules — Windows has no
+          # pkg-config by default; use the pkgconf bundled with vcpkg.
+          $vcpkgInst = "$env:GITHUB_WORKSPACE/vcpkg_installed/$env:VCPKG_TRIPLET" -replace '\\','/'
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg" install pkgconf --triplet $env:VCPKG_TRIPLET --classic
+          $pkgconf = "$env:VCPKG_INSTALLATION_ROOT/installed/$env:VCPKG_TRIPLET/tools/pkgconf/pkgconf.exe"
+          $env:PKG_CONFIG_PATH = "$vcpkgInst/lib/pkgconfig"
           git clone --depth 1 https://gitea.nouspiro.space/nou/libXISF
           cmake -S libXISF -B libxisf-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
+            -DVCPKG_MANIFEST_MODE=OFF `
+            -DCMAKE_PREFIX_PATH="$vcpkgInst" `
+            -DPKG_CONFIG_EXECUTABLE="$pkgconf" `
             -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
           cmake --build libxisf-build --config Release --parallel
           cmake --install libxisf-build --config Release
