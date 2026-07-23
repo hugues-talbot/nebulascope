@@ -131,6 +131,11 @@ private:
     // as one QTransform — used to carry ROIs/points across the rotation.
     QTransform diskToViewTransform(const QStringList& ops, const QSize& diskSize) const;
     QHash<QString, QSize> m_diskSizeByPath;    // as-decoded dims, pre-orientation
+    // Orientation revision per path: bumped on every rotate/flip/reset. Cells
+    // stash PIXELS; a stash made under an older revision no longer matches the
+    // path's history and must be re-derived on activation (stale-view guard).
+    QHash<QString, int> m_xformRev;
+    void bumpXformRev(const QString& path) { ++m_xformRev[path]; }
     // Pre-rotation base for rotateToAngle — captured lazily on the first
     // arbitrary rotation of an image, dropped on 90°/flip or image switch.
     ImageData m_rotBase;

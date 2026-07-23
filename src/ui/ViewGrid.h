@@ -52,6 +52,7 @@ public:
     Wcs wcs;
     StretchModel::State stretch{};
     bool hasStretch = false;
+    int xformRev = 0;                     // orientation revision the stash was made under
     std::vector<ChannelStats> stats;
 
     // Calibrated linking: maps this cell's scene onto the link group's shared

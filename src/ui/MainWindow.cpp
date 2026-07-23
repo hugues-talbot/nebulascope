@@ -405,6 +405,7 @@ void MainWindow::doTransform(Xform x) {
     const QString inv = xformName(inverseXform(x));
     if (!hist.isEmpty() && hist.last() == inv) hist.removeLast();
     else hist << xformName(x);
+    bumpXformRev(m_currentPath);
     m_grid->remapActiveScene(xformForwardTransform(x, ow, oh));   // links survive
     refreshAnnotations();
     const bool rotated = (x == Xform::RotCW || x == Xform::RotCCW);
@@ -433,6 +434,7 @@ void MainWindow::doRotateArbitrary(double angleDeg) {
     // break disk-frame imports. rotateToAngle() keeps the chain short anyway by
     // restoring the base history before appending its single op.
     m_xformByPath[m_currentPath] << QStringLiteral("rot:%1").arg(angleDeg, 0, 'f', 4);
+    bumpXformRev(m_currentPath);
     refreshAnnotations();
     m_view->zoomToFit();
     m_lastW = nw; m_lastH = nh;
@@ -771,6 +773,7 @@ void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
         oldC->stretch = m_model.state();
         oldC->hasStretch = oldC->image.isValid();
         if (!oldC->path.isEmpty()) m_stfByPath[oldC->path] = oldC->stretch;
+        oldC->xformRev = m_xformRev.value(oldC->path, 0);
         oldC->view()->setSource(&oldC->image);      // pixel readout keeps working
     }
     m_image = std::move(newC->image);
@@ -798,6 +801,15 @@ void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
         m_lastH = m_image.height();
     }
     if (newC->hasStretch) m_model.setState(newC->stretch);   // changed() re-renders this view
+    // Stale-view guard: the image's orientation changed (in another cell or via
+    // a tool) after this stash was made — the pixels no longer match the
+    // recorded history. Re-derive them from source + history.
+    if (!m_currentPath.isEmpty() &&
+        newC->xformRev != m_xformRev.value(m_currentPath, 0)) {
+        newC->xformRev = m_xformRev.value(m_currentPath, 0);
+        displayPath(m_currentPath);                 // fresh decode + replay + stretch restore
+        return;                                     // displayPath refreshed annotations/panels
+    }
     if (m_cmapCombo) {
         const bool mono = m_image.isValid() && m_image.channels() == 1;
         m_cmapCombo->setEnabled(mono);
@@ -1645,6 +1657,7 @@ void MainWindow::resetOrientation() {
         m_annDirty.insert(m_currentPath);
     }
     m_xformByPath.remove(m_currentPath);
+    bumpXformRev(m_currentPath);
     m_rotBasePath.clear();                    // stale rotation-dialog base
     m_rotBase = ImageData();
     m_undo->clear();
