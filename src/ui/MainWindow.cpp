@@ -1230,7 +1230,7 @@ void MainWindow::addPaths(const QStringList& paths) {
 // Register an in-memory image (e.g. a channel combine) and show it. It gets a
 // synthetic "mem://" key so displayPath() serves it from m_synthetic instead of
 // touching the disk; Save Data As… can later write it to a real file.
-void MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
+QString MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     static int counter = 0;
     const QString key = QStringLiteral("mem://%1#%2").arg(name).arg(++counter);
     m_synthetic.insert(key, std::make_shared<ImageData>(std::move(img)));
@@ -1239,6 +1239,7 @@ void MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
     m_fileList->setCurrentItem(it);               // triggers showRow -> displayPath
     m_undo->push(new SyntheticImageCmd(this, key, name, m_synthetic.value(key)));
+    return key;
 }
 
 void MainWindow::removeSyntheticEntry(const QString& key) {
@@ -1535,20 +1536,63 @@ void MainWindow::transportColorsFromRef() {
     if (st.valid && !st.renormalize) refModel.setState(st);
     else refModel.autoStretch(computeStats(*refImg));
     const ImageData refDisp = DisplayRenderer::renderFloat(*refImg, refModel);
-    const ImageData srcDisp = DisplayRenderer::renderFloat(m_image, m_model);
+
+    // If the source was rotated/flipped in-session, run the transport in the
+    // DISK frame: the rotated canvas carries black expansion borders that would
+    // otherwise be baked into the result as real pixels (and its dark corner
+    // pixels would tug the distribution). The result then ADOPTS the source's
+    // orientation history, so it displays rotated identically — but reset /
+    // rotate-back keep working and no border is ever baked.
+    const QStringList srcOps = m_xformByPath.value(m_currentPath);
+    std::shared_ptr<ImageData> baseHold;          // keeps a fresh decode alive
+    const ImageData* srcPix = &m_image;
+    if (!srcOps.isEmpty()) {
+        auto syn2 = m_synthetic.constFind(m_currentPath);
+        if (syn2 != m_synthetic.constEnd()) srcPix = syn2.value().get();
+        else {
+            int hduReq = -1;
+            const QString base = splitHduKey(m_currentPath, hduReq);
+            io::LoadOptions lopts2;
+            lopts2.fitsHdu = hduReq;
+            io::LoadResult lr = io::loadImage(base, lopts2);
+            if (lr.ok) { baseHold = std::make_shared<ImageData>(std::move(lr.image)); srcPix = baseHold.get(); }
+            // decode failure: fall back to the rotated pixels (old behaviour)
+        }
+    }
+    const bool diskFrame = (srcPix != &m_image);
+    const ImageData srcDisp = DisplayRenderer::renderFloat(*srcPix, m_model);
 
     // Restrict the distribution estimate to what each view actually SHOWS —
     // off-screen features (frame edges, unrelated field) must not steer the
-    // match. Source: the active view. Reference: its cell, if displayed.
+    // match. Source: the active view (mapped back to the disk frame when the
+    // transport runs there). Reference: its cell, if displayed.
     auto toRoi = [](const QRect& r) {
         TransportRoi t; t.x = r.x(); t.y = r.y(); t.w = r.width(); t.h = r.height(); return t;
     };
-    TransportRoi srcRoi = toRoi(m_view->visibleImageRect());
+    TransportRoi srcRoi;
+    if (!diskFrame) {
+        srcRoi = toRoi(m_view->visibleImageRect());
+    } else {
+        const QTransform T = diskToViewTransform(srcOps, QSize(srcPix->width(), srcPix->height()));
+        const QRect diskRect = T.inverted().mapRect(QRectF(m_view->visibleImageRect()))
+                                   .toAlignedRect()
+                                   .intersected(QRect(0, 0, srcPix->width(), srcPix->height()));
+        srcRoi = toRoi(diskRect);
+    }
     TransportRoi refRoi;                          // whole image unless shown in a cell
     for (int i = 0; i < m_grid->rows() * m_grid->cols(); ++i) {
         ViewCell* c = m_grid->cellAt(i);
         if (c && c != m_grid->activeCell() && c->path == key) {
-            refRoi = toRoi(c->view()->visibleImageRect());
+            const QStringList refOps = m_xformByPath.value(key);
+            QRect vis = c->view()->visibleImageRect();
+            if (!refOps.isEmpty()) {
+                // refDisp is decoded from disk (unrotated); map the cell's view
+                // rect back to that frame.
+                const QTransform TR = diskToViewTransform(refOps, QSize(refImg->width(), refImg->height()));
+                vis = TR.inverted().mapRect(QRectF(vis)).toAlignedRect()
+                          .intersected(QRect(0, 0, refImg->width(), refImg->height()));
+            }
+            refRoi = toRoi(vis);
             break;
         }
     }
@@ -1571,14 +1615,23 @@ void MainWindow::transportColorsFromRef() {
         }
     }
     if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
-    addSyntheticImage(QStringLiteral("%1_ct").arg(QFileInfo(m_currentPath).completeBaseName()),
-                      std::move(res.image));
+    const QSize srcDiskSize(srcPix->width(), srcPix->height());
+    const QString newKey = addSyntheticImage(
+        QStringLiteral("%1_ct").arg(QFileInfo(m_currentPath).completeBaseName()),
+        std::move(res.image));
     // Result is display-ready [0,1]: show it 1:1.
     for (int c = 0; c < 3; ++c) {
         m_model.setRange(c, 0.0, 1.0);
         m_model.setChannel(c, ChannelStretch{});
     }
     m_model.setFn(StretchFn::Linear);
+    if (diskFrame) {
+        // Adopt the source's orientation so the result shows rotated the same
+        // way; re-display to replay it onto the clean disk-frame pixels.
+        m_xformByPath[newKey] = srcOps;
+        m_diskSizeByPath[newKey] = srcDiskSize;
+        displayPath(newKey);
+    }
     statusBar()->showMessage(QStringLiteral("Colours transported from %1").arg(pick), 4000);
 }
 
@@ -2121,6 +2174,28 @@ bool MainWindow::xformFromName(const QString& n, Xform& out) {
 // Imported annotations (SExtractor catalogs, plain JSON without an orientation
 // record) are in the disk pixel frame; replay this image's orientation history
 // over them — same ops, same order, same dimension tracking as the pixels.
+QTransform MainWindow::diskToViewTransform(const QStringList& ops, const QSize& diskSize) const {
+    QTransform T;
+    int w = diskSize.width(), h = diskSize.height();
+    for (const QString& n : ops) {
+        if (n.startsWith(QLatin1String("rot:"))) {
+            const double a = n.mid(4).toDouble();
+            const double th = a * M_PI / 180.0;
+            const double c = std::cos(th), s = std::sin(th);
+            const int nw = std::max(1, int(std::ceil(w * std::fabs(c) + h * std::fabs(s))));
+            const int nh = std::max(1, int(std::ceil(w * std::fabs(s) + h * std::fabs(c))));
+            T = T * rotForwardTransform(a, w, h, nw, nh);
+            w = nw; h = nh;
+        } else {
+            Xform x;
+            if (!xformFromName(n, x)) continue;
+            T = T * xformForwardTransform(x, w, h);
+            if (x == Xform::RotCW || x == Xform::RotCCW) std::swap(w, h);
+        }
+    }
+    return T;
+}
+
 void MainWindow::mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns) {
     const QStringList ops = m_xformByPath.value(m_currentPath);
     if (ops.isEmpty() || anns.empty()) return;

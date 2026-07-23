@@ -92,7 +92,7 @@ private:
                             const QHash<QString, QShortcut*>& keys);
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
-    void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
+    QString addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list; returns its key
 public:
     // Undo/redo backing for synthetic entries (combine, colour transport).
     void removeSyntheticEntry(const QString& key);
@@ -127,6 +127,9 @@ private:
     // Inverse: take annotations expressed in the frame described by `ops` back
     // to the disk frame (walk the op chain backwards with exact inverses).
     void unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, const QStringList& ops);
+    // Forward map (disk frame → current view frame) of an orientation history,
+    // as one QTransform — used to carry ROIs/points across the rotation.
+    QTransform diskToViewTransform(const QStringList& ops, const QSize& diskSize) const;
     QHash<QString, QSize> m_diskSizeByPath;    // as-decoded dims, pre-orientation
     // Pre-rotation base for rotateToAngle — captured lazily on the first
     // arbitrary rotation of an image, dropped on 90°/flip or image switch.
