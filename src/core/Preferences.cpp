@@ -25,11 +25,15 @@ void Preferences::load() {
     annLineWidth    = s.value(QStringLiteral("annotation_line_width"), annLineWidth).toDouble();
     markerFrac      = s.value(QStringLiteral("marker_size_fraction"), markerFrac).toDouble();
     autoLoadSidecar = s.value(QStringLiteral("auto_load_sidecar"), autoLoadSidecar).toBool();
+    recentImagesMax = s.value(QStringLiteral("recent_images_max"), recentImagesMax).toInt();
+    recentJsonMax   = s.value(QStringLiteral("recent_json_max"), recentJsonMax).toInt();
     s.endGroup();
     gridTargetLines = qBound(3, gridTargetLines, 20);
     annTextSize     = qBound(5.0, annTextSize, 72.0);
     annLineWidth    = qBound(0.0, annLineWidth, 8.0);
     markerFrac      = qBound(5.0, markerFrac, 200.0);
+    recentImagesMax = qBound(0, recentImagesMax, 50);
+    recentJsonMax   = qBound(0, recentJsonMax, 50);
 }
 
 void Preferences::save() const {
@@ -41,6 +45,8 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("annotation_line_width"), annLineWidth);
     s.setValue(QStringLiteral("marker_size_fraction"), markerFrac);
     s.setValue(QStringLiteral("auto_load_sidecar"), autoLoadSidecar);
+    s.setValue(QStringLiteral("recent_images_max"), recentImagesMax);
+    s.setValue(QStringLiteral("recent_json_max"), recentJsonMax);
     s.endGroup();
 }
 

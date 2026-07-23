@@ -82,6 +82,18 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     sidecar->setChecked(p.autoLoadSidecar);
     form->addRow(QString(), sidecar);
 
+    auto* recentImg = new QSpinBox();
+    recentImg->setRange(0, 50);
+    recentImg->setValue(p.recentImagesMax);
+    recentImg->setToolTip("How many images File \u25b8 Open Recent remembers (0 disables)");
+    form->addRow("Recent images history:", recentImg);
+
+    auto* recentJson = new QSpinBox();
+    recentJson->setRange(0, 50);
+    recentJson->setValue(p.recentJsonMax);
+    recentJson->setToolTip("How many annotation files File \u25b8 Recent Annotations remembers (0 disables)");
+    form->addRow("Recent annotations history:", recentJson);
+
     // ---- Shortcuts tab ----
     // Edits the same INI the startup shortcut loader reads (Help ▸ Configure
     // Shortcuts… opens it in a file manager). New actions appear here after
@@ -132,6 +144,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         lineW->setValue(d.annLineWidth);
         marker->setValue(d.markerFrac);
         sidecar->setChecked(d.autoLoadSidecar);
+        recentImg->setValue(d.recentImagesMax);
+        recentJson->setValue(d.recentJsonMax);
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
@@ -141,6 +155,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.annLineWidth    = lineW->value();
         p.markerFrac      = marker->value();
         p.autoLoadSidecar = sidecar->isChecked();
+        p.recentImagesMax = recentImg->value();
+        p.recentJsonMax   = recentJson->value();
         p.save();
         // Persist the shortcut edits back to the INI the startup loader reads.
         QSettings sc(QSettings::IniFormat, QSettings::UserScope,

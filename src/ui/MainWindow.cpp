@@ -792,6 +792,9 @@ void MainWindow::buildMenusAndToolbar() {
     // File
     QMenu* file = menuBar()->addMenu("&File");
     acts["open"] = file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
+    m_recentImagesMenu = file->addMenu("Open &Recent");
+    m_recentJsonMenu = file->addMenu("Recent A&nnotations");
+    rebuildRecentMenus();
     acts["save_data_as"] = file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
     acts["save_stretched_as"] = file->addAction("Save Stretc&hed As…", this, &MainWindow::saveStretched);
     acts["export_view"] = file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
@@ -1590,6 +1593,11 @@ void MainWindow::displayPath(const QString& path) {
     // Per-image STF memory: restore this file's last stretch, or auto-stretch on
     // first visit. Set m_currentPath first so the change handler saves correctly.
     m_currentPath = path;
+    {   // Recent-images history (strip any ||hdu= suffix; skip in-memory results).
+        int hduDummy = -1;
+        rememberRecent(QStringLiteral("recentImages"), splitHduKey(path, hduDummy),
+                       Preferences::get().recentImagesMax);
+    }
 
     // Auto-load the sidecar annotation file on the first visit to this image.
     if (Preferences::get().autoLoadSidecar && !m_annByPath.contains(path)) {
@@ -2260,6 +2268,10 @@ void MainWindow::loadAnnotations() {
     const QString path = QFileDialog::getOpenFileName(
         this, "Load annotations", QString(), "Annotations (*_annotation.json *.json)");
     if (path.isEmpty()) return;
+    loadAnnotationsFile(path);
+}
+
+void MainWindow::loadAnnotationsFile(const QString& path) {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QMessageBox::warning(this, "Load failed", "Could not read " + path);
@@ -2291,7 +2303,53 @@ void MainWindow::loadAnnotations() {
     ensureAnnotationsVisible();                    // loading implies wanting to see them
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
+    rememberRecent(QStringLiteral("recentJson"), path, Preferences::get().recentJsonMax);
     statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
+}
+
+// ---- recent-files history ----------------------------------------------------
+
+void MainWindow::rememberRecent(const QString& settingsKey, const QString& path, int max) {
+    if (path.isEmpty() || path.startsWith(QLatin1String("mem://")) || max <= 0) return;
+    QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                QStringLiteral("NebulaScope"), QStringLiteral("recent"));
+    QStringList lst = s.value(settingsKey).toStringList();
+    lst.removeAll(path);
+    lst.prepend(path);
+    while (lst.size() > max) lst.removeLast();
+    s.setValue(settingsKey, lst);
+    rebuildRecentMenus();
+}
+
+void MainWindow::rebuildRecentMenus() {
+    if (!m_recentImagesMenu || !m_recentJsonMenu) return;
+    QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                QStringLiteral("NebulaScope"), QStringLiteral("recent"));
+    auto fill = [this, &s](QMenu* menu, const QString& key, auto opener) {
+        menu->clear();
+        const QStringList lst = s.value(key).toStringList();
+        for (const QString& p : lst) {
+            // Show "name — dir" but act on the full path.
+            QAction* a = menu->addAction(QStringLiteral("%1 \u2014 %2")
+                .arg(QFileInfo(p).fileName(), QFileInfo(p).absolutePath()));
+            connect(a, &QAction::triggered, this, [opener, p] { opener(p); });
+        }
+        menu->setEnabled(!lst.isEmpty());
+        if (!lst.isEmpty()) {
+            menu->addSeparator();
+            QAction* clr = menu->addAction(QStringLiteral("Clear List"));
+            connect(clr, &QAction::triggered, this, [this, key] {
+                QSettings s2(QSettings::IniFormat, QSettings::UserScope,
+                             QStringLiteral("NebulaScope"), QStringLiteral("recent"));
+                s2.remove(key);
+                rebuildRecentMenus();
+            });
+        }
+    };
+    fill(m_recentImagesMenu, QStringLiteral("recentImages"),
+         [this](const QString& p) { openPaths({ p }); });
+    fill(m_recentJsonMenu, QStringLiteral("recentJson"),
+         [this](const QString& p) { loadAnnotationsFile(p); });
 }
 
 void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {

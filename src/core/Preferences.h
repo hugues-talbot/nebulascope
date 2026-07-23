@@ -16,6 +16,8 @@ struct Preferences {
     double annLineWidth    = 1.0;              // ellipse/line stroke width in screen px (0 = hairline)
     double markerFrac      = 40.0;             // "Annotate Here" radius = imageWidth / this
     bool   autoLoadSidecar = true;             // load <image>_annotation.json on open
+    int    recentImagesMax = 10;               // history length: images
+    int    recentJsonMax   = 5;                // history length: annotation files
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

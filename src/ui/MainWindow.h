@@ -173,7 +173,13 @@ private:
     void saveAnnotations();               // silent save to the image's sidecar
     void saveAnnotationsAs();             // dialog for an explicit file name
     bool writeAnnotationsFile(const QString& path);   // shared writer
-    void loadAnnotations();               // read annotations from a JSON file
+    void loadAnnotations();               // dialog, then loadAnnotationsFile
+    void loadAnnotationsFile(const QString& path);   // read annotations from a JSON file
+    // Recent-files history (persisted via QSettings): last 10 images, 5 JSONs.
+    void rememberRecent(const QString& settingsKey, const QString& path, int max);
+    void rebuildRecentMenus();
+    QMenu* m_recentImagesMenu = nullptr;
+    QMenu* m_recentJsonMenu = nullptr;
     void importSexCatalog();              // SExtractor catalog -> ellipse annotations
     void editAnnotationDialog(int annIdx);   // double-click: text + colour dialog
     void deleteActiveAnnotation();           // Delete key: selected (or latest) annotation
