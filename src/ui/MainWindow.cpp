@@ -27,6 +27,8 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QFormLayout>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
@@ -904,13 +906,20 @@ void MainWindow::buildMenusAndToolbar() {
     addPreset(QStringLiteral("2 \u00d7 2"), 2, 2);
     split->addSeparator();
     split->addAction(QStringLiteral("Custom\u2026"), this, [this] {
-        bool ok = false;
-        const int r = QInputDialog::getInt(this, QStringLiteral("Split view"),
-            QStringLiteral("Rows (1\u20135):"), m_grid->rows(), 1, 5, 1, &ok);
-        if (!ok) return;
-        const int c = QInputDialog::getInt(this, QStringLiteral("Split view"),
-            QStringLiteral("Columns (1\u20135):"), m_grid->cols(), 1, 5, 1, &ok);
-        if (ok) m_grid->setGrid(r, c);
+        // One dialog, two spinboxes (little up/down arrows), 1-5 each.
+        QDialog dlg(this);
+        dlg.setWindowTitle(QStringLiteral("Split view"));
+        auto* form = new QFormLayout(&dlg);
+        auto* rowsSpin = new QSpinBox(); rowsSpin->setRange(1, 5); rowsSpin->setValue(m_grid->rows());
+        auto* colsSpin = new QSpinBox(); colsSpin->setRange(1, 5); colsSpin->setValue(m_grid->cols());
+        form->addRow(QStringLiteral("Rows:"), rowsSpin);
+        form->addRow(QStringLiteral("Columns:"), colsSpin);
+        auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+        connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        form->addRow(bb);
+        if (dlg.exec() == QDialog::Accepted)
+            m_grid->setGrid(rowsSpin->value(), colsSpin->value());
     });
 
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
