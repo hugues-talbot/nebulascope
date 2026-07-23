@@ -43,25 +43,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-ccfits2.6-libxisf-${{ hashFiles('.github/workflows/windows.yml') }}
+          key: deps-${{ runner.os }}-ccfits2.7-libxisf-${{ hashFiles('.github/workflows/windows.yml') }}
 
       - name: Build CCfits
         if: steps.depcache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          # HEASARC layout changes occasionally; try the known locations.
-          $urls = @(
-            "https://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/CCfits-2.6.tar.gz",
-            "https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.6.tar.gz"
-          )
-          $ok = $false
-          foreach ($u in $urls) {
-            curl -fsSL -o CCfits-2.6.tar.gz $u
-            if ($LASTEXITCODE -eq 0 -and (Get-Item CCfits-2.6.tar.gz).Length -gt 100000) { $ok = $true; break }
-          }
-          if (-not $ok) { throw "Could not download CCfits tarball (all URLs returned junk)" }
-          tar xzf CCfits-2.6.tar.gz
-          cmake -S CCfits-2.6 -B ccfits-build `
+          # Current release lives at an unversioned FTP path (v2.7 as of 2026-01)
+          # and unpacks into a "CCfits/" subdirectory.
+          curl -fsSL -o CCfits.tar.gz https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/ccfits/CCfits.tar.gz
+          if ((Get-Item CCfits.tar.gz).Length -lt 100000) { throw "CCfits download too small - got an error page?" }
+          tar xzf CCfits.tar.gz
+          cmake -S CCfits -B ccfits-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
             -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
