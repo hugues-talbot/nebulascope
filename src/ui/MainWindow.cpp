@@ -1212,7 +1212,29 @@ void MainWindow::combineChannels() {
             if (!res.ok) continue;
             img = std::make_shared<ImageData>(std::move(res.image));
         }
-        if (img && img->channels() == 1) mono.push_back({ item->text(), img });
+        if (img && img->channels() == 1) {
+            // Bake this image's current view stretch (its stretch memory, or the
+            // live model if it's the displayed image) into a value mapper, for
+            // the dialog's "As displayed (view stretch)" pre-normalize mode.
+            std::function<float(float)> viewMap;
+            StretchModel::State st = (p == m_currentPath) ? m_model.state()
+                                                          : m_stfByPath.value(p);
+            if (st.valid) {
+                const int N = 4096;
+                auto lut = std::make_shared<std::vector<float>>(
+                    buildLut(st.fn, st.chan[0], st.ghs, N));
+                const double lo = st.lo[0], hi = st.hi[0];
+                const ChannelStretch cs = st.chan[0];
+                viewMap = [lut, lo, hi, cs](float v) -> float {
+                    if (!std::isfinite(v)) return 0.0f;
+                    const double t = windowCoord(v, lo, hi, cs);
+                    int idx = int(t * 4095.0 + 0.5);
+                    idx = idx < 0 ? 0 : (idx > 4095 ? 4095 : idx);
+                    return (*lut)[std::size_t(idx)];
+                };
+            }
+            mono.push_back({ item->text(), img, std::move(viewMap) });
+        }
     }
     if (mono.size() < 2) {
         QMessageBox::information(this, "Combine Channels",

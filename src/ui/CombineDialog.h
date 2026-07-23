@@ -8,6 +8,7 @@
 #include <QDialog>
 #include <QHash>
 #include <QString>
+#include <functional>
 #include <memory>
 #include <vector>
 #include "core/ImageData.h"
@@ -24,7 +25,8 @@ namespace astro {
 class CombineDialog : public QDialog {
     Q_OBJECT
 public:
-    struct Source { QString name; std::shared_ptr<ImageData> img; };
+    struct Source { QString name; std::shared_ptr<ImageData> img;
+                    std::function<float(float)> viewMap; };   // current view stretch (null = none)
 
     CombineDialog(std::vector<Source> monoSources, QWidget* parent = nullptr);
 

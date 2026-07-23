@@ -159,7 +159,7 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     auto* opt = new QGridLayout();
     opt->addWidget(new QLabel("Pre-normalize:"), 0, 0);
     m_preNormCombo = new QComboBox();
-    m_preNormCombo->addItems({ "None (raw × weight)", "Median (equalize background)", "Min/Max → [0,1]", "Pedestal (subtract median)" });
+    m_preNormCombo->addItems({ "None (raw × weight)", "Median (equalize background)", "Min/Max → [0,1]", "Pedestal (subtract median)", "As displayed (view stretch)" });
     opt->addWidget(m_preNormCombo, 0, 1);
 
     opt->addWidget(new QLabel("Data:"), 0, 2);
@@ -252,12 +252,16 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
     w = dw; h = dh;
 
     const bool stretched = m_domainCombo->currentIndex() == 1;
-    const PreNorm pnDummy = PreNorm::None; (void)pnDummy;
+    // "As displayed": bake each source's CURRENT view stretch (as edited in the
+    // histogram panel) into its plane, then combine with no further prenorm.
+    // Sources never shown (no stretch memory) fall back to an auto-STF.
+    const bool asDisplayed = m_preNormCombo->currentIndex() == 4;
     scratch.reserve(m_rows.size() + 2);
 
-    auto buildWorking = [&](const ImageData* img) -> const float* {
+    auto buildWorking = [&](std::size_t srcIdx) -> const float* {
+        const ImageData* img = m_sources[srcIdx].img.get();
         const float* base = img->plane<float>(0);
-        if (!preview && !stretched) return base;                 // linear full-res: use directly
+        if (!preview && !stretched && !asDisplayed) return base;  // linear full-res: use directly
         // else materialize a (possibly downsampled) buffer
         std::vector<float> buf; buf.resize(std::size_t(dw) * dh);
         for (int y = 0; y < dh; ++y) {
@@ -267,7 +271,13 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
                 buf[std::size_t(y) * dw + x] = base[std::size_t(sy) * refW + sx];
             }
         }
-        if (stretched) { Mapper mp = makeMapper(buf.data(), buf.size()); for (auto& v : buf) v = mp.map(v); }
+        if (asDisplayed) {
+            if (m_sources[srcIdx].viewMap) { for (auto& v : buf) v = m_sources[srcIdx].viewMap(v); }
+            else { Mapper mp = makeMapper(buf.data(), buf.size()); for (auto& v : buf) v = mp.map(v); }
+        } else if (stretched) {
+            Mapper mp = makeMapper(buf.data(), buf.size());
+            for (auto& v : buf) v = mp.map(v);
+        }
         scratch.push_back(std::move(buf));
         return scratch.back().data();
     };
@@ -279,12 +289,12 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
                 .arg(m_sources[i].name).arg(row.w).arg(row.h).arg(refW).arg(refH); return false; }
 
         if (row.role->currentIndex() == RoleL) {                 // luminance source
-            if (!lum) lum = buildWorking(m_sources[i].img.get());
+            if (!lum) lum = buildWorking(i);
             continue;
         }
         const double wR = row.wR->value(), wG = row.wG->value(), wB = row.wB->value();
         if (std::fabs(wR) < 1e-9 && std::fabs(wG) < 1e-9 && std::fabs(wB) < 1e-9) continue;
-        CombinePlane p; p.data = buildWorking(m_sources[i].img.get()); p.wR = wR; p.wG = wG; p.wB = wB;
+        CombinePlane p; p.data = buildWorking(i); p.wR = wR; p.wG = wG; p.wB = wB;
         planes.push_back(p);
     }
     if (planes.empty() && !(lum && lumMode() != LumMode::None)) { err = "Assign at least one channel to R, G or B."; return false; }
