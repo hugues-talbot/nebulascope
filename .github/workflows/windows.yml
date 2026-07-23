@@ -1,0 +1,103 @@
+name: Windows build
+
+# Proves the Windows/MSVC build compiles and packages a runnable zip as an
+# artifact. CCfits and libXISF are not in vcpkg, so they are built from source
+# and cached; the whole dependency layer only rebuilds when this file changes.
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      DEPS: ${{ github.workspace }}\deps        # install prefix for CCfits + libXISF
+      VCPKG_TRIPLET: x64-windows
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- Qt (cached by the action itself) --------------------------------
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.*"
+          arch: win64_msvc2019_64
+          cache: true
+
+      # ---- vcpkg: cfitsio + zlib + lz4 + pugixml ----------------------------
+      - name: vcpkg dependencies
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"  # 2024.06 baseline; bump freely
+          runVcpkgInstall: true
+          vcpkgJsonGlob: "vcpkg.json"
+
+      # ---- CCfits + libXISF from source, cached -----------------------------
+      - name: Cache CCfits + libXISF
+        id: depcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPS }}
+          key: deps-${{ runner.os }}-ccfits2.6-libxisf-${{ hashFiles('.github/workflows/windows.yml') }}
+
+      - name: Build CCfits
+        if: steps.depcache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          curl -LO https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.6.tar.gz
+          tar xzf CCfits-2.6.tar.gz
+          cmake -S CCfits-2.6 -B ccfits-build `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
+            -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
+          cmake --build ccfits-build --config Release --parallel
+          cmake --install ccfits-build --config Release
+
+      - name: Build libXISF
+        if: steps.depcache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://gitea.nouspiro.space/nou/libXISF
+          cmake -S libXISF -B libxisf-build `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
+            -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
+          cmake --build libxisf-build --config Release --parallel
+          cmake --install libxisf-build --config Release
+
+      # ---- NebulaScope -------------------------------------------------------
+      - name: Configure
+        shell: pwsh
+        run: |
+          cmake -B build `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
+            -DCMAKE_PREFIX_PATH="$env:DEPS" `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      # ---- Package a runnable zip -------------------------------------------
+      - name: Deploy Qt + DLLs
+        shell: pwsh
+        run: |
+          $out = "package/NebulaScope"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item build/src/Release/nebulascope.exe $out
+          windeployqt --release --no-translations "$out/nebulascope.exe"
+          # cfitsio & friends from vcpkg; CCfits + XISF from the deps prefix
+          Copy-Item "$env:VCPKG_ROOT/installed/$env:VCPKG_TRIPLET/bin/*.dll" $out -ErrorAction SilentlyContinue
+          Copy-Item "$env:DEPS/bin/*.dll" $out -ErrorAction SilentlyContinue
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NebulaScope-windows-x64
+          path: package
+          retention-days: 30

@@ -1,0 +1,10 @@
+{
+  "name": "nebulascope",
+  "version-string": "0.71",
+  "dependencies": [
+    "cfitsio",
+    "zlib",
+    "lz4",
+    "pugixml"
+  ]
+}
