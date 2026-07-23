@@ -22,7 +22,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Homebrew dependencies
-        run: brew install qt cfitsio ccfits ninja
+        run: brew install cfitsio ccfits ninja
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.*"
+          arch: clang_64
+          cache: true
 
       # ---- libXISF from source, cached --------------------------------------
       - name: Cache libXISF
@@ -48,7 +55,7 @@ jobs:
       - name: Configure
         run: |
           cmake -B build -G Ninja \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix);$DEPS" \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR;$(brew --prefix);$DEPS" \
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
@@ -61,7 +68,10 @@ jobs:
           # Bundle libXISF (macdeployqt rewrites its install_name too)
           mkdir -p "$APP/Contents/Frameworks"
           cp "$DEPS"/lib/libXISF*.dylib "$APP/Contents/Frameworks/" || true
-          "$(brew --prefix qt)/bin/macdeployqt" "$APP" -verbose=1
+          "$QT_ROOT_DIR/bin/macdeployqt" "$APP" -verbose=1
+          # macdeployqt edits dylibs, invalidating their ad-hoc signatures — re-sign.
+          codesign --force --deep -s - "$APP"
+          codesign --verify --deep "$APP"
           # Zip preserving symlinks/permissions (ditto, not zip -r)
           mkdir -p package
           ditto -c -k --sequesterRsrc --keepParent "$APP" package/NebulaScope-macos-arm64.zip
