@@ -25,6 +25,7 @@ void Preferences::load() {
     annLineWidth    = s.value(QStringLiteral("annotation_line_width"), annLineWidth).toDouble();
     markerFrac      = s.value(QStringLiteral("marker_size_fraction"), markerFrac).toDouble();
     autoLoadSidecar = s.value(QStringLiteral("auto_load_sidecar"), autoLoadSidecar).toBool();
+    overlayOpacity  = s.value(QStringLiteral("overlay_opacity"), overlayOpacity).toDouble();
     recentImagesMax = s.value(QStringLiteral("recent_images_max"), recentImagesMax).toInt();
     recentJsonMax   = s.value(QStringLiteral("recent_json_max"), recentJsonMax).toInt();
     s.endGroup();
@@ -34,6 +35,7 @@ void Preferences::load() {
     markerFrac      = qBound(5.0, markerFrac, 200.0);
     recentImagesMax = qBound(0, recentImagesMax, 50);
     recentJsonMax   = qBound(0, recentJsonMax, 50);
+    overlayOpacity  = qBound(0.5, overlayOpacity, 1.0);
 }
 
 void Preferences::save() const {
@@ -45,6 +47,7 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("annotation_line_width"), annLineWidth);
     s.setValue(QStringLiteral("marker_size_fraction"), markerFrac);
     s.setValue(QStringLiteral("auto_load_sidecar"), autoLoadSidecar);
+    s.setValue(QStringLiteral("overlay_opacity"), overlayOpacity);
     s.setValue(QStringLiteral("recent_images_max"), recentImagesMax);
     s.setValue(QStringLiteral("recent_json_max"), recentJsonMax);
     s.endGroup();

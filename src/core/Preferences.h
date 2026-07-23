@@ -16,6 +16,10 @@ struct Preferences {
     double annLineWidth    = 1.0;              // ellipse/line stroke width in screen px (0 = hairline)
     double markerFrac      = 40.0;             // "Annotate Here" radius = imageWidth / this
     bool   autoLoadSidecar = true;             // load <image>_annotation.json on open
+    double overlayOpacity  = 1.0;              // floating-panel background opacity;
+                                               // 1.0 = opaque (fast: repaints clip like
+                                               // docks), <1 = see-through (recomposites
+                                               // panels on every view repaint)
     int    recentImagesMax = 10;               // history length: images
     int    recentJsonMax   = 5;                // history length: annotation files
 

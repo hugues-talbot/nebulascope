@@ -82,6 +82,15 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     sidecar->setChecked(p.autoLoadSidecar);
     form->addRow(QString(), sidecar);
 
+    auto* overlayOp = new QSpinBox();
+    overlayOp->setRange(50, 100);
+    overlayOp->setSuffix(" %");
+    overlayOp->setValue(int(p.overlayOpacity * 100 + 0.5));
+    overlayOp->setToolTip("Floating-panel background opacity. 100% is fastest — any\n"
+                          "translucency forces extra repaints while zooming/panning.\n"
+                          "Takes effect when overlay mode is next entered (O twice).");
+    form->addRow("Overlay panel opacity:", overlayOp);
+
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
     recentImg->setValue(p.recentImagesMax);
@@ -146,6 +155,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         sidecar->setChecked(d.autoLoadSidecar);
         recentImg->setValue(d.recentImagesMax);
         recentJson->setValue(d.recentJsonMax);
+        overlayOp->setValue(int(d.overlayOpacity * 100 + 0.5));
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
@@ -157,6 +167,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.autoLoadSidecar = sidecar->isChecked();
         p.recentImagesMax = recentImg->value();
         p.recentJsonMax   = recentJson->value();
+        p.overlayOpacity  = overlayOp->value() / 100.0;
         p.save();
         // Persist the shortcut edits back to the INI the startup loader reads.
         QSettings sc(QSettings::IniFormat, QSettings::UserScope,

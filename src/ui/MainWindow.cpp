@@ -1585,7 +1585,18 @@ void MainWindow::applySavedOrientation() {
 QWidget* MainWindow::makeOverlayBox(QWidget* content) {
     auto* box = new QWidget(centralWidget());
     box->setAttribute(Qt::WA_StyledBackground, true);
-    box->setStyleSheet("background: rgba(9,14,19,0.84); border: 1px solid #22303e; border-radius: 10px;");
+    // Opaque panels let Qt CLIP their area out of the image view's repaints
+    // (same fast path as docked panels). Any translucency forces the view AND
+    // the panels to recomposite on every zoom/pan tick — user's choice.
+    const double op = Preferences::get().overlayOpacity;
+    if (op >= 0.999) {
+        box->setStyleSheet("background: rgb(9,14,19); border: 1px solid #22303e; border-radius: 10px;");
+        box->setAutoFillBackground(true);
+        box->setAttribute(Qt::WA_OpaquePaintEvent, true);
+    } else {
+        box->setStyleSheet(QStringLiteral("background: rgba(9,14,19,%1); border: 1px solid #22303e; border-radius: 10px;")
+                               .arg(op, 0, 'f', 2));
+    }
     auto* l = new QVBoxLayout(box);
     l->setContentsMargins(7, 7, 7, 7);
     l->addWidget(content);
