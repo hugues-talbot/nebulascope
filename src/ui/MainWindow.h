@@ -99,6 +99,7 @@ public:
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
     void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push
     void resetOrientation();                   // drop stored rotate/flip history, re-decode
+    void transportColorsFromRef();             // sliced-OT colour transfer from a reference
     void applySavedOrientation();              // replay the sidecar's orientation on demand
     // Absolute rotation: restores the stashed pre-rotation base, then applies
     // ONE resample. Hunting for the right angle never degrades the image, and

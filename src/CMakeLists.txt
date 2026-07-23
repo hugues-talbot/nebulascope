@@ -9,6 +9,7 @@ add_library(astro_core STATIC
     core/SexCatalog.cpp
     core/Preferences.cpp
     core/Colormap.cpp
+    core/ColorTransport.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
     core/Wcs.cpp

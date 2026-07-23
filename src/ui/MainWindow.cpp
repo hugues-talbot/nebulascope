@@ -10,6 +10,7 @@
 #include "app/AppInfo.h"
 #include "io/ImageWriter.h"
 #include "core/ImageStats.h"
+#include "core/ColorTransport.h"
 #include "core/SexCatalog.h"
 #include "core/Preferences.h"
 #include "ui/PreferencesDialog.h"
@@ -966,6 +967,8 @@ void MainWindow::buildMenusAndToolbar() {
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
     image->addSeparator();
     acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
+    image->addSeparator();
+    acts["transport_colors"] = image->addAction("&Transport Colors from Reference…", this, &MainWindow::transportColorsFromRef);
     acts["apply_saved_orientation"] = image->addAction("Apply &Saved Orientation", this, &MainWindow::applySavedOrientation);
 
     // Stretch — transfer the current image's stretch to others in the list.
@@ -1412,6 +1415,75 @@ void MainWindow::prevImage() {
 // then the pixels are re-decoded from disk (no inverse resampling — a true
 // restore). The cleared orientation persists on the next annotation save, and
 // the undo stack is reset (its recorded frames no longer exist).
+// Transfer the colour distribution of another loaded image onto the displayed
+// one (sliced optimal transport). Both are taken AS DISPLAYED — the reference
+// through its remembered stretch (or an auto-STF), the source through the live
+// model — so "make this look like that" means what the user sees. The result
+// is a new display-ready list entry; nothing is overwritten.
+void MainWindow::transportColorsFromRef() {
+    if (!m_image.isValid()) return;
+    QStringList names;
+    QList<QString> keys;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* item = m_fileList->item(i);
+        const QString p = item->data(Qt::UserRole).toString();
+        if (p.isEmpty() || p == m_currentPath) continue;
+        names << item->text();
+        keys << p;
+    }
+    if (names.isEmpty()) {
+        QMessageBox::information(this, "Transport Colors",
+            "Load a second image to use as the colour reference.");
+        return;
+    }
+    bool ok = false;
+    const QString pick = QInputDialog::getItem(this, "Transport Colors",
+        "Reference image (colours to adopt):", names, 0, false, &ok);
+    if (!ok) return;
+    const QString key = keys[names.indexOf(pick)];
+
+    // Decode the reference (or fetch the in-memory synthetic).
+    std::shared_ptr<ImageData> refImg;
+    auto syn = m_synthetic.constFind(key);
+    if (syn != m_synthetic.constEnd()) refImg = syn.value();
+    else {
+        int hduReq = -1;
+        const QString base = splitHduKey(key, hduReq);
+        io::LoadOptions lopts;
+        lopts.fitsHdu = hduReq;
+        io::LoadResult res = io::loadImage(base, lopts);
+        if (!res.ok) { QMessageBox::warning(this, "Transport Colors", res.error); return; }
+        refImg = std::make_shared<ImageData>(std::move(res.image));
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    // Reference as displayed: its stretch memory, else an auto-STF.
+    StretchModel refModel;
+    refModel.setChannelCount(refImg->channels());
+    StretchModel::State st = m_stfByPath.value(key);
+    if (st.valid && !st.renormalize) refModel.setState(st);
+    else refModel.autoStretch(computeStats(*refImg));
+    const ImageData refDisp = DisplayRenderer::renderFloat(*refImg, refModel);
+    const ImageData srcDisp = DisplayRenderer::renderFloat(m_image, m_model);
+
+    ColorTransportResult res = transportColors(srcDisp, refDisp);
+    QApplication::restoreOverrideCursor();
+    if (!res.ok) {
+        QMessageBox::warning(this, "Transport Colors", QString::fromStdString(res.error));
+        return;
+    }
+    if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+    addSyntheticImage(QStringLiteral("%1_ct").arg(QFileInfo(m_currentPath).completeBaseName()),
+                      std::move(res.image));
+    // Result is display-ready [0,1]: show it 1:1.
+    for (int c = 0; c < 3; ++c) {
+        m_model.setRange(c, 0.0, 1.0);
+        m_model.setChannel(c, ChannelStretch{});
+    }
+    m_model.setFn(StretchFn::Linear);
+    statusBar()->showMessage(QStringLiteral("Colours transported from %1").arg(pick), 4000);
+}
+
 void MainWindow::resetOrientation() {
     if (m_currentPath.isEmpty() || !m_image.isValid()) return;
     const QStringList ops = m_xformByPath.value(m_currentPath);
