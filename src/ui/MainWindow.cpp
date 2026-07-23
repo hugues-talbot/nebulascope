@@ -241,6 +241,28 @@ private:
     bool m_first = true;
 };
 
+// Creating a synthetic image (combine / colour transport) is undoable: undo
+// removes the list entry (full cleanup), redo re-registers the same pixels.
+// If the entry was meanwhile saved to disk (rebranded to a file path), the
+// mem:// key no longer exists and both directions safely no-op.
+class SyntheticImageCmd : public QUndoCommand {
+public:
+    SyntheticImageCmd(MainWindow* w, QString key, QString name, std::shared_ptr<ImageData> img)
+        : m_w(w), m_key(std::move(key)), m_name(std::move(name)), m_img(std::move(img)) {
+        setText(QStringLiteral("create %1").arg(m_name));
+    }
+    void undo() override { m_w->removeSyntheticEntry(m_key); }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        m_w->restoreSyntheticEntry(m_key, m_name, m_img);
+    }
+private:
+    MainWindow* m_w;
+    QString m_key, m_name;
+    std::shared_ptr<ImageData> m_img;
+    bool m_first = true;
+};
+
 MainWindow::Xform inverseXform(MainWindow::Xform x) {
     using X = MainWindow::Xform;
     if (x == X::RotCW)  return X::RotCCW;
@@ -1216,6 +1238,27 @@ void MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     it->setData(Qt::UserRole, key);
     it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
     m_fileList->setCurrentItem(it);               // triggers showRow -> displayPath
+    m_undo->push(new SyntheticImageCmd(this, key, name, m_synthetic.value(key)));
+}
+
+void MainWindow::removeSyntheticEntry(const QString& key) {
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* it = m_fileList->item(i);
+        if (it->data(Qt::UserRole).toString() != key) continue;
+        m_fileList->clearSelection();
+        it->setSelected(true);
+        removeSelected();          // full cleanup: stretch memory, synthetic map, empty state
+        return;
+    }
+}
+
+void MainWindow::restoreSyntheticEntry(const QString& key, const QString& name,
+                                       std::shared_ptr<ImageData> img) {
+    m_synthetic.insert(key, std::move(img));
+    auto* it = new QListWidgetItem(name, m_fileList);
+    it->setData(Qt::UserRole, key);
+    it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
+    m_fileList->setCurrentItem(it);
 }
 
 // Tools ▸ Combine Channels: gather every MONO image in the list (loading those

@@ -93,6 +93,10 @@ private:
     void addPaths(const QStringList& paths);   // append list items, no decode
     void displayPath(const QString& path);     // decode one file into the view
     void addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list
+    // Undo/redo backing for synthetic entries (combine, colour transport).
+    void removeSyntheticEntry(const QString& key);
+    void restoreSyntheticEntry(const QString& key, const QString& name,
+                               std::shared_ptr<ImageData> img);
 public:
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
     // Undo plumbing (used by the QUndoCommand classes in MainWindow.cpp):
