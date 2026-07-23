@@ -183,6 +183,10 @@ private:
     // rotations, drop whole turns, cancel inverse pairs) — replaying a literal
     // rotate/counter-rotate pair from disk would bake in dead black borders.
     static QStringList canonicalXforms(QStringList ops);
+    // Re-canonicalize the current image's history after a mutation; when it
+    // shortens (e.g. rot → flip → rot-back), re-derive the pixels with one
+    // clean replay so expansion borders never accumulate.
+    void normalizeOrientation();
     void reapplyStoredXforms();
     // Push an undo entry for an annotation edit already applied to m_annByPath;
     // `before` is the list as it was prior to the edit.

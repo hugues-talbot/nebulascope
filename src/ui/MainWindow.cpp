@@ -369,6 +369,7 @@ void MainWindow::applyTransform(Xform x) {
     if (!m_image.isValid()) return;
     doTransform(x);
     m_undo->push(new TransformCmd(this, m_currentPath, x));   // first redo is skipped
+    normalizeOrientation();
 }
 
 void MainWindow::doTransform(Xform x) {
@@ -488,6 +489,7 @@ void MainWindow::pushRotateTo(double totalDeg) {
     if (std::fabs(totalDeg - cur) < 1e-4) return;
     rotateToAngle(totalDeg);
     m_undo->push(new RotateAngleCmd(this, m_currentPath, cur, totalDeg));  // first redo skipped
+    normalizeOrientation();
 }
 
 void MainWindow::restoreImageState(const QString& path, const ImageData& img,
@@ -1682,6 +1684,7 @@ void MainWindow::applySavedOrientation() {
         else { Xform x; if (xformFromName(n, x)) doTransform(x); }
     }
     m_sidecarOrientByPath.remove(m_currentPath);   // now carried by the live history
+    normalizeOrientation();
     statusBar()->showMessage(QStringLiteral("Saved orientation applied (%1×%2)")
                                  .arg(m_image.width()).arg(m_image.height()), 4000);
 }
@@ -2279,6 +2282,35 @@ void MainWindow::unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, cons
 // upright image padded to (w + h·sin2a) × (h + w·sin2a). Replaying the
 // canonical list reproduces the same geometry without the dead borders.
 QStringList MainWindow::canonicalXforms(QStringList ops) {
+    // Stage 1 — commute every arbitrary rotation to the tail and merge them
+    // into ONE net rotation. Rotations commute with 90° rotations unchanged,
+    // and with mirrors by negating the angle (M ∘ R(a) = R(-a) ∘ M). The
+    // canonical form — lossless flips/90s first, at most one rot: last — means
+    // replay expands the canvas at most ONCE, and net-zero rotations vanish
+    // entirely (no accumulated black borders).
+    {
+        QStringList head;
+        double tail = 0.0;
+        int flipsAfter = 0;
+        for (int i = ops.size() - 1; i >= 0; --i) {
+            const QString& n = ops[i];
+            if (n.startsWith(QLatin1String("rot:"))) {
+                const double a = n.mid(4).toDouble();
+                tail += (flipsAfter % 2) ? -a : a;
+            } else {
+                Xform x;
+                if (xformFromName(n, x) && (x == Xform::FlipH || x == Xform::FlipV))
+                    ++flipsAfter;
+                head.prepend(n);
+            }
+        }
+        ops = head;
+        const double net = std::remainder(tail, 360.0);
+        if (std::fabs(net) > 1e-4)
+            ops << QStringLiteral("rot:%1").arg(net, 0, 'f', 4);
+    }
+    // Stage 2 — cancel adjacent inverse 90°/flip pairs (and drop whole-turn
+    // rotations, defensively).
     bool changed = true;
     while (changed) {
         changed = false;
@@ -2308,6 +2340,19 @@ QStringList MainWindow::canonicalXforms(QStringList ops) {
         }
     }
     return ops;
+}
+
+void MainWindow::normalizeOrientation() {
+    auto it = m_xformByPath.find(m_currentPath);
+    if (it == m_xformByPath.end()) return;
+    const QStringList canon = canonicalXforms(it.value());
+    if (canon == it.value()) return;               // already minimal — pixels are fine
+    if (canon.isEmpty()) m_xformByPath.erase(it);
+    else it.value() = canon;
+    m_rotBasePath.clear();                         // pixels re-derived below — stale base
+    m_rotBase = ImageData();
+    bumpXformRev(m_currentPath);
+    displayPath(m_currentPath);                    // one clean replay from source pixels
 }
 
 void MainWindow::reapplyStoredXforms() {
