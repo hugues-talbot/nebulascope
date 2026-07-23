@@ -74,6 +74,9 @@ jobs:
           cmake -S $src -B ccfits-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
+            -DVCPKG_MANIFEST_MODE=OFF `
+            -DCMAKE_PREFIX_PATH="$vcpkgInst" `
+            -DZLIB_ROOT="$vcpkgInst" `
             -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
           cmake --build ccfits-build --config Release --parallel
           cmake --install ccfits-build --config Release
