@@ -968,7 +968,6 @@ void MainWindow::buildMenusAndToolbar() {
     image->addSeparator();
     acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
     image->addSeparator();
-    acts["transport_colors"] = image->addAction("&Transport Colors from Reference…", this, &MainWindow::transportColorsFromRef);
     acts["apply_saved_orientation"] = image->addAction("Apply &Saved Orientation", this, &MainWindow::applySavedOrientation);
 
     // Stretch — transfer the current image's stretch to others in the list.
@@ -982,6 +981,7 @@ void MainWindow::buildMenusAndToolbar() {
     // Tools — pixel-math utilities.
     QMenu* tools = menuBar()->addMenu("&Tools");
     acts["combine_channels"] = tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
+    acts["transport_colors"] = tools->addAction("&Transport Colors from Reference…", this, &MainWindow::transportColorsFromRef);
     acts["import_sextractor"] = tools->addAction("Import &SExtractor Catalog…", this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -1437,10 +1437,38 @@ void MainWindow::transportColorsFromRef() {
         return;
     }
     bool ok = false;
-    const QString pick = QInputDialog::getItem(this, "Transport Colors",
-        "Reference image (colours to adopt):", names, 0, false, &ok);
+    // Reference picker + transport strength in one small dialog.
+    QDialog dlg(this);
+    dlg.setWindowTitle("Transport Colors");
+    auto* form = new QFormLayout(&dlg);
+    auto* combo = new QComboBox();
+    combo->addItems(names);
+    form->addRow("Reference (colours to adopt):", combo);
+    auto* strengthRow = new QHBoxLayout();
+    auto* strength = new QSlider(Qt::Horizontal);
+    strength->setRange(0, 100);
+    static int s_lastStrength = 100;               // remembered for the session
+    strength->setValue(s_lastStrength);
+    auto* strengthLbl = new QLabel(QStringLiteral("%1%").arg(strength->value()));
+    strengthLbl->setMinimumWidth(40);
+    connect(strength, &QSlider::valueChanged, strengthLbl,
+            [strengthLbl](int v) { strengthLbl->setText(QStringLiteral("%1%").arg(v)); });
+    strengthRow->addWidget(strength, 1);
+    strengthRow->addWidget(strengthLbl);
+    form->addRow("Strength:", strengthRow);
+    auto* hint = new QLabel("100% = full palette adoption; lower values blend\n"
+                            "the transported colours with the original.");
+    hint->setStyleSheet("color:#7e8b98; font-size:11px;");
+    form->addRow(QString(), hint);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    form->addRow(bb);
+    ok = dlg.exec() == QDialog::Accepted;
     if (!ok) return;
-    const QString key = keys[names.indexOf(pick)];
+    s_lastStrength = strength->value();
+    const QString pick = combo->currentText();
+    const QString key = keys[combo->currentIndex()];
 
     // Decode the reference (or fetch the in-memory synthetic).
     std::shared_ptr<ImageData> refImg;
@@ -1487,6 +1515,17 @@ void MainWindow::transportColorsFromRef() {
     if (!res.ok) {
         QMessageBox::warning(this, "Transport Colors", QString::fromStdString(res.error));
         return;
+    }
+    // Partial transport: blend transported colours back toward the original.
+    const double s = s_lastStrength / 100.0;
+    if (s < 0.999) {
+        for (int c = 0; c < res.image.channels(); ++c) {
+            float* o = res.image.plane<float>(c);
+            const float* orig = srcDisp.plane<float>(std::min(c, srcDisp.channels() - 1));
+            const std::size_t np = res.image.samplesPerChannel();
+            for (std::size_t i = 0; i < np; ++i)
+                o[i] = float(orig[i] + s * (o[i] - orig[i]));
+        }
     }
     if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
     addSyntheticImage(QStringLiteral("%1_ct").arg(QFileInfo(m_currentPath).completeBaseName()),
