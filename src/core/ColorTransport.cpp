@@ -77,7 +77,8 @@ static std::vector<std::size_t> roiIndices(int W, int H, const TransportRoi& roi
 
 ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
                                      int iterations, std::size_t maxSamples,
-                                     const TransportRoi& srcRoi, const TransportRoi& refRoi) {
+                                     const TransportRoi& srcRoi, const TransportRoi& refRoi,
+                                     float saturationCut) {
     ColorTransportResult r;
     if (!src.isValid() || !ref.isValid() ||
         src.format() != SampleFormat::Float32 || ref.format() != SampleFormat::Float32) {
@@ -86,8 +87,27 @@ ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
     }
     const std::size_t n = src.samplesPerChannel();
     const std::size_t nr = ref.samplesPerChannel();
-    const std::vector<std::size_t> idxS = roiIndices(src.width(), src.height(), srcRoi, maxSamples);
-    const std::vector<std::size_t> idxR = roiIndices(ref.width(), ref.height(), refRoi, maxSamples);
+    std::vector<std::size_t> idxS = roiIndices(src.width(), src.height(), srcRoi, maxSamples);
+    std::vector<std::size_t> idxR = roiIndices(ref.width(), ref.height(), refRoi, maxSamples);
+
+    // Drop saturated pixels (stars) from BOTH distribution estimates: their
+    // colours are clipped artefacts and, across modalities (RGB vs HO stars),
+    // fundamentally unmatchable. The map still applies to every pixel.
+    auto pruneSaturated = [&](std::vector<std::size_t>& idx, const ImageData& img) {
+        if (saturationCut >= 1.0f) return;
+        const int ch = img.channels();
+        const float* p0 = img.plane<float>(0);
+        const float* p1 = ch >= 3 ? img.plane<float>(1) : p0;
+        const float* p2 = ch >= 3 ? img.plane<float>(2) : p0;
+        std::vector<std::size_t> keep;
+        keep.reserve(idx.size());
+        for (std::size_t i : idx)
+            if (p0[i] < saturationCut && p1[i] < saturationCut && p2[i] < saturationCut)
+                keep.push_back(i);
+        if (keep.size() >= 1024) idx.swap(keep);   // keep the cut only if enough remains
+    };
+    pruneSaturated(idxS, src);
+    pruneSaturated(idxR, ref);
 
     // Mono pair: 1-D quantile matching.
     if (src.channels() == 1 && ref.channels() == 1) {

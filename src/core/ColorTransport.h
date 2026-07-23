@@ -33,10 +33,15 @@ struct TransportRoi {
 // srcRoi/refRoi: only pixels inside these rectangles contribute to the
 // distributions — e.g. each view's visible region, so off-screen features
 // don't steer the match.
+// saturationCut: pixels with any channel at or above this are excluded from
+// the distribution estimate (saturated stars would otherwise tug the bright
+// end — RGB star colours vs narrowband HO stars are unmatchable anyway).
+// Set >= 1 to disable.
 ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
                                      int iterations = 15,
                                      std::size_t maxSamples = 200000,
                                      const TransportRoi& srcRoi = {},
-                                     const TransportRoi& refRoi = {});
+                                     const TransportRoi& refRoi = {},
+                                     float saturationCut = 0.98f);
 
 } // namespace astro
