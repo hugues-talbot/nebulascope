@@ -1,0 +1,74 @@
+name: macOS build
+
+# Apple Silicon build: Qt6 + CFITSIO + CCfits from Homebrew, libXISF from
+# source (cached). Produces a self-contained NebulaScope.app via macdeployqt,
+# zipped as an artifact. NOTE: unsigned — testers must right-click ▸ Open (or
+# `xattr -cr NebulaScope.app`) to clear Gatekeeper quarantine.
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-14          # arm64 (Apple Silicon)
+    env:
+      DEPS: ${{ github.workspace }}/deps        # install prefix for libXISF
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Homebrew dependencies
+        run: brew install qt cfitsio ccfits ninja
+
+      # ---- libXISF from source, cached --------------------------------------
+      - name: Cache libXISF
+        id: depcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPS }}
+          key: deps-${{ runner.os }}-arm64-libxisf-${{ hashFiles('.github/workflows/macos.yml') }}
+
+      - name: Build libXISF
+        if: steps.depcache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://gitea.nouspiro.space/nou/libXISF
+          cmake -S libXISF -B libxisf-build -G Ninja \
+            -DCMAKE_INSTALL_PREFIX="$DEPS" -DCMAKE_BUILD_TYPE=Release
+          cmake --build libxisf-build
+          cmake --install libxisf-build
+
+      # ---- NebulaScope -------------------------------------------------------
+      - name: App icon
+        run: ./icon/make_icns.sh || echo "icon generation failed — building without custom icon"
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix);$DEPS" \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      # ---- Package a self-contained .app -------------------------------------
+      - name: Deploy Qt into the bundle
+        run: |
+          APP=build/src/NebulaScope.app
+          # Bundle libXISF (macdeployqt rewrites its install_name too)
+          mkdir -p "$APP/Contents/Frameworks"
+          cp "$DEPS"/lib/libXISF*.dylib "$APP/Contents/Frameworks/" || true
+          "$(brew --prefix qt)/bin/macdeployqt" "$APP" -verbose=1
+          # Zip preserving symlinks/permissions (ditto, not zip -r)
+          mkdir -p package
+          ditto -c -k --sequesterRsrc --keepParent "$APP" package/NebulaScope-macos-arm64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NebulaScope-macos-arm64
+          path: package/NebulaScope-macos-arm64.zip
+          retention-days: 30
