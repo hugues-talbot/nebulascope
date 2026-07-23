@@ -33,19 +33,24 @@ and never needs to know the source format.
   single-type (FITS scaling via BSCALE/BZERO; XISF/picture integers normalized
   to [0,1]); NaN/Inf blanks are handled throughout.
 - **Stretch functions** — Linear (windowing, with MTF midtone), Log, Asinh, and
-  **GHS** (D/b, draggable symmetry point SP, shadow/highlight protection LP/HP).
-  Linear sets the black/white window; the nonlinear modes zoom the plot into it
-  so their controls span the full widget. Editable numeric fields for every
-  parameter.
+  **GHS** (exponential-response strength D, focus b, draggable symmetry point
+  SP, shadow/highlight protection LP/HP). Linear sets the black/white window;
+  the nonlinear modes zoom the plot into it so their controls span the full
+  widget. Editable numeric fields for every parameter (per-channel 3×3
+  Black/Mid/White grid for RGB images). New images open with a plain min→max
+  linear ramp; Auto STF / Auto Linked provide the boosted stretch on demand.
 - **RGB histogram** — per-channel or linked Black/Mid/White handles, log/linear
   frequency axis toggle, live transfer curve and colorbar legend; one shared
   model keeps the curve and the image in lock-step.
-- **False colour** — Gray, Heat, Viridis, Magma, Inferno, Cividis, inverted
-  gray, and a threshold **Split** map (inverted below the break, normal above)
-  for mono frames.
-- **Inspection** — drag-rectangle zoom, wheel zoom, right-drag (or Shift/middle)
-  pan, hover pixel readout; auto-stretch (STF) on open; an Info panel with data
-  range, statistics, FITS structure and a searchable header.
+- **False colour** — Gray, Heat, Viridis, Magma, Inferno, Cividis base maps
+  with composable **Invert** and threshold **Split** modifiers, plus a
+  colorbar legend spanning the display window.
+- **Inspection** — drag-rectangle zoom, wheel zoom (Shift = fine), right-drag
+  pan, hover pixel readout; **split views up to 5×5** with linked pan/zoom —
+  automatic for same-size images, user-calibrated between differing ones
+  (links survive rotation); right-click menu with copyable RA/Dec + pixel
+  values and **Aladin / SIMBAD lookups**; an Info panel with data range,
+  statistics, FITS structure and a searchable header.
 - **Astrometry** — WCS from FITS keywords (TAN) *and* PixInsight's
   `PCL:AstrometricSolution` XISF properties; live RA/Dec hover readout,
   copyable coordinates, RA/Dec coordinate grid overlay with labelled lines,
@@ -59,16 +64,22 @@ and never needs to know the source format.
   filtering, CLASS_STAR colouring) — handy for building NN training sets.
 - **Channel combination** — up to 7 mono inputs (LRGB + SHO) merged through a
   linear-combination dialog with palette presets (SHO/Hubble, HOO, LRGB…),
-  per-channel normalization, and a live preview.
+  per-channel normalization (including **“As displayed”**: merge each channel
+  through its current view stretch), and a live weight-responsive preview;
+  results land in the first empty view.
 - **Sessions** — multi-image list (append / remove / drag-reorder / export +
   import); **Space/Shift+Space** blink between images (looping), with per-image
   stretch memory and zoom held across same-size frames; copy/paste stretches
   between images (normalized or absolute).
-- **Export** — *Save Data As* (FITS/XISF/16-bit TIFF) and *Export View As* /
-  *Export Zoomed Region As* (stretched + colormapped PNG/JPEG/TIFF).
-- **Layout** — dockable image-list, info, and histogram panels (F2/F4/F3),
-  image-only mode (Tab), fullscreen, user-configurable shortcuts
-  (`shortcuts.ini`), undo/redo for annotations and image transforms.
+- **Export** — *Save Data As* (FITS/XISF/16-bit TIFF), *Save Stretched As*
+  (bake the display transfer into Float32 FITS/XISF/TIFF), and *Export View
+  As* / *Export Zoomed Region As* (PNG/JPEG/TIFF/WebP, with JPEG quality and
+  8/16-bit PNG/TIFF depth options).
+- **Layout** — panels float translucently over the image by default (docked
+  layout one keypress away), image-only mode (Tab), fullscreen,
+  user-configurable shortcuts (`shortcuts.ini`), Preferences dialog (defaults,
+  histories, shortcuts), recent images/annotations menus, undo/redo for
+  annotations and image transforms.
 
 ## Download
 
@@ -82,6 +93,8 @@ Prebuilt binaries for every tagged version are on the
   `nebulascope.exe` (Qt and all DLLs included).
 - **Linux (x64)** — `NebulaScope-linux-x64.zip`: run `./run.sh`; needs system
   Qt6 / cfitsio / ccfits (one `apt install`, see the script's comment).
+- **Ubuntu/Debian** — `nebulascope_<version>_amd64.deb`:
+  `sudo apt install ./nebulascope_*.deb` (dependencies auto-resolved).
 
 Every push to `main` also builds all three platforms (GitHub Actions); the
 per-commit artifacts are on the Actions tab.
