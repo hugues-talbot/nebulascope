@@ -54,7 +54,11 @@ jobs:
           curl -fsSL -o CCfits.tar.gz https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/ccfits/CCfits.tar.gz
           if ((Get-Item CCfits.tar.gz).Length -lt 100000) { throw "CCfits download too small - got an error page?" }
           tar xzf CCfits.tar.gz
-          cmake -S CCfits -B ccfits-build `
+          # The subdir name varies between releases (CCfits/, CCfits-2.7/...) — find it.
+          $src = (Get-ChildItem -Directory | Where-Object { $_.Name -like "CCfits*" } | Select-Object -First 1).Name
+          if (-not $src) { Get-ChildItem; throw "No CCfits* directory after extraction" }
+          echo "CCfits source dir: $src"
+          cmake -S $src -B ccfits-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
             -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
