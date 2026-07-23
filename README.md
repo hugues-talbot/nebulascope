@@ -67,6 +67,10 @@ and never needs to know the source format.
   per-channel normalization (including **“As displayed”**: merge each channel
   through its current view stretch), and a live weight-responsive preview;
   results land in the first empty view.
+- **Colour transport** — transfer a reference image’s palette onto the
+  displayed image via **sliced optimal transport** (iterative distribution
+  transfer) in display space, estimated from each view’s visible pixels only;
+  no alignment required, result is a new display-ready entry.
 - **Sessions** — multi-image list (append / remove / drag-reorder / export +
   import); **Space/Shift+Space** blink between images (looping), with per-image
   stretch memory and zoom held across same-size frames; copy/paste stretches
