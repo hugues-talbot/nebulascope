@@ -66,20 +66,15 @@ ChannelStretch StretchModel::stfFor(double median, double mad, double mn, double
 }
 
 void StretchModel::linearWindow(const std::vector<ChannelStats>& stats) {
+    // Plain min→max linear ramp (same look as Reset, but with the display range
+    // fitted to the data). No percentile "boost" — the user asked first views to
+    // be predictable; Auto STF / Auto Linked remain the boosted options.
     m_fn = StretchFn::Linear;
     const int n = std::min<int>(int(stats.size()), 3);
     for (int c = 0; c < n; ++c) {
-        const double mn = stats[c].min, mx = stats[c].max;
-        const double span = std::max(1e-6, mx - mn);
-        m_lo[c] = mn;
-        m_hi[c] = mx;
-
-        ChannelStretch cs;
-        cs.black = 0.0;                                              // preserve the lowest values
-        cs.white = (double(stats[c].p99) - mn) / span;               // window top at the 99th percentile
-        cs.white = std::min(1.0, std::max(0.02, cs.white));
-        cs.mid   = 0.5 * (cs.black + cs.white);                      // MTF m = 0.5 → identity ramp
-        m_chan[c] = cs;
+        m_lo[c] = stats[c].min;
+        m_hi[c] = std::max(double(stats[c].min) + 1e-6, double(stats[c].max));
+        m_chan[c] = ChannelStretch{};        // black 0, mid 0.5, white 1 → identity ramp
     }
     emit changed();
 }
