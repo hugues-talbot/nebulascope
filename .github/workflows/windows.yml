@@ -30,12 +30,15 @@ jobs:
           cache: true
 
       # ---- vcpkg: cfitsio + zlib + lz4 + pugixml ----------------------------
+      # Use the runner's preinstalled vcpkg (kept in step with its MSVC) instead
+      # of a pinned checkout — a stale baseline fails against new toolchains.
       - name: vcpkg dependencies
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"  # 2024.06 baseline; bump freely
-          runVcpkgInstall: true
-          vcpkgJsonGlob: "vcpkg.json"
+        shell: pwsh
+        run: |
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          # vcpkg.json in the repo root = manifest mode; installs into
+          # ./vcpkg_installed/<triplet> (no package args allowed).
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg" install --triplet $env:VCPKG_TRIPLET
 
       # ---- CCfits + libXISF from source, cached -----------------------------
       - name: Cache CCfits + libXISF
@@ -58,7 +61,7 @@ jobs:
           $src = (Get-ChildItem -Directory | Where-Object { $_.Name -like "CCfits*" } | Select-Object -First 1).Name
           if (-not $src) { Get-ChildItem; throw "No CCfits* directory after extraction" }
           echo "CCfits source dir: $src"
-          $vcpkgInst = "$env:VCPKG_ROOT/installed/$env:VCPKG_TRIPLET" -replace '\\','/'
+          $vcpkgInst = "$env:GITHUB_WORKSPACE/vcpkg_installed/$env:VCPKG_TRIPLET" -replace '\\','/'
           # CCfits ships its own FindCFITSIO.cmake (pkg-config based) that cannot
           # see vcpkg. Replace it with a stub that points straight at vcpkg.
           @(
@@ -108,8 +111,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           Copy-Item build/src/Release/nebulascope.exe $out
           windeployqt --release --no-translations "$out/nebulascope.exe"
-          # cfitsio & friends from vcpkg; CCfits + XISF from the deps prefix
-          Copy-Item "$env:VCPKG_ROOT/installed/$env:VCPKG_TRIPLET/bin/*.dll" $out -ErrorAction SilentlyContinue
+          # cfitsio & friends from the manifest install; CCfits + XISF from the deps prefix
+          Copy-Item "$env:GITHUB_WORKSPACE/vcpkg_installed/$env:VCPKG_TRIPLET/bin/*.dll" $out -ErrorAction SilentlyContinue
           Copy-Item "$env:DEPS/bin/*.dll" $out -ErrorAction SilentlyContinue
 
       - name: Upload artifact
