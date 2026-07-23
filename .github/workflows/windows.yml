@@ -58,14 +58,19 @@ jobs:
           $src = (Get-ChildItem -Directory | Where-Object { $_.Name -like "CCfits*" } | Select-Object -First 1).Name
           if (-not $src) { Get-ChildItem; throw "No CCfits* directory after extraction" }
           echo "CCfits source dir: $src"
-          $vcpkgInst = "$env:VCPKG_ROOT/installed/$env:VCPKG_TRIPLET"
+          $vcpkgInst = "$env:VCPKG_ROOT/installed/$env:VCPKG_TRIPLET" -replace '\\','/'
+          # CCfits ships its own FindCFITSIO.cmake (pkg-config based) that cannot
+          # see vcpkg. Replace it with a stub that points straight at vcpkg.
+          @(
+            "SET(CFITSIO_FOUND TRUE)",
+            "SET(CFITSIO_INCLUDE_DIR `"$vcpkgInst/include`")",
+            "SET(CFITSIO_INCLUDE_DIRS `"$vcpkgInst/include`")",
+            "SET(CFITSIO_LIBRARY `"$vcpkgInst/lib/cfitsio.lib`")",
+            "SET(CFITSIO_LIBRARIES `"$vcpkgInst/lib/cfitsio.lib`")"
+          ) | Set-Content -Path "$src/FindCFITSIO.cmake"
           cmake -S $src -B ccfits-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=$env:VCPKG_TRIPLET `
-            -DCMAKE_PREFIX_PATH="$vcpkgInst" `
-            -DCFITSIO_ROOT_DIR="$vcpkgInst" `
-            -DCFITSIO_INCLUDE_DIRS="$vcpkgInst/include" `
-            -DCFITSIO_LIBRARIES="$vcpkgInst/lib/cfitsio.lib" `
             -DCMAKE_INSTALL_PREFIX="$env:DEPS" -DCMAKE_BUILD_TYPE=Release
           cmake --build ccfits-build --config Release --parallel
           cmake --install ccfits-build --config Release
