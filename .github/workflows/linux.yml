@@ -56,6 +56,12 @@ jobs:
         run: cmake --build build
 
       # ---- Package -----------------------------------------------------------
+      - name: Build .deb
+        run: |
+          cd build && cpack -G DEB && cd ..
+          mkdir -p package/NebulaScope
+          cp build/*.deb package/NebulaScope/
+
       - name: Package
         run: |
           mkdir -p package/NebulaScope/lib

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=NebulaScope
+Comment=Astronomical image inspector (FITS/XISF) with precise histogram control
+Exec=nebulascope %F
+Icon=nebulascope
+Terminal=false
+Categories=Science;Astronomy;Graphics;Viewer;
+MimeType=image/fits;application/fits;image/tiff;image/png;image/jpeg;

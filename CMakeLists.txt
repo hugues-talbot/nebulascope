@@ -93,3 +93,32 @@ message(STATUS "libXISF: ${XISF_LIB}  (headers: ${XISF_INCLUDE_DIR})")
 # find_library(PUGIXML_LIB pugixml)
 
 add_subdirectory(src)
+
+# ---- Linux install + .deb packaging (cpack -G DEB) --------------------------
+if(UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+    install(TARGETS nebulascope RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    # Bundle libXISF (not packaged by Debian/Ubuntu) as a private library.
+    get_filename_component(XISF_LIB_REAL "${XISF_LIB}" REALPATH)
+    file(GLOB XISF_LIB_FILES "${XISF_LIB_REAL}" "${XISF_LIB}*")
+    install(FILES ${XISF_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR}/nebulascope)
+    set_target_properties(nebulascope PROPERTIES
+        INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}/nebulascope")
+    install(FILES packaging/nebulascope.desktop
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES icon/NebulaScope.iconset/icon_256x256.png
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps
+            RENAME nebulascope.png)
+
+    set(CPACK_GENERATOR DEB)
+    set(CPACK_PACKAGE_NAME "nebulascope")
+    set(CPACK_PACKAGE_VERSION "0.72")           # keep in step with src/app/AppInfo.h
+    set(CPACK_PACKAGE_CONTACT "Hugues Talbot")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+        "Astronomical image inspector (FITS/XISF) with precise histogram control")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    # Let dpkg-shlibdeps compute Qt/cfitsio/ccfits dependencies for the exact
+    # distro release this .deb is built on (avoids the libcfitsio10-vs-t64 mess).
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    include(CPack)
+endif()
