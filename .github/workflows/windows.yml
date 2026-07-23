@@ -49,7 +49,17 @@ jobs:
         if: steps.depcache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          curl -LO https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.6.tar.gz
+          # HEASARC layout changes occasionally; try the known locations.
+          $urls = @(
+            "https://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/CCfits-2.6.tar.gz",
+            "https://heasarc.gsfc.nasa.gov/fitsio/CCfits/CCfits-2.6.tar.gz"
+          )
+          $ok = $false
+          foreach ($u in $urls) {
+            curl -fsSL -o CCfits-2.6.tar.gz $u
+            if ($LASTEXITCODE -eq 0 -and (Get-Item CCfits-2.6.tar.gz).Length -gt 100000) { $ok = $true; break }
+          }
+          if (-not $ok) { throw "Could not download CCfits tarball (all URLs returned junk)" }
           tar xzf CCfits-2.6.tar.gz
           cmake -S CCfits-2.6 -B ccfits-build `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
