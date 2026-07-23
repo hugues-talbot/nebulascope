@@ -1259,7 +1259,16 @@ void MainWindow::removeSelected() {
         delete m_fileList->takeItem(m_fileList->row(it));
     }
     if (m_fileList->count() == 0) {
+        // Last image closed: empty every view cell and the live state.
         m_currentPath.clear();
+        m_image = ImageData();
+        m_header = ImageHeader();
+        m_wcs = Wcs();
+        m_annotations->rebuild(0, 0, m_wcs, {});
+        m_grid->clearAll();
+        m_hist->setSource(nullptr);
+        m_info->setData(nullptr, nullptr, {});
+        m_pixelLabel->setText("\u2014");
         setWindowTitle("NebulaScope \u2014 Inspector");
     } else if (m_fileList->currentRow() < 0) {
         m_fileList->setCurrentRow(0);

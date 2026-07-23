@@ -39,6 +39,7 @@ public:
     AnnotationLayer* layer() const { return m_layer; }
     int index() const { return m_index; }
     bool occupied() const;
+    void clearContent();                  // drop image/path/stretch; show placeholder
     bool linkEnabled() const;
     void setActive(bool on);
     void refreshChrome();                 // placeholder / link-button visibility
@@ -87,6 +88,7 @@ public:
     ViewCell* activeCell() const { return m_cells.empty() ? nullptr : m_cells[m_active]; }
     ViewCell* cellAt(int i) const { return (i >= 0 && i < int(m_cells.size())) ? m_cells[std::size_t(i)] : nullptr; }
     void activate(ViewCell* c);
+    void clearAll();                      // empty every cell (last image closed)
     // Show/hide the views' scrollbars ("elevators") — panning still works via
     // right-drag / Shift-drag; applies to every cell, current and future.
     void setScrollBarsVisible(bool on);

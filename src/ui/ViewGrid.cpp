@@ -45,6 +45,20 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
 bool ViewCell::occupied() const { return m_view->hasImage(); }
 bool ViewCell::linkEnabled() const { return m_linkBtn->isChecked(); }
 
+void ViewCell::clearContent() {
+    image = ImageData();
+    header = ImageHeader();
+    path.clear();
+    wcs = Wcs();
+    hasStretch = false;
+    stats.clear();
+    world = QTransform();
+    calibrated = false;
+    if (m_linkBtn) m_linkBtn->setChecked(false);
+    m_view->clearDisplay();
+    refreshChrome();
+}
+
 void ViewCell::setActive(bool on) {
     m_active = on;
     setStyleSheet(QStringLiteral("astro--ViewCell{border:%1;}")
@@ -134,6 +148,10 @@ void ViewGrid::setScrollBarsVisible(bool on) {
         c->view()->setHorizontalScrollBarPolicy(pol);
         c->view()->setVerticalScrollBarPolicy(pol);
     }
+}
+
+void ViewGrid::clearAll() {
+    for (ViewCell* c : m_cells) c->clearContent();
 }
 
 void ViewGrid::activate(ViewCell* c) {

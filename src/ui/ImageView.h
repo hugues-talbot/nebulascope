@@ -23,6 +23,7 @@ public:
     explicit ImageView(QWidget* parent = nullptr);
 
     void setDisplayImage(const QImage& img);
+    void clearDisplay();            // drop the pixmap + scene (empty cell)
     void setSource(const ImageData* img) { m_src = img; }   // for pixel readout
     void zoomToFit();
     void zoomActualSize();          // 1:1 — one image pixel per screen pixel, centred on the current view

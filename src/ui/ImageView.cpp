@@ -46,6 +46,13 @@ void ImageView::adoptNavigationCalibrated(const ImageView* src, const QTransform
     m_adopting = false;
 }
 
+void ImageView::clearDisplay() {
+    if (m_item) { m_scene->removeItem(m_item); delete m_item; m_item = nullptr; }
+    m_scene->setSceneRect(QRectF());
+    m_src = nullptr;
+    resetTransform();
+}
+
 void ImageView::setDisplayImage(const QImage& img) {
     const QPixmap pm = QPixmap::fromImage(img);
     if (!m_item) {
