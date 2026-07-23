@@ -9,6 +9,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
+if(MSVC)
+    # MSVC's <cmath> hides M_PI behind _USE_MATH_DEFINES.
+    add_compile_definitions(_USE_MATH_DEFINES NOMINMAX)
+endif()
 
 # ---- dependencies ----------------------------------------------------------
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
