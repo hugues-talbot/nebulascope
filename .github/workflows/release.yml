@@ -1,0 +1,60 @@
+name: Release
+
+# Fires on version tags (v0.72, v1.0, ...). Rebuilds nothing itself: it waits
+# for the three platform build workflows on the same commit to succeed, then
+# downloads their artifacts and attaches them to a GitHub Release.
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write      # needed to create the release
+  actions: read        # needed to read artifacts from other workflow runs
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Wait for platform builds on this commit
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-regexp: "(windows|linux|macos)"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Download artifacts from the build workflows
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          commit: ${{ github.sha }}
+          workflow_conclusion: success
+          path: artifacts
+          # grabs every artifact from every workflow run on this commit
+
+      - name: Zip the unpacked artifacts
+        run: |
+          cd artifacts
+          ls -R
+          # Each artifact lands as a directory; zip the two that aren't already zips.
+          [ -d NebulaScope-windows-x64 ] && (cd NebulaScope-windows-x64 && zip -r ../NebulaScope-windows-x64.zip .)
+          [ -d NebulaScope-linux-x64 ]   && (cd NebulaScope-linux-x64   && zip -r ../NebulaScope-linux-x64.zip .)
+          # macOS artifact already contains NebulaScope-macos-arm64.zip — lift it out.
+          [ -d NebulaScope-macos-arm64 ] && mv NebulaScope-macos-arm64/*.zip . || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: NebulaScope ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          body: |
+            Cross-platform builds of NebulaScope ${{ github.ref_name }}.
+
+            | Platform | File | Notes |
+            |---|---|---|
+            | macOS (Apple Silicon) | `NebulaScope-macos-arm64.zip` | Unsigned — right-click ▸ Open on first launch |
+            | Windows (x64) | `NebulaScope-windows-x64.zip` | Unzip and run `nebulascope.exe` |
+            | Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |
+          files: artifacts/*.zip
