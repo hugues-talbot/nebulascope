@@ -25,13 +25,29 @@ jobs:
           wait-interval: 30
           allowed-conclusions: success
 
-      - name: Download artifacts from the build workflows
+      - name: Download Windows artifact
         uses: dawidd6/action-download-artifact@v6
         with:
+          workflow: windows.yml
           commit: ${{ github.sha }}
           workflow_conclusion: success
           path: artifacts
-          # grabs every artifact from every workflow run on this commit
+
+      - name: Download Linux artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: linux.yml
+          commit: ${{ github.sha }}
+          workflow_conclusion: success
+          path: artifacts
+
+      - name: Download macOS artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: macos.yml
+          commit: ${{ github.sha }}
+          workflow_conclusion: success
+          path: artifacts
 
       - name: Zip the unpacked artifacts
         run: |
