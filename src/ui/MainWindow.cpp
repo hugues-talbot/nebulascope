@@ -1466,7 +1466,23 @@ void MainWindow::transportColorsFromRef() {
     const ImageData refDisp = DisplayRenderer::renderFloat(*refImg, refModel);
     const ImageData srcDisp = DisplayRenderer::renderFloat(m_image, m_model);
 
-    ColorTransportResult res = transportColors(srcDisp, refDisp);
+    // Restrict the distribution estimate to what each view actually SHOWS —
+    // off-screen features (frame edges, unrelated field) must not steer the
+    // match. Source: the active view. Reference: its cell, if displayed.
+    auto toRoi = [](const QRect& r) {
+        TransportRoi t; t.x = r.x(); t.y = r.y(); t.w = r.width(); t.h = r.height(); return t;
+    };
+    TransportRoi srcRoi = toRoi(m_view->visibleImageRect());
+    TransportRoi refRoi;                          // whole image unless shown in a cell
+    for (int i = 0; i < m_grid->rows() * m_grid->cols(); ++i) {
+        ViewCell* c = m_grid->cellAt(i);
+        if (c && c != m_grid->activeCell() && c->path == key) {
+            refRoi = toRoi(c->view()->visibleImageRect());
+            break;
+        }
+    }
+
+    ColorTransportResult res = transportColors(srcDisp, refDisp, 15, 200000, srcRoi, refRoi);
     QApplication::restoreOverrideCursor();
     if (!res.ok) {
         QMessageBox::warning(this, "Transport Colors", QString::fromStdString(res.error));

@@ -8,17 +8,6 @@ namespace astro {
 
 namespace {
 
-// Sorted sample of one plane's finite values (stride-subsampled to maxSamples).
-std::vector<float> sortedSample(const float* p, std::size_t n, std::size_t maxSamples) {
-    const std::size_t step = n > maxSamples ? n / maxSamples : 1;
-    std::vector<float> s;
-    s.reserve(n / step + 1);
-    for (std::size_t i = 0; i < n; i += step)
-        if (std::isfinite(p[i])) s.push_back(p[i]);
-    std::sort(s.begin(), s.end());
-    return s;
-}
-
 // Quantile map from two sorted samples, tabulated at Q knots: value at source
 // quantile q maps to the reference value at the same quantile.
 struct QuantileMap {
@@ -62,10 +51,33 @@ void randomRotation(std::mt19937& rng, double R[3][3]) {
     for (int i = 0; i < 3; ++i) { R[0][i] = a[i]; R[1][i] = b[i]; R[2][i] = c[i]; }
 }
 
+// Strided flat-index sample of the pixels inside `roi` (whole image if the
+// roi is invalid), capped at maxSamples.
+static std::vector<std::size_t> roiIndices(int W, int H, const TransportRoi& roi,
+                                           std::size_t maxSamples) {
+    int x0 = 0, y0 = 0, rw = W, rh = H;
+    if (roi.valid()) {
+        x0 = std::max(0, roi.x); y0 = std::max(0, roi.y);
+        rw = std::min(W - x0, roi.w); rh = std::min(H - y0, roi.h);
+        if (rw <= 0 || rh <= 0) { x0 = y0 = 0; rw = W; rh = H; }   // degenerate: fall back
+    }
+    const std::size_t total = std::size_t(rw) * rh;
+    const std::size_t step = total > maxSamples ? total / maxSamples : 1;
+    std::vector<std::size_t> idx;
+    idx.reserve(total / step + 1);
+    for (std::size_t k = 0; k < total; k += step) {
+        const int yy = y0 + int(k / rw);
+        const int xx = x0 + int(k % rw);
+        idx.push_back(std::size_t(yy) * W + xx);
+    }
+    return idx;
+}
+
 } // namespace
 
 ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
-                                     int iterations, std::size_t maxSamples) {
+                                     int iterations, std::size_t maxSamples,
+                                     const TransportRoi& srcRoi, const TransportRoi& refRoi) {
     ColorTransportResult r;
     if (!src.isValid() || !ref.isValid() ||
         src.format() != SampleFormat::Float32 || ref.format() != SampleFormat::Float32) {
@@ -74,18 +86,25 @@ ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
     }
     const std::size_t n = src.samplesPerChannel();
     const std::size_t nr = ref.samplesPerChannel();
+    const std::vector<std::size_t> idxS = roiIndices(src.width(), src.height(), srcRoi, maxSamples);
+    const std::vector<std::size_t> idxR = roiIndices(ref.width(), ref.height(), refRoi, maxSamples);
 
     // Mono pair: 1-D quantile matching.
     if (src.channels() == 1 && ref.channels() == 1) {
-        auto ss = sortedSample(src.plane<float>(0), n, maxSamples);
-        auto rs = sortedSample(ref.plane<float>(0), nr, maxSamples);
+        const float* ps = src.plane<float>(0);
+        const float* pr = ref.plane<float>(0);
+        std::vector<float> ss, rs;
+        ss.reserve(idxS.size()); rs.reserve(idxR.size());
+        for (std::size_t i : idxS) if (std::isfinite(ps[i])) ss.push_back(ps[i]);
+        for (std::size_t i : idxR) if (std::isfinite(pr[i])) rs.push_back(pr[i]);
+        std::sort(ss.begin(), ss.end());
+        std::sort(rs.begin(), rs.end());
         if (ss.size() < 16 || rs.size() < 16) { r.error = "Not enough finite pixels."; return r; }
         QuantileMap qm; qm.build(ss, rs, 1024);
         r.image = ImageData(src.width(), src.height(), 1, SampleFormat::Float32, ColorSpace::Gray);
-        const float* p = src.plane<float>(0);
         float* o = r.image.plane<float>(0);
         for (std::size_t i = 0; i < n; ++i)
-            o[i] = std::isfinite(p[i]) ? qm.map(p[i]) : 0.0f;
+            o[i] = std::isfinite(ps[i]) ? qm.map(ps[i]) : 0.0f;
         r.ok = true;
         return r;
     }
@@ -109,8 +128,6 @@ ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
     const float* R2 = ref.plane<float>(2);
 
     std::mt19937 rng(20260723u);                 // deterministic result
-    const std::size_t stepS = n  > maxSamples ? n  / maxSamples : 1;
-    const std::size_t stepR = nr > maxSamples ? nr / maxSamples : 1;
     std::vector<float> projS, projR, all(n);
     const int Q = 1024;
 
@@ -129,9 +146,9 @@ ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
             for (std::size_t i = 0; i < n; ++i)
                 all[i] = float(rx * W[i] + ry * W[n + i] + rz * W[2 * n + i]);
             projS.clear();
-            for (std::size_t i = 0; i < n; i += stepS) projS.push_back(all[i]);
+            for (std::size_t i : idxS) projS.push_back(all[i]);
             projR.clear();
-            for (std::size_t i = 0; i < nr; i += stepR) {
+            for (std::size_t i : idxR) {
                 if (!std::isfinite(R0[i]) || !std::isfinite(R1[i]) || !std::isfinite(R2[i])) continue;
                 projR.push_back(float(rx * R0[i] + ry * R1[i] + rz * R2[i]));
             }

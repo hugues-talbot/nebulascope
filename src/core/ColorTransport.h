@@ -20,11 +20,23 @@ struct ColorTransportResult {
     ImageData   image;          // Float32, same geometry/channels as the source
 };
 
+// Pixel rectangle restricting which pixels FEED the distribution estimate
+// (the resulting map is still applied to every source pixel). Invalid = all.
+struct TransportRoi {
+    int x = 0, y = 0, w = 0, h = 0;
+    bool valid() const { return w > 0 && h > 0; }
+};
+
 // src/ref: Float32, display-ready [0,1]; 3-channel RGB (or both 1-channel).
 // iterations: sliced-OT sweeps (10-20 typical). maxSamples: per-image sample
 // cap for estimating the quantile maps (the mapping is applied to every pixel).
+// srcRoi/refRoi: only pixels inside these rectangles contribute to the
+// distributions — e.g. each view's visible region, so off-screen features
+// don't steer the match.
 ColorTransportResult transportColors(const ImageData& src, const ImageData& ref,
                                      int iterations = 15,
-                                     std::size_t maxSamples = 200000);
+                                     std::size_t maxSamples = 200000,
+                                     const TransportRoi& srcRoi = {},
+                                     const TransportRoi& refRoi = {});
 
 } // namespace astro
