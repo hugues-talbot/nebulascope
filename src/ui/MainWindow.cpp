@@ -1745,10 +1745,36 @@ void MainWindow::saveFile() {
     else statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
 }
 
+// Float [0,1] render -> 16-bit-per-channel QImage (for 16-bit PNG/TIFF export).
+static QImage floatToRgb64(const ImageData& f) {
+    if (!f.isValid()) return QImage();
+    const int w = f.width(), h = f.height();
+    QImage out(w, h, QImage::Format_RGBX64);
+    const float* p0 = f.plane<float>(0);
+    const float* p1 = f.channels() >= 3 ? f.plane<float>(1) : p0;
+    const float* p2 = f.channels() >= 3 ? f.plane<float>(2) : p0;
+    auto q16 = [](float v) -> quint16 {
+        const float c = v < 0 ? 0.0f : (v > 1 ? 1.0f : v);
+        return quint16(c * 65535.0f + 0.5f);
+    };
+    for (int y = 0; y < h; ++y) {
+        quint16* row = reinterpret_cast<quint16*>(out.scanLine(y));
+        for (int x = 0; x < w; ++x) {
+            const std::size_t i = std::size_t(y) * w + x;
+            row[x * 4 + 0] = q16(p0[i]);
+            row[x * 4 + 1] = q16(p1[i]);
+            row[x * 4 + 2] = q16(p2[i]);
+            row[x * 4 + 3] = 65535;
+        }
+    }
+    return out;
+}
+
 void MainWindow::exportView() {
     if (!m_image.isValid()) return;
     // The exact 8-bit RGB image currently on screen — stretch, colormap and all.
-    saveRenderedImage(DisplayRenderer::render(m_image, m_model), "Export view (full frame)");
+    saveRenderedImage(DisplayRenderer::render(m_image, m_model), "Export view (full frame)",
+        [this] { return floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model)); });
 }
 
 void MainWindow::exportRegion() {
@@ -1760,21 +1786,52 @@ void MainWindow::exportRegion() {
     }
     // Render the whole frame, then crop to the currently visible image pixels.
     const QImage full = DisplayRenderer::render(m_image, m_model);
-    saveRenderedImage(full.copy(roi.intersected(full.rect())), "Export zoomed region");
+    saveRenderedImage(full.copy(roi.intersected(full.rect())), "Export zoomed region",
+        [this, roi] {
+            QImage f16 = floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model));
+            return f16.copy(roi.intersected(f16.rect()));
+        });
 }
 
-void MainWindow::saveRenderedImage(const QImage& img, const QString& title) {
+void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
+                                   const std::function<QImage()>& make16) {
     if (img.isNull()) return;
     const QString path = QFileDialog::getSaveFileName(
         this, title, QString(), "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)");
     if (path.isEmpty()) return;
-    if (!img.save(path)) {
+    const QString ext = QFileInfo(path).suffix().toLower();
+
+    int quality = -1;                                  // -1 = format default
+    QImage toSave = img;
+    if (ext == "jpg" || ext == "jpeg") {
+        static int lastQuality = 90;                   // remembered for the session
+        bool ok = false;
+        const int q = QInputDialog::getInt(this, "JPEG quality",
+            "Quality (1\u2013100):", lastQuality, 1, 100, 1, &ok);
+        if (!ok) return;
+        lastQuality = quality = q;
+    } else if ((ext == "png" || ext == "tiff" || ext == "tif") && make16) {
+        static int lastDepth = 0;                      // 0 = 8-bit
+        bool ok = false;
+        const QStringList depths{ "8-bit per channel", "16-bit per channel" };
+        const QString depth = QInputDialog::getItem(this, "Bit depth",
+            "Pixel depth:", depths, lastDepth, false, &ok);
+        if (!ok) return;
+        lastDepth = depth.startsWith("16") ? 1 : 0;
+        if (lastDepth == 1) {
+            toSave = make16();
+            if (toSave.isNull()) { QMessageBox::warning(this, "Export failed", "16-bit render failed."); return; }
+        }
+    }
+
+    if (!toSave.save(path, nullptr, quality)) {
         QMessageBox::warning(this, "Export failed",
                              QStringLiteral("Could not write %1").arg(QFileInfo(path).fileName()));
         return;
     }
-    statusBar()->showMessage(QStringLiteral("Exported %1 (%2\u00d7%3)")
-        .arg(QFileInfo(path).fileName()).arg(img.width()).arg(img.height()), 3000);
+    statusBar()->showMessage(QStringLiteral("Exported %1 (%2\u00d7%3%4)")
+        .arg(QFileInfo(path).fileName()).arg(toSave.width()).arg(toSave.height())
+        .arg(toSave.format() == QImage::Format_RGBX64 ? QStringLiteral(" \u00b7 16-bit") : QString()), 3000);
 }
 
 void MainWindow::updateDisplay() {

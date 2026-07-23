@@ -8,6 +8,7 @@
 #include <QMainWindow>
 #include <QHash>
 #include <QSet>
+#include <functional>
 #include <memory>
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
@@ -129,7 +130,10 @@ private:
     QString m_rotBasePath;
     double m_rotBaseAngle = 0.0;
     void applyCopiedStretch(const QString& path, bool normalized);  // paste onto one file
-    void saveRenderedImage(const QImage& img, const QString& title);  // shared export dialog
+    // Shared export dialog. make16, when given, supplies a 16-bit variant for
+    // PNG/TIFF export (built from the float render, no 8-bit quantisation).
+    void saveRenderedImage(const QImage& img, const QString& title,
+                           const std::function<QImage()>& make16 = {});
 
     ImageData      m_image;
     ImageHeader    m_header;
