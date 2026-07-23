@@ -89,6 +89,7 @@ public:
     ViewCell* cellAt(int i) const { return (i >= 0 && i < int(m_cells.size())) ? m_cells[std::size_t(i)] : nullptr; }
     void activate(ViewCell* c);
     void clearAll();                      // empty every cell (last image closed)
+    ViewCell* firstEmptyVisible();        // first shown cell with no image, or null
     // Show/hide the views' scrollbars ("elevators") — panning still works via
     // right-drag / Shift-drag; applies to every cell, current and future.
     void setScrollBarsVisible(bool on);

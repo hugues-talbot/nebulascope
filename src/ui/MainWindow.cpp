@@ -1243,8 +1243,21 @@ void MainWindow::combineChannels() {
     }
     CombineDialog dlg(std::move(mono), this);
     if (dlg.exec() == QDialog::Accepted && dlg.hasResult()) {
+        // Land the result in an empty view when one exists (multi-view HOO/SHO
+        // workflow); otherwise it replaces the active view's image.
+        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
         ImageData out = dlg.result();                 // copy out of the dialog
         addSyntheticImage(dlg.resultName(), std::move(out));
+        if (dlg.resultDisplayReady()) {
+            // Data is already display-stretched [0,1]: show it 1:1 (identity
+            // linear window), not through a fresh auto-STF.
+            for (int c = 0; c < 3; ++c) {
+                m_model.setRange(c, 0.0, 1.0);
+                ChannelStretch cs; cs.black = 0.0; cs.mid = 0.5; cs.white = 1.0;
+                m_model.setChannel(c, cs);
+            }
+            m_model.setFn(StretchFn::Linear);
+        }
     }
 }
 

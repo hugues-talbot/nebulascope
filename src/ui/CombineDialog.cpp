@@ -320,8 +320,14 @@ void CombineDialog::updatePreview() {
     // without it the (smooth, high-SNR) combined data bands visibly at 8 bits.
     QImage img(w, h, QImage::Format_RGB888);
     const float* pr = res.image.plane<float>(0); const float* pg = res.image.plane<float>(1); const float* pb = res.image.plane<float>(2);
-    const float* pooled[3] = { pr, pg, pb };
-    const Mapper mm = makeMapperPooled(pooled, 3, std::size_t(w)*h);
+    // "As displayed" (and stretched domain) planes are already display-ready
+    // [0,1] — show them 1:1; re-auto-STFing would cancel the user's tuning.
+    const bool displayReady = m_preNormCombo->currentIndex() == 4 || m_domainCombo->currentIndex() == 1;
+    Mapper mm;                                              // default = identity window
+    if (!displayReady) {
+        const float* pooled[3] = { pr, pg, pb };
+        mm = makeMapperPooled(pooled, 3, std::size_t(w)*h);
+    }
     auto hashU = [](std::uint32_t x){ x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; };
     auto dith8 = [&](float y01, std::size_t i, int c) -> uchar {
         const float r1 = (hashU(std::uint32_t(i) * 3u + std::uint32_t(c) + 0x9e3779b9u) >> 8) * (1.0f / 16777216.0f);
@@ -349,6 +355,7 @@ void CombineDialog::accept() {
     CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
     if (!res.ok) { QMessageBox::warning(this, "Combine Channels", QString::fromStdString(res.error)); return; }
     m_result = std::move(res.image);
+    m_resultDisplayReady = (m_preNormCombo->currentIndex() == 4) || (m_domainCombo->currentIndex() == 1);
     rememberSettings();     // persist for the next time the dialog opens
     QDialog::accept();
 }

@@ -137,6 +137,11 @@ void ViewGrid::relayout() {
             m_cells[i]->hide();
         }
     }
+    // Distribute space evenly: every visible row/column stretches, so a 2×2
+    // grid fills the window (screen aspect) instead of packing square cells
+    // top-left. Reset stretches beyond the current grid (max 5×5).
+    for (int r = 0; r < 5; ++r) m_lay->setRowStretch(r, r < m_rows ? 1 : 0);
+    for (int c = 0; c < 5; ++c) m_lay->setColumnStretch(c, c < m_cols ? 1 : 0);
     for (int r = 0; r < m_rows; ++r) m_lay->setRowStretch(r, 1);
     for (int c = 0; c < m_cols; ++c) m_lay->setColumnStretch(c, 1);
 }
@@ -152,6 +157,13 @@ void ViewGrid::setScrollBarsVisible(bool on) {
 
 void ViewGrid::clearAll() {
     for (ViewCell* c : m_cells) c->clearContent();
+}
+
+ViewCell* ViewGrid::firstEmptyVisible() {
+    const std::size_t shown = std::size_t(m_rows) * m_cols;
+    for (std::size_t i = 0; i < m_cells.size() && i < shown; ++i)
+        if (!m_cells[i]->occupied() && m_cells[i] != activeCell()) return m_cells[i];
+    return nullptr;
 }
 
 void ViewGrid::activate(ViewCell* c) {

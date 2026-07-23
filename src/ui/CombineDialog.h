@@ -33,6 +33,10 @@ public:
     bool             hasResult() const { return m_result.isValid(); }
     const ImageData& result()    const { return m_result; }
     QString          resultName() const;
+    // True when the result is already display-stretched [0,1] ("As displayed"
+    // prenorm or stretched domain) — the caller should show it with an identity
+    // linear stretch, not a fresh auto-STF.
+    bool             resultDisplayReady() const { return m_resultDisplayReady; }
 
 private:
     struct Row {
@@ -69,6 +73,7 @@ private:
     QLabel*     m_status   = nullptr;
 
     ImageData m_result;
+    bool m_resultDisplayReady = false;
 
     // Cross-invocation memory: the dialog reopens with the settings you last used
     // (global options + per-image role/weights, keyed by image name).
