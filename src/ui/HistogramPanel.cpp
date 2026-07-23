@@ -209,8 +209,8 @@ void HistogramPanel::syncFromModel() {
     if (ghs) {
         const GHSParams g = m_model->ghs();
         m_rgbBox->setVisible(false);
-        setField(0, "SP", g.SP, 4);
-        setField(1, "LP", g.LP, 4);
+        setField(0, "LP", g.LP, 4);
+        setField(1, "SP", g.SP, 4);
         setField(2, "HP", g.HP, 4);
         setField(3, "D",  g.D,  4);
         setField(4, "b",  g.b,  4);
@@ -265,8 +265,8 @@ void HistogramPanel::onParamEdited(int idx) {
 
     if (m_model->fn() == StretchFn::GHS) {
         GHSParams g = m_model->ghs();
-        if (idx == 0)      g.SP = std::min(g.HP - eps, std::max(g.LP + eps, clamp01(val)));
-        else if (idx == 1) g.LP = std::min(g.SP - eps, std::max(0.0, clamp01(val)));
+        if (idx == 0)      g.LP = std::min(g.SP - eps, std::max(0.0, clamp01(val)));
+        else if (idx == 1) g.SP = std::min(g.HP - eps, std::max(g.LP + eps, clamp01(val)));
         else if (idx == 2) g.HP = std::max(g.SP + eps, std::min(1.0, clamp01(val)));
         else if (idx == 3) g.D  = std::min(8.0,  std::max(0.0,  val));
         else if (idx == 4) g.b  = std::min(15.0, std::max(-5.0, val));

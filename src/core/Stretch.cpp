@@ -34,9 +34,15 @@ double ghsSlope(double x, double D, double b, double SP) {
 
 static std::vector<float> buildGhsLut(const GHSParams& g, int N) {
     std::vector<float> lut(N);
+    // The curve is normalized to [0,1] below, which cancels any LINEAR scaling
+    // of the slope — so a linear D acts only through the b·D product and feels
+    // interchangeable with b. Give D an exponential response (like official
+    // GHS, where D reaches the thousands): D becomes the "amount" of stretch
+    // concentrated at SP, b the falloff "focus"/profile — visibly different.
+    const double Deff = std::expm1(g.D);           // ui 0..8 -> 0..~2980
     auto clampedSlope = [&](double x) {
         const double xx = x < g.LP ? g.LP : (x > g.HP ? g.HP : x);   // linear protection zones
-        return ghsSlope(xx, g.D, g.b, g.SP);
+        return ghsSlope(xx, Deff, g.b, g.SP);
     };
     // Cumulative integral of the slope -> monotonic transfer; normalize to [0,1].
     std::vector<double> cum(N);
