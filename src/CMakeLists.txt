@@ -62,6 +62,7 @@ add_executable(nebulascope
     ui/MainWindow.cpp
     ui/RotateDialog.cpp
     ui/ViewGrid.cpp
+    ui/ScriptRunner.cpp
     ui/PreferencesDialog.cpp
     ${APP_ICON_SOURCES}
 )

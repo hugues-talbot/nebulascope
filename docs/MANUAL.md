@@ -1,6 +1,6 @@
 # NebulaScope — User Manual
 
-*Version 0.84. This is the complete guide; for a quick start see the
+*Version 0.85. This is the complete guide; for a quick start see the
 [README](../README.md). Every keyboard shortcut named here is a default — all
 of them are reconfigurable in **Preferences ▸ Shortcuts** (stored in
 `shortcuts.ini`, whose location is shown in the dialog).*
@@ -318,6 +318,13 @@ nebulascope [options] [files...]
   -l, --list <file>      Load a saved image list.
       --split <RxC>      Split the view (max 5x5) and assign the first R*C
                          images to the cells in raster order.
+      --run <script>     Execute a command script and exit with the number of
+                         failed assertions (testing/batch; headless with
+                         QT_QPA_PLATFORM=offscreen). Commands: open, show,
+                         next/prev, split, fn, autostf [linked], reset,
+                         adjust <name> <v>, rot90, flip, rotate, export, save,
+                         assert size|channels|pixel|range, sleep, quit — one
+                         per line, #-comments; see tests/smoke.nsc.
   -h, --help             This help.
 ```
 

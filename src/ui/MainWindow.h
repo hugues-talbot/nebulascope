@@ -38,6 +38,7 @@ class InfoPanel;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
+    friend class ScriptRunner;   // --run scripts drive the window directly
 public:
     MainWindow();
 

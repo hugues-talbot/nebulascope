@@ -1,4 +1,5 @@
 #include "ui/MainWindow.h"
+#include "ui/ScriptRunner.h"
 #include <QApplication>
 #include <QPalette>
 #include <QStyleFactory>
@@ -57,6 +58,9 @@ static void printUsage() {
         "      --split <RxC>     Split the view into R rows \u00d7 C columns (max 5x5) and\n"
         "                        assign the first R*C images to the cells in raster\n"
         "                        order, e.g. --split 2x1.\n"
+        "      --run <script>    Execute a line-based command script (testing/batch)\n"
+        "                        and exit with the number of failed assertions.\n"
+        "                        Headless: QT_QPA_PLATFORM=offscreen. See docs/MANUAL.md.\n"
         "  -h, --help            Show this help and exit.\n"
         "\n"
         "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff .webp\n"
@@ -135,6 +139,7 @@ int main(int argc, char** argv) {
     //                nebulascope --list set.txt (a saved image list)
     QStringList files;
     int splitR = 0, splitC = 0;
+    QString scriptPath;
     const QStringList args = app.arguments().mid(1);
     for (int i = 0; i < args.size(); ++i) {
         const QString& a = args[i];
@@ -157,6 +162,8 @@ int main(int argc, char** argv) {
                 printUsage();
                 return 2;
             }
+        } else if (a == "--run" && i + 1 < args.size()) {
+            scriptPath = args[++i];
         } else if (a.startsWith('-')) {
             std::fprintf(stderr, "Unknown option: %s\n", a.toLocal8Bit().constData());
             printUsage();
@@ -172,6 +179,13 @@ int main(int argc, char** argv) {
     }
     if (!files.isEmpty()) w.openPaths(files);
     if (splitR > 0) w.applySplitLayout(splitR, splitC);
+
+    astro::ScriptRunner* runner = nullptr;
+    if (!scriptPath.isEmpty()) {
+        runner = new astro::ScriptRunner(&w, scriptPath, &app);
+        if (!runner->load()) return 3;
+        runner->start();                       // exits the app with the failure count
+    }
 
     return app.exec();
 }

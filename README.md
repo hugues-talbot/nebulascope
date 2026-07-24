@@ -114,6 +114,8 @@ src/
   render/               # StretchModel (shared state) + DisplayRenderer
   ui/                   # ImageView, Histogram*, ColorBar, InfoPanel, MainWindow
   app/                  # main.cpp (entry + theme), app.qrc, appicon.png
+tests/                  # CTest units (core math, IO round-trips) + script-mode
+                        # smoke test (smoke.nsc) + synthetic test image
 icon/                   # iconset PNGs + make_icns.sh (-> NebulaScope.icns)
 docs/
   BUILDING-macos.md     # Homebrew + libXISF, step by step
@@ -128,6 +130,23 @@ Requires Qt6, CFITSIO + CCfits, and libXISF.
 cmake -B build -G Ninja -DCMAKE_PREFIX_PATH=/opt/homebrew
 cmake --build build
 ```
+
+## Tests
+
+Two layers, both run by CI on every push (all three platforms):
+
+```sh
+ctest --test-dir build --output-on-failure     # unit tests: core math + IO round-trips
+./build/src/nebulascope --run tests/smoke.nsc  # scripted end-to-end smoke test
+```
+
+Unit tests cover the stretch/LUT invariants (monotonicity, the
+narrow-window anti-posterization rule), adjustments, lossless geometry
+round-trips, statistics, and format round-trips (including the XISF
+float-normalization required for PixInsight interop). The script mode
+(`--run`, see the manual §13) drives the real application — open, stretch,
+rotate, export — with assertions, against the committed synthetic FITS in
+`tests/testdata/`; add `QT_QPA_PLATFORM=offscreen` to run it headless.
 
 **Linux / Windows** — the binary is `build/src/nebulascope`:
 
