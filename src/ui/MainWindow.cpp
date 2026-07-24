@@ -2118,12 +2118,12 @@ void MainWindow::updateDisplay() {
     // slider positions are skipped, which is exactly what a drag wants).
     if (m_renderWatcher->isRunning()) { m_renderPending = true; return; }
     m_renderPending = false;
-    // Snapshot the model state; ImageData planes are shared (copy is cheap) and
-    // immutable — orientation changes and image switches swap in NEW ImageData,
-    // which the identity check in onRenderDone() catches.
+    // Record the identity of the LIVE buffer first (ImageData copies are DEEP —
+    // a pointer taken from the copy would never match m_image again), then give
+    // the worker its own private copy, safe against mid-render rotations/switches.
+    m_renderSrc = m_image.plane<float>(0);
+    m_renderSize = QSize(m_image.width(), m_image.height());
     const ImageData img = m_image;
-    m_renderSrc = img.plane<float>(0);
-    m_renderSize = QSize(img.width(), img.height());
     const StretchModel::State st = m_model.state();
     m_renderWatcher->setFuture(QtConcurrent::run([img, st]() -> QImage {
         StretchModel local;                      // plain value copy for the worker
