@@ -164,9 +164,12 @@ macOS specifics (Homebrew, building libXISF, common link errors) are in
 ## Documentation
 
 - **[docs/MANUAL.md](docs/MANUAL.md)** — the complete user manual: every
-  feature, shortcut, dialog, and file format.
+  feature, shortcut, dialog, and file format (screenshot slots ready in
+  `docs/screenshots/`).
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — developer map: layers,
   data flow, and the geometry/windowing invariants to preserve when extending.
+- **[docs/DECISIONS.md](docs/DECISIONS.md)** — design-decision log: why the
+  pipeline, geometry model, and format interop work the way they do.
 
 ## Citing
 
