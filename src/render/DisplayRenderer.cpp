@@ -35,7 +35,7 @@ static constexpr float kDither = 1.0f;
 template <typename Fn>
 static void parallelRows(int h, Fn&& fn) {
     unsigned nt = std::thread::hardware_concurrency();
-    nt = std::min(nt ? nt : 1u, 8u);
+    nt = std::min(nt ? nt : 1u, 32u);          // use the machine (was capped at 8)
     if (nt <= 1 || h < 64) { fn(0, h); return; }
     std::vector<std::thread> pool;
     pool.reserve(nt);

@@ -87,4 +87,5 @@ endif()
 target_link_libraries(nebulascope PRIVATE
     astro_core
     Qt6::Widgets
+    Qt6::Concurrent
 )

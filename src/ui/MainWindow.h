@@ -6,6 +6,8 @@
 // to the renderer so any histogram edit updates the display live.
 //
 #include <QMainWindow>
+#include <QFutureWatcher>
+#include <QImage>
 #include <QHash>
 #include <QSet>
 #include <functional>
@@ -50,6 +52,7 @@ private slots:
     void exportView();
     void exportRegion();
     void updateDisplay();
+    void onRenderDone();                  // async render finished — show + maybe rerun
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
     void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
@@ -236,6 +239,13 @@ protected:
     QDockWidget*    m_infoDock = nullptr;
     QListWidget*    m_fileList = nullptr;
     QLabel*         m_pixelLabel = nullptr;
+    // Async display rendering: updateDisplay() snapshots state and kicks a
+    // worker; slider drags stay fluid while frames render off-thread, and
+    // intermediate states are coalesced (only the latest is rendered).
+    QFutureWatcher<QImage>* m_renderWatcher = nullptr;
+    bool        m_renderPending = false;  // a newer state arrived mid-render
+    const void* m_renderSrc = nullptr;    // identity of the pixels being rendered
+    QSize       m_renderSize;
     QComboBox*      m_cmapCombo = nullptr;
     QCheckBox*      m_invertCheck = nullptr;
     QCheckBox*      m_splitCheck = nullptr;

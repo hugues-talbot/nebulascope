@@ -22,6 +22,7 @@
 #include <QListWidget>
 #include <QApplication>
 #include <QClipboard>
+#include <QtConcurrent/QtConcurrent>
 #include <QInputDialog>
 #include <QActionGroup>
 #include <QColorDialog>
@@ -182,6 +183,8 @@ void MainWindow::buildUi() {
     statusBar()->addPermanentWidget(m_pixelLabel);
 
     connect(&m_model, &StretchModel::changed, this, &MainWindow::updateDisplay);
+    m_renderWatcher = new QFutureWatcher<QImage>(this);
+    connect(m_renderWatcher, &QFutureWatcher<QImage>::finished, this, &MainWindow::onRenderDone);
 
     // Keep the active image's stretch memory current: every edit (drag, tab,
     // Auto/Reset) is snapshotted under its path, so revisiting restores it.
@@ -2109,7 +2112,37 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
 
 void MainWindow::updateDisplay() {
     if (!m_image.isValid()) return;
-    m_view->setDisplayImage(DisplayRenderer::render(m_image, m_model));
+    // Coalescing async render: the GUI thread never blocks on a frame. If a
+    // render is in flight, just note that a newer state exists — when the
+    // worker returns, the LATEST model state is rendered next (intermediate
+    // slider positions are skipped, which is exactly what a drag wants).
+    if (m_renderWatcher->isRunning()) { m_renderPending = true; return; }
+    m_renderPending = false;
+    // Snapshot the model state; ImageData planes are shared (copy is cheap) and
+    // immutable — orientation changes and image switches swap in NEW ImageData,
+    // which the identity check in onRenderDone() catches.
+    const ImageData img = m_image;
+    m_renderSrc = img.plane<float>(0);
+    m_renderSize = QSize(img.width(), img.height());
+    const StretchModel::State st = m_model.state();
+    m_renderWatcher->setFuture(QtConcurrent::run([img, st]() -> QImage {
+        StretchModel local;                      // plain value copy for the worker
+        local.setState(st);
+        return DisplayRenderer::render(img, local);
+    }));
+}
+
+void MainWindow::onRenderDone() {
+    const QImage frame = m_renderWatcher->result();
+    if (!m_image.isValid()) return;
+    // Identity check: only show the frame if it was rendered from the pixels
+    // the window is STILL displaying — a frame from a pre-switch or pre-rotate
+    // image (wrong content, maybe wrong size) is silently dropped and the
+    // current state rendered instead.
+    const bool current = (m_image.plane<float>(0) == m_renderSrc) &&
+                         (QSize(m_image.width(), m_image.height()) == m_renderSize);
+    if (current && !frame.isNull()) m_view->setDisplayImage(frame);
+    if (m_renderPending || !current) updateDisplay();
 }
 
 void MainWindow::toggleImageOnly() {

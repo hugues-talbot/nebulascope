@@ -15,7 +15,7 @@ if(MSVC)
 endif()
 
 # ---- dependencies ----------------------------------------------------------
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
 
 # FITS: CFITSIO (C lib) + CCfits (C++ wrapper).
 # Resolve CFITSIO to actual link items in ${CFITSIO_LINK_LIBS} (+ include dirs in
