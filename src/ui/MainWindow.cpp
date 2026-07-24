@@ -78,6 +78,11 @@
 
 namespace astro {
 
+// Sidecar (de)serialization of the display adjustments — defined near
+// writeAnnotationsFile, used earlier by displayPath's sidecar auto-load.
+static QJsonObject adjustToJson(const AdjustParams& a);
+static AdjustParams adjustFromJson(const QJsonObject& o);
+
 MainWindow::MainWindow() {
     setWindowTitle("NebulaScope — Inspector");
     m_undo = new QUndoStack(this);
