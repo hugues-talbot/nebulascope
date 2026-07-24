@@ -1,6 +1,7 @@
 #include "ui/ColorBar.h"
 #include "core/Stretch.h"
 #include "core/Colormap.h"
+#include "core/Adjustments.h"
 #include <QPainter>
 #include <QFontMetrics>
 #include <algorithm>
@@ -33,7 +34,11 @@ void ColorBar::paintEvent(QPaintEvent*) {
     const ChannelStretch cs = m_model->channel(0);
 
     const int N = 512;
-    const std::vector<float> lut = buildLut(fn, cs, m_model->ghs(), N);
+    std::vector<float> lut = buildLut(fn, cs, m_model->ghs(), N);
+    // The colorbar legend shows the value→colour of the LIVE display: compose
+    // the tone adjustments; colour ops are applied per swatch below.
+    if (!m_model->adjust().toneIdentity())
+        for (float& v : lut) v = applyTone(v, m_model->adjust());
     const bool useCmap = mono && colormapActive(m_model->colormap(), m_model->cmapMods());
     const std::vector<std::uint8_t> cmap =
         useCmap ? buildColormapLut(m_model->colormap(), m_model->cmapMods(), 256)
@@ -50,6 +55,14 @@ void ColorBar::paintEvent(QPaintEvent*) {
         if (useCmap) {
             const int idx = std::clamp(int(y * 255.0f + 0.5f), 0, 255);
             rr = cmap[idx*3+0]; gg = cmap[idx*3+1]; bb = cmap[idx*3+2];
+        } else if (!mono && !m_model->adjust().colorIdentity()) {
+            // RGB display: show what a NEUTRAL pixel becomes under the colour
+            // ops (temperature/tint/hue/sat) — the white-balance shift, visible.
+            float r2 = y, g2 = y, b2 = y;
+            applyColor(r2, g2, b2, m_model->adjust());
+            rr = std::clamp(int(r2 * 255.0f + 0.5f), 0, 255);
+            gg = std::clamp(int(g2 * 255.0f + 0.5f), 0, 255);
+            bb = std::clamp(int(b2 * 255.0f + 0.5f), 0, 255);
         } else {
             rr = gg = bb = std::clamp(int(y * 255.0f + 0.5f), 0, 255);
         }

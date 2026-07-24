@@ -151,6 +151,11 @@ void HistogramView::paintEvent(QPaintEvent*) {
     const int curveCh = (m_active < 0 || m_active >= ch) ? 0 : m_active;
     const ChannelStretch cw = m_model->channel(curveCh);
     std::vector<float> lut = buildLut(m_model->fn(), cw, m_model->ghs(), N);
+    // The curve must show the FULL data→display mapping: post-stretch tone
+    // adjustments are part of it (colour ops are cross-channel — not drawable
+    // per channel; they show in the image and colorbar).
+    if (!m_model->adjust().toneIdentity())
+        for (float& v : lut) v = applyTone(v, m_model->adjust());
     const double wDenom = std::max(1e-6, cw.white - cw.black);
     double va, vb; viewRange(va, vb);
     QPainterPath curve;
