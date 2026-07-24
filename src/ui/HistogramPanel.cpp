@@ -12,6 +12,7 @@
 #include <QLineEdit>
 #include <QDoubleValidator>
 #include <QLocale>
+#include <QEvent>
 #include <algorithm>
 #include <cmath>
 
@@ -23,6 +24,20 @@ static QPushButton* tab(const QString& text) {
     b->setCursor(Qt::PointingHandCursor);
     return b;
 }
+
+// Wheel adjusts a slider ONLY once it has been clicked (has focus) — hovering
+// a slider while wheel-zooming the panel must not silently edit the display.
+class WheelWhenFocused : public QObject {
+public:
+    using QObject::QObject;
+    bool eventFilter(QObject* o, QEvent* e) override {
+        if (e->type() == QEvent::Wheel) {
+            auto* w = qobject_cast<QWidget*>(o);
+            if (w && !w->hasFocus()) { e->ignore(); return true; }
+        }
+        return QObject::eventFilter(o, e);
+    }
+};
 
 HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     : QWidget(parent), m_model(model) {
@@ -169,6 +184,19 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
             { "Saturation",-100, 100, "Saturation about luminance" },
             { "Vibrance", -100, 100, "Saturation weighted to muted pixels (protects stars)" },
         };
+        // Grid placement pairs complementary controls across the two columns:
+        //   Bright|Contrast, Highlights|Shadows, White pt|Black pt,
+        //   Gamma|Temp, Tint|Hue, Saturation|Vibrance.
+        // (defs[] order is the model/index order — do not reorder it.)
+        const int place[kAdjSliders][2] = {   // slider index -> {row, column}
+            /*0 Bright*/     {0, 0}, /*1 Contrast*/ {0, 1},
+            /*2 Gamma*/      {3, 0}, /*3 Shadows*/  {1, 1},
+            /*4 Highlights*/ {1, 0}, /*5 Black pt*/ {2, 1},
+            /*6 White pt*/   {2, 0}, /*7 Temp*/     {3, 1},
+            /*8 Tint*/       {4, 0}, /*9 Hue*/      {4, 1},
+            /*10 Saturation*/{5, 0}, /*11 Vibrance*/{5, 1},
+        };
+        auto* wheelGuard = new WheelWhenFocused(this);
         for (int i = 0; i < kAdjSliders; ++i) {
             auto* lb = new QLabel(defs[i].name);
             lb->setStyleSheet("color:#7e8b98; font-size:10px;");
@@ -176,15 +204,24 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
             s->setRange(defs[i].lo, defs[i].hi);
             s->setValue(0);
             s->setToolTip(defs[i].tip);
+            s->setFocusPolicy(Qt::ClickFocus);        // click first, then wheel works
+            s->setSingleStep(1);
+            s->setPageStep(5);
+            s->installEventFilter(wheelGuard);
             m_adjSlider[i] = s;
-            ag->addWidget(lb, i / 2, (i % 2) * 2);
-            ag->addWidget(s,  i / 2, (i % 2) * 2 + 1);
+            ag->addWidget(lb, place[i][0], place[i][1] * 2);
+            ag->addWidget(s,  place[i][0], place[i][1] * 2 + 1);
             connect(s, &QSlider::valueChanged, this, &HistogramPanel::onAdjChanged);
         }
         ag->setColumnStretch(1, 1);
         ag->setColumnStretch(3, 1);
         root->addLayout(ag);
         connect(adjReset, &QPushButton::clicked, this, [this] { m_model->setAdjust(AdjustParams{}); });
+        // Same click-then-wheel behaviour for the GHS sliders.
+        for (QSlider* s : { m_dSlider, m_bSlider }) {
+            s->setFocusPolicy(Qt::ClickFocus);
+            s->installEventFilter(wheelGuard);
+        }
     }
 
     // --- Auto / Reset ---
