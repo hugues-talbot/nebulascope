@@ -20,8 +20,12 @@ struct SaveResult {
 
 struct SaveOptions {
     // XISF data-block compression (ignored by the FITS backend).
+    // Default None: older libXISF builds emit (byte-shuffled) compressed
+    // blocks that PixInsight decodes as structured noise — uncompressed
+    // blocks are read identically everywhere. Re-enable LZ4 only after
+    // verifying PI round-trip with your installed libXISF.
     enum class Compression { None, Zlib, LZ4, LZ4HC, Zstd };
-    Compression xisfCompression = Compression::LZ4;
+    Compression xisfCompression = Compression::None;
     int  compressionLevel = -1;   // -1 = codec default
     bool writeHeader      = true;  // emit FITS cards / XISF properties
 };
