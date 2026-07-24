@@ -72,7 +72,8 @@ private slots:
     void pasteStretchToSelected(bool normalized);   // apply to selected list rows
     void pasteStretchToAll(bool normalized);        // apply to every list row
     void onListContextMenu(const QPoint& pos);      // right-click on the image list
-    void combineChannels();                         // Tools ▸ Combine Channels…
+    void combineChannels();
+    void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:
     // Load a list file (one path per line; blanks and #-comments ignored) and

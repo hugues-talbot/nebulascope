@@ -58,6 +58,7 @@ add_executable(nebulascope
     ui/InfoPanel.cpp
     ui/AnnotationLayer.cpp
     ui/CombineDialog.cpp
+    ui/StarCombineDialog.cpp
     ui/MainWindow.cpp
     ui/RotateDialog.cpp
     ui/ViewGrid.cpp

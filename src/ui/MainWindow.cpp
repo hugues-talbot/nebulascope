@@ -5,6 +5,7 @@
 #include "ui/ViewGrid.h"
 #include "ui/InfoPanel.h"
 #include "ui/CombineDialog.h"
+#include "ui/StarCombineDialog.h"
 #include "io/ImageReader.h"
 #include "io/FitsReader.h"
 #include "app/AppInfo.h"
@@ -1025,6 +1026,7 @@ void MainWindow::buildMenusAndToolbar() {
     // Tools — pixel-math utilities.
     QMenu* tools = menuBar()->addMenu("&Tools");
     acts["combine_channels"] = tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
+    acts["combine_stars"] = tools->addAction("Combine &Stars (screen)…", this, &MainWindow::combineStars);
     acts["transport_colors"] = tools->addAction("&Transport Colors from Reference…", this, &MainWindow::transportColorsFromRef);
     acts["import_sextractor"] = tools->addAction("Import &SExtractor Catalog…", this, &MainWindow::importSexCatalog);
 
@@ -1349,6 +1351,61 @@ void MainWindow::combineChannels() {
             }
             m_model.setFn(StretchFn::Linear);
         }
+    }
+}
+
+// Tools ▸ Combine Stars: gather the RGB (or mono) images in the list, run the
+// screen-blend dialog on their DISPLAY renditions, add the result to the list.
+void MainWindow::combineStars() {
+    std::vector<StarCombineDialog::Source> srcs;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* item = m_fileList->item(i);
+        const QString p = item->data(Qt::UserRole).toString();
+        std::shared_ptr<ImageData> img;
+        auto syn = m_synthetic.constFind(p);
+        if (syn != m_synthetic.constEnd()) img = syn.value();
+        else {
+            int hduReq = -1;
+            const QString base = splitHduKey(p, hduReq);
+            io::LoadOptions lopts;
+            lopts.fitsHdu = hduReq;
+            io::LoadResult res = io::loadImage(base, lopts);
+            if (!res.ok) continue;
+            img = std::make_shared<ImageData>(std::move(res.image));
+        }
+        if (!img || !img->isValid()) continue;
+        // "As displayed": each image goes through its own stretch memory (or
+        // the live model for the shown image) — screening operates on the two
+        // renditions the user actually prepared.
+        StretchModel::State st = (p == m_currentPath) ? m_model.state()
+                                                      : m_stfByPath.value(p);
+        std::function<void(ImageData&)> toDisplay;
+        if (st.valid) {
+            toDisplay = [st](ImageData& d) {
+                StretchModel local;
+                local.setState(st);
+                d = DisplayRenderer::renderFloat(d, local);
+            };
+        }
+        srcs.push_back({ item->text(), img, std::move(toDisplay) });
+    }
+    if (srcs.size() < 2) {
+        QMessageBox::information(this, "Combine Stars",
+            "Load the starless and the stars-only image into the list first.");
+        return;
+    }
+    StarCombineDialog dlg(std::move(srcs), this);
+    if (dlg.exec() == QDialog::Accepted && dlg.hasResult()) {
+        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+        ImageData out = dlg.result();
+        addSyntheticImage(dlg.resultName(), std::move(out));
+        // Screen output is display-ready [0,1]: show it 1:1.
+        for (int c = 0; c < 3; ++c) {
+            m_model.setRange(c, 0.0, 1.0);
+            ChannelStretch cs; cs.black = 0.0; cs.mid = 0.5; cs.white = 1.0;
+            m_model.setChannel(c, cs);
+        }
+        m_model.setFn(StretchFn::Linear);
     }
 }
 
