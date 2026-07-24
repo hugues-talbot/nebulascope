@@ -2,7 +2,9 @@
 
 #include <QFileInfo>
 #include <algorithm>
+#include <cmath>
 #include <cstring>
+#include <limits>
 
 #include <libxisf.h>   // from https://gitea.nouspiro.space/nou/libXISF
 
@@ -59,9 +61,46 @@ SaveResult XisfWriter::save(const QString& path, const ImageData& image,
                           toXisfFormat(image.format()),
                           ch == 3 ? LibXISF::Image::RGB : LibXISF::Image::Gray);
 
-        // Planar layout matches on both sides -> straight copy.
-        const std::size_t n = std::min<std::size_t>(image.byteSize(), im.imageDataSize());
-        std::memcpy(im.imageData(), image.bytes().data(), n);
+        // PixInsight expects floating-point XISF samples normalized to [0,1]
+        // (the spec's bounds convention); out-of-range floats render there as
+        // noise. Rescale float data at save and record the mapping in FITS
+        // keywords so the original range is recoverable.
+        const bool isFloat = image.format() == SampleFormat::Float32 ||
+                             image.format() == SampleFormat::Float64;
+        double lo = 0.0, hi = 1.0;
+        bool rescale = false;
+        if (isFloat) {
+            lo = std::numeric_limits<double>::infinity();
+            hi = -std::numeric_limits<double>::infinity();
+            const std::size_t n = image.samplesPerChannel();
+            for (int c = 0; c < ch; ++c) {
+                const float* p = image.plane<float>(c);
+                for (std::size_t i = 0; i < n; ++i) {
+                    const float v = p[i];
+                    if (!std::isfinite(v)) continue;
+                    if (v < lo) lo = v;
+                    if (v > hi) hi = v;
+                }
+            }
+            if (!std::isfinite(lo) || hi <= lo) { lo = 0.0; hi = 1.0; }
+            rescale = lo < 0.0 || hi > 1.0;
+        }
+
+        if (rescale && image.format() == SampleFormat::Float32) {
+            const double s = 1.0 / (hi - lo);
+            const std::size_t n = image.samplesPerChannel();
+            float* dst = reinterpret_cast<float*>(im.imageData());
+            for (int c = 0; c < ch; ++c) {
+                const float* p = image.plane<float>(c);
+                float* o = dst + std::size_t(c) * n;
+                for (std::size_t i = 0; i < n; ++i)
+                    o[i] = std::isfinite(p[i]) ? float((p[i] - lo) * s) : 0.0f;
+            }
+        } else {
+            // Planar layout matches on both sides -> straight copy.
+            const std::size_t n = std::min<std::size_t>(image.byteSize(), im.imageDataSize());
+            std::memcpy(im.imageData(), image.bytes().data(), n);
+        }
 
         if (opts.writeHeader) {
             for (const auto& c : header.cards) {
@@ -71,6 +110,17 @@ SaveResult XisfWriter::save(const QString& path, const ImageData& image,
                 kw.comment = c.comment.toStdString();
                 im.addFITSKeyword(kw);
             }
+        }
+        if (rescale) {
+            // v_original = NSSCALE * v_stored + NSZERO
+            LibXISF::FITSKeyword k1;
+            k1.name = "NSSCALE"; k1.value = std::to_string(hi - lo);
+            k1.comment = "NebulaScope: original = NSSCALE*stored + NSZERO";
+            im.addFITSKeyword(k1);
+            LibXISF::FITSKeyword k2;
+            k2.name = "NSZERO"; k2.value = std::to_string(lo);
+            k2.comment = "NebulaScope: float data normalized to [0,1] for XISF";
+            im.addFITSKeyword(k2);
         }
 
         // Compression is set per data block on the image before writing.
