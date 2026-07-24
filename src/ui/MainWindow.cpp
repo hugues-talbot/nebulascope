@@ -1863,12 +1863,18 @@ void MainWindow::displayPath(const QString& path) {
     }
 
     // Auto-load the sidecar annotation file on the first visit to this image.
+    bool sidecarAdjValid = false;              // adjustments read from the sidecar,
+    AdjustParams sidecarAdj;                   // applied after the stretch is set up
     if (Preferences::get().autoLoadSidecar && !m_annByPath.contains(path)) {
         const QString sc = annotationSidecar(path);
         if (!sc.isEmpty() && QFile::exists(sc)) {
             QFile f(sc);
             if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
                 const QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+                if (doc.object().contains(QLatin1String("adjustments"))) {
+                    sidecarAdj = adjustFromJson(doc.object()["adjustments"].toObject());
+                    sidecarAdjValid = true;
+                }
                 std::vector<Annotation> anns = AnnotationLayer::fromJson(doc);
                 if (!anns.empty()) {
                     // The sidecar records the orientation the annotations were
@@ -1924,6 +1930,9 @@ void MainWindow::displayPath(const QString& path) {
         m_stfByPath.insert(path, st);                    // persist finalized (flag cleared)
     } else {
         m_model.linearWindow(stats);                     // first visit: gentle linear window (min → p99)
+        // Adjustments never leak across images: reset to identity, or to what
+        // this image's sidecar carries.
+        m_model.setAdjust(sidecarAdjValid ? sidecarAdj : AdjustParams{});
     }
 
     m_view->setSource(&m_image);
@@ -2653,6 +2662,34 @@ void MainWindow::closeEvent(QCloseEvent* e) {
     else e->ignore();
 }
 
+// (De)serialize the display adjustments carried in annotation sidecars.
+static QJsonObject adjustToJson(const AdjustParams& a) {
+    QJsonObject o;
+    o["brightness"] = a.brightness;   o["contrast"]   = a.contrast;
+    o["gamma"]      = a.gamma;        o["shadows"]    = a.shadows;
+    o["highlights"] = a.highlights;   o["blackpoint"] = a.blackpoint;
+    o["whitepoint"] = a.whitepoint;   o["temperature"]= a.temperature;
+    o["tint"]       = a.tint;         o["hue"]        = a.hue;
+    o["saturation"] = a.saturation;   o["vibrance"]   = a.vibrance;
+    return o;
+}
+static AdjustParams adjustFromJson(const QJsonObject& o) {
+    AdjustParams a;
+    a.brightness  = o.value("brightness").toDouble(0.0);
+    a.contrast    = o.value("contrast").toDouble(0.0);
+    a.gamma       = o.value("gamma").toDouble(1.0);
+    a.shadows     = o.value("shadows").toDouble(0.0);
+    a.highlights  = o.value("highlights").toDouble(0.0);
+    a.blackpoint  = o.value("blackpoint").toDouble(0.0);
+    a.whitepoint  = o.value("whitepoint").toDouble(1.0);
+    a.temperature = o.value("temperature").toDouble(0.0);
+    a.tint        = o.value("tint").toDouble(0.0);
+    a.hue         = o.value("hue").toDouble(0.0);
+    a.saturation  = o.value("saturation").toDouble(0.0);
+    a.vibrance    = o.value("vibrance").toDouble(0.0);
+    return a;
+}
+
 bool MainWindow::writeAnnotationsFile(const QString& path) {
     const auto& anns = m_annByPath.value(m_currentPath);
     QFile f(path);
@@ -2661,34 +2698,40 @@ bool MainWindow::writeAnnotationsFile(const QString& path) {
         return false;
     }
     QJsonDocument doc = AnnotationLayer::toJson(anns);
+    QJsonObject root = doc.object();
     // Record the image orientation these annotations refer to, so a fresh
     // session can rotate/flip the reloaded image back into agreement.
     const QStringList ops = m_xformByPath.value(m_currentPath);
     if (!ops.isEmpty()) {
-        QJsonObject root = doc.object();
         QJsonArray arr;
         for (const QString& o : ops) arr.append(o);
         root["orientation"] = arr;
-        doc.setObject(root);
     }
+    // Display adjustments are per-image state too — carried in the sidecar and
+    // restored on the next session's first visit.
+    if (!m_model.adjust().identity())
+        root["adjustments"] = adjustToJson(m_model.adjust());
+    doc.setObject(root);
     f.write(doc.toJson(QJsonDocument::Indented));
     m_annDirty.remove(m_currentPath);
-    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s) to %2")
-                                 .arg(anns.size()).arg(QFileInfo(path).fileName()), 3000);
+    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s)%2 to %3")
+                                 .arg(anns.size())
+                                 .arg(m_model.adjust().identity() ? QString() : QStringLiteral(" + adjustments"))
+                                 .arg(QFileInfo(path).fileName()), 3000);
     return true;
 }
 
 // Silent save: overwrite the image's sidecar ("<image>_annotation.json") — the
 // file displayPath() auto-loads. Falls back to the dialog for in-memory images.
 void MainWindow::saveAnnotations() {
-    if (m_annByPath.value(m_currentPath).empty()) return;
+    if (m_annByPath.value(m_currentPath).empty() && m_model.adjust().identity()) return;
     const QString sc = annotationSidecar(m_currentPath);
     if (sc.isEmpty()) { saveAnnotationsAs(); return; }
     writeAnnotationsFile(sc);
 }
 
 void MainWindow::saveAnnotationsAs() {
-    if (m_annByPath.value(m_currentPath).empty()) return;
+    if (m_annByPath.value(m_currentPath).empty() && m_model.adjust().identity()) return;
     const QString sc = annotationSidecar(m_currentPath);
     const QString suggest = sc.isEmpty() ? QStringLiteral("annotation.json") : sc;
     const QString path = QFileDialog::getSaveFileName(
@@ -2722,7 +2765,15 @@ void MainWindow::loadAnnotationsFile(const QString& path) {
     }
     QString err;
     std::vector<Annotation> anns = AnnotationLayer::fromJson(doc, &err);
+    // Adjustments load even from an annotation-less sidecar.
+    const bool hasAdj = doc.object().contains(QLatin1String("adjustments"));
+    if (hasAdj)
+        m_model.setAdjust(adjustFromJson(doc.object()["adjustments"].toObject()));
     if (anns.empty()) {
+        if (hasAdj) {
+            statusBar()->showMessage("Loaded display adjustments (no annotations in file)", 3000);
+            return;
+        }
         QMessageBox::warning(this, "Load failed", err.isEmpty() ? QStringLiteral("No annotations in file") : err);
         return;
     }
@@ -2741,7 +2792,9 @@ void MainWindow::loadAnnotationsFile(const QString& path) {
     refreshAnnotations();
     pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
     rememberRecent(QStringLiteral("recentJson"), path, Preferences::get().recentJsonMax);
-    statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)").arg(m_annByPath[m_currentPath].size()), 3000);
+    statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)%2")
+        .arg(m_annByPath[m_currentPath].size())
+        .arg(hasAdj ? QStringLiteral(" + adjustments") : QString()), 3000);
 }
 
 // ---- recent-files history ----------------------------------------------------
