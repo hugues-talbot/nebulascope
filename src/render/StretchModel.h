@@ -7,6 +7,7 @@
 #include "core/Stretch.h"
 #include "core/ImageStats.h"
 #include "core/Colormap.h"
+#include "core/Adjustments.h"
 #include <QObject>
 #include <vector>
 
@@ -41,6 +42,11 @@ public:
     double splitThreshold() const { return m_split; }
     void setSplitThreshold(double t) { t = t < 0 ? 0 : (t > 1 ? 1 : t); if (t != m_split) { m_split = t; emit changed(); } }
 
+    // Post-stretch display adjustments (brightness/contrast, WB, saturation…)
+    // — applied after the transfer function, before colormap/quantisation.
+    const AdjustParams& adjust() const { return m_adj; }
+    void setAdjust(const AdjustParams& a) { m_adj = a; emit changed(); }
+
     double lo(int c) const { return m_lo[clampC(c)]; }
     double hi(int c) const { return m_hi[clampC(c)]; }
     void setRange(int c, double lo, double hi) { c = clampC(c); m_lo[c] = lo; m_hi[c] = hi; }
@@ -71,11 +77,13 @@ public:
         bool           cmapInvert = false;
         bool           cmapSplit  = false;
         double         split = 0.25;
+        AdjustParams   adj;                   // post-stretch display adjustments
     };
     State state() const {
         State s;
         s.valid = true; s.fn = m_fn; s.count = m_count; s.ghs = m_ghs; s.cmap = m_cmap; s.split = m_split;
         s.cmapInvert = m_cmapInvert; s.cmapSplit = m_cmapSplit;
+        s.adj = m_adj;
         for (int c = 0; c < 3; ++c) { s.chan[c] = m_chan[c]; s.lo[c] = m_lo[c]; s.hi[c] = m_hi[c]; }
         return s;
     }
@@ -83,6 +91,7 @@ public:
         if (!s.valid) return;
         m_fn = s.fn; m_count = s.count; m_ghs = s.ghs; m_cmap = s.cmap; m_split = s.split;
         m_cmapInvert = s.cmapInvert; m_cmapSplit = s.cmapSplit;
+        m_adj = s.adj;
         for (int c = 0; c < 3; ++c) { m_chan[c] = s.chan[c]; m_lo[c] = s.lo[c]; m_hi[c] = s.hi[c]; }
         emit changed();
     }
@@ -119,6 +128,7 @@ private:
     double m_split = 0.25;
     double m_lo[3] = {0, 0, 0};
     double m_hi[3] = {1, 1, 1};
+    AdjustParams m_adj;
 };
 
 } // namespace astro

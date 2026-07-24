@@ -28,6 +28,7 @@ private slots:
     void syncFromModel();
     void onParamEdited(int idx);
     void onRgbEdited(int c, int idx);   // 3×3 grid: channel c, 0=B 1=M 2=W
+    void onAdjChanged();                // any adjustment slider moved
 
 private:
     int  editChannel() const;
@@ -51,6 +52,13 @@ private:
     QWidget*   m_rgbBox = nullptr;
     QLineEdit* m_rgbEdit[3][3] = {};
     QLabel*    m_rgbColLbl[3] = {};
+    // Post-stretch display adjustments (always visible, any stretch mode).
+    // Order: bright, contrast, gamma, shadows, highlights, blackpt, whitept,
+    // temp, tint, hue, saturation, vibrance. Indices >= kAdjColorFrom are the
+    // cross-channel colour ops (disabled for mono sources).
+    static constexpr int kAdjSliders = 12;
+    static constexpr int kAdjColorFrom = 7;
+    QSlider* m_adjSlider[kAdjSliders] = {};
 };
 
 } // namespace astro

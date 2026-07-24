@@ -81,6 +81,7 @@ void StretchModel::linearWindow(const std::vector<ChannelStats>& stats) {
 
 void StretchModel::reset() {
     m_fn = StretchFn::Linear;
+    m_adj = AdjustParams{};                 // adjustments are display state too
     for (int c = 0; c < 3; ++c) m_chan[c] = ChannelStretch{};
     m_ghs = GHSParams{};
     emit changed();

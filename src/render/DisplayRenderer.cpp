@@ -1,6 +1,7 @@
 #include "render/DisplayRenderer.h"
 #include "core/Stretch.h"
 #include "core/Colormap.h"
+#include "core/Adjustments.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -64,6 +65,12 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
         for (int c = 0; c < 3; ++c)
             lut[c] = buildLut(model.fn(), model.channel(c), model.ghs(), N);
     }
+    // Post-stretch tone adjustments compose into the transfer LUTs — free per
+    // pixel. Colour adjustments are cross-channel and handled per pixel below.
+    const AdjustParams& adj = model.adjust();
+    if (!adj.toneIdentity())
+        for (int c = 0; c < 3; ++c)
+            for (float& v : lut[c]) v = applyTone(v, adj);
 
     // Hoist the windowing out of the inner loop: windowCoord(v) is affine in v,
     //   t = ((v-lo)/(hi-lo) - black) / (white-black)  =  v*A + B  (then clamp),
@@ -153,6 +160,27 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
         return out;
     }
 
+    if (ch >= 3 && !adj.colorIdentity()) {
+        // Cross-channel colour ops (WB / hue / saturation / vibrance).
+        parallelRows(h, [&](int y0, int y1) {
+            for (int y = y0; y < y1; ++y) {
+                uchar* row = base + qsizetype(y) * bpl;
+                const std::size_t off = std::size_t(y) * w;
+                for (int x = 0; x < w; ++x) {
+                    const std::size_t i = off + x;
+                    float r = mapNorm(0, p0[i], i);
+                    float g = mapNorm(1, p1[i], i);
+                    float b = mapNorm(2, p2[i], i);
+                    applyColor(r, g, b, adj);
+                    row[x * 3 + 0] = to8(r, i, 0);
+                    row[x * 3 + 1] = to8(g, i, 1);
+                    row[x * 3 + 2] = to8(b, i, 2);
+                }
+            }
+        });
+        return out;
+    }
+
     parallelRows(h, [&](int y0, int y1) {
         for (int y = y0; y < y1; ++y) {
             uchar* row = base + qsizetype(y) * bpl;
@@ -187,6 +215,10 @@ ImageData DisplayRenderer::renderFloat(const ImageData& img, const StretchModel&
         for (int c = 0; c < 3; ++c)
             lut[c] = buildLut(model.fn(), model.channel(c), model.ghs(), N);
     }
+    const AdjustParams& adj = model.adjust();      // same composition as render()
+    if (!adj.toneIdentity())
+        for (int c = 0; c < 3; ++c)
+            for (float& v : lut[c]) v = applyTone(v, adj);
     double A[3], B[3];
     for (int c = 0; c < 3; ++c) {
         const ChannelStretch cs = model.channel(c);
@@ -239,6 +271,15 @@ ImageData DisplayRenderer::renderFloat(const ImageData& img, const StretchModel&
         parallelRows(h, [&](int y0, int y1) {
             for (std::size_t i = std::size_t(y0) * w, e = std::size_t(y1) * w; i < e; ++i)
                 o[i] = mapF(ci, p[i]);
+        });
+    }
+    if (ch >= 3 && !adj.colorIdentity()) {
+        float* o0 = out.plane<float>(0);
+        float* o1 = out.plane<float>(1);
+        float* o2 = out.plane<float>(2);
+        parallelRows(h, [&](int y0, int y1) {
+            for (std::size_t i = std::size_t(y0) * w, e = std::size_t(y1) * w; i < e; ++i)
+                applyColor(o0[i], o1[i], o2[i], adj);
         });
     }
     (void)n;

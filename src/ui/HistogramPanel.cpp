@@ -13,6 +13,7 @@
 #include <QDoubleValidator>
 #include <QLocale>
 #include <algorithm>
+#include <cmath>
 
 namespace astro {
 
@@ -136,6 +137,56 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     m_bSlider = addSlider("b · focus", -500, 1500, 600);    // /100
     root->addWidget(m_ghsBox);
 
+    // --- post-stretch display adjustments (always visible, any mode) ---
+    {
+        auto* hdr = new QHBoxLayout();
+        auto* al = new QLabel("ADJUST");
+        al->setStyleSheet("color:#5b6876; font-size:10px; letter-spacing:1.5px; font-weight:600;");
+        auto* adjReset = new QPushButton("Reset");
+        adjReset->setCursor(Qt::PointingHandCursor);
+        adjReset->setStyleSheet("font-size:10px; padding:1px 8px;");
+        adjReset->setToolTip("Reset adjustments only (stretch untouched)");
+        hdr->addWidget(al);
+        hdr->addStretch();
+        hdr->addWidget(adjReset);
+        root->addLayout(hdr);
+
+        auto* ag = new QGridLayout();
+        ag->setHorizontalSpacing(10);
+        ag->setVerticalSpacing(2);
+        struct Def { const char* name; int lo, hi; const char* tip; };
+        const Def defs[kAdjSliders] = {
+            { "Bright",   -100, 100, "Brightness" },
+            { "Contrast", -100, 100, "Contrast (pivot at mid-gray)" },
+            { "Gamma",    -100, 100, "Gamma 0.33–3 (log scale)" },
+            { "Shadows",  -100, 100, "Lift / crush dark tones (black point pinned)" },
+            { "Highlights",-100, 100, "Boost / recover bright tones (white point pinned)" },
+            { "Black pt",    0, 100, "Clip-in from black (display space)" },
+            { "White pt",    0, 100, "Clip-in from white (display space)" },
+            { "Temp",     -100, 100, "Colour temperature: blue ↔ amber" },
+            { "Tint",     -100, 100, "Tint: green ↔ magenta" },
+            { "Hue",      -180, 180, "Hue rotation (degrees)" },
+            { "Saturation",-100, 100, "Saturation about luminance" },
+            { "Vibrance", -100, 100, "Saturation weighted to muted pixels (protects stars)" },
+        };
+        for (int i = 0; i < kAdjSliders; ++i) {
+            auto* lb = new QLabel(defs[i].name);
+            lb->setStyleSheet("color:#7e8b98; font-size:10px;");
+            auto* s = new QSlider(Qt::Horizontal);
+            s->setRange(defs[i].lo, defs[i].hi);
+            s->setValue(0);
+            s->setToolTip(defs[i].tip);
+            m_adjSlider[i] = s;
+            ag->addWidget(lb, i / 2, (i % 2) * 2);
+            ag->addWidget(s,  i / 2, (i % 2) * 2 + 1);
+            connect(s, &QSlider::valueChanged, this, &HistogramPanel::onAdjChanged);
+        }
+        ag->setColumnStretch(1, 1);
+        ag->setColumnStretch(3, 1);
+        root->addLayout(ag);
+        connect(adjReset, &QPushButton::clicked, this, [this] { m_model->setAdjust(AdjustParams{}); });
+    }
+
     // --- Auto / Reset ---
     auto* btnRow = new QHBoxLayout();
     auto* autoBtn = new QPushButton("Auto STF");
@@ -197,6 +248,30 @@ void HistogramPanel::syncFromModel() {
     QSignalBlocker bd(m_dSlider), bb(m_bSlider);
     m_dSlider->setValue(int(m_model->ghs().D * 100));
     m_bSlider->setValue(int(m_model->ghs().b * 100));
+    // Adjustment sliders follow the model (per-image restore, reset, paste).
+    // Colour ops need RGB; keep those sliders disabled for mono sources.
+    {
+        const AdjustParams& a = m_model->adjust();
+        const int av[kAdjSliders] = {
+            int(std::lround(a.brightness * 100)),
+            int(std::lround(a.contrast * 100)),
+            int(std::lround(std::log(std::max(0.05, a.gamma)) / std::log(3.0) * 100)),
+            int(std::lround(a.shadows * 100)),
+            int(std::lround(a.highlights * 100)),
+            int(std::lround(a.blackpoint * 200)),
+            int(std::lround((1.0 - a.whitepoint) * 200)),
+            int(std::lround(a.temperature * 100)),
+            int(std::lround(a.tint * 100)),
+            int(std::lround(a.hue)),
+            int(std::lround(a.saturation * 100)),
+            int(std::lround(a.vibrance * 100)) };
+        const bool rgbSrc = m_src && m_src->channels() >= 3;
+        for (int i = 0; i < kAdjSliders; ++i) {
+            QSignalBlocker bl(m_adjSlider[i]);
+            m_adjSlider[i]->setValue(av[i]);
+            if (i >= kAdjColorFrom) m_adjSlider[i]->setEnabled(rgbSrc);
+        }
+    }
     m_view->recomputeHistogram();
 
     // --- editable parameter fields ---
@@ -305,6 +380,23 @@ void HistogramPanel::onRgbEdited(int c, int idx) {
     else if (idx == 1) cs.mid   = std::min(cs.white - eps, std::max(cs.black + eps, nv));
     else               cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
     m_model->setChannel(c, cs);
+}
+
+void HistogramPanel::onAdjChanged() {
+    AdjustParams a;
+    a.brightness  = m_adjSlider[0]->value() / 100.0;
+    a.contrast    = m_adjSlider[1]->value() / 100.0;
+    a.gamma       = std::pow(3.0, m_adjSlider[2]->value() / 100.0);
+    a.shadows     = m_adjSlider[3]->value() / 100.0;
+    a.highlights  = m_adjSlider[4]->value() / 100.0;
+    a.blackpoint  = m_adjSlider[5]->value() / 200.0;
+    a.whitepoint  = 1.0 - m_adjSlider[6]->value() / 200.0;
+    a.temperature = m_adjSlider[7]->value() / 100.0;
+    a.tint        = m_adjSlider[8]->value() / 100.0;
+    a.hue         = m_adjSlider[9]->value();
+    a.saturation  = m_adjSlider[10]->value() / 100.0;
+    a.vibrance    = m_adjSlider[11]->value() / 100.0;
+    m_model->setAdjust(a);
 }
 
 } // namespace astro
