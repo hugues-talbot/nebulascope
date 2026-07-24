@@ -1,0 +1,39 @@
+# NebulaScope smoke test — run from the repo root:
+#   ./build/src/nebulascope --run tests/smoke.nsc
+# Headless (CI):  QT_QPA_PLATFORM=offscreen … --run tests/smoke.nsc
+# Uses the committed synthetic image (128x128 Float32 gradient + gaussian
+# stars, values ~50..1340, pixel [0,0] NaN).
+
+open tests/testdata/sample.fits
+sleep 500                       # let the decode + first render land
+
+assert size 128 128
+assert channels 1
+assert range 50.4 1339.9 5
+
+# Orientation round-trip: the border-bug regression, end to end.
+rotate 45
+sleep 200
+rotate 0
+sleep 200
+assert size 128 128
+
+# Lossless geometry round-trips preserve the data extremes.
+rot90 cw
+rot90 ccw
+flip h
+flip h
+assert size 128 128
+assert range 50.4 1339.9 5
+
+# Stretch + adjustments exercise the full render path.
+autostf
+fn asinh
+adjust saturation 0.3
+adjust gamma 1.4
+reset
+
+export /tmp/smoke_view.png
+save /tmp/smoke_data.fits
+
+quit
