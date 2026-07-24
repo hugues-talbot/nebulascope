@@ -92,6 +92,7 @@ message(STATUS "libXISF: ${XISF_LIB}  (headers: ${XISF_INCLUDE_DIR})")
 # find_library(LZ4_LIB lz4)
 # find_library(PUGIXML_LIB pugixml)
 
+include(CTest)                      # defines BUILD_TESTING (default ON)
 add_subdirectory(src)
 
 # ---- Linux install + .deb packaging (cpack -G DEB) --------------------------

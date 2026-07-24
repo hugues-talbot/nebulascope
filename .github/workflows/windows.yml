@@ -115,6 +115,9 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
       # ---- Package a runnable zip -------------------------------------------
       - name: Deploy Qt + DLLs
         shell: pwsh
