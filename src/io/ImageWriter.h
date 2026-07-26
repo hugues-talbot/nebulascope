@@ -20,13 +20,14 @@ struct SaveResult {
 
 struct SaveOptions {
     // XISF data-block compression (ignored by the FITS backend).
-    // Default None: older libXISF builds emit (byte-shuffled) compressed
-    // blocks that PixInsight decodes as structured noise — uncompressed
-    // blocks are read identically everywhere. Re-enable LZ4 only after
-    // verifying PI round-trip with your installed libXISF.
+    // libXISF >= 0.2.13 output was verified spec-conformant (attributes +
+    // block bytes) for every codec, shuffled and not; the earlier "PixInsight
+    // shows noise" reports came from un-normalized float samples, not the
+    // compression path.
     enum class Compression { None, Zlib, LZ4, LZ4HC, Zstd };
-    Compression xisfCompression = Compression::None;
+    Compression xisfCompression = Compression::Zlib;
     int  compressionLevel = -1;   // -1 = codec default
+    bool xisfByteShuffle  = true;  // byte-shuffle blocks (better ratios on 16-bit/float)
     bool writeHeader      = true;  // emit FITS cards / XISF properties
 };
 

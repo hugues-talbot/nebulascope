@@ -5,6 +5,7 @@
 #include "core/ImageData.h"
 #include "io/ImageReader.h"
 #include "io/ImageWriter.h"
+#include <QFile>
 #include <QTemporaryDir>
 #include <QString>
 #include <cmath>
@@ -93,6 +94,46 @@ NS_TEST(xisf_writes_normalized_floats) {
     NS_CHECK(mn >= -1e-4f && mx <= 1.0f + 1e-4f);
     // And the shape survives the linear rescale.
     NS_CHECK(roundTripError(tmp.path(), "xisf", img, true) < 1e-3 * 60000.0);
+}
+
+NS_TEST(xisf_compressed_roundtrip_all_codecs) {
+    // Every codec (with byte shuffling) must engage in the file and round-trip
+    // exactly. The XML header is checked so a silent fallback to uncompressed
+    // blocks can't masquerade as a pass.
+    QTemporaryDir tmp;
+    using C = io::SaveOptions::Compression;
+    const struct { C codec; const char* attr; } cases[] = {
+        { C::None,  nullptr },
+        { C::Zlib,  "compression=\"zlib+sh:" },
+        { C::LZ4,   "compression=\"lz4+sh:" },
+        { C::LZ4HC, "compression=\"lz4hc+sh:" },
+        { C::Zstd,  "compression=\"" },   // zstd, or zlib where compiled out
+    };
+    ImageData img = makePattern(64, 48, 3, 0.0f, 1.0f);
+    int idx = 0;
+    for (const auto& tc : cases) {
+        const QString path = tmp.path() + QString("/codec%1.xisf").arg(idx++);
+        io::SaveOptions opts;
+        opts.xisfCompression = tc.codec;
+        NS_CHECK(io::saveImage(path, img, {}, opts).ok);
+
+        QFile f(path);
+        NS_CHECK(f.open(QIODevice::ReadOnly));
+        const QByteArray head = f.read(4096);
+        if (tc.attr) NS_CHECK(head.contains(tc.attr));
+        else         NS_CHECK(!head.contains("compression=\""));
+
+        io::LoadResult lr = io::loadImage(path);
+        NS_CHECK(lr.ok && lr.image.isValid());
+        double worst = 0.0;
+        for (int c = 0; c < img.channels(); ++c) {
+            const float* a = img.plane<float>(c);
+            const float* b = lr.image.plane<float>(c);
+            for (std::size_t i = 0; i < img.samplesPerChannel(); ++i)
+                worst = std::max(worst, std::fabs(double(b[i]) - double(a[i])));
+        }
+        NS_CHECK(worst < 1e-5);
+    }
 }
 
 NS_TEST(tiff_roundtrip_16bit) {

@@ -39,10 +39,12 @@ static LibXISF::DataBlock::CompressionCodec toXisfCodec(SaveOptions::Compression
         case SaveOptions::Compression::Zlib:  return C::Zlib;
         case SaveOptions::Compression::LZ4:   return C::LZ4;
         case SaveOptions::Compression::LZ4HC: return C::LZ4HC;
-        // Zstd was added in newer libXISF; fall back where it's unavailable.
-        case SaveOptions::Compression::Zstd:  return C::LZ4HC;
+        // ZSTD can be compiled out of libXISF; fall back to Zlib there.
+        case SaveOptions::Compression::Zstd:
+            return LibXISF::DataBlock::CompressionCodecSupported(C::ZSTD)
+                       ? C::ZSTD : C::Zlib;
     }
-    return C::LZ4;
+    return C::Zlib;
 }
 
 bool XisfWriter::canWrite(const QString& path) const {
@@ -124,7 +126,10 @@ SaveResult XisfWriter::save(const QString& path, const ImageData& image,
         }
 
         // Compression is set per data block on the image before writing.
-        im.setCompression(toXisfCodec(opts.xisfCompression), opts.compressionLevel);
+        const auto codec = toXisfCodec(opts.xisfCompression);
+        im.setCompression(codec, opts.compressionLevel);
+        im.setByteshuffling(opts.xisfByteShuffle &&
+                            codec != LibXISF::DataBlock::CompressionCodec::None);
 
         LibXISF::XISFWriter writer;
         writer.writeImage(im);
