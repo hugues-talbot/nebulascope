@@ -27,6 +27,7 @@ jobs:
         with:
           version: "6.7.*"
           arch: win64_msvc2019_64
+          modules: qtimageformats
           cache: true
 
       # ---- vcpkg: cfitsio + zlib + lz4 + pugixml ----------------------------

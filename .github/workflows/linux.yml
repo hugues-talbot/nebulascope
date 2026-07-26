@@ -25,7 +25,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
-            qt6-base-dev libcfitsio-dev libccfits-dev \
+            qt6-base-dev qt6-image-formats-plugins libcfitsio-dev libccfits-dev \
             zlib1g-dev liblz4-dev libpugixml-dev
 
       # ---- libXISF from source, cached --------------------------------------
