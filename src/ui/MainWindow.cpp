@@ -2040,6 +2040,24 @@ void MainWindow::displayPath(const QString& path) {
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count()), 4000);
 }
 
+// XISF only: ask which data-block compression to write (remembered for the
+// session, like JPEG quality / export bit depth). False = user cancelled.
+static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
+    static int lastChoice = 0;                         // 0 = Zstd
+    const QStringList choices{ "Zstd (smallest)",
+                               "Zlib (widest compatibility)",
+                               "Uncompressed" };
+    bool ok = false;
+    const QString c = QInputDialog::getItem(parent, "XISF compression",
+        "Data-block compression:", choices, lastChoice, false, &ok);
+    if (!ok) return false;
+    lastChoice = choices.indexOf(c);
+    using C = io::SaveOptions::Compression;
+    opts.xisfCompression = lastChoice == 0 ? C::Zstd
+                         : lastChoice == 1 ? C::Zlib : C::None;
+    return true;
+}
+
 // Save the CURRENT VIEW's non-linear edit as data: the stretch (window +
 // transfer + colormap for mono) is baked into Float32 [0,1] pixels at full
 // precision — unlike Export View As…, which quantises to 8-bit for pictures.
@@ -2049,12 +2067,15 @@ void MainWindow::saveStretched() {
         this, "Save stretched image", QString(),
         "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
     if (path.isEmpty()) return;
+    io::SaveOptions opts;
+    if (QFileInfo(path).suffix().toLower() == "xisf" &&
+        !askXisfCompression(this, opts)) return;
     ImageData baked = DisplayRenderer::renderFloat(m_image, m_model);
     if (!baked.isValid()) { QMessageBox::warning(this, "Save failed", "Could not bake the stretch."); return; }
     ImageHeader hdr = m_header;
     hdr.cards.push_back({ QStringLiteral("HISTORY"),
                           QStringLiteral("NebulaScope: baked display stretch"), QString() });
-    io::SaveResult sr = io::saveImage(path, baked, hdr);
+    io::SaveResult sr = io::saveImage(path, baked, hdr, opts);
     if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);
     else statusBar()->showMessage("Saved stretched " + QFileInfo(path).fileName(), 3000);
 }
@@ -2064,7 +2085,10 @@ void MainWindow::saveFile() {
     const QString path = QFileDialog::getSaveFileName(
         this, "Save image", QString(), "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
     if (path.isEmpty()) return;
-    io::SaveResult sr = io::saveImage(path, m_image, m_header);
+    io::SaveOptions opts;
+    if (QFileInfo(path).suffix().toLower() == "xisf" &&
+        !askXisfCompression(this, opts)) return;
+    io::SaveResult sr = io::saveImage(path, m_image, m_header, opts);
     if (!sr.ok) { QMessageBox::warning(this, "Save failed", sr.error); return; }
     statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
 

@@ -75,7 +75,8 @@ and never needs to know the source format.
   import); **Space/Shift+Space** blink between images (looping), with per-image
   stretch memory and zoom held across same-size frames; copy/paste stretches
   between images (normalized or absolute).
-- **Export** — *Save Data As* (FITS/XISF/16-bit TIFF), *Save Stretched As*
+- **Export** — *Save Data As* (FITS/XISF/16-bit TIFF, XISF with optional
+  Zstd/Zlib block compression), *Save Stretched As*
   (bake the display transfer into Float32 FITS/XISF/TIFF), and *Export View
   As* / *Export Zoomed Region As* (PNG/JPEG/TIFF/WebP, with JPEG quality and
   8/16-bit PNG/TIFF depth options).

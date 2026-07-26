@@ -339,9 +339,12 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list
   entry to the file. **XISF interop:** float data are normalized to [0,1]
   (PixInsight's convention; `NSSCALE`/`NSZERO` keywords record the original
-  range) and data blocks are uncompressed for maximum compatibility.
+  range). Saving XISF asks for **compression** — Zstd (smallest), Zlib
+  (widest compatibility), or Uncompressed; blocks are byte-shuffled for
+  better ratios, and the choice is remembered for the session.
 - **File ▸ Save Stretched As…** — bakes the current display transfer
-  (stretch + adjustments) into Float32 FITS/XISF/TIFF.
+  (stretch + adjustments) into Float32 FITS/XISF/TIFF. Same XISF
+  compression prompt.
 - **File ▸ Export View As…** (⌘E) — the *displayed* image (stretched,
   colormapped): PNG / JPEG / TIFF / WebP. JPEG asks for **quality**;
   PNG/TIFF ask for **8- or 16-bit** depth (16-bit is built from the float
