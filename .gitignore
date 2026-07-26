@@ -37,3 +37,4 @@ ui_*.h
 *.fit
 *.fts
 *.xisf
+/smoke_view.png

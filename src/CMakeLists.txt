@@ -102,4 +102,14 @@ if(BUILD_TESTING)
         target_link_libraries(test_${t} PRIVATE astro_core)
         add_test(NAME ${t} COMMAND test_${t})
     endforeach()
+
+    # End-to-end smoke test: the real app runs tests/smoke.nsc headless.
+    # cwd = repo root (the script opens tests/testdata/… and writes its
+    # smoke_* outputs there, gitignored); exit code = script failure count.
+    add_test(NAME smoke
+             COMMAND $<TARGET_FILE:nebulascope> --run ${CMAKE_SOURCE_DIR}/tests/smoke.nsc
+             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    set_tests_properties(smoke PROPERTIES
+                         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+                         TIMEOUT 120)
 endif()

@@ -1,6 +1,9 @@
 # NebulaScope smoke test — run from the repo root:
 #   ./build/src/nebulascope --run tests/smoke.nsc
 # Headless (CI):  QT_QPA_PLATFORM=offscreen … --run tests/smoke.nsc
+# Also registered as the `smoke` CTest (offscreen, cwd = repo root).
+# Outputs are written to the working directory (smoke_*.png/.fits/.xisf,
+# gitignored) — relative paths keep this portable to Windows runners.
 # Uses the committed synthetic image (128x128 Float32 gradient + gaussian
 # stars, values ~50..1340, pixel [0,0] NaN).
 
@@ -33,7 +36,16 @@ adjust saturation 0.3
 adjust gamma 1.4
 reset
 
-export /tmp/smoke_view.png
-save /tmp/smoke_data.fits
+export smoke_view.png
+save smoke_data.fits
+
+# XISF round-trip through the app: save (normalized to [0,1] with
+# NSSCALE/NSZERO keywords, zlib+shuffle blocks), reload, verify.
+save smoke_data.xisf
+open smoke_data.xisf
+sleep 500
+assert size 128 128
+assert channels 1
+assert range 0.0 1.0 0.01
 
 quit

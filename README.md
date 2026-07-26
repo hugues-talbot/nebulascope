@@ -137,8 +137,8 @@ cmake --build build
 Two layers, both run by CI on every push (all three platforms):
 
 ```sh
-ctest --test-dir build --output-on-failure     # unit tests: core math + IO round-trips
-./build/src/nebulascope --run tests/smoke.nsc  # scripted end-to-end smoke test
+ctest --test-dir build --output-on-failure     # runs everything: unit tests + smoke
+./build/src/nebulascope --run tests/smoke.nsc  # end-to-end smoke test on its own
 ```
 
 Unit tests cover the stretch/LUT invariants (monotonicity, the
