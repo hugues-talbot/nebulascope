@@ -323,8 +323,9 @@ nebulascope [options] [files...]
                          QT_QPA_PLATFORM=offscreen). Commands: open, show,
                          next/prev, split, fn, autostf [linked], reset,
                          adjust <name> <v>, rot90, flip, rotate, export, save,
-                         assert size|channels|pixel|range, sleep, quit — one
-                         per line, #-comments; see tests/smoke.nsc.
+                         assert size|channels|pixel|range, sleep,
+                         waitloaded [ms] (block until image + stats ready),
+                         quit — one per line, #-comments; see tests/smoke.nsc.
   -h, --help             This help.
 ```
 

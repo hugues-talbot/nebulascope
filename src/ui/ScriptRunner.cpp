@@ -4,6 +4,8 @@
 #include "render/DisplayRenderer.h"
 #include "io/ImageWriter.h"
 #include <QCoreApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QFile>
 #include <QListWidget>
 #include <QTextStream>
@@ -160,6 +162,21 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         io::SaveResult sr = io::saveImage(t[1], m_w->m_image, m_w->m_header);
         if (!sr.ok) { err = sr.error; return false; }
+        return true;
+    }
+    if (cmd == QLatin1String("waitloaded")) {
+        // Block (pumping the event loop) until the current image and its
+        // statistics are ready — deterministic where fixed sleeps race the
+        // async decode/render on slow machines (CI runners).
+        const int timeout = t.size() > 1 ? t[1].toInt() : 10000;
+        QElapsedTimer et; et.start();
+        while (et.elapsed() < timeout &&
+               (!m_w->m_image.isValid() || m_w->m_curStats.empty()))
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        if (!m_w->m_image.isValid() || m_w->m_curStats.empty()) {
+            err = QStringLiteral("image not loaded within %1 ms").arg(timeout);
+            return false;
+        }
         return true;
     }
     if (cmd == QLatin1String("assert")) return doAssert(t, err);

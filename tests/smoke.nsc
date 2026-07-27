@@ -8,7 +8,7 @@
 # stars, values ~50..1340, pixel [0,0] NaN).
 
 open tests/testdata/sample.fits
-sleep 500                       # let the decode + first render land
+waitloaded                      # block until decode + stats land (CI-safe)
 
 assert size 128 128
 assert channels 1
@@ -19,6 +19,7 @@ rotate 45
 sleep 200
 rotate 0
 sleep 200
+waitloaded
 assert size 128 128
 
 # Lossless geometry round-trips preserve the data extremes.
@@ -43,7 +44,7 @@ save smoke_data.fits
 # NSSCALE/NSZERO keywords, zlib+shuffle blocks), reload, verify.
 save smoke_data.xisf
 open smoke_data.xisf
-sleep 500
+waitloaded
 assert size 128 128
 assert channels 1
 assert range 0.0 1.0 0.01
