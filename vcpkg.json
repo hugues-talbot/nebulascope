@@ -1,6 +1,6 @@
 {
   "name": "nebulascope",
-  "version-string": "0.86",
+  "version-string": "0.87",
   "dependencies": [
     "cfitsio",
     "zlib",

@@ -1,6 +1,6 @@
 # NebulaScope — User Manual
 
-*Version 0.86. This is the complete guide; for a quick start see the
+*Version 0.87. This is the complete guide; for a quick start see the
 [README](../README.md). Every keyboard shortcut named here is a default — all
 of them are reconfigurable in **Preferences ▸ Shortcuts** (stored in
 `shortcuts.ini`, whose location is shown in the dialog).*
