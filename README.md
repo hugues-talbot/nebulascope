@@ -19,11 +19,9 @@ and never needs to know the source format.
 > fed from SExtractor catalogs — e.g. for building machine-learning training
 > sets.
 
-<!-- TODO: screenshots — suggested set:
-     1. Main window: M81 with histogram dock + GHS curve
-     2. Annotation layer: SExtractor import over a dense field + RA/Dec grid
-     3. Combine Channels dialog (SHO palette)
-     docs/img/*.png, referenced here. -->
+![M81: GHS stretch with the histogram panel — draggable SP/LP/HP handles, strength D and focus b](docs/screenshots/readme-ghs.png)
+
+![Split view: M81 (annotated) beside the Western Veil, linked navigation](docs/screenshots/split-views.png)
 
 ## Features
 
