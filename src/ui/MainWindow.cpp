@@ -1482,10 +1482,18 @@ void MainWindow::importList() {
 
 void MainWindow::applySplitLayout(int rows, int cols) {
     m_grid->setGrid(rows, cols);
+    if (m_grid->layout()) m_grid->layout()->activate();   // final cell geometry now
     const int n = std::min(rows * cols, m_fileList->count());
     for (int i = 0; i < n; ++i) {                 // raster order: row-major cells
         m_grid->activate(m_grid->cellAt(i));      // swap state into cell i
         showRow(i);                               // decode list row i into it
+        // Render synchronously: the async pipeline would drop this frame as
+        // soon as the next cell activates (identity check) — the cell would
+        // keep its pixels but never get a pixmap. Fit: the grid is new.
+        if (m_image.isValid()) {
+            m_view->setDisplayImage(DisplayRenderer::render(m_image, m_model));
+            m_view->zoomToFit();
+        }
     }
     if (n > 0) m_grid->activate(m_grid->cellAt(0));
 }
