@@ -164,6 +164,15 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!sr.ok) { err = sr.error; return false; }
         return true;
     }
+    if (cmd == QLatin1String("screenshot")) {
+        // Render the whole main window (widget tree, docks and all) to a PNG.
+        // Works on the offscreen platform too — the basis for reproducible
+        // documentation captures.
+        if (!needArgs(1)) return false;
+        const QPixmap px = m_w->grab();
+        if (px.isNull() || !px.save(t[1])) { err = "could not write " + t[1]; return false; }
+        return true;
+    }
     if (cmd == QLatin1String("waitloaded")) {
         // Block (pumping the event loop) until the current image and its
         // statistics are ready — deterministic where fixed sleeps race the
