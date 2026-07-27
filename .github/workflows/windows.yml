@@ -47,7 +47,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.DEPS }}
-          key: deps-${{ runner.os }}-ccfits2.7-libxisf-${{ hashFiles('.github/workflows/windows.yml') }}
+          # vcpkg.json is part of the key: libXISF links vcpkg-provided libs
+          # (zlib/lz4/zstd), so a manifest change must rebuild the dep layer.
+          key: deps-${{ runner.os }}-ccfits2.7-libxisf-${{ hashFiles('.github/workflows/windows.yml', 'vcpkg.json') }}
 
       - name: Build CCfits
         if: steps.depcache.outputs.cache-hit != 'true'
