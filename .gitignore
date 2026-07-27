@@ -38,3 +38,9 @@ ui_*.h
 *.fts
 *.xisf
 /smoke_view.png
+
+# Test fixtures are exempt from the data-file ignores above
+!tests/testdata/*.fits
+!tests/testdata/*.fit
+!tests/testdata/*.xisf
+!tests/testdata/*.tiff
