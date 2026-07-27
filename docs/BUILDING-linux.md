@@ -8,7 +8,7 @@ Tested on Debian/Ubuntu-style distros; adapt package names for your distro.
 sudo apt install build-essential cmake ninja-build pkg-config \
                  qt6-base-dev qt6-image-formats-plugins \
                  libcfitsio-dev libccfits-dev zlib1g-dev liblz4-dev \
-                 libpugixml-dev
+                 libzstd-dev libpugixml-dev
 ```
 
 That covers Qt6, CFITSIO, and CCfits. **libXISF is not packaged** — build it

@@ -5,6 +5,7 @@
     "cfitsio",
     "zlib",
     "lz4",
+    "zstd",
     "pugixml"
   ]
 }

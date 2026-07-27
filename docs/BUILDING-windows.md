@@ -20,7 +20,7 @@ directory (CI does the same):
 vcpkg install --triplet x64-windows
 ```
 
-That provides cfitsio, zlib, lz4 and pugixml. Qt itself comes from the
+That provides cfitsio, zlib, lz4, zstd and pugixml. Qt itself comes from the
 official installer or `aqt` — include the **qtimageformats** module (the
 TIFF/WebP plugins live there, not in qtbase).
 
