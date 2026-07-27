@@ -12,12 +12,17 @@ back to CMake package configs / `find_library`.
 
 ## 2. Dependencies via vcpkg
 
+The repo root carries a `vcpkg.json` manifest, so vcpkg runs in **manifest
+mode**: don't pass package names, just install the manifest from the project
+directory (CI does the same):
+
 ```bat
-vcpkg install qtbase cfitsio zlib lz4
+vcpkg install --triplet x64-windows
 ```
 
-`qtbase` brings Qt6 (with the JPEG/PNG/TIFF image plugins). `cfitsio` provides a
-CMake config package that this project picks up automatically.
+That provides cfitsio, zlib, lz4 and pugixml. Qt itself comes from the
+official installer or `aqt` — include the **qtimageformats** module (the
+TIFF/WebP plugins live there, not in qtbase).
 
 **CCfits and libXISF are not in vcpkg** — build them yourself against the same
 toolchain and install into a prefix you pass to CMake (below). For each:
@@ -51,7 +56,7 @@ build\src\Release\nebulascope.exe
 At configure time you should see a line like:
 
 ```
--- CFITSIO target: cfitsio
+-- CFITSIO link: <paths to cfitsio>
 -- libXISF: C:/local/lib/XISF.lib  (headers: C:/local/include)
 ```
 

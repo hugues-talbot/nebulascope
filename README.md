@@ -28,8 +28,8 @@ and never needs to know the source format.
 ## Features
 
 - **Formats** — FITS (CFITSIO/CCfits, multi-HDU + compressed) and XISF
-  (libXISF), read **and** write; JPEG/PNG/TIFF read (via Qt) + 16-bit TIFF
-  write. Integer images are promoted to Float32 on load so the whole pipeline is
+  (libXISF), read **and** write; JPEG/PNG/TIFF/WebP read (via Qt) + 16-bit
+  TIFF write. Integer images are promoted to Float32 on load so the whole pipeline is
   single-type (FITS scaling via BSCALE/BZERO; XISF/picture integers normalized
   to [0,1]); NaN/Inf blanks are handled throughout.
 - **Stretch functions** — Linear (windowing, with MTF midtone), Log, Asinh, and
@@ -62,6 +62,14 @@ and never needs to know the source format.
   (`<image>_annotation.json`, auto-loaded, orientation-aware), and importable
   from **SExtractor** ASCII catalogs (scaled A/B/THETA ellipses, FLAGS
   filtering, CLASS_STAR colouring) — handy for building NN training sets.
+- **Adjustments** — post-stretch display tuning in the histogram panel:
+  tone (brightness/contrast/gamma, shadows/highlights, black/white point)
+  and colour (temperature/tint, hue, saturation, vibrance), reflected live
+  in the transfer curve and colorbar, persisted per image in the JSON
+  sidecar.
+- **Star recomposition** — Tools ▸ Combine Stars screen-blends a starless
+  image with its stars-only counterpart (amount slider, auto-guessed
+  pairing) for the starless-processing workflow.
 - **Channel combination** — up to 7 mono inputs (LRGB + SHO) merged through a
   linear-combination dialog with palette presets (SHO/Hubble, HOO, LRGB…),
   per-channel normalization (including **“As displayed”**: merge each channel
@@ -115,8 +123,9 @@ src/
   render/               # StretchModel (shared state) + DisplayRenderer
   ui/                   # ImageView, Histogram*, ColorBar, InfoPanel, MainWindow
   app/                  # main.cpp (entry + theme), app.qrc, appicon.png
-tests/                  # CTest units (core math, IO round-trips) + script-mode
-                        # smoke test (smoke.nsc) + synthetic test image
+tests/                  # CTest units (core, io, wcs, catalog, combine,
+                        # colormap) + script-mode smoke test (smoke.nsc)
+                        # + committed fixtures (testdata/)
 icon/                   # iconset PNGs + make_icns.sh (-> NebulaScope.icns)
 docs/
   BUILDING-macos.md     # Homebrew + libXISF, step by step
@@ -143,11 +152,15 @@ ctest --test-dir build --output-on-failure     # runs everything: unit tests + s
 
 Unit tests cover the stretch/LUT invariants (monotonicity, the
 narrow-window anti-posterization rule), adjustments, lossless geometry
-round-trips, statistics, and format round-trips (including the XISF
-float-normalization required for PixInsight interop). The script mode
+round-trips, statistics, format round-trips (including XISF
+float-normalization and per-codec block compression for PixInsight
+interop), the WCS/astrometry math (TAN round-trips, keyword fallbacks,
+transform rebasing), SExtractor catalog parsing, channel combination,
+colour transport, and the colormap/modifier algebra. The script mode
 (`--run`, see the manual §13) drives the real application — open, stretch,
-rotate, export — with assertions, against the committed synthetic FITS in
-`tests/testdata/`; add `QT_QPA_PLATFORM=offscreen` to run it headless.
+rotate, export, save/reload — with assertions, against the committed
+synthetic FITS in `tests/testdata/`; it runs headless in CI as the `smoke`
+CTest (`QT_QPA_PLATFORM=offscreen`).
 
 **Linux / Windows** — the binary is `build/src/nebulascope`:
 

@@ -81,10 +81,12 @@ Reconfigure clean: `rm -rf build && cmake -B build …`.
 export PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH
 ```
 
-**`no member named 'Zstd' in CompressionCodec`** — libXISF implements only
-None/Zlib/LZ4/LZ4HC (no zstd, even on master). The writer maps the `Zstd`
-option to `LZ4HC` as a fallback, so this should already be handled; if you see
-it, you're compiling an older copy of `src/io/XisfWriter.cpp`.
+**`no member named 'ZSTD' in CompressionCodec`** — your libXISF predates
+zstd support (added upstream in 2023). Current libXISF (Homebrew 0.2.13+,
+or master) has `DataBlock::ZSTD`; the writer probes
+`CompressionCodecSupported(ZSTD)` at runtime and falls back to Zlib when the
+library was built without it. If the *symbol* is missing at compile time,
+update libXISF.
 
 **Undefined symbols for `lz4_*` / `zlib` / `pugixml` at link time** — your
 libXISF was built static. Uncomment the `find_library` lines in the top-level

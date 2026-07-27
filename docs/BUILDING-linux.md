@@ -6,11 +6,15 @@ Tested on Debian/Ubuntu-style distros; adapt package names for your distro.
 
 ```sh
 sudo apt install build-essential cmake ninja-build pkg-config \
-                 qt6-base-dev libcfitsio-dev libccfits-dev zlib1g-dev liblz4-dev
+                 qt6-base-dev qt6-image-formats-plugins \
+                 libcfitsio-dev libccfits-dev zlib1g-dev liblz4-dev \
+                 libpugixml-dev
 ```
 
 That covers Qt6, CFITSIO, and CCfits. **libXISF is not packaged** — build it
-next. (Qt's image plugins for JPEG/PNG/TIFF come with `qt6-base-dev`.)
+next. (JPEG/PNG plugins come with `qt6-base-dev`, but TIFF and WebP live in
+`qt6-image-formats-plugins` — without it, TIFF export and the TIFF/WebP
+readers silently disappear.)
 
 ## 2. Build and install libXISF
 
@@ -45,7 +49,7 @@ is in a non-standard location, add `-DCMAKE_PREFIX_PATH=/path/to/qt6`.
 At configure time you should see:
 
 ```
--- CFITSIO target: PkgConfig::CFITSIO
+-- CFITSIO link: <paths to libcfitsio>
 -- libXISF: /usr/local/lib/libXISF.so  (headers: /usr/local/include)
 ```
 

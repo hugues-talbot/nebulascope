@@ -57,10 +57,14 @@ that one the *what*.)
 - **XISF float output is normalized to [0,1]** (NSSCALE/NSZERO keywords keep
   the inverse map): PixInsight assumes the [0,1] bounds convention and
   renders out-of-range floats as noise.
-- **XISF data blocks are written uncompressed by default.** The older gitea
+- ~~**XISF data blocks are written uncompressed by default.** The older gitea
   libXISF's compressed (shuffled) blocks decode as structured noise in
   PixInsight. Re-enable LZ4 only after a PI round-trip test with the
-  installed libXISF.
+  installed libXISF.~~ *Superseded (v0.86): the "noise" was the
+  un-normalized-float bug all along — libXISF ≥ 0.2.13 compressed output was
+  verified spec-conformant and PI-round-tripped. Blocks are now compressed
+  (byte-shuffled) with a save-time Zstd/Zlib/Uncompressed choice; Zstd falls
+  back to Zlib where libXISF lacks it.*
 - **FITS multi-HDU**: list entries expand per image HDU; "no 2-D image in
   primary HDU" is handled by scanning extensions.
 - **Sidecars** (`<image>_annotation.json`) carry annotations + orientation +
@@ -97,8 +101,16 @@ that one the *what*.)
 
 - **CI**: GitHub Actions build macOS (official Qt + macdeployqt), Linux
   (system Qt), Windows (vcpkg + FindCFITSIO stub + libXISF from gitea).
-  Tags `v*` publish a Release (zip ×3 + .deb).
+  All three jobs need the Qt image-formats module (TIFF/WebP plugins live
+  there, not in qtbase). Tags `v*` publish a Release (zip ×3 + .deb).
+- **Tests are framework-free CTest binaries** (`tests/nstest.h`) plus a
+  scripted smoke run of the real app (`tests/smoke.nsc`, offscreen QPA) —
+  the CI gate since v0.85. Failing ctest output is published to the job
+  summary so failures are diagnosable from the run page. Test fixtures in
+  `tests/testdata/` are explicitly exempted from the data-file gitignore
+  rules (a `*.fits` ignore once silently swallowed the smoke fixture).
 - **`src/app/AppInfo.h` is user-maintained** (version/copyright/About) — the
   assistant never rewrites it unasked (see CLAUDE.md). Version also lives in
-  CMakeLists (CPACK) and CITATION.cff; bump all three when tagging.
+  CMakeLists (CPACK), CITATION.cff and vcpkg.json; bump all four when
+  tagging.
 - **`-psn` arguments** (Finder) are ignored by the CLI parser.

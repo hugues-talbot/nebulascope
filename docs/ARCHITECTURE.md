@@ -1,6 +1,6 @@
 # NebulaScope — Architecture
 
-Developer-facing map of the codebase (v0.83). The user-facing feature guide is
+Developer-facing map of the codebase (v0.86). The user-facing feature guide is
 [MANUAL.md](MANUAL.md); design rationale lives in [DECISIONS.md](DECISIONS.md).
 
 ## Layers
@@ -37,12 +37,20 @@ app/     entry point, theme, resources, user-maintained AppInfo.h
   bbox-expanded canvas, NaN corners, weight-renormalized sampling).
 - **Wcs** — TAN projection from FITS keywords or PCL XISF properties;
   `transformed()` / `rotated()` rebase CRPIX + CD through any pixel remap.
+- **SexCatalog** — SExtractor ASCII_HEAD parser; name-keyed column access,
+  order-independent (feeds the annotation importer).
+- **Preferences** — QSettings-backed app options (recent lists, shortcuts
+  location, UI defaults).
 
 ### io/
 Abstract `ImageReader`/`ImageWriter` registries (`readerForFile()` by magic +
 extension). Backends: FITS (CCfits/CFITSIO; multi-HDU enumeration, tile
 compression, BSCALE/BZERO), XISF (libXISF; properties incl. astrometric
 solution), Qt image formats (JPEG/PNG/TIFF/WebP read; 16-bit TIFF write).
+Write path: FITS/XISF/16-bit TIFF. The XISF writer normalizes float data to
+[0,1] (NSSCALE/NSZERO keywords keep the inverse map — PixInsight's bounds
+convention) and compresses data blocks per `SaveOptions` (Zstd/Zlib/LZ4,
+byte-shuffled; Zstd falls back to Zlib where libXISF was built without it).
 
 ### render/
 - **StretchModel** — the single source of truth for display params (function,
@@ -75,6 +83,9 @@ solution), Qt image formats (JPEG/PNG/TIFF/WebP read; 16-bit TIFF write).
 - **HistogramPanel/View, ColorBar, InfoPanel, CombineDialog,
   StarCombineDialog, RotateDialog, PreferencesDialog** — all drive/read the
   shared StretchModel or MainWindow state; no widget owns pixel data.
+- **ScriptRunner** — `--run <script>` batch mode: one command per line
+  (open/stretch/transform/save/assert/screenshot/…), exit code = failed
+  assertions. Drives the real MainWindow; powers the CI smoke test.
 
 ## Key invariants
 
@@ -106,3 +117,13 @@ solution), Qt image formats (JPEG/PNG/TIFF/WebP read; 16-bit TIFF write).
 QUndoStack commands guard on `currentPath()` and mark themselves obsolete if
 their image is no longer active. Annotation edits snapshot before/after
 vectors; 90°/flips apply inverses; arbitrary rotation stores angle pairs.
+
+## Tests
+
+`tests/` holds framework-free CTest units (`nstest.h`: NS_TEST/NS_CHECK,
+exit code = failure count) — six binaries: core (stretch/adjust/transform/
+stats invariants), io (format round-trips incl. XISF normalization +
+per-codec compression), wcs, catalog, combine (+ colour transport),
+colormap — plus the `smoke` test, which runs the real app headless
+(offscreen QPA) through `tests/smoke.nsc` via ScriptRunner. All run in the
+three CI jobs; failing output is published to the job summary.

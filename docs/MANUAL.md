@@ -1,6 +1,6 @@
 # NebulaScope — User Manual
 
-*Version 0.85. This is the complete guide; for a quick start see the
+*Version 0.86. This is the complete guide; for a quick start see the
 [README](../README.md). Every keyboard shortcut named here is a default — all
 of them are reconfigurable in **Preferences ▸ Shortcuts** (stored in
 `shortcuts.ini`, whose location is shown in the dialog).*
@@ -325,6 +325,7 @@ nebulascope [options] [files...]
                          adjust <name> <v>, rot90, flip, rotate, export, save,
                          assert size|channels|pixel|range, sleep,
                          waitloaded [ms] (block until image + stats ready),
+                         screenshot <file> (grab the whole window to PNG),
                          quit — one per line, #-comments; see tests/smoke.nsc.
   -h, --help             This help.
 ```
@@ -340,9 +341,10 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list
   entry to the file. **XISF interop:** float data are normalized to [0,1]
   (PixInsight's convention; `NSSCALE`/`NSZERO` keywords record the original
-  range). Saving XISF asks for **compression** — Zstd (smallest), Zlib
-  (widest compatibility), or Uncompressed; blocks are byte-shuffled for
-  better ratios, and the choice is remembered for the session.
+  range). Saving XISF asks for **compression** — Zstd (smallest; silently
+  falls back to Zlib if your libXISF build lacks it), Zlib (widest
+  compatibility), or Uncompressed; blocks are byte-shuffled for better
+  ratios, and the choice is remembered for the session.
 - **File ▸ Save Stretched As…** — bakes the current display transfer
   (stretch + adjustments) into Float32 FITS/XISF/TIFF. Same XISF
   compression prompt.
@@ -380,8 +382,9 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   handles aren't collapsed.
 - *Adjustment sliders seem inert* — colour sliders (Temp…Vibrance) are
   disabled for mono images; tone sliders work everywhere.
-- *NebulaScope XISF looks like noise in PixInsight* — fixed in v0.83+
-  (normalized floats, uncompressed blocks); re-save the file.
+- *NebulaScope XISF looks like noise in PixInsight* — fixed in v0.84+
+  (floats normalized to [0,1]); re-save the file. Compressed blocks
+  (v0.86+) are PI-verified and not the culprit.
 - *RA/Dec missing on an XISF* — confirm the file carries
   `PCL:AstrometricSolution:*` properties (Info panel filter: `Astrometric`).
 - *Annotations misplaced after import* — they map through the recorded
