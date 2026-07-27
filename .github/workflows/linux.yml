@@ -56,7 +56,17 @@ jobs:
         run: cmake --build build
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: |
+          set -o pipefail
+          ctest --test-dir build --output-on-failure 2>&1 | tee ctest.log
+
+      # Failing test output lands in the run-page summary, readable at a
+      # glance (and without API auth) straight from the Actions overview.
+      - name: Test failure summary
+        if: failure()
+        run: |
+          { echo '### ctest output (tail)'; echo '```';
+            tail -120 ctest.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       # ---- Package -----------------------------------------------------------
       - name: Build .deb

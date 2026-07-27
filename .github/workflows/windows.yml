@@ -123,7 +123,19 @@ jobs:
         # need them on PATH (vcpkg's applocal copy covers cfitsio only).
         run: |
           $env:PATH = "$env:DEPS\bin;$env:GITHUB_WORKSPACE\vcpkg_installed\$env:VCPKG_TRIPLET\bin;$env:PATH"
-          ctest --test-dir build --build-config Release --output-on-failure
+          ctest --test-dir build --build-config Release --output-on-failure 2>&1 | Tee-Object ctest.log
+          exit $LASTEXITCODE
+
+      # Failing test output lands in the run-page summary, readable at a
+      # glance (and without API auth) straight from the Actions overview.
+      - name: Test failure summary
+        if: failure()
+        shell: pwsh
+        run: |
+          "### ctest output (tail)" >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
+          Get-Content ctest.log -Tail 120 >> $env:GITHUB_STEP_SUMMARY
+          '```' >> $env:GITHUB_STEP_SUMMARY
 
       # ---- Package a runnable zip -------------------------------------------
       - name: Deploy Qt + DLLs
