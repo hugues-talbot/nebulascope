@@ -152,7 +152,9 @@ Unit tests cover the stretch/LUT invariants (monotonicity, the
 narrow-window anti-posterization rule), adjustments, lossless geometry
 round-trips, statistics, format round-trips (including XISF
 float-normalization and per-codec block compression for PixInsight
-interop), the WCS/astrometry math (TAN round-trips, keyword fallbacks,
+interop — plus fixtures written by PixInsight itself, in Float32
+plain/Zstd/Zlib and UInt16, asserted to decode identically), the
+WCS/astrometry math (TAN round-trips, keyword fallbacks,
 transform rebasing), SExtractor catalog parsing, channel combination,
 colour transport, and the colormap/modifier algebra. The script mode
 (`--run`, see the manual §13) drives the real application — open, stretch,

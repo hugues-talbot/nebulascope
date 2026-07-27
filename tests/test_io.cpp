@@ -9,6 +9,7 @@
 #include <QTemporaryDir>
 #include <QString>
 #include <cmath>
+#include <cstring>
 
 using namespace astro;
 
@@ -134,6 +135,52 @@ NS_TEST(xisf_compressed_roundtrip_all_codecs) {
         }
         NS_CHECK(worst < 1e-5);
     }
+}
+
+NS_TEST(pixinsight_written_xisf_interop) {
+    // Fixtures written by PixInsight itself (64x64 RGB crop of an HII
+    // region, saved four ways). Every variant must decode to the same
+    // pixels — this tests the read direction our own round-trips can't:
+    // a symmetric reader/writer bug passes round-trips but fails here.
+    const QString dir = QStringLiteral(NS_TESTDATA_DIR);
+    io::LoadResult ref = io::loadImage(dir + "/pi_f32_plain.xisf");
+    NS_CHECK(ref.ok && ref.image.isValid());
+    NS_CHECK(ref.image.width() == 64 && ref.image.height() == 64 &&
+             ref.image.channels() == 3);
+    // PixInsight float convention: samples in [0,1], with real signal.
+    float mn = 1e9f, mx = -1e9f;
+    for (int c = 0; c < 3; ++c) {
+        const float* p = ref.image.plane<float>(c);
+        for (std::size_t i = 0; i < ref.image.samplesPerChannel(); ++i) {
+            mn = std::min(mn, p[i]); mx = std::max(mx, p[i]);
+        }
+    }
+    NS_CHECK(mn >= 0.0f && mx <= 1.0f && mx > mn);
+
+    // Compressed variants (zstd+shuffle, zlib+shuffle): bit-identical.
+    for (const char* name : { "/pi_f32_zstd.xisf", "/pi_f32_zlib.xisf" }) {
+        io::LoadResult r = io::loadImage(dir + name);
+        NS_CHECK(r.ok && r.image.isValid());
+        bool same = r.image.width() == 64 && r.image.height() == 64 &&
+                    r.image.channels() == 3;
+        for (int c = 0; same && c < 3; ++c)
+            same = std::memcmp(r.image.plane<float>(c), ref.image.plane<float>(c),
+                               ref.image.samplesPerChannel() * sizeof(float)) == 0;
+        NS_CHECK(same);
+    }
+
+    // UInt16 variant: reader promotes + normalizes to [0,1] — must agree
+    // with the float original to 16-bit quantization.
+    io::LoadResult u16 = io::loadImage(dir + "/pi_u16_plain.xisf");
+    NS_CHECK(u16.ok && u16.image.isValid());
+    double worst = 0.0;
+    for (int c = 0; c < 3; ++c) {
+        const float* a = ref.image.plane<float>(c);
+        const float* b = u16.image.plane<float>(c);
+        for (std::size_t i = 0; i < ref.image.samplesPerChannel(); ++i)
+            worst = std::max(worst, std::fabs(double(a[i]) - double(b[i])));
+    }
+    NS_CHECK(worst <= 1.0 / 65535.0 + 1e-7);
 }
 
 NS_TEST(tiff_roundtrip_16bit) {
