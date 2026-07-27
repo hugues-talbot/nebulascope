@@ -224,6 +224,8 @@ selected showing its grab handles.*
 
 ## 10. Astrometry
 
+![RA/Dec grid over a plate-solved luminance master, SExtractor ellipses overlaid](screenshots/grid-astrometry.png)
+
 Solutions are read from FITS WCS keywords (TAN) and from PixInsight's
 `PCL:AstrometricSolution` XISF properties; unsolved frames fall back to
 telescope-pointing keywords for approximate coordinates.
@@ -326,6 +328,11 @@ nebulascope [options] [files...]
                          assert size|channels|pixel|range, sleep,
                          waitloaded [ms] (block until image + stats ready),
                          screenshot <file> (grab the whole window to PNG),
+                         cmap <name>, cmapmod invert|split on|off [t],
+                         panels on|off (Image Only toggle),
+                         action <name> (trigger a menu action by its
+                         shortcut-registry name, e.g. toggle_grid; avoid
+                         modal dialogs — they block the script),
                          quit — one per line, #-comments; see tests/smoke.nsc.
   -h, --help             This help.
 ```

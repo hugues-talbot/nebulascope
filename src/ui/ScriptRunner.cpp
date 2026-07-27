@@ -3,10 +3,14 @@
 #include "ui/ViewGrid.h"
 #include "render/DisplayRenderer.h"
 #include "io/ImageWriter.h"
+#include <QAction>
+#include <QCheckBox>
+#include <QComboBox>
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QFile>
+#include <QSlider>
 #include <QListWidget>
 #include <QTextStream>
 #include <QRegularExpression>
@@ -164,11 +168,66 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!sr.ok) { err = sr.error; return false; }
         return true;
     }
+    if (cmd == QLatin1String("cmap")) {
+        // False-colour base map (mono images) — drives the toolbar combo so
+        // model, legend and rendering all update through the normal path.
+        if (!needArgs(1)) return false;
+        if (!m_w->m_cmapCombo) { err = "no colormap control"; return false; }
+        static const char* names[] = { "gray", "heat", "viridis", "magma", "inferno", "cividis" };
+        const QString want = t[1].toLower();
+        for (int i = 0; i < int(sizeof(names) / sizeof(*names)); ++i)
+            if (want == QLatin1String(names[i])) { m_w->m_cmapCombo->setCurrentIndex(i); return true; }
+        err = "unknown colormap (gray|heat|viridis|magma|inferno|cividis)";
+        return false;
+    }
+    if (cmd == QLatin1String("cmapmod")) {
+        // cmapmod invert on|off   ·   cmapmod split on|off [t]
+        if (!needArgs(2)) return false;
+        const bool on = t[2].toLower() == QLatin1String("on");
+        // click(), not setChecked(): the UI reacts to the user-interaction
+        // signal, which programmatic setChecked never emits.
+        if (t[1].toLower() == QLatin1String("invert")) {
+            if (!m_w->m_invertCheck) { err = "no invert control"; return false; }
+            if (m_w->m_invertCheck->isChecked() != on) m_w->m_invertCheck->click();
+            return true;
+        }
+        if (t[1].toLower() == QLatin1String("split")) {
+            if (!m_w->m_splitCheck) { err = "no split control"; return false; }
+            if (t.size() > 3 && m_w->m_splitSlider)
+                m_w->m_splitSlider->setValue(int(t[3].toDouble() * 100));
+            if (m_w->m_splitCheck->isChecked() != on) m_w->m_splitCheck->click();
+            return true;
+        }
+        err = "cmapmod invert|split on|off [t]";
+        return false;
+    }
+    if (cmd == QLatin1String("action")) {
+        // Trigger any named menu action (the shortcut-registry names, e.g.
+        // toggle_grid). Modal dialogs block the script until closed — avoid.
+        if (!needArgs(1)) return false;
+        QAction* a = m_w->m_actionRegistry.value(t[1]);
+        if (!a) { err = "unknown action \"" + t[1] + "\""; return false; }
+        a->trigger();
+        return true;
+    }
+    if (cmd == QLatin1String("panels")) {
+        // panels on|off — the Image Only toggle (hide/show all overlay boxes).
+        if (!needArgs(1)) return false;
+        const bool wantPanels = t[1].toLower() != QLatin1String("off");
+        if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
+        return true;
+    }
     if (cmd == QLatin1String("screenshot")) {
         // Render the whole main window (widget tree, docks and all) to a PNG.
         // Works on the offscreen platform too — the basis for reproducible
         // documentation captures.
         if (!needArgs(1)) return false;
+        // Drain the async display pipeline first: a grab taken while a
+        // re-render is in flight captures the previous frame.
+        QElapsedTimer et; et.start();
+        while (et.elapsed() < 15000 && m_w->m_renderWatcher &&
+               (m_w->m_renderWatcher->isRunning() || m_w->m_renderPending))
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
         const QPixmap px = m_w->grab();
         if (px.isNull() || !px.save(t[1])) { err = "could not write " + t[1]; return false; }
         return true;

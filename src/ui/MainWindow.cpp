@@ -1071,6 +1071,7 @@ void MainWindow::buildMenusAndToolbar() {
     keys["paste_annotation"] = pasteAnn;
 
     applyUserShortcuts(acts, keys);     // user INI overrides the defaults above
+    m_actionRegistry = acts;            // kept: ScriptRunner triggers by name
 
     // Toolbar
     QToolBar* tb = addToolBar("Main");

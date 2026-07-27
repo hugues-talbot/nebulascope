@@ -255,6 +255,7 @@ protected:
     QSlider*        m_splitSlider = nullptr;
 
     bool m_imageOnly = false;
+    QHash<QString, QAction*> m_actionRegistry;   // shortcut names → actions (ScriptRunner)
     bool m_savedLeft = true, m_savedRight = true, m_savedInfo = true;
 
     // Last displayed image dimensions; used to keep zoom/pan when the next image
