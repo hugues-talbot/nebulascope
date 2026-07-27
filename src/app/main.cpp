@@ -21,19 +21,30 @@ public:
     NebulaApp(int& argc, char** argv) : QApplication(argc, argv) {}
     void setWindow(astro::MainWindow* w) {
         m_win = w;
-        if (w && !m_pending.isEmpty()) { w->openPaths(m_pending); m_pending.clear(); }
+        if (w && !m_pending.isEmpty()) { w->openPaths(m_pending); m_pending.clear(); raiseWindow(); }
     }
 protected:
     bool event(QEvent* e) override {
         if (e->type() == QEvent::FileOpen) {
             const QString f = static_cast<QFileOpenEvent*>(e)->file();
             if (!f.isEmpty()) {
-                if (m_win) m_win->openPaths({ f });
+                if (m_win) { m_win->openPaths({ f }); raiseWindow(); }
                 else       m_pending << f;
             }
             return true;
         }
         return QApplication::event(e);
+    }
+private:
+    // A QFileOpenEvent does not activate the app: when NebulaScope is already
+    // running (or another app is frontmost), the image loads into a window
+    // that stays buried — Finder "Open With" looks like it did nothing.
+    void raiseWindow() {
+        if (!m_win) return;
+        m_win->setWindowState(m_win->windowState() & ~Qt::WindowMinimized);
+        m_win->show();
+        m_win->raise();
+        m_win->activateWindow();
     }
 private:
     QPointer<astro::MainWindow> m_win;
