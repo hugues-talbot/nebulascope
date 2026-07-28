@@ -1,0 +1,32 @@
+# Preface {.unnumbered}
+
+NebulaScope is a cross-platform Qt 6 desktop tool for inspecting and
+annotating astronomical images, focused on the thing most tools do poorly:
+precise, draggable RGB-histogram control — including a Generalised Hyperbolic
+Stretch for pulling faint galaxy signal out of a high-dynamic-range background
+without blowing out cores and stars.
+
+It reads FITS [@pence2010] — including multi-HDU and tile-compressed files —
+PixInsight XISF [@xisf10] with embedded astrometric solutions, and ordinary
+JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor
+[@bertin1996] import directly as annotation overlays, and a reference image's
+colour palette can be transferred onto the displayed image through sliced
+optimal transport [@pitie2007].
+
+Where it fits: between viewers like SAOImage DS9 [@joye2003] (regions, WCS
+readout, but dated stretch ergonomics) and processing suites like PixInsight
+or Siril (powerful stretches, but not fast annotation-centric inspectors).
+NebulaScope combines modern histogram manipulation — including the
+Generalised Hyperbolic Stretch [@ghs2022] — blink comparison with per-image
+stretch memory, and an editable, undoable vector annotation layer that can be
+fed from SExtractor catalogs, e.g. for building machine-learning training
+sets.
+
+This document collects the complete user manual, the developer-facing
+architecture map and design-decision log, with the per-platform build
+instructions and the release history as appendices. Every screenshot in this
+book is generated reproducibly by NebulaScope's own scripting mode
+(see the manual's command-line chapter) from real acquired data.
+
+The project's source code and issue tracker live at
+<https://github.com/hugues-talbot/nebulascope>.

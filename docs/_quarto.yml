@@ -1,0 +1,47 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "NebulaScope"
+  subtitle: "An astronomical image inspector — User Manual & Developer Guide"
+  author: "Hugues Talbot"
+  date: today
+  chapters:
+    - index.qmd
+    - MANUAL.md
+    - ARCHITECTURE.md
+    - DECISIONS.md
+  appendices:
+    - BUILDING-macos.md
+    - BUILDING-linux.md
+    - BUILDING-windows.md
+    - RELEASES.md
+    - references.qmd
+
+bibliography: references.bib
+# Every reference appears in the bibliography even without an inline citation
+# (the .md chapters stay free of citation syntax so GitHub renders them clean).
+nocite: |
+  @*
+
+format:
+  pdf:
+    documentclass: scrreprt
+    pdf-engine: xelatex
+    toc: true
+    toc-depth: 2
+    # The manual carries its own section numbers (§1..§16) — Quarto numbering
+    # on top would double them up.
+    number-sections: false
+    colorlinks: true
+    fig-align: center
+    include-in-header:
+      text: |
+        % UI screenshots are dark-themed: a thin frame separates them from
+        % the white page.
+        \usepackage{float}
+        \let\origincludegraphics\includegraphics
+        \renewcommand{\includegraphics}[2][]{\fbox{\origincludegraphics[#1]{#2}}}
+        \setlength{\fboxsep}{0pt}
+        \setlength{\fboxrule}{0.4pt}

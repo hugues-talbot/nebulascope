@@ -5,12 +5,7 @@
 of them are reconfigurable in **Preferences ▸ Shortcuts** (stored in
 `shortcuts.ini`, whose location is shown in the dialog).*
 
-> **Screenshot placeholders** look like the block below. Drop the named PNG
-> into `docs/screenshots/` and the image appears; the caption suggests what to
-> capture.
-
 ![Main window: overlay layout, image loaded, histogram panel open](screenshots/overview.png)
-*Capture: whole window, a colour image loaded, overlay panels visible.*
 
 ---
 
@@ -37,7 +32,6 @@ the view is split, otherwise in the active view. On first view it gets a plain
 boosted stretch (§3).
 
 ![Image list with a multi-HDU FITS entry expanded](screenshots/image-list-hdu.png)
-*Capture: left panel, one multi-HDU file expanded showing its HDU rows.*
 
 ## 2. The display pipeline
 
@@ -59,8 +53,6 @@ catches up at render rate (intermediate positions are skipped, never queued).
 The Histogram panel (toggle **F3**) is the heart of the tool:
 
 ![Histogram panel: Linear mode, RGB image, per-channel lines](screenshots/histogram-linear.png)
-*Capture: right panel, Linear tab, an RGB image with visibly separated
-per-channel B/M/W lines.*
 
 - **Stretch functions** — tabs for **Linear / Log / Asinh / GHS**.
   - *Linear* acts as the windowing stage: drag **B** (black), **M** (midtone),
@@ -102,8 +94,6 @@ apply to the stretched display values, so they compose identically with
 Linear/Log/Asinh/GHS:
 
 ![ADJUST sliders, a temperature/saturation edit in progress](screenshots/adjust-panel.png)
-*Capture: ADJUST section with a few sliders off-centre and a visible colour
-shift in the image behind.*
 
 | Left column | Right column |
 |---|---|
@@ -137,7 +127,6 @@ plus two composable **modifiers** that work with *every* map:
 RGB images ignore the colormap (the combo is disabled).
 
 ![Split colormap on a galaxy field, colorbar visible](screenshots/colormap-split.png)
-*Capture: mono image with split(t) active, the colorbar showing the fold.*
 
 ## 6. Inspecting
 
@@ -185,7 +174,6 @@ Image menu / toolbar:
   angle that puts celestial north up / the central Dec line horizontal.
 
 ![Rotation dialog with dial, preview and North Up](screenshots/rotate-dialog.png)
-*Capture: the dialog over a plate-solved image, dial at a non-zero angle.*
 
 Everything follows the pixels through every transform: annotations, the
 astrometric solution (reference pixel + CD matrix), and view-link
@@ -200,8 +188,6 @@ resampled pixels — do photometry on unrotated data.
 A pure **vector overlay** — never rasterized into the data.
 
 ![Annotated field: ellipses, a labelled segment, the RA/Dec grid](screenshots/annotations.png)
-*Capture: a few ellipses + one labelled line + text, grid on, one shape
-selected showing its grab handles.*
 
 - **Draw** — toolbar tools: ellipse (drag), line segment (drag; the label
   sits beyond the start point, never crossing the segment), text (click).
@@ -246,10 +232,12 @@ Merges up to **7 mono inputs** — R, G, B, S(II), H(α), O(III), L — into a
 colour image via a linear-combination matrix:
 
 ![Combine Channels dialog, SHO preset, preview visible](screenshots/combine-channels.png)
+
 *The dialog with three narrowband masters (M1) assigned S/H/O and the live
 preview.*
 
 ![SII, Ha and OIII masters with their SHO combination in a 2×2 split](screenshots/combine-result.png)
+
 *The created image lands in the first empty view: each channel beside the
 Hubble-palette result.*
 
@@ -290,16 +278,12 @@ Recolours the current image to match a reference's colour distribution
   baked. The result is a new display-ready list entry; undoable.
 
 ![Colour transport in a 1×3 split: source, reference, transported result](screenshots/transport.png)
-*Capture: source and reference side by side, the `_ct` result in a third view
-or after.*
 
 ## 12. Split views & linked navigation
 
 **View ▸ Split View…** — one dialog with rows × columns spinners (max 5×5).
 
 ![2×2 split comparing renditions, one active cell](screenshots/split-views.png)
-*Capture: 2×2 grid, same object in different renditions, active cell's blue
-border visible.*
 
 - One cell is **active** (blue border) — the histogram, info panel, tools,
   and rotation act on it. Click any cell to activate; then click a list

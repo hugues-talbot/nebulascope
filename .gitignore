@@ -44,3 +44,8 @@ ui_*.h
 !tests/testdata/*.fit
 !tests/testdata/*.xisf
 !tests/testdata/*.tiff
+
+# Quarto book build artifacts
+/docs/_book/
+/docs/.quarto/
+/docs/index_files/
