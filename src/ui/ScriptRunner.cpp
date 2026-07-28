@@ -24,6 +24,94 @@
 
 namespace astro {
 
+// --- script-command reference (single source for --run list / --help <cmd>) --
+namespace {
+struct CommandHelp { const char* usage; const char* desc; };
+struct CommandRef  { const char* name; CommandHelp help; };
+const CommandRef kCommands[] = {
+  {"open",       {"open <path>",
+    "Load an image into the list and display it (first empty cell when split).\n"
+    "Globs are not expanded here; give a concrete path."}},
+  {"show",       {"show <n>",
+    "Select image-list row n (1-based) and display it."}},
+  {"next",       {"next", "Blink forward through the list (wraps)."}},
+  {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"split",      {"split <RxC>",
+    "Split the view into R rows x C columns (max 5x5) and assign the first\n"
+    "R*C list images to the cells in raster order."}},
+  {"fn",         {"fn linear|log|asinh|ghs", "Set the stretch transfer function."}},
+  {"autostf",    {"autostf [linked]",
+    "Automatic stretch from image statistics; 'linked' pools all channels\n"
+    "(preserves colour balance). Use only on LINEAR data - processed masters\n"
+    "look right with 'reset'."}},
+  {"reset",      {"reset", "Plain min-max linear window; clears adjustments."}},
+  {"adjust",     {"adjust <name> <value>",
+    "Post-stretch adjustment. Names: brightness contrast gamma shadows\n"
+    "highlights blackpoint whitepoint temperature tint hue saturation vibrance."}},
+  {"rot90",      {"rot90 cw|ccw", "Lossless 90-degree rotation of the data."}},
+  {"flip",       {"flip h|v", "Lossless horizontal/vertical flip of the data."}},
+  {"rotate",     {"rotate <deg>",
+    "Absolute arbitrary rotation (bilinear, expanded canvas, NaN corners)."}},
+  {"export",     {"export <path>",
+    "Write the displayed rendition (stretch, adjustments, colormap baked)\n"
+    "as PNG/JPEG/TIFF."}},
+  {"save",       {"save <path>",
+    "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
+    "default compression (Zlib, byte-shuffled)."}},
+  {"assert",     {"assert size <W> <H> | channels <n> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+    "Test assertions against the displayed image's raw data. Failures are\n"
+    "counted; the process exit code is the failure count."}},
+  {"sleep",      {"sleep <ms>", "Pause the script (event loop keeps running)."}},
+  {"waitloaded", {"waitloaded [ms]",
+    "Block until the current image and its statistics are ready (default\n"
+    "timeout 10000 ms). Prefer this over sleep after open/show."}},
+  {"screenshot", {"screenshot <path> [dialog]",
+    "Grab the whole main window (or, with 'dialog', the dialog opened by the\n"
+    "dialog command) to PNG after the async render pipeline drains.\n"
+    "Works headless (QT_QPA_PLATFORM=offscreen)."}},
+  {"cmap",       {"cmap gray|heat|viridis|magma|inferno|cividis",
+    "False-colour base map (mono images only)."}},
+  {"cmapmod",    {"cmapmod invert|split on|off [t]",
+    "Colormap modifiers; split folds the map at threshold t (0..1)."}},
+  {"panels",     {"panels on|off", "Show/hide all overlay panels (Image Only)."}},
+  {"action",     {"action <name>",
+    "Trigger any menu action by its shortcut-registry name (e.g. toggle_grid).\n"
+    "Avoid actions that open modal dialogs - they block the script."}},
+  {"transport",  {"transport <row> [strength%]",
+    "Colour-transport the displayed image toward list row <row> (1-based) as\n"
+    "reference (sliced optimal transport, as-displayed data); the result\n"
+    "becomes a new display-ready list entry. Default strength 100."}},
+  {"dialog",     {"dialog rotate|combine|preferences|close",
+    "Open a dialog NON-modally (for dlgclick/dlgcombo/screenshot ... dialog),\n"
+    "or close the open one."}},
+  {"dlgclick",   {"dlgclick <button text>",
+    "Click a button in the open dialog by its visible text (e.g. a Combine\n"
+    "preset, or 'Create Image')."}},
+  {"dlgcombo",   {"dlgcombo <n> <prefix>",
+    "Set the n-th combo box (creation order, 0-based) of the open dialog to\n"
+    "the first entry whose text starts with <prefix>."}},
+  {"quit",       {"quit", "End the script; the process exits with the failure count."}},
+};
+} // namespace
+
+void ScriptRunner::printCommandList() {
+    std::printf("NebulaScope script commands (one per line in a --run file; #-comments).\n"
+                "Details: nebulascope --help <command>\n\n");
+    for (const CommandRef& c : kCommands) {
+        const QString firstLine = QString::fromUtf8(c.help.desc).section('\n', 0, 0);
+        std::printf("  %-14s %s\n", c.name, firstLine.toLocal8Bit().constData());
+    }
+}
+
+bool ScriptRunner::printCommandHelp(const QString& cmd) {
+    for (const CommandRef& c : kCommands) {
+        if (cmd.compare(QLatin1String(c.name), Qt::CaseInsensitive) != 0) continue;
+        std::printf("%s\n\nUsage:  %s\n\n%s\n", c.name, c.help.usage, c.help.desc);
+        return true;
+    }
+    return false;
+}
+
 ScriptRunner::ScriptRunner(MainWindow* w, const QString& scriptPath, QObject* parent)
     : QObject(parent), m_w(w), m_path(scriptPath) {}
 

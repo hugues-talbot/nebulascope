@@ -72,7 +72,9 @@ static void printUsage() {
         "      --run <script>    Execute a line-based command script (testing/batch)\n"
         "                        and exit with the number of failed assertions.\n"
         "                        Headless: QT_QPA_PLATFORM=offscreen. See docs/MANUAL.md.\n"
-        "  -h, --help            Show this help and exit.\n"
+        "      --run list        List all script commands with one-line summaries.\n"
+        "  -h, --help [command]  Show this help — or detailed help for one script\n"
+        "                        command, e.g. nebulascope --help transport.\n"
         "\n"
         "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff .webp\n"
         "\n"
@@ -132,7 +134,24 @@ int main(int argc, char** argv) {
     // Handle --help/-h before constructing the GUI so it works headless too.
     for (int i = 1; i < argc; ++i) {
         const QString a = QString::fromLocal8Bit(argv[i]);
-        if (a == "--help" || a == "-h") { printUsage(); return 0; }
+        if (a == "--help" || a == "-h") {
+            // "--help <command>" documents one script command in detail.
+            if (i + 1 < argc) {
+                const QString cmd = QString::fromLocal8Bit(argv[i + 1]);
+                if (astro::ScriptRunner::printCommandHelp(cmd)) return 0;
+                std::fprintf(stderr, "Unknown script command \"%s\" — list them with: nebulascope --run list\n\n",
+                             cmd.toLocal8Bit().constData());
+                return 2;
+            }
+            printUsage();
+            return 0;
+        }
+        // "--run list" is a reserved word: print the script-command reference.
+        if (a == "--run" && i + 1 < argc &&
+            QString::fromLocal8Bit(argv[i + 1]) == QLatin1String("list")) {
+            astro::ScriptRunner::printCommandList();
+            return 0;
+        }
     }
 
     NebulaApp app(argc, argv);

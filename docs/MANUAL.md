@@ -308,6 +308,8 @@ nebulascope [options] [files...]
   -l, --list <file>      Load a saved image list.
       --split <RxC>      Split the view (max 5x5) and assign the first R*C
                          images to the cells in raster order.
+      --run list         List all script commands (one-line summaries);
+                         detailed help: --help <command>.
       --run <script>     Execute a command script and exit with the number of
                          failed assertions (testing/batch; headless with
                          QT_QPA_PLATFORM=offscreen). Commands: open, show,

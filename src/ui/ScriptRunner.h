@@ -57,6 +57,10 @@ public:
     // Begin executing after the event loop starts; quits the app when done.
     void start();
 
+    // CLI discoverability:  nebulascope --run list  /  nebulascope --help <cmd>
+    static void printCommandList();                    // one line per command
+    static bool printCommandHelp(const QString& cmd);  // false if unknown
+
 private:
     void step();                        // execute the next line, schedule the next
     bool execute(const QString& line, QString& err);   // one command
