@@ -78,6 +78,8 @@ private slots:
     // (show, for scripted captures). Null when preconditions fail.
     class RotateDialog*  makeRotateDialog();
     class CombineDialog* makeCombineDialog(QString* whyNot = nullptr);
+    bool runColorTransport(const QString& refKey, int strengthPct,
+                           QString* errOut = nullptr);
     void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:

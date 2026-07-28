@@ -333,6 +333,8 @@ nebulascope [options] [files...]
                          action <name> (trigger a menu action by its
                          shortcut-registry name, e.g. toggle_grid; avoid
                          modal dialogs — they block the script),
+                         transport <row> [strength%] (colour transport onto
+                         the displayed image, list row as reference),
                          dialog rotate|combine|preferences|close (open a
                          dialog NON-modally for scripted captures),
                          dlgclick <button text>, dlgcombo <n> <prefix>

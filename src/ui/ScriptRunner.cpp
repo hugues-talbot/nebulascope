@@ -221,6 +221,22 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
         return true;
     }
+    if (cmd == QLatin1String("transport")) {
+        // transport <row> [strengthPct] — colour-transport the displayed
+        // image toward list row n (1-based) as reference; result becomes a
+        // new display-ready list entry (same as Tools > Transport Colors).
+        if (!needArgs(1)) return false;
+        const int row = t[1].toInt() - 1;
+        if (row < 0 || row >= m_w->m_fileList->count()) { err = "row out of range"; return false; }
+        const QString key = m_w->m_fileList->item(row)->data(Qt::UserRole).toString();
+        const int strength = t.size() > 2 ? t[2].toInt() : 100;
+        QString terr;
+        if (!m_w->runColorTransport(key, strength, &terr)) {
+            err = terr.isEmpty() ? QStringLiteral("transport failed") : terr;
+            return false;
+        }
+        return true;
+    }
     if (cmd == QLatin1String("dialog")) {
         // Open a dialog NON-modally for scripted captures (exec() would block
         // the script), or close the one that's open.

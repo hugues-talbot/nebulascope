@@ -1621,9 +1621,16 @@ void MainWindow::transportColorsFromRef() {
     ok = dlg.exec() == QDialog::Accepted;
     if (!ok) return;
     s_lastStrength = strength->value();
-    const QString pick = combo->currentText();
-    const QString key = keys[combo->currentIndex()];
+    QString terr;
+    if (!runColorTransport(keys[combo->currentIndex()], strength->value(), &terr) &&
+        !terr.isEmpty())
+        QMessageBox::warning(this, "Transport Colors", terr);
+}
 
+// The transport proper, shared by the picker slot and ScriptRunner: reference
+// by list key, strength in percent. False (+ *errOut) on failure.
+bool MainWindow::runColorTransport(const QString& key, int strengthPct, QString* errOut) {
+    if (!m_image.isValid()) { if (errOut) *errOut = "no image displayed"; return false; }
     // Decode the reference (or fetch the in-memory synthetic).
     std::shared_ptr<ImageData> refImg;
     auto syn = m_synthetic.constFind(key);
@@ -1634,7 +1641,7 @@ void MainWindow::transportColorsFromRef() {
         io::LoadOptions lopts;
         lopts.fitsHdu = hduReq;
         io::LoadResult res = io::loadImage(base, lopts);
-        if (!res.ok) { QMessageBox::warning(this, "Transport Colors", res.error); return; }
+        if (!res.ok) { if (errOut) *errOut = res.error; return false; }
         refImg = std::make_shared<ImageData>(std::move(res.image));
     }
 
@@ -1710,11 +1717,11 @@ void MainWindow::transportColorsFromRef() {
     ColorTransportResult res = transportColors(srcDisp, refDisp, 15, 200000, srcRoi, refRoi);
     QApplication::restoreOverrideCursor();
     if (!res.ok) {
-        QMessageBox::warning(this, "Transport Colors", QString::fromStdString(res.error));
-        return;
+        if (errOut) *errOut = QString::fromStdString(res.error);
+        return false;
     }
     // Partial transport: blend transported colours back toward the original.
-    const double s = s_lastStrength / 100.0;
+    const double s = strengthPct / 100.0;
     if (s < 0.999) {
         for (int c = 0; c < res.image.channels(); ++c) {
             float* o = res.image.plane<float>(c);
@@ -1742,7 +1749,9 @@ void MainWindow::transportColorsFromRef() {
         m_diskSizeByPath[newKey] = srcDiskSize;
         displayPath(newKey);
     }
-    statusBar()->showMessage(QStringLiteral("Colours transported from %1").arg(pick), 4000);
+    statusBar()->showMessage(QStringLiteral("Colours transported from %1")
+                                 .arg(QFileInfo(key).fileName()), 4000);
+    return true;
 }
 
 void MainWindow::resetOrientation() {
