@@ -333,6 +333,11 @@ nebulascope [options] [files...]
                          action <name> (trigger a menu action by its
                          shortcut-registry name, e.g. toggle_grid; avoid
                          modal dialogs — they block the script),
+                         dialog rotate|combine|preferences|close (open a
+                         dialog NON-modally for scripted captures),
+                         dlgclick <button text>, dlgcombo <n> <prefix>
+                         (drive the open dialog's buttons / combos),
+                         screenshot <file> dialog (capture the open dialog),
                          quit — one per line, #-comments; see tests/smoke.nsc.
   -h, --help             This help.
 ```

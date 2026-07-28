@@ -74,6 +74,10 @@ private slots:
     void pasteStretchToAll(bool normalized);        // apply to every list row
     void onListContextMenu(const QPoint& pos);      // right-click on the image list
     void combineChannels();
+    // Dialog builders shared by the menu slots (exec) and ScriptRunner
+    // (show, for scripted captures). Null when preconditions fail.
+    class RotateDialog*  makeRotateDialog();
+    class CombineDialog* makeCombineDialog(QString* whyNot = nullptr);
     void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:

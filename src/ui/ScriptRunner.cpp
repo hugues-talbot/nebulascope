@@ -1,11 +1,15 @@
 #include "ui/ScriptRunner.h"
 #include "ui/MainWindow.h"
 #include "ui/ViewGrid.h"
+#include "ui/RotateDialog.h"
+#include "ui/CombineDialog.h"
+#include "ui/PreferencesDialog.h"
 #include "render/DisplayRenderer.h"
 #include "io/ImageWriter.h"
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QPushButton>
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QEventLoop>
@@ -217,10 +221,69 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
         return true;
     }
+    if (cmd == QLatin1String("dialog")) {
+        // Open a dialog NON-modally for scripted captures (exec() would block
+        // the script), or close the one that's open.
+        if (!needArgs(1)) return false;
+        const QString which = t[1].toLower();
+        if (which == QLatin1String("close")) {
+            if (m_dialog) m_dialog->deleteLater();
+            m_dialog.clear();
+            return true;
+        }
+        if (m_dialog) { err = "a dialog is already open (dialog close first)"; return false; }
+        QDialog* d = nullptr;
+        if      (which == QLatin1String("rotate"))      d = m_w->makeRotateDialog();
+        else if (which == QLatin1String("combine")) {
+            QString why;
+            d = m_w->makeCombineDialog(&why);
+            if (!d) { err = why; return false; }
+        }
+        else if (which == QLatin1String("preferences")) d = new PreferencesDialog(m_w);
+        else { err = "dialog rotate|combine|preferences|close"; return false; }
+        if (!d) { err = "cannot open dialog (no image?)"; return false; }
+        m_dialog = d;
+        d->show();
+        return true;
+    }
+    if (cmd == QLatin1String("dlgclick")) {
+        // Click a button in the open dialog by its visible text (e.g. a
+        // Combine preset): dlgclick SHO
+        if (!needArgs(1)) return false;
+        if (!m_dialog) { err = "no dialog open"; return false; }
+        const QString want = QStringList(t.mid(1)).join(QLatin1Char(' '));
+        const auto buttons = m_dialog->findChildren<QPushButton*>();
+        for (QPushButton* b : buttons)
+            if (QString(b->text()).remove(QLatin1Char('&')) == want) { b->click(); return true; }
+        err = "no button \"" + want + "\" in the dialog";
+        return false;
+    }
+    if (cmd == QLatin1String("dlgcombo")) {
+        // Set the n-th combo box (creation order, 0-based) of the open dialog
+        // to the entry whose text starts with the given prefix:
+        //   dlgcombo 0 S      -> "S (SII)"
+        if (!needArgs(2)) return false;
+        if (!m_dialog) { err = "no dialog open"; return false; }
+        const auto combos = m_dialog->findChildren<QComboBox*>();
+        const int n = t[1].toInt();
+        if (n < 0 || n >= combos.size()) {
+            err = QStringLiteral("combo index out of range (dialog has %1)").arg(combos.size());
+            return false;
+        }
+        const QString want = QStringList(t.mid(2)).join(QLatin1Char(' ')).toLower();
+        for (int i = 0; i < combos[n]->count(); ++i)
+            if (combos[n]->itemText(i).toLower().startsWith(want)) {
+                combos[n]->setCurrentIndex(i);
+                return true;
+            }
+        err = "no entry starting with \"" + want + "\"";
+        return false;
+    }
     if (cmd == QLatin1String("screenshot")) {
-        // Render the whole main window (widget tree, docks and all) to a PNG.
-        // Works on the offscreen platform too — the basis for reproducible
-        // documentation captures.
+        // Render the whole main window (widget tree, docks and all) — or,
+        // with the `dialog` argument, the dialog opened by the `dialog`
+        // command — to a PNG. Works on the offscreen platform too: the basis
+        // for reproducible documentation captures.
         if (!needArgs(1)) return false;
         // Drain the async display pipeline first: a grab taken while a
         // re-render is in flight captures the previous frame.
@@ -228,7 +291,12 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         while (et.elapsed() < 15000 && m_w->m_renderWatcher &&
                (m_w->m_renderWatcher->isRunning() || m_w->m_renderPending))
             QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-        const QPixmap px = m_w->grab();
+        QWidget* target = m_w;
+        if (t.size() > 2 && t[2].toLower() == QLatin1String("dialog")) {
+            if (!m_dialog) { err = "no dialog open"; return false; }
+            target = m_dialog;
+        }
+        const QPixmap px = target->grab();
         if (px.isNull() || !px.save(t[1])) { err = "could not write " + t[1]; return false; }
         return true;
     }

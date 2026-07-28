@@ -27,11 +27,22 @@
 //   assert pixel <x> <y> <v> [tol]            mono (raw data value)
 //   assert pixel <x> <y> <r> <g> <b> [tol]    rgb
 //   assert range <min> <max> [tol]            channel-0 data extremes
+//   waitloaded [ms]             block until image + stats ready (default 10s)
+//   screenshot <path> [dialog]  whole window (or the open dialog) to PNG,
+//                               after the async render pipeline drains
+//   cmap <name>                 gray|heat|viridis|magma|inferno|cividis
+//   cmapmod invert|split on|off [t]
+//   panels on|off               the Image Only toggle
+//   action <name>               trigger a menu action by registry name
+//   dialog rotate|combine|preferences|close    open non-modally / close
 //   sleep <ms>
 //   quit
 //
 #include <QObject>
+#include <QPointer>
 #include <QStringList>
+
+class QDialog;
 
 namespace astro {
 
@@ -54,6 +65,7 @@ private:
     MainWindow* m_w;
     QString m_path;
     QStringList m_lines;
+    QPointer<QDialog> m_dialog;         // dialog opened by the `dialog` command
     int m_pc = 0;                       // program counter (line index)
     int m_failures = 0;
     int m_delayMs = 30;                 // between commands: lets renders settle

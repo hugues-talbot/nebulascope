@@ -979,33 +979,10 @@ void MainWindow::buildMenusAndToolbar() {
     acts["rotate_cw"]  = image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
     acts["rotate_ccw"] = image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
     acts["rotate_by_angle"] = image->addAction("Rotate by &Angle\u2026", QKeySequence("Ctrl+R"), this, [this]{
-        if (!m_image.isValid()) return;
-        // Small preview of the current display for the dialog's live thumbnail.
-        const QImage thumb = DisplayRenderer::render(m_image, m_model)
-            .scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        // North-up preset: measure the screen direction of celestial north at
-        // the image centre; the rotation that sends it to "up" (screen angle
-        // -90°, with visual-CCW positive) is rel = phi + 90.
-        double northUp = std::numeric_limits<double>::quiet_NaN();
-        if (m_wcs.valid()) {
-            const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
-            double ra = 0, dec = 0, nx = 0, ny = 0;
-            if (m_wcs.pixelToSky(cx, cy, ra, dec)) {
-                const bool south = dec > 89.0;               // sample away from the pole
-                const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
-                if (m_wcs.skyToPixel(ra, dec + dd, nx, ny)) {
-                    double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
-                    if (south) phi += 180.0;
-                    double t = currentRotationAngle() + phi + 90.0;
-                    while (t > 180.0) t -= 360.0;
-                    while (t < -180.0) t += 360.0;
-                    northUp = t;
-                }
-            }
-        }
-        RotateDialog dlg(thumb, currentRotationAngle(), northUp, this);
-        connect(&dlg, &RotateDialog::applyRequested, this, [this](double a){ pushRotateTo(a); });
-        if (dlg.exec() == QDialog::Accepted) pushRotateTo(dlg.angle());
+        RotateDialog* dlg = makeRotateDialog();
+        if (!dlg) return;
+        if (dlg->exec() == QDialog::Accepted) pushRotateTo(dlg->angle());
+        dlg->deleteLater();
     });
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
@@ -1287,9 +1264,43 @@ void MainWindow::restoreSyntheticEntry(const QString& key, const QString& name,
     m_fileList->setCurrentItem(it);
 }
 
-// Tools ▸ Combine Channels: gather every MONO image in the list (loading those
-// not yet decoded), run the dialog, and add the RGB result to the list.
-void MainWindow::combineChannels() {
+// Rotate-by-angle dialog, configured for the current image: display
+// thumbnail + the north-up preset measured from the WCS. Shared by the menu
+// slot (exec) and ScriptRunner (show). Caller owns the returned dialog.
+RotateDialog* MainWindow::makeRotateDialog() {
+    if (!m_image.isValid()) return nullptr;
+    // Small preview of the current display for the dialog's live thumbnail.
+    const QImage thumb = DisplayRenderer::render(m_image, m_model)
+        .scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    // North-up preset: measure the screen direction of celestial north at
+    // the image centre; the rotation that sends it to "up" (screen angle
+    // -90°, with visual-CCW positive) is rel = phi + 90.
+    double northUp = std::numeric_limits<double>::quiet_NaN();
+    if (m_wcs.valid()) {
+        const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
+        double ra = 0, dec = 0, nx = 0, ny = 0;
+        if (m_wcs.pixelToSky(cx, cy, ra, dec)) {
+            const bool south = dec > 89.0;               // sample away from the pole
+            const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
+            if (m_wcs.skyToPixel(ra, dec + dd, nx, ny)) {
+                double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
+                if (south) phi += 180.0;
+                double t = currentRotationAngle() + phi + 90.0;
+                while (t > 180.0) t -= 360.0;
+                while (t < -180.0) t += 360.0;
+                northUp = t;
+            }
+        }
+    }
+    auto* dlg = new RotateDialog(thumb, currentRotationAngle(), northUp, this);
+    connect(dlg, &RotateDialog::applyRequested, this, [this](double a){ pushRotateTo(a); });
+    return dlg;
+}
+
+// Combine-channels dialog over every MONO image in the list (loading those
+// not yet decoded). Shared by the menu slot (exec) and ScriptRunner (show).
+// Caller owns the returned dialog; null (+ *whyNot) when under two monos.
+CombineDialog* MainWindow::makeCombineDialog(QString* whyNot) {
     std::vector<CombineDialog::Source> mono;
     for (int i = 0; i < m_fileList->count(); ++i) {
         QListWidgetItem* item = m_fileList->item(i);
@@ -1331,11 +1342,21 @@ void MainWindow::combineChannels() {
         }
     }
     if (mono.size() < 2) {
-        QMessageBox::information(this, "Combine Channels",
+        if (whyNot) *whyNot = QStringLiteral(
             "Load at least two single-channel (mono) images into the list first.");
+        return nullptr;
+    }
+    return new CombineDialog(std::move(mono), this);
+}
+
+void MainWindow::combineChannels() {
+    QString whyNot;
+    CombineDialog* dlgp = makeCombineDialog(&whyNot);
+    if (!dlgp) {
+        QMessageBox::information(this, "Combine Channels", whyNot);
         return;
     }
-    CombineDialog dlg(std::move(mono), this);
+    CombineDialog& dlg = *dlgp;
     if (dlg.exec() == QDialog::Accepted && dlg.hasResult()) {
         // Land the result in an empty view when one exists (multi-view HOO/SHO
         // workflow); otherwise it replaces the active view's image.
@@ -1353,6 +1374,7 @@ void MainWindow::combineChannels() {
             m_model.setFn(StretchFn::Linear);
         }
     }
+    dlgp->deleteLater();
 }
 
 // Tools ▸ Combine Stars: gather the RGB (or mono) images in the list, run the
