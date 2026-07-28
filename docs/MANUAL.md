@@ -285,7 +285,7 @@ Recolours the current image to match a reference's colour distribution
   SHO image). Rotated images are handled in the disk frame — no borders are
   baked. The result is a new display-ready list entry; undoable.
 
-![Before/after of a colour transport in a 1×2 split](screenshots/transport.png)
+![Colour transport in a 1×3 split: source, reference, transported result](screenshots/transport.png)
 *Capture: source and reference side by side, the `_ct` result in a third view
 or after.*
 
