@@ -1,8 +1,13 @@
 # Direction / TODO
 
-Strategic discussion notes (2026-07-28) — direction, not yet a plan. Current
-phase: **use NebulaScope in real operations** and observe where its impact is
-greatest before committing to any branch below.
+Strategic discussion notes (2026-07-28) — direction, not yet a plan.
+**Decision (2026-07-28): the next chapter is (1) Siril/PixInsight
+interoperability**, alongside using the tool in real operations.
+
+Local tool survey: Siril 1.4.0-beta1 (`siril-cli` in the app bundle —
+script files AND the named-pipe live command interface), GraXpert.app
+(CLI via subcommands), PixInsight (no external driving; file-level interop,
+already verified both directions).
 
 ## The three candidate directions
 
@@ -44,6 +49,8 @@ demand.
 
 ## Near-term candidates (roughly ordered)
 
+- [x] Watch & auto-reload — images overwritten by external tools re-decode
+      live in every view (View ▸ Auto-Reload Changed Files; shipped post-v0.89)
 - [ ] External-tools framework (GraXpert CLI as the first integration)
 - [ ] Siril CLI round-trip (send current image to a Siril script, ingest result)
 - [ ] SAMP client (broadcast/receive images + coordinates with DS9/Aladin/Topcat)
