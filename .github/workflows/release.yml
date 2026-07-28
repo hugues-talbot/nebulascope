@@ -25,6 +25,27 @@ jobs:
           wait-interval: 30
           allowed-conclusions: success
 
+      # ---- Documentation PDF (Quarto book) ----------------------------------
+      # Rendered fresh so the appendix includes THIS release's notes. Every
+      # step is continue-on-error: a docs hiccup must never block binaries.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history: make-releases.sh reads the tags
+
+      - name: Set up Quarto + TinyTeX
+        uses: quarto-dev/quarto-actions/setup@v2
+        continue-on-error: true
+        with:
+          tinytex: true
+
+      - name: Render documentation PDF
+        continue-on-error: true
+        run: |
+          ./docs/make-releases.sh
+          (cd docs && quarto render --to pdf)
+          mkdir -p artifacts
+          cp docs/_book/NebulaScope.pdf "artifacts/NebulaScope-docs-${{ github.ref_name }}.pdf" || true
+
       - name: Download Windows artifact
         uses: dawidd6/action-download-artifact@v6
         with:
@@ -75,6 +96,8 @@ jobs:
             | Windows (x64) | `NebulaScope-windows-x64.zip` | Unzip and run `nebulascope.exe` |
             | Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |
             | Ubuntu/Debian | `nebulascope_*_amd64.deb` | `sudo apt install ./nebulascope_*.deb` (deps auto-resolved) |
+            | Documentation | `NebulaScope-docs-*.pdf` | Manual + architecture + build guides + release notes |
           files: |
             artifacts/*.zip
             artifacts/*.deb
+            artifacts/*.pdf
