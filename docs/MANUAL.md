@@ -158,6 +158,12 @@ cards or XISF properties) in a filterable, copyable table.
 - In-memory results (combine, transport) are marked in the list; **Save Data
   As…** turns the entry into the saved file (name, sidecars, and per-image
   state follow).
+- **Auto-reload** (View ▸ Auto-Reload Changed Files, default on): when
+  another program — PixInsight, Siril, GraXpert, … — overwrites a listed
+  file on disk, NebulaScope re-decodes it automatically (in every view that
+  shows it, active or not). Stretch memory applies to the reloaded data, and
+  zoom/pan survive when the dimensions are unchanged. Keep NebulaScope open
+  beside your processing suite and every save appears as it lands.
 
 ## 8. Geometry: rotate & flip
 

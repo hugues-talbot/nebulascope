@@ -197,6 +197,16 @@ void MainWindow::buildUi() {
     connect(&m_model, &StretchModel::changed, this, [this] {
         if (!m_currentPath.isEmpty()) m_stfByPath.insert(m_currentPath, m_model.state());
     });
+
+    // Interop: reload images that external tools overwrite on disk. Debounced —
+    // suites write in bursts (or write-then-rename, which drops the watch).
+    m_fileWatcher = new QFileSystemWatcher(this);
+    connect(m_fileWatcher, &QFileSystemWatcher::fileChanged,
+            this, &MainWindow::onWatchedFileChanged);
+    m_reloadTimer = new QTimer(this);
+    m_reloadTimer->setSingleShot(true);
+    m_reloadTimer->setInterval(600);
+    connect(m_reloadTimer, &QTimer::timeout, this, &MainWindow::reloadChangedFiles);
 }
 
 // ---- undo commands -----------------------------------------------------------
@@ -892,6 +902,12 @@ void MainWindow::buildMenusAndToolbar() {
         isFullScreen() ? showNormal() : showFullScreen();
     });
     acts["image_only"] = view->addAction("&Image Only", QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
+    // Interop: refresh images that PixInsight/Siril/GraXpert overwrite on disk.
+    m_autoReloadAct = view->addAction("Auto-&Reload Changed Files");
+    m_autoReloadAct->setCheckable(true);
+    m_autoReloadAct->setChecked(true);
+    m_autoReloadAct->setToolTip("Re-decode a list image when another program overwrites it");
+    acts["auto_reload"] = m_autoReloadAct;
     view->addSeparator();
     QAction* aGrid = view->addAction("Coordinate &Grid", QKeySequence("G"), this, [this](bool) {
         m_annotations->setGridVisible(!m_annotations->gridVisible());
@@ -1227,6 +1243,71 @@ void MainWindow::addPaths(const QStringList& paths) {
             m_fileList->setCurrentItem(firstAdded);
         }
     }
+    syncFileWatcher();
+}
+
+// ---- auto-reload on external change -----------------------------------------
+
+// Watch exactly the on-disk files behind the current list (multi-HDU rows
+// share their file; mem:// entries have none).
+void MainWindow::syncFileWatcher() {
+    if (!m_fileWatcher) return;
+    QSet<QString> want;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        int hduDummy = -1;
+        const QString base = splitHduKey(m_fileList->item(i)->data(Qt::UserRole).toString(), hduDummy);
+        if (!base.isEmpty() && !base.startsWith(QLatin1String("mem://")) &&
+            QFileInfo::exists(base))
+            want.insert(base);
+    }
+    const QStringList old = m_fileWatcher->files();
+    if (!old.isEmpty()) m_fileWatcher->removePaths(old);
+    if (!want.isEmpty()) m_fileWatcher->addPaths(QStringList(want.begin(), want.end()));
+}
+
+void MainWindow::onWatchedFileChanged(const QString& path) {
+    // Write-then-rename replaces the inode and silently drops the watch;
+    // re-arm as soon as the new file exists.
+    if (QFileInfo::exists(path) && !m_fileWatcher->files().contains(path))
+        m_fileWatcher->addPath(path);
+    if (m_autoReloadAct && !m_autoReloadAct->isChecked()) return;
+    m_reloadPending.insert(path);
+    m_reloadTimer->start();                       // restart the debounce window
+}
+
+void MainWindow::reloadChangedFiles() {
+    const QSet<QString> pending = m_reloadPending;
+    m_reloadPending.clear();
+    for (const QString& base : pending) {
+        if (!QFileInfo::exists(base)) continue;   // deleted / still being replaced
+        int hduDummy = -1;
+        // Active image first: full re-display (stretch memory and, for
+        // unchanged dimensions, zoom/pan are preserved by displayPath).
+        if (splitHduKey(m_currentPath, hduDummy) == base)
+            displayPath(m_currentPath);
+        // Inactive cells holding this file: re-decode and re-render through
+        // the cell's own remembered stretch.
+        for (int i = 0; i < m_grid->rows() * m_grid->cols(); ++i) {
+            ViewCell* c = m_grid->cellAt(i);
+            if (!c || c == m_grid->activeCell()) continue;
+            int hduReq = -1;
+            if (splitHduKey(c->path, hduReq) != base) continue;
+            io::LoadOptions lopts;
+            lopts.fitsHdu = hduReq;
+            io::LoadResult res = io::loadImage(base, lopts);
+            if (!res.ok) continue;
+            c->image = std::move(res.image);
+            c->header = std::move(res.header);
+            c->stats = computeStats(c->image);
+            c->view()->setSource(&c->image);
+            StretchModel cellModel;
+            cellModel.setChannelCount(c->image.channels());
+            if (c->hasStretch) cellModel.setState(c->stretch);
+            c->view()->setDisplayImage(DisplayRenderer::render(c->image, cellModel));
+        }
+        statusBar()->showMessage(
+            QStringLiteral("Reloaded (changed on disk): %1").arg(QFileInfo(base).fileName()), 4000);
+    }
 }
 
 // Register an in-memory image (e.g. a channel combine) and show it. It gets a
@@ -1468,6 +1549,7 @@ void MainWindow::removeSelected() {
         m_synthetic.remove(p);                           // free any in-memory combine
         delete m_fileList->takeItem(m_fileList->row(it));
     }
+    syncFileWatcher();
     if (m_fileList->count() == 0) {
         // Last image closed: empty every view cell and the live state.
         m_currentPath.clear();

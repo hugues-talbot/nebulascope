@@ -10,6 +10,8 @@
 #include <QImage>
 #include <QHash>
 #include <QSet>
+#include <QFileSystemWatcher>
+#include <QTimer>
 #include <functional>
 #include <memory>
 #include "core/ImageData.h"
@@ -186,6 +188,16 @@ private:
     ViewGrid* m_grid = nullptr;
     void ensureAnnotationsVisible();      // force the overlay on (load/import)
     QAction* m_annVisAct = nullptr;       // View ▸ Show Annotations (kept in sync)
+
+    // Auto-reload: watch every on-disk list image; re-decode when an external
+    // tool (PixInsight, Siril, GraXpert, ...) overwrites one.
+    QFileSystemWatcher* m_fileWatcher = nullptr;
+    QTimer*        m_reloadTimer = nullptr;    // debounce: writes arrive in bursts
+    QSet<QString>  m_reloadPending;            // base file paths awaiting reload
+    QAction*       m_autoReloadAct = nullptr;
+    void syncFileWatcher();
+    void onWatchedFileChanged(const QString& path);
+    void reloadChangedFiles();
     // Rotate/flip history per image: re-applied when the image reloads from
     // disk (blink-back or a fresh session via the annotation sidecar), so the
     // pixels always match annotations made in a transformed orientation.
