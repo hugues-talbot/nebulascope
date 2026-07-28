@@ -252,8 +252,13 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if      (which == QLatin1String("rotate"))      d = m_w->makeRotateDialog();
         else if (which == QLatin1String("combine")) {
             QString why;
-            d = m_w->makeCombineDialog(&why);
-            if (!d) { err = why; return false; }
+            CombineDialog* cd = m_w->makeCombineDialog(&why);
+            if (!cd) { err = why; return false; }
+            // Non-modal: land the result on Create Image, as the modal
+            // slot does after exec().
+            connect(cd, &QDialog::accepted, m_w,
+                    [this, cd] { m_w->adoptCombineResult(*cd); });
+            d = cd;
         }
         else if (which == QLatin1String("preferences")) d = new PreferencesDialog(m_w);
         else { err = "dialog rotate|combine|preferences|close"; return false; }

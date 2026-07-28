@@ -1356,25 +1356,29 @@ void MainWindow::combineChannels() {
         QMessageBox::information(this, "Combine Channels", whyNot);
         return;
     }
-    CombineDialog& dlg = *dlgp;
-    if (dlg.exec() == QDialog::Accepted && dlg.hasResult()) {
-        // Land the result in an empty view when one exists (multi-view HOO/SHO
-        // workflow); otherwise it replaces the active view's image.
-        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
-        ImageData out = dlg.result();                 // copy out of the dialog
-        addSyntheticImage(dlg.resultName(), std::move(out));
-        if (dlg.resultDisplayReady()) {
-            // Data is already display-stretched [0,1]: show it 1:1 (identity
-            // linear window), not through a fresh auto-STF.
-            for (int c = 0; c < 3; ++c) {
-                m_model.setRange(c, 0.0, 1.0);
-                ChannelStretch cs; cs.black = 0.0; cs.mid = 0.5; cs.white = 1.0;
-                m_model.setChannel(c, cs);
-            }
-            m_model.setFn(StretchFn::Linear);
-        }
-    }
+    if (dlgp->exec() == QDialog::Accepted) adoptCombineResult(*dlgp);
     dlgp->deleteLater();
+}
+
+// Land an accepted combine result in the session (shared by the modal slot
+// and the ScriptRunner's non-modal dialog, via QDialog::accepted).
+void MainWindow::adoptCombineResult(CombineDialog& dlg) {
+    if (!dlg.hasResult()) return;
+    // Land the result in an empty view when one exists (multi-view HOO/SHO
+    // workflow); otherwise it replaces the active view's image.
+    if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+    ImageData out = dlg.result();                 // copy out of the dialog
+    addSyntheticImage(dlg.resultName(), std::move(out));
+    if (dlg.resultDisplayReady()) {
+        // Data is already display-stretched [0,1]: show it 1:1 (identity
+        // linear window), not through a fresh auto-STF.
+        for (int c = 0; c < 3; ++c) {
+            m_model.setRange(c, 0.0, 1.0);
+            ChannelStretch cs; cs.black = 0.0; cs.mid = 0.5; cs.white = 1.0;
+            m_model.setChannel(c, cs);
+        }
+        m_model.setFn(StretchFn::Linear);
+    }
 }
 
 // Tools ▸ Combine Stars: gather the RGB (or mono) images in the list, run the

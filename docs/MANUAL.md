@@ -246,8 +246,12 @@ Merges up to **7 mono inputs** — R, G, B, S(II), H(α), O(III), L — into a
 colour image via a linear-combination matrix:
 
 ![Combine Channels dialog, SHO preset, preview visible](screenshots/combine-channels.png)
-*Capture: the dialog with three narrowband inputs assigned and the preview
-showing a Hubble-palette result.*
+*The dialog with three narrowband masters (M1) assigned S/H/O and the live
+preview.*
+
+![SII, Ha and OIII masters with their SHO combination in a 2×2 split](screenshots/combine-result.png)
+*The created image lands in the first empty view: each channel beside the
+Hubble-palette result.*
 
 - **Palette presets**: SHO/Hubble, HOO, HSO, LRGB, plain RGB, bicolor.
 - Per-channel **pre-normalization**: median / background-pedestal / min-max /
