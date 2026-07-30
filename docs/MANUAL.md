@@ -40,7 +40,8 @@ raw mosaic. The algorithm is a global choice — in the same menu or in
 Preferences: **RCD**
 (default; directional, best on stars — validated against Siril's RCD),
 **Bilinear**, or **Superpixel** (each 2×2 cell becomes one RGB pixel: half
-size, zero artifacts, fastest). Debayering happens at load — auto-reload
+size, zero artifacts, fastest). Debayering happens at load — the status bar notes the decision
+(e.g. *debayered RGGB, RCD*), the Info panel records it, and auto-reload
 (§7) and per-image stretch memory compose with it naturally.
 
 ![Raw Bayer mosaic beside its RCD demosaic, 1×2 split](screenshots/debayer.png)

@@ -2317,9 +2317,17 @@ void MainWindow::displayPath(const QString& path) {
 
     const QString name = QFileInfo(path).fileName();
     setWindowTitle(QStringLiteral("NebulaScope \u2014 %1").arg(name));
-    statusBar()->showMessage(QStringLiteral("%1   %2\u00d7%3   %4 ch   [%5/%6]")
+    // Surface the demosaic decision right where the eye lands on open.
+    QString debayerNote;
+    for (const QString& s : m_header.structure)
+        if (s.startsWith(QLatin1String("Debayered: "))) {
+            debayerNote = QStringLiteral("   \u00b7 debayered %1").arg(s.mid(11));
+            break;
+        }
+    statusBar()->showMessage(QStringLiteral("%1   %2\u00d7%3   %4 ch   [%5/%6]%7")
         .arg(name).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels())
-        .arg(m_fileList->currentRow() + 1).arg(m_fileList->count()), 4000);
+        .arg(m_fileList->currentRow() + 1).arg(m_fileList->count())
+        .arg(debayerNote), 4000);
 }
 
 // XISF only: ask which data-block compression to write (remembered for the
