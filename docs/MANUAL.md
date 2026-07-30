@@ -91,7 +91,10 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
   image in the list**: each one applies it as it loads. Made for
   same-acquisition-session batches — set up one frame, share, then blink
   through the rest. From the command line: `--shared-stf` (auto-stretch the
-  first image, share with all); in scripts: `stfall`.
+  first image, share with all); in scripts: `stfall`. For a *subset* — or
+  for **normalized** pasting that re-anchors on each image's own statistics —
+  use Copy Stretch, select images in the list, and right-click ▸ Paste
+  Stretch.
 - The **colorbar** legend shows the current transfer over the window, with
   ticks in real data units; it follows the active colormap *and* the
   adjustments — what the bar shows is what a pixel of that value looks like.
