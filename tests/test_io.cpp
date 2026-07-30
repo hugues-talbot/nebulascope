@@ -183,6 +183,27 @@ NS_TEST(pixinsight_written_xisf_interop) {
     NS_CHECK(worst <= 1.0 / 65535.0 + 1e-7);
 }
 
+NS_TEST(tiff_large_image_reads_back) {
+    // Regression: Qt 6's QImageReader allocation limit (128 MB default)
+    // rejected big 16-bit TIFFs on READ that we ourselves had written —
+    // 16-bit RGB decodes to 8 bytes/pixel, so ~16 Mpx tripped it while
+    // Preview opened the same file happily. The reader must lift the limit.
+    QTemporaryDir tmp;
+    const int W = 6200, H = 6200;                  // 6200² × 8 B ≈ 307 MB decoded
+    ImageData img(W, H, 3, SampleFormat::Float32, ColorSpace::RGB);
+    for (int c = 0; c < 3; ++c) {
+        float* p = img.plane<float>(c);
+        for (std::size_t i = 0; i < img.samplesPerChannel(); ++i)
+            p[i] = float((i * (c + 2)) % 1000) / 999.0f;
+    }
+    const QString path = tmp.path() + "/big.tiff";
+    NS_CHECK(io::saveImage(path, img, {}).ok);
+    io::LoadResult lr = io::loadImage(path);
+    NS_CHECK(lr.ok);
+    NS_CHECK(lr.image.width() == W && lr.image.height() == H &&
+             lr.image.channels() == 3);
+}
+
 NS_TEST(tiff_roundtrip_16bit) {
     // 16-bit TIFF: quantization error bounded by 1/65535 of the range.
     QTemporaryDir tmp;

@@ -23,6 +23,12 @@ bool QtImageReader::canRead(const QString& path) const {
 LoadResult QtImageReader::load(const QString& path, const LoadOptions& opts) const {
     LoadResult r;
 
+    // Qt caps DECODED image size (256 MB default) as a decompression-bomb
+    // guard for untrusted content — but a 16-bit RGB TIFF decodes at
+    // 8 bytes/pixel, so ordinary full-frame astro exports (~16 Mpx+) hit the
+    // cap and fail with "Unable to read image data" while other viewers open
+    // them fine. These are user-chosen local files: lift the limit.
+    QImageReader::setAllocationLimit(0);
     QImageReader reader(path);
     reader.setAutoTransform(true);                 // honour EXIF orientation
     QImage src = reader.read();
