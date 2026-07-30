@@ -394,7 +394,12 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list
   entry to the file. **XISF interop:** float data are normalized to [0,1]
   (PixInsight's convention; `NSSCALE`/`NSZERO` keywords record the original
-  range). Saving XISF asks for **compression** — Zstd (smallest; silently
+  range). Saving **FITS** preserves metadata carefully: keyword values keep
+  their natural types (numbers stay numeric, not quoted strings), and when a
+  PixInsight-native XISF carries its metadata only as XISF *properties*, the
+  standard keywords (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME,
+  …) are synthesized from them — units converted where the conventions
+  differ. Saving XISF asks for **compression** — Zstd (smallest; silently
   falls back to Zlib if your libXISF build lacks it), Zlib (widest
   compatibility), or Uncompressed; blocks are byte-shuffled for better
   ratios, and the choice is remembered for the session.

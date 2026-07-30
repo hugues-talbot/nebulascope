@@ -183,6 +183,63 @@ NS_TEST(pixinsight_written_xisf_interop) {
     NS_CHECK(worst <= 1.0 / 65535.0 + 1e-7);
 }
 
+NS_TEST(fits_writes_typed_cards) {
+    // Numbers must land as NUMERIC cards, not quoted strings — and quoted
+    // strings must come out single-quoted, not doubled.
+    QTemporaryDir tmp;
+    ImageData img = makePattern(8, 8, 1, 0.0f, 1.0f);
+    ImageHeader h;
+    h.cards.push_back({ "FOCALLEN", "1672.4416", "focal length" });
+    h.cards.push_back({ "XBINNING", "2", "binning" });
+    h.cards.push_back({ "DATE-OBS", "'2026-04-25T12:00:00.000'", "date" });
+    const QString path = tmp.path() + "/typed.fits";
+    NS_CHECK(io::saveImage(path, img, h).ok);
+    QFile f(path);
+    NS_CHECK(f.open(QIODevice::ReadOnly));
+    const QByteArray raw = f.read(8 * 2880);
+    bool focOk = false, binOk = false, dateOk = false;
+    for (int i = 0; i + 80 <= raw.size(); i += 80) {
+        const QByteArray c = raw.mid(i, 80);
+        if (c.startsWith("FOCALLEN")) focOk  = !c.contains('\'') && c.contains("1672.44");
+        if (c.startsWith("XBINNING")) binOk  = !c.contains('\'') && c.contains("2");
+        if (c.startsWith("DATE-OBS")) dateOk = c.count('\'') == 2 && c.contains("2026-04-25T12");
+        if (c.startsWith("END")) break;
+    }
+    NS_CHECK(focOk);
+    NS_CHECK(binOk);
+    NS_CHECK(dateOk);
+}
+
+NS_TEST(fits_synthesizes_cards_from_xisf_properties) {
+    // PixInsight-native XISF: metadata as properties, no FITS keywords. The
+    // FITS writer must synthesize the standard cards (with unit fixes:
+    // FocalLength metres → FOCALLEN mm, timestamps lose the trailing Z).
+    QTemporaryDir tmp;
+    ImageData img = makePattern(8, 8, 1, 0.0f, 1.0f);
+    ImageHeader h;                                    // no cards at all
+    h.properties["Observation:Time:Start"] = "2025-12-27T00:45:46.943Z";
+    h.properties["Instrument:Telescope:FocalLength"] = "2.040398";
+    h.properties["Instrument:Sensor:XPixelSize"] = "7.52";
+    h.properties["Instrument:ExposureTime"] = "300";
+    h.properties["Instrument:Camera:Name"] = "ZWO ASI1600MM Pro";
+    const QString path = tmp.path() + "/props.fits";
+    NS_CHECK(io::saveImage(path, img, h).ok);
+    io::LoadResult lr = io::loadImage(path);
+    NS_CHECK(lr.ok);
+    auto value = [&lr](const char* key) {
+        for (const auto& c : lr.header.cards)
+            if (c.key.compare(QLatin1String(key), Qt::CaseInsensitive) == 0)
+                return c.value;
+        return QString();
+    };
+    NS_CHECK(value("DATE-OBS").contains("2025-12-27T00:45:46.943"));
+    NS_CHECK(!value("DATE-OBS").contains("Z"));
+    NS_CHECK(std::fabs(value("FOCALLEN").remove('\'').toDouble() - 2040.398) < 0.01);
+    NS_CHECK(std::fabs(value("XPIXSZ").remove('\'').toDouble() - 7.52) < 1e-6);
+    NS_CHECK(std::fabs(value("EXPTIME").remove('\'').toDouble() - 300.0) < 1e-6);
+    NS_CHECK(value("INSTRUME").contains("ASI1600MM"));
+}
+
 NS_TEST(tiff_large_image_reads_back) {
     // Regression: Qt 6's QImageReader allocation limit (128 MB default)
     // rejected big 16-bit TIFFs on READ that we ourselves had written —

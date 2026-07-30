@@ -45,11 +45,88 @@ static bool isStructural(const QString& key) {
     return key.isEmpty() || k.startsWith("NAXIS") || reserved.contains(k);
 }
 
+// Write one card with its NATURAL type: quoted-string cards stay strings,
+// bools stay logical, and bare numbers become numeric cards — a FITS
+// FOCALLEN= '1672.4416' string frustrates every tool that reads it as a
+// number (PixInsight included).
+static void addTypedKey(CCfits::PHDU& phdu, const QString& key,
+                        const QString& rawValue, const QString& comment) {
+    QString v = rawValue.trimmed();
+    const bool wasQuoted = v.size() >= 2 && v.startsWith('\'') && v.endsWith('\'');
+    if (wasQuoted) v = v.mid(1, v.size() - 2).trimmed();
+    const std::string k = key.toStdString(), cm = comment.toStdString();
+    if (!wasQuoted) {
+        if (v == QLatin1String("T")) { phdu.addKey(k, true, cm);  return; }
+        if (v == QLatin1String("F")) { phdu.addKey(k, false, cm); return; }
+        bool ok = false;
+        const qlonglong i = v.toLongLong(&ok);
+        if (ok) { phdu.addKey(k, static_cast<long>(i), cm); return; }
+        const double d = v.toDouble(&ok);
+        if (ok) { phdu.addKey(k, d, cm); return; }
+    }
+    phdu.addKey(k, v.toStdString(), cm);
+}
+
+// Standard keywords synthesized from XISF properties when the card itself is
+// missing — PixInsight-native files often carry Observation:*/Instrument:*
+// properties and no embedded FITS keywords at all; without this mapping a
+// XISF → FITS save silently drops the observation metadata.
+static void appendCardsFromProperties(const ImageHeader& header,
+                                      std::vector<HeaderCard>& cards) {
+    QSet<QString> have;
+    for (const auto& c : cards) have.insert(c.key.toUpper());
+    auto prop = [&header](const char* id) {
+        return header.properties.value(QLatin1String(id)).toString();
+    };
+    auto add = [&](const char* key, const QString& value, const char* comment) {
+        if (value.isEmpty() || have.contains(QLatin1String(key))) return;
+        cards.push_back({ QLatin1String(key), value, QLatin1String(comment) });
+    };
+    auto scaled = [&prop](const char* id, double factor) -> QString {
+        const QString v = prop(id);
+        if (v.isEmpty()) return {};
+        bool ok = false;
+        const double d = v.toDouble(&ok);
+        return ok ? QString::number(d * factor, 'g', 10) : QString();
+    };
+    QString t = prop("Observation:Time:Start");
+    if (t.endsWith(QLatin1Char('Z'))) t.chop(1);          // FITS DATE-OBS is bare ISO
+    add("DATE-OBS", t.isEmpty() ? t : QLatin1Char('\'') + t + QLatin1Char('\''),
+        "Start of observation (from XISF Observation:Time:Start)");
+    QString te = prop("Observation:Time:End");
+    if (te.endsWith(QLatin1Char('Z'))) te.chop(1);
+    add("DATE-END", te.isEmpty() ? te : QLatin1Char('\'') + te + QLatin1Char('\''),
+        "End of observation (from XISF)");
+    add("EXPTIME",  prop("Instrument:ExposureTime"), "Exposure time (s, from XISF)");
+    add("FOCALLEN", scaled("Instrument:Telescope:FocalLength", 1000.0),
+        "Focal length (mm, from XISF; property is metres)");
+    add("APTDIA",   scaled("Instrument:Telescope:Aperture", 1000.0),
+        "Aperture diameter (mm, from XISF)");
+    add("XPIXSZ",   prop("Instrument:Sensor:XPixelSize"), "Pixel size X (um, from XISF)");
+    add("YPIXSZ",   prop("Instrument:Sensor:YPixelSize"), "Pixel size Y (um, from XISF)");
+    add("XBINNING", prop("Instrument:Camera:XBinning"), "Binning X (from XISF)");
+    add("YBINNING", prop("Instrument:Camera:YBinning"), "Binning Y (from XISF)");
+    add("GAIN",     prop("Instrument:Camera:Gain"), "Camera gain (from XISF)");
+    const QString cam = prop("Instrument:Camera:Name");
+    add("INSTRUME", cam.isEmpty() ? cam : QLatin1Char('\'') + cam + QLatin1Char('\''),
+        "Camera (from XISF)");
+    const QString tel = prop("Instrument:Telescope:Name");
+    add("TELESCOP", tel.isEmpty() ? tel : QLatin1Char('\'') + tel + QLatin1Char('\''),
+        "Telescope (from XISF)");
+    const QString obj = prop("Observation:Object:Name");
+    add("OBJECT",   obj.isEmpty() ? obj : QLatin1Char('\'') + obj + QLatin1Char('\''),
+        "Object (from XISF)");
+    add("RA",  prop("Observation:Center:RA"),  "Image centre RA (deg, from XISF)");
+    add("DEC", prop("Observation:Center:Dec"), "Image centre Dec (deg, from XISF)");
+}
+
 static void writeHeader(CCfits::PHDU& phdu, const ImageHeader& header) {
-    for (const auto& c : header.cards) {
+    std::vector<HeaderCard> cards = header.cards;
+    appendCardsFromProperties(header, cards);
+    for (const auto& c : cards) {
         if (isStructural(c.key)) continue;
         try {
-            phdu.addKey(c.key.toStdString(), c.value.toStdString(), c.comment.toStdString());
+            addTypedKey(phdu, c.key, c.value, c.comment);
         } catch (...) { /* skip a single bad card, keep going */ }
     }
 }
