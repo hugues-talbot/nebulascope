@@ -1080,10 +1080,15 @@ void MainWindow::buildMenusAndToolbar() {
     QMenu* help = menuBar()->addMenu("&Help");
     help->addAction("Configure &Shortcuts…", this, &MainWindow::showShortcutSettings);
     QAction* prefsAct = help->addAction("&Preferences…", this, [this] {
+        const int oldDebayer = Preferences::get().debayerMethod;
         PreferencesDialog dlg(this);
         if (dlg.exec() == QDialog::Accepted) {
             m_annColor = Preferences::get().annColor;   // new-annotation default
             refreshAnnotations();                       // grid density, stroke width
+            if (Preferences::get().debayerMethod != oldDebayer) {
+                syncDebayerMenu();                      // radio state follows the pref
+                if (!m_currentPath.isEmpty()) displayPath(m_currentPath);
+            }
         }
     });
     prefsAct->setMenuRole(QAction::PreferencesRole);   // macOS: app menu ▸ Settings…

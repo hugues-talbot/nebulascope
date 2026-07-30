@@ -8,6 +8,7 @@
 #include <QKeySequenceEdit>
 #include <QSettings>
 #include <QLabel>
+#include <QComboBox>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
@@ -103,6 +104,13 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     recentJson->setToolTip("How many annotation files File \u25b8 Recent Annotations remembers (0 disables)");
     form->addRow("Recent annotations history:", recentJson);
 
+    auto* debayerMeth = new QComboBox();
+    debayerMeth->addItems({ "Superpixel (half size)", "Bilinear", "RCD (best)" });
+    debayerMeth->setCurrentIndex(qBound(0, p.debayerMethod, 2));
+    debayerMeth->setToolTip("Demosaic algorithm for one-shot-colour (Bayer) frames.\n"
+                            "Also switchable per session in Image \u25b8 Debayer.");
+    form->addRow("Debayer algorithm:", debayerMeth);
+
     // ---- Shortcuts tab ----
     // Edits the same INI the startup shortcut loader reads (Help ▸ Configure
     // Shortcuts… opens it in a file manager). New actions appear here after
@@ -156,6 +164,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         recentImg->setValue(d.recentImagesMax);
         recentJson->setValue(d.recentJsonMax);
         overlayOp->setValue(int(d.overlayOpacity * 100 + 0.5));
+        debayerMeth->setCurrentIndex(qBound(0, d.debayerMethod, 2));
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
@@ -168,6 +177,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.recentImagesMax = recentImg->value();
         p.recentJsonMax   = recentJson->value();
         p.overlayOpacity  = overlayOp->value() / 100.0;
+        p.debayerMethod   = debayerMeth->currentIndex();
         p.save();
         // Persist the shortcut edits back to the INI the startup loader reads.
         QSettings sc(QSettings::IniFormat, QSettings::UserScope,

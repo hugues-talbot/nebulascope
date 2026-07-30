@@ -36,7 +36,8 @@ whose header carries a Bayer pattern (`BAYERPAT`, honouring
 `XBAYROFF`/`YBAYROFF` — written by ASIAIR, ASICAP, NINA, SGP, …) opens as
 RGB. **Image ▸ Debayer** controls it per image: *Auto-Detect*, a forced
 pattern (for frames with missing or wrong keywords), or *Off* to inspect the
-raw mosaic. The algorithm is a global choice in the same menu: **RCD**
+raw mosaic. The algorithm is a global choice — in the same menu or in
+Preferences: **RCD**
 (default; directional, best on stars — validated against Siril's RCD),
 **Bilinear**, or **Superpixel** (each 2×2 cell becomes one RGB pixel: half
 size, zero artifacts, fastest). Debayering happens at load — auto-reload
