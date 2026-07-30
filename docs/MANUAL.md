@@ -31,6 +31,19 @@ the view is split, otherwise in the active view. On first view it gets a plain
 **min→max linear ramp** (predictable, no guessing); press **Auto STF** for a
 boosted stretch (§3).
 
+**One-shot-colour (OSC) frames are debayered automatically.** A mono frame
+whose header carries a Bayer pattern (`BAYERPAT`, honouring
+`XBAYROFF`/`YBAYROFF` — written by ASIAIR, ASICAP, NINA, SGP, …) opens as
+RGB. **Image ▸ Debayer** controls it per image: *Auto-Detect*, a forced
+pattern (for frames with missing or wrong keywords), or *Off* to inspect the
+raw mosaic. The algorithm is a global choice in the same menu: **RCD**
+(default; directional, best on stars — validated against Siril's RCD),
+**Bilinear**, or **Superpixel** (each 2×2 cell becomes one RGB pixel: half
+size, zero artifacts, fastest). Debayering happens at load — auto-reload
+(§7) and per-image stretch memory compose with it naturally.
+
+![Raw Bayer mosaic beside its RCD demosaic, 1×2 split](screenshots/debayer.png)
+
 ![Image list with a multi-HDU FITS entry expanded](screenshots/image-list-hdu.png)
 
 ## 2. The display pipeline
@@ -329,6 +342,8 @@ nebulascope [options] [files...]
                          action <name> (trigger a menu action by its
                          shortcut-registry name, e.g. toggle_grid; avoid
                          modal dialogs — they block the script),
+                         debayer auto|off|<pattern> [method] (OSC demosaic
+                         mode for the displayed frame),
                          transport <row> [strength%] (colour transport onto
                          the displayed image, list row as reference),
                          dialog rotate|combine|preferences|close (open a

@@ -22,6 +22,8 @@ struct Preferences {
                                                // panels on every view repaint)
     int    recentImagesMax = 10;               // history length: images
     int    recentJsonMax   = 5;                // history length: annotation files
+    int    debayerMethod   = 2;                // DebayerMethod: 0 superpixel,
+                                               // 1 bilinear, 2 RCD (default)
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

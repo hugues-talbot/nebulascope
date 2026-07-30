@@ -49,6 +49,8 @@ demand.
 
 ## Near-term candidates (roughly ordered)
 
+- [x] Debayering — RCD/bilinear/superpixel, BAYERPAT auto-detect, per-image
+      override, validated against Siril's RCD (from real-operations need)
 - [x] Watch & auto-reload — images overwritten by external tools re-decode
       live in every view (View ▸ Auto-Reload Changed Files; shipped post-v0.89)
 - [ ] External-tools framework (GraXpert CLI as the first integration)

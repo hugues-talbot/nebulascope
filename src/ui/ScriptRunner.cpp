@@ -5,6 +5,8 @@
 #include "ui/CombineDialog.h"
 #include "ui/PreferencesDialog.h"
 #include "render/DisplayRenderer.h"
+#include "core/Debayer.h"
+#include "core/Preferences.h"
 #include "io/ImageWriter.h"
 #include <QAction>
 #include <QCheckBox>
@@ -77,6 +79,10 @@ const CommandRef kCommands[] = {
   {"action",     {"action <name>",
     "Trigger any menu action by its shortcut-registry name (e.g. toggle_grid).\n"
     "Avoid actions that open modal dialogs - they block the script."}},
+  {"debayer",    {"debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel]",
+    "Demosaic mode for the displayed OSC frame: auto detects BAYERPAT from\n"
+    "the header, a pattern name forces it, off shows the raw mosaic. The\n"
+    "optional second argument sets the global algorithm (persisted)."}},
   {"transport",  {"transport <row> [strength%]",
     "Colour-transport the displayed image toward list row <row> (1-based) as\n"
     "reference (sliced optimal transport, as-displayed data); the result\n"
@@ -307,6 +313,31 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!needArgs(1)) return false;
         const bool wantPanels = t[1].toLower() != QLatin1String("off");
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
+        return true;
+    }
+    if (cmd == QLatin1String("debayer")) {
+        // debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel]
+        if (!needArgs(1)) return false;
+        if (m_w->m_currentPath.isEmpty()) { err = "no image shown"; return false; }
+        if (t.size() > 2) {
+            const QString meth = t[2].toLower();
+            int m = meth == QLatin1String("superpixel") ? 0
+                  : meth == QLatin1String("bilinear")   ? 1
+                  : meth == QLatin1String("rcd")        ? 2 : -1;
+            if (m < 0) { err = "method rcd|bilinear|superpixel"; return false; }
+            Preferences::get().debayerMethod = m;
+        }
+        const QString want = t[1].toLower();
+        int mode = 0;
+        if      (want == QLatin1String("auto")) mode = 0;
+        else if (want == QLatin1String("off"))  mode = -1;
+        else {
+            const BayerPattern p = bayerPatternFromString(want.toLatin1().constData());
+            if (p == BayerPattern::None) { err = "debayer auto|off|rggb|bggr|grbg|gbrg"; return false; }
+            mode = int(p);
+        }
+        m_w->m_debayerByPath[m_w->m_currentPath] = mode;
+        m_w->displayPath(m_w->m_currentPath);
         return true;
     }
     if (cmd == QLatin1String("transport")) {

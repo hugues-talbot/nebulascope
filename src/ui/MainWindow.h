@@ -191,6 +191,14 @@ private:
 
     // Auto-reload: watch every on-disk list image; re-decode when an external
     // tool (PixInsight, Siril, GraXpert, ...) overwrites one.
+    // Debayer: per-image mode (-1 off, 0 auto-detect, 1..4 forced pattern in
+    // BayerPattern enum order); algorithm is the global preference.
+    QHash<QString, int> m_debayerByPath;
+    QAction* m_debayerModeActs[6] = {};   // auto, RGGB, BGGR, GRBG, GBRG, off
+    QAction* m_debayerMethodActs[3] = {}; // superpixel, bilinear, RCD
+    ImageData applyDebayer(ImageData&& img, ImageHeader& hdr, const QString& key);
+    void syncDebayerMenu();
+
     QFileSystemWatcher* m_fileWatcher = nullptr;
     QTimer*        m_reloadTimer = nullptr;    // debounce: writes arrive in bursts
     QSet<QString>  m_reloadPending;            // base file paths awaiting reload

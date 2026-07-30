@@ -10,6 +10,7 @@
 #include "io/FitsReader.h"
 #include "app/AppInfo.h"
 #include "io/ImageWriter.h"
+#include "core/Debayer.h"
 #include "core/ImageStats.h"
 #include "core/ColorTransport.h"
 #include "core/SexCatalog.h"
@@ -1003,6 +1004,55 @@ void MainWindow::buildMenusAndToolbar() {
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+
+    // Debayer: per-image pattern mode + the global algorithm.
+    image->addSeparator();
+    QMenu* deb = image->addMenu("De&bayer");
+    auto redisplay = [this] {
+        if (!m_currentPath.isEmpty()) displayPath(m_currentPath);
+    };
+    auto* modeGroup = new QActionGroup(this);
+    const struct { const char* label; int mode; const char* key; } kModes[] = {
+        { "&Auto-Detect (header)", 0,  "debayer_auto" },
+        { "Force RGGB",            1,  "debayer_rggb" },
+        { "Force BGGR",            2,  "debayer_bggr" },
+        { "Force GRBG",            3,  "debayer_grbg" },
+        { "Force GBRG",            4,  "debayer_gbrg" },
+        { "&Off (raw mosaic)",     -1, "debayer_off" },
+    };
+    for (int i = 0; i < 6; ++i) {
+        const int mode = kModes[i].mode;
+        QAction* a = deb->addAction(kModes[i].label, this, [this, mode, redisplay] {
+            if (m_currentPath.isEmpty()) return;
+            m_debayerByPath[m_currentPath] = mode;
+            redisplay();
+        });
+        a->setCheckable(true);
+        a->setActionGroup(modeGroup);
+        m_debayerModeActs[i] = a;
+        acts[kModes[i].key] = a;
+    }
+    m_debayerModeActs[0]->setChecked(true);
+    deb->addSeparator();
+    auto* methodGroup = new QActionGroup(this);
+    const struct { const char* label; int m; const char* key; } kMeth[] = {
+        { "Superpixel (half size)", 0, "debayer_superpixel" },
+        { "Bilinear",               1, "debayer_bilinear" },
+        { "RCD (best)",             2, "debayer_rcd" },
+    };
+    for (int i = 0; i < 3; ++i) {
+        const int m = kMeth[i].m;
+        QAction* a = deb->addAction(kMeth[i].label, this, [this, m, redisplay] {
+            Preferences::get().debayerMethod = m;
+            Preferences::get().save();
+            redisplay();
+        });
+        a->setCheckable(true);
+        a->setActionGroup(methodGroup);
+        m_debayerMethodActs[i] = a;
+        acts[kMeth[i].key] = a;
+    }
+    m_debayerMethodActs[qBound(0, Preferences::get().debayerMethod, 2)]->setChecked(true);
     image->addSeparator();
     acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
     image->addSeparator();
@@ -1246,6 +1296,47 @@ void MainWindow::addPaths(const QStringList& paths) {
     syncFileWatcher();
 }
 
+// ---- debayer ----------------------------------------------------------------
+
+// Demosaic a freshly loaded mono frame according to the image's mode (auto /
+// forced pattern / off) and the global algorithm preference. Non-CFA frames
+// pass through untouched.
+ImageData MainWindow::applyDebayer(ImageData&& img, ImageHeader& hdr, const QString& key) {
+    if (!img.isValid() || img.channels() != 1) return std::move(img);
+    const int mode = m_debayerByPath.value(key, 0);
+    if (mode < 0) return std::move(img);                       // forced off
+    BayerPattern p = (mode == 0) ? bayerPatternFromHeader(hdr)
+                                 : static_cast<BayerPattern>(mode);
+    if (p == BayerPattern::None) return std::move(img);
+    const auto method = static_cast<DebayerMethod>(qBound(0, Preferences::get().debayerMethod, 2));
+    ImageData rgb = debayer(img, p, method);
+    if (!rgb.isValid()) return std::move(img);
+    const char* mname = method == DebayerMethod::RCD ? "RCD"
+                      : method == DebayerMethod::Bilinear ? "bilinear" : "superpixel";
+    hdr.structure << QStringLiteral("Debayered: %1, %2%3")
+                         .arg(QLatin1String(bayerPatternName(p)), QLatin1String(mname),
+                              method == DebayerMethod::Superpixel
+                                  ? QStringLiteral(" (half size)") : QString());
+    return rgb;
+}
+
+// Keep the Image ▸ Debayer submenu radio state in step with the shown image.
+void MainWindow::syncDebayerMenu() {
+    const int mode = m_debayerByPath.value(m_currentPath, 0);
+    const int idx = (mode == -1) ? 5 : mode;                   // off is the last entry
+    for (int i = 0; i < 6; ++i)
+        if (m_debayerModeActs[i]) {
+            QSignalBlocker b(m_debayerModeActs[i]);
+            m_debayerModeActs[i]->setChecked(i == idx);
+        }
+    const int m = qBound(0, Preferences::get().debayerMethod, 2);
+    for (int i = 0; i < 3; ++i)
+        if (m_debayerMethodActs[i]) {
+            QSignalBlocker b(m_debayerMethodActs[i]);
+            m_debayerMethodActs[i]->setChecked(i == m);
+        }
+}
+
 // ---- auto-reload on external change -----------------------------------------
 
 // Watch exactly the on-disk files behind the current list (multi-HDU rows
@@ -1296,7 +1387,7 @@ void MainWindow::reloadChangedFiles() {
             lopts.fitsHdu = hduReq;
             io::LoadResult res = io::loadImage(base, lopts);
             if (!res.ok) continue;
-            c->image = std::move(res.image);
+            c->image = applyDebayer(std::move(res.image), res.header, c->path);
             c->header = std::move(res.header);
             c->stats = computeStats(c->image);
             c->view()->setSource(&c->image);
@@ -2019,9 +2110,11 @@ void MainWindow::displayPath(const QString& path) {
         }
         loaded = std::move(res.image);
         hdr    = std::move(res.header);
+        loaded = applyDebayer(std::move(loaded), hdr, path);
     }
     m_image = std::move(loaded);
     m_header = std::move(hdr);
+    syncDebayerMenu();
 
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
     // keywords in XISF). Enables the RA/Dec hover readout when present.

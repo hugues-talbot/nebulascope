@@ -28,6 +28,7 @@ void Preferences::load() {
     overlayOpacity  = s.value(QStringLiteral("overlay_opacity"), overlayOpacity).toDouble();
     recentImagesMax = s.value(QStringLiteral("recent_images_max"), recentImagesMax).toInt();
     recentJsonMax   = s.value(QStringLiteral("recent_json_max"), recentJsonMax).toInt();
+    debayerMethod   = s.value(QStringLiteral("debayer_method"), debayerMethod).toInt();
     s.endGroup();
     gridTargetLines = qBound(3, gridTargetLines, 20);
     annTextSize     = qBound(5.0, annTextSize, 72.0);
@@ -35,6 +36,7 @@ void Preferences::load() {
     markerFrac      = qBound(5.0, markerFrac, 200.0);
     recentImagesMax = qBound(0, recentImagesMax, 50);
     recentJsonMax   = qBound(0, recentJsonMax, 50);
+    debayerMethod   = qBound(0, debayerMethod, 2);
     overlayOpacity  = qBound(0.5, overlayOpacity, 1.0);
 }
 
@@ -50,6 +52,7 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("overlay_opacity"), overlayOpacity);
     s.setValue(QStringLiteral("recent_images_max"), recentImagesMax);
     s.setValue(QStringLiteral("recent_json_max"), recentJsonMax);
+    s.setValue(QStringLiteral("debayer_method"), debayerMethod);
     s.endGroup();
 }
 

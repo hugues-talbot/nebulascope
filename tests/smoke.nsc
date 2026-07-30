@@ -49,4 +49,17 @@ assert size 128 128
 assert channels 1
 assert range 0.0 1.0 0.01
 
+# OSC debayer end to end: the real ASIAIR CFA fixture auto-detects RGGB and
+# opens as RGB; forcing off shows the raw mosaic again.
+open tests/testdata/cfa_asiair_rggb.fits
+waitloaded
+assert channels 3
+assert size 128 128
+debayer off
+waitloaded
+assert channels 1
+debayer auto
+waitloaded
+assert channels 3
+
 quit
