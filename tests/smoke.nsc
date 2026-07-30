@@ -72,4 +72,22 @@ action redo
 waitloaded
 assert channels 3
 
+# Blink culling: tag (checked = keep), sort, remove, move — end to end.
+assert rows 3
+tag off                          # reject the CFA frame (current)
+tagsort                          # unchecked sinks below the keepers
+tagremove unchecked
+assert rows 2
+show 1
+waitloaded
+save smoke_cull.fits
+open smoke_cull.fits
+waitloaded
+tag off
+tagmove unchecked smoke_cull_out
+assert rows 3
+show 3                           # the moved row re-keyed to its new home
+waitloaded
+assert size 128 128
+
 quit

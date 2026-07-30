@@ -184,6 +184,16 @@ cards or XISF properties) in a filterable, copyable table.
 - In-memory results (combine, transport) are marked in the list; **Save Data
   As…** turns the entry into the saved file (name, sidecars, and per-image
   state follow).
+- **Blink culling** — every list row carries a **keep-check** (checked by
+  default). Blink through a session with **Space**/**↓** and hit **B** to
+  reject the bad frame under your eyes — debayering and live STF editing
+  stay available the whole time, which is exactly what makes this blink
+  different. Then act on the tags from the list's right-click menu:
+  **Check/Uncheck Selected**, **Sort: Checked First**, **Move
+  Checked/Unchecked To…** (files move with their annotation sidecars, and
+  the list follows them to the new location), and **Remove
+  Checked/Unchecked from List**. Scriptable as `tag`, `tagsort`,
+  `tagremove`, `tagmove` (§13) for scripted culling pipelines.
 - **Auto-reload** (View ▸ Auto-Reload Changed Files, default on): when
   another program — PixInsight, Siril, GraXpert, … — overwrites a listed
   file on disk, NebulaScope re-decodes it automatically (in every view that
@@ -360,6 +370,8 @@ nebulascope [options] [files...]
                          modal dialogs — they block the script),
                          debayer auto|off|<pattern> [method] (OSC demosaic
                          mode for the displayed frame),
+                         tag on|off|toggle, tagsort, tagremove, tagmove
+                         (blink-culling: keep-checks and acting on them),
                          transport <row> [strength%] (colour transport onto
                          the displayed image, list row as reference),
                          dialog rotate|combine|preferences|close (open a

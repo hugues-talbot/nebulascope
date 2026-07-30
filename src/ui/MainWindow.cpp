@@ -732,6 +732,17 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     aPasteA->setEnabled(canPaste);
     aAllN->setEnabled(m_copiedStretch.valid && m_fileList->count() > 0);
     menu.addSeparator();
+    // Blink culling (checked = keep): tag the selection, then act on tags.
+    QAction* aCheckSel   = menu.addAction(QStringLiteral("Check Selected (%1)").arg(nSel));
+    QAction* aUncheckSel = menu.addAction(QStringLiteral("Uncheck Selected (%1)").arg(nSel));
+    aCheckSel->setEnabled(nSel > 0);
+    aUncheckSel->setEnabled(nSel > 0);
+    QAction* aSortTag  = menu.addAction("Sort: Checked First");
+    QAction* aMoveUnch = menu.addAction("Move Unchecked To…");
+    QAction* aMoveChk  = menu.addAction("Move Checked To…");
+    QAction* aRemUnch  = menu.addAction("Remove Unchecked from List");
+    QAction* aRemChk   = menu.addAction("Remove Checked from List");
+    menu.addSeparator();
     QAction* aRemove = menu.addAction("Remove from List");
     aRemove->setEnabled(nSel > 0);
 
@@ -741,6 +752,13 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     else if (chosen == aPasteN) pasteStretchToSelected(true);
     else if (chosen == aPasteA) pasteStretchToSelected(false);
     else if (chosen == aAllN) pasteStretchToAll(true);
+    else if (chosen == aCheckSel)   setSelectedTags(true);
+    else if (chosen == aUncheckSel) setSelectedTags(false);
+    else if (chosen == aSortTag)  sortListByTag();
+    else if (chosen == aMoveUnch) moveTaggedFiles(false);
+    else if (chosen == aMoveChk)  moveTaggedFiles(true);
+    else if (chosen == aRemUnch)  removeTaggedFromList(false);
+    else if (chosen == aRemChk)   removeTaggedFromList(true);
     else if (chosen == aRemove) removeSelected();
 }
 
@@ -1148,6 +1166,10 @@ void MainWindow::buildMenusAndToolbar() {
     connect(prev, &QShortcut::activated, this, &MainWindow::prevImage);
     keys["next_image"] = next;
     keys["prev_image"] = prev;
+    // Blink culling: B flips the shown frame's keep-tag mid-blink.
+    auto* tag = new QShortcut(QKeySequence(Qt::Key_B), this);
+    connect(tag, &QShortcut::activated, this, &MainWindow::toggleCurrentTag);
+    keys["toggle_tag"] = tag;
     // Delete (Backspace on macOS) removes the selected annotation — or, with
     // nothing selected, the most recently added one. Undoable.
     auto* delAnn = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
@@ -1309,6 +1331,10 @@ void MainWindow::addPaths(const QStringList& paths) {
             m_fileList);
         it->setData(Qt::UserRole, p);
         it->setToolTip(p);
+        // Culling tag: checked = keep. Blink through, uncheck the rejects (B),
+        // then act on the tags from the list's context menu.
+        it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
+        it->setCheckState(Qt::Checked);
         if (!firstAdded) firstAdded = it;
 
         // Multi-extension FITS: probed ASYNCHRONOUSLY (scheduleHduProbe) so a
@@ -1396,6 +1422,138 @@ void MainWindow::sharedStfStartup() {
     if (!m_image.isValid() || m_curStats.empty()) return;
     m_model.autoStretch(m_curStats);
     applyStretchToAllList();
+}
+
+// ---- blink culling ----------------------------------------------------------
+
+// The tag lives on the list row (checked = keep). Child HDU rows share their
+// parent file, so file operations dedup by base path and skip mem:// entries.
+
+void MainWindow::toggleCurrentTag() {
+    QListWidgetItem* it = m_fileList->currentItem();
+    if (!it || !(it->flags() & Qt::ItemIsUserCheckable)) return;
+    const bool nowChecked = it->checkState() != Qt::Checked;
+    it->setCheckState(nowChecked ? Qt::Checked : Qt::Unchecked);
+    statusBar()->showMessage(QStringLiteral("%1 — %2")
+        .arg(it->text().trimmed(), nowChecked ? QStringLiteral("checked (keep)")
+                                              : QStringLiteral("unchecked")), 2000);
+}
+
+void MainWindow::setSelectedTags(bool checked) {
+    for (QListWidgetItem* it : m_fileList->selectedItems())
+        if (it->flags() & Qt::ItemIsUserCheckable)
+            it->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+}
+
+void MainWindow::sortListByTag() {
+    // Stable partition: checked rows first, original order kept within each
+    // group. Rebuild via takeItem so the widgets (and their states) survive.
+    const QString curKey = m_fileList->currentItem()
+        ? m_fileList->currentItem()->data(Qt::UserRole).toString() : QString();
+    QList<QListWidgetItem*> checkedRows, uncheckedRows;
+    while (m_fileList->count() > 0) {
+        QListWidgetItem* it = m_fileList->takeItem(0);
+        (it->checkState() == Qt::Checked ? checkedRows : uncheckedRows).append(it);
+    }
+    QSignalBlocker blk(m_fileList);
+    for (QListWidgetItem* it : checkedRows)   m_fileList->addItem(it);
+    for (QListWidgetItem* it : uncheckedRows) m_fileList->addItem(it);
+    for (int i = 0; i < m_fileList->count(); ++i)
+        if (m_fileList->item(i)->data(Qt::UserRole).toString() == curKey) {
+            m_fileList->setCurrentRow(i);
+            break;
+        }
+}
+
+void MainWindow::removeTaggedFromList(bool checked) {
+    QSignalBlocker blk(m_fileList);
+    m_fileList->clearSelection();
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* it = m_fileList->item(i);
+        if ((it->checkState() == Qt::Checked) == checked) it->setSelected(true);
+    }
+    blk.unblock();
+    removeSelected();                          // shared row/sidecar/memory logic
+}
+
+// Rekey every per-path map when a file moves (same idea as the mem:// rename
+// in saveFile, factored for reuse).
+void MainWindow::migratePathState(const QString& oldKey, const QString& newKey) {
+    if (m_stfByPath.contains(oldKey))      m_stfByPath.insert(newKey, m_stfByPath.take(oldKey));
+    if (m_annByPath.contains(oldKey))      m_annByPath.insert(newKey, m_annByPath.take(oldKey));
+    if (m_annDirty.remove(oldKey))         m_annDirty.insert(newKey);
+    if (m_xformByPath.contains(oldKey))    m_xformByPath.insert(newKey, m_xformByPath.take(oldKey));
+    if (m_diskSizeByPath.contains(oldKey)) m_diskSizeByPath.insert(newKey, m_diskSizeByPath.take(oldKey));
+    if (m_debayerByPath.contains(oldKey))  m_debayerByPath.insert(newKey, m_debayerByPath.take(oldKey));
+    if (m_currentPath == oldKey)           m_currentPath = newKey;
+}
+
+void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
+    // Collect the FILES behind matching top-level rows (skip in-memory and
+    // child HDU rows; a parent row moves the whole file).
+    QStringList files;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* it = m_fileList->item(i);
+        if ((it->checkState() == Qt::Checked) != checked) continue;
+        const QString key = it->data(Qt::UserRole).toString();
+        int hdu = -1;
+        const QString base = splitHduKey(key, hdu);
+        if (hdu >= 0 || base.startsWith(QLatin1String("mem://"))) continue;
+        if (QFileInfo::exists(base) && !files.contains(base)) files << base;
+    }
+    if (files.isEmpty()) {
+        QMessageBox::information(this, "Move Frames",
+            QStringLiteral("No %1 files to move.").arg(checked ? "checked" : "unchecked"));
+        return;
+    }
+    QString dir = destDir;
+    if (dir.isEmpty())
+        dir = QFileDialog::getExistingDirectory(this,
+            QStringLiteral("Move %1 %2 frame(s) to…")
+                .arg(files.size()).arg(checked ? "checked" : "unchecked"));
+    if (dir.isEmpty()) return;
+    QDir().mkpath(dir);                        // scripted destinations may be new
+
+    int moved = 0;
+    QStringList failed;
+    for (const QString& base : files) {
+        const QString dest = dir + QLatin1Char('/') + QFileInfo(base).fileName();
+        if (QFileInfo::exists(dest)) { failed << QFileInfo(base).fileName() + " (exists)"; continue; }
+        if (!QFile::rename(base, dest)) {
+            // Cross-volume: copy then remove.
+            if (!QFile::copy(base, dest) || !QFile::remove(base)) {
+                failed << QFileInfo(base).fileName();
+                QFile::remove(dest);           // don't leave half a copy
+                continue;
+            }
+        }
+        // The annotation sidecar travels with its image.
+        const QString sc = annotationSidecar(base);
+        if (!sc.isEmpty() && QFileInfo::exists(sc)) {
+            const QString scDest = dir + QLatin1Char('/') + QFileInfo(sc).fileName();
+            if (!QFile::rename(sc, scDest)) {
+                if (QFile::copy(sc, scDest)) QFile::remove(sc);
+            }
+        }
+        // Rekey rows (parent + HDU children) and every per-path map.
+        for (int i = 0; i < m_fileList->count(); ++i) {
+            QListWidgetItem* it = m_fileList->item(i);
+            const QString key = it->data(Qt::UserRole).toString();
+            int hdu = -1;
+            if (splitHduKey(key, hdu) != base) continue;
+            const QString newKey = (hdu < 0) ? dest : makeHduKey(dest, hdu);
+            it->setData(Qt::UserRole, newKey);
+            it->setToolTip(hdu < 0 ? dest
+                                   : QStringLiteral("%1 — HDU %2").arg(dest).arg(hdu));
+            migratePathState(key, newKey);
+        }
+        ++moved;
+    }
+    syncFileWatcher();
+    QString msg = QStringLiteral("Moved %1 file(s) to %2").arg(moved).arg(QDir(dir).dirName());
+    if (!failed.isEmpty())
+        msg += QStringLiteral(" — FAILED: %1").arg(failed.join(QLatin1String(", ")));
+    statusBar()->showMessage(msg, 6000);
 }
 
 // ---- debayer ----------------------------------------------------------------

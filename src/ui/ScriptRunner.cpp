@@ -64,9 +64,20 @@ const CommandRef kCommands[] = {
   {"save",       {"save <path>",
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
-    "Test assertions against the displayed image's raw data. Failures are\n"
-    "counted; the process exit code is the failure count."}},
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+    "Test assertions against the displayed image's raw data (rows: the\n"
+    "image-list row count). Failures are counted; the process exit code is\n"
+    "the failure count."}},
+  {"tag",        {"tag on|off|toggle",
+    "The current row's keep-check (checked = keep). Interactive equivalent:\n"
+    "the checkbox, or the B key while blinking."}},
+  {"tagsort",    {"tagsort", "Reorder the list: checked rows first (stable)."}},
+  {"tagremove",  {"tagremove checked|unchecked",
+    "Remove all rows in that tag state from the list (files untouched)."}},
+  {"tagmove",    {"tagmove checked|unchecked <dir>",
+    "Move the files behind rows in that tag state into <dir> (created if\n"
+    "missing), annotation sidecars and per-image state included; the list\n"
+    "rekeys to the new locations."}},
   {"sleep",      {"sleep <ms>", "Pause the script (event loop keeps running)."}},
   {"waitloaded", {"waitloaded [ms]",
     "Block until the current image and its statistics are ready (default\n"
@@ -319,6 +330,41 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
         return true;
     }
+    if (cmd == QLatin1String("tag")) {
+        // tag on|off|toggle — the current row's keep-check.
+        if (!needArgs(1)) return false;
+        QListWidgetItem* it = m_w->m_fileList->currentItem();
+        if (!it) { err = "no current image"; return false; }
+        const QString w = t[1].toLower();
+        if      (w == QLatin1String("on"))     it->setCheckState(Qt::Checked);
+        else if (w == QLatin1String("off"))    it->setCheckState(Qt::Unchecked);
+        else if (w == QLatin1String("toggle")) m_w->toggleCurrentTag();
+        else { err = "tag on|off|toggle"; return false; }
+        return true;
+    }
+    if (cmd == QLatin1String("tagsort")) {
+        m_w->sortListByTag();
+        return true;
+    }
+    if (cmd == QLatin1String("tagremove")) {
+        if (!needArgs(1)) return false;
+        const QString w = t[1].toLower();
+        if (w != QLatin1String("checked") && w != QLatin1String("unchecked")) {
+            err = "tagremove checked|unchecked"; return false;
+        }
+        m_w->removeTaggedFromList(w == QLatin1String("checked"));
+        return true;
+    }
+    if (cmd == QLatin1String("tagmove")) {
+        if (!needArgs(2)) return false;
+        const QString w = t[1].toLower();
+        if (w != QLatin1String("checked") && w != QLatin1String("unchecked")) {
+            err = "tagmove checked|unchecked <dir>"; return false;
+        }
+        m_w->moveTaggedFiles(w == QLatin1String("checked"),
+                             QStringList(t.mid(2)).join(QLatin1Char(' ')));
+        return true;
+    }
     if (cmd == QLatin1String("stfall")) {
         // Share the current stretch with every image in the list.
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
@@ -485,6 +531,15 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
         if (img.width() != w || img.height() != h) {
             err = QStringLiteral("size is %1x%2, expected %3x%4")
                       .arg(img.width()).arg(img.height()).arg(w).arg(h);
+            return false;
+        }
+        return true;
+    }
+    if (what == QLatin1String("rows")) {
+        if (t.size() < 3) { err = "assert rows n"; return false; }
+        const int n = m_w->m_fileList->count();
+        if (n != t[2].toInt()) {
+            err = QStringLiteral("list has %1 row(s)").arg(n);
             return false;
         }
         return true;

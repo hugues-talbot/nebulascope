@@ -213,6 +213,15 @@ private:
     // memory — each applies as that image loads. Refreshes visible cells.
     void applyStretchToAllList();
 
+    // Blink culling (checked = keep):
+    void toggleCurrentTag();                    // B — flip the shown frame's check
+    void setSelectedTags(bool checked);         // check/uncheck the list selection
+    void sortListByTag();                       // checked rows first, order stable
+    void removeTaggedFromList(bool checked);    // drop all (un)checked rows
+    void moveTaggedFiles(bool checked,          // move (un)checked files + sidecars;
+                         const QString& destDir = QString());  // empty → ask (GUI)
+    void migratePathState(const QString& oldKey, const QString& newKey);
+
 public:
     // --shared-stf: auto-stretch the first image and share it with the list.
     void sharedStfStartup();
