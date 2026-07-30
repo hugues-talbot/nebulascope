@@ -70,7 +70,8 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
 
 ![Histogram panel: Linear mode, RGB image, per-channel lines](screenshots/histogram-linear.png)
 
-- **Stretch functions** — tabs for **Linear / Log / Asinh / GHS**.
+- **Stretch functions** — tabs for **Linear / Log / Asinh / GHS**
+  (keys: **I** / **L** / **S** / **G**).
   - *Linear* acts as the windowing stage: drag **B** (black), **M** (midtone),
     **W** (white) directly on the plot. RGB images additionally show each
     channel's own B/M/W as thin coloured lines — grab one **in the plot body**
@@ -174,7 +175,7 @@ cards or XISF properties) in a filterable, copyable table.
 - **Space** / **Shift+Space** — and **↓** / **↑** — next / previous image,
   looping. Zoom and pan are preserved across same-size images, so you can
   blink a small region.
-- **L** toggles the image list; **C** closes the current image (closing the
+- **Shift+L** (or **F2**) toggles the image list; **C** closes the current image (closing the
   last image empties all views).
 - List management: **+** append, **−** / context menu remove, drag to
   reorder, export (**⤓**) and **File ▸ Import Image List…** re-load a saved
@@ -248,8 +249,8 @@ Solutions are read from FITS WCS keywords (TAN) and from PixInsight's
 telescope-pointing keywords for approximate coordinates.
 
 - Hover readout: RA/Dec of the pixel under the cursor.
-- **RA/Dec grid overlay** with labelled, axis-aligned coordinate text
-  (density set in Preferences).
+- **RA/Dec grid overlay** (**Shift+G**) with labelled, axis-aligned
+  coordinate text (density set in Preferences).
 - **Right-click menu**, grouped readout / annotations / lookup / zoom:
   copy RA/Dec, copy pixel value, annotate here, paste annotation,
   **Look up in Aladin** (opens Aladin Lite framed ~10× the clicked

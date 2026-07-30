@@ -878,7 +878,7 @@ void MainWindow::buildMenusAndToolbar() {
     // View
     QMenu* view = menuBar()->addMenu("&View");
     QAction* aLeft = m_leftDock->toggleViewAction();
-    aLeft->setShortcuts({ QKeySequence("F2"), QKeySequence("L") });
+    aLeft->setShortcuts({ QKeySequence("F2"), QKeySequence("Shift+L") });
     QAction* aRight = m_rightDock->toggleViewAction();
     aRight->setShortcut(QKeySequence("F3"));
     QAction* aInfo = m_infoDock->toggleViewAction();
@@ -914,7 +914,7 @@ void MainWindow::buildMenusAndToolbar() {
     m_autoReloadAct->setToolTip("Re-decode a list image when another program overwrites it");
     acts["auto_reload"] = m_autoReloadAct;
     view->addSeparator();
-    QAction* aGrid = view->addAction("Coordinate &Grid", QKeySequence("G"), this, [this](bool) {
+    QAction* aGrid = view->addAction("Coordinate &Grid", QKeySequence("Shift+G"), this, [this](bool) {
         m_annotations->setGridVisible(!m_annotations->gridVisible());
         refreshAnnotations();
     });
@@ -1057,6 +1057,34 @@ void MainWindow::buildMenusAndToolbar() {
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
+    // Transfer-function radio group: I / L / S / G (the list and grid view
+    // toggles moved to Shift+L / Shift+G to free the mnemonics).
+    auto* fnGroup = new QActionGroup(this);
+    const struct { const char* label; const char* key; const char* reg; StretchFn fn; } kFns[] = {
+        { "L&inear", "I", "fn_linear", StretchFn::Linear },
+        { "&Log",    "L", "fn_log",    StretchFn::Log },
+        { "A&sinh",  "S", "fn_asinh",  StretchFn::Asinh },
+        { "&GHS",    "G", "fn_ghs",    StretchFn::GHS },
+    };
+    QAction* fnActs[4];
+    for (int i = 0; i < 4; ++i) {
+        const StretchFn fn = kFns[i].fn;
+        QAction* a = stretch->addAction(kFns[i].label, QKeySequence(kFns[i].key),
+                                        this, [this, fn] { m_model.setFn(fn); });
+        a->setCheckable(true);
+        a->setActionGroup(fnGroup);
+        fnActs[i] = a;
+        acts[kFns[i].reg] = a;
+    }
+    fnActs[0]->setChecked(true);
+    connect(&m_model, &StretchModel::changed, this, [this, fnActs] {
+        const int i = int(m_model.fn());
+        for (int k = 0; k < 4; ++k) {
+            QSignalBlocker b(fnActs[k]);
+            fnActs[k]->setChecked(k == i);
+        }
+    });
+    stretch->addSeparator();
     acts["auto_stf"] = stretch->addAction("Auto ST&F", QKeySequence("U"), this, [this] {
         if (!m_curStats.empty()) m_model.autoStretch(m_curStats);
     });
