@@ -9,6 +9,7 @@ add_library(astro_core STATIC
     core/SexCatalog.cpp
     core/Preferences.cpp
     core/Colormap.cpp
+    core/Debayer.cpp
     core/ColorTransport.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
@@ -96,7 +97,7 @@ target_link_libraries(nebulascope PRIVATE
 # Framework-free unit tests for the core math and IO round-trips.
 # Run with:  ctest --test-dir build --output-on-failure
 if(BUILD_TESTING)
-    foreach(t core io wcs catalog combine colormap)
+    foreach(t core io wcs catalog combine colormap debayer)
         add_executable(test_${t} ${CMAKE_SOURCE_DIR}/tests/test_${t}.cpp)
         target_include_directories(test_${t} PRIVATE ${CMAKE_SOURCE_DIR}/tests)
         target_compile_definitions(test_${t} PRIVATE
