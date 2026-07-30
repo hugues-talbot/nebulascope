@@ -87,6 +87,11 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
 - **Auto STF (linked)** — one shared stretch from pooled statistics;
   preserves colour balance (use for colour-calibrated data).
 - **Reset** — back to the plain linear window (also clears adjustments).
+- **Apply to All** — share the current stretch (+ adjustments) with **every
+  image in the list**: each one applies it as it loads. Made for
+  same-acquisition-session batches — set up one frame, share, then blink
+  through the rest. From the command line: `--shared-stf` (auto-stretch the
+  first image, share with all); in scripts: `stfall`.
 - The **colorbar** legend shows the current transfer over the window, with
   ticks in real data units; it follows the active colormap *and* the
   adjustments — what the bar shows is what a pixel of that value looks like.
@@ -160,8 +165,9 @@ cards or XISF properties) in a filterable, copyable table.
 
 ## 7. Sessions, blinking & the image list
 
-- **Space** / **Shift+Space** — next / previous image, looping. Zoom and pan
-  are preserved across same-size images, so you can blink a small region.
+- **Space** / **Shift+Space** — and **↓** / **↑** — next / previous image,
+  looping. Zoom and pan are preserved across same-size images, so you can
+  blink a small region.
 - **L** toggles the image list; **C** closes the current image (closing the
   last image empties all views).
 - List management: **+** append, **−** / context menu remove, drag to
@@ -327,13 +333,16 @@ nebulascope [options] [files...]
   -l, --list <file>      Load a saved image list.
       --split <RxC>      Split the view (max 5x5) and assign the first R*C
                          images to the cells in raster order.
+      --shared-stf       Auto-stretch the first image and share that stretch
+                         with every loaded image (same-session frames).
       --run list         List all script commands (one-line summaries);
                          detailed help: --help <command>.
       --run <script>     Execute a command script and exit with the number of
                          failed assertions (testing/batch; headless with
                          QT_QPA_PLATFORM=offscreen). Commands: open, show,
                          next/prev, split, fn, autostf [linked], reset,
-                         adjust <name> <v>, rot90, flip, rotate, export, save,
+                         adjust <name> <v>, stfall (share stretch with the
+                         whole list), rot90, flip, rotate, export, save,
                          assert size|channels|pixel|range, sleep,
                          waitloaded [ms] (block until image + stats ready),
                          screenshot <file> (grab the whole window to PNG),

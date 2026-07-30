@@ -47,6 +47,10 @@ const CommandRef kCommands[] = {
     "(preserves colour balance). Use only on LINEAR data - processed masters\n"
     "look right with 'reset'."}},
   {"reset",      {"reset", "Plain min-max linear window; clears adjustments."}},
+  {"stfall",     {"stfall",
+    "Share the displayed stretch (+adjustments) with every image in the\n"
+    "list: each applies as that image loads (same-session frames).\n"
+    "CLI equivalent at startup: --shared-stf."}},
   {"adjust",     {"adjust <name> <value>",
     "Post-stretch adjustment. Names: brightness contrast gamma shadows\n"
     "highlights blackpoint whitepoint temperature tint hue saturation vibrance."}},
@@ -313,6 +317,12 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!needArgs(1)) return false;
         const bool wantPanels = t[1].toLower() != QLatin1String("off");
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
+        return true;
+    }
+    if (cmd == QLatin1String("stfall")) {
+        // Share the current stretch with every image in the list.
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        m_w->applyStretchToAllList();
         return true;
     }
     if (cmd == QLatin1String("debayer")) {

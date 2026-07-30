@@ -32,6 +32,7 @@ assert range 50.4 1339.9 5
 
 # Stretch + adjustments exercise the full render path.
 autostf
+stfall
 fn asinh
 adjust saturation 0.3
 adjust gamma 1.4

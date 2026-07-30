@@ -199,6 +199,19 @@ private:
     ImageData applyDebayer(ImageData&& img, ImageHeader& hdr, const QString& key);
     void syncDebayerMenu();
 
+    // Multi-HDU FITS probing runs AFTER the rows appear (one file per event-
+    // loop tick): adding 20 files stays instant, child rows fill in behind.
+    QStringList m_hduProbeQueue;
+    void scheduleHduProbe();
+    // Write the current stretch (+adjustments) into every list image's
+    // memory — each applies as that image loads. Refreshes visible cells.
+    void applyStretchToAllList();
+
+public:
+    // --shared-stf: auto-stretch the first image and share it with the list.
+    void sharedStfStartup();
+private:
+
     QFileSystemWatcher* m_fileWatcher = nullptr;
     QTimer*        m_reloadTimer = nullptr;    // debounce: writes arrive in bursts
     QSet<QString>  m_reloadPending;            // base file paths awaiting reload

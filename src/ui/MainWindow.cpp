@@ -181,6 +181,8 @@ void MainWindow::buildUi() {
     m_rightDock = new QDockWidget("Histogram", this);
     m_rightDock->setObjectName("rightDock");
     m_hist = new HistogramPanel(&m_model, m_rightDock);
+    connect(m_hist, &HistogramPanel::applyToAllRequested,
+            this, &MainWindow::applyStretchToAllList);
     m_hist->setSource(&m_image);
     m_rightDock->setWidget(m_hist);
     m_rightDock->setMinimumWidth(400);
@@ -1091,6 +1093,11 @@ void MainWindow::buildMenusAndToolbar() {
     aboutQt->setMenuRole(QAction::AboutQtRole);
 
     // Walk the loaded-image list: Space = next, Shift+Space = previous.
+    // Arrow keys walk the list too (the sliders keep click+wheel editing).
+    auto* nextArrow = new QShortcut(QKeySequence(Qt::Key_Down), this);
+    connect(nextArrow, &QShortcut::activated, this, &MainWindow::nextImage);
+    auto* prevArrow = new QShortcut(QKeySequence(Qt::Key_Up), this);
+    connect(prevArrow, &QShortcut::activated, this, &MainWindow::prevImage);
     auto* next = new QShortcut(QKeySequence(Qt::Key_Space), this);
     connect(next, &QShortcut::activated, this, &MainWindow::nextImage);
     auto* prev = new QShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Space), this);
@@ -1260,26 +1267,15 @@ void MainWindow::addPaths(const QStringList& paths) {
         it->setToolTip(p);
         if (!firstAdded) firstAdded = it;
 
-        // Multi-extension FITS: show the file like a folder, one indented child
-        // row per image HDU. The parent row loads the first image HDU.
+        // Multi-extension FITS: probed ASYNCHRONOUSLY (scheduleHduProbe) so a
+        // large batch appears instantly; child HDU rows fill in behind.
         if (hduReq < 0) {
             const QString ext = QFileInfo(base).suffix().toLower();
-            if (ext == "fits" || ext == "fit" || ext == "fts" || ext == "fz") {
-                const QList<io::FitsHduEntry> hdus = io::listFitsImageHdus(base);
-                if (hdus.size() > 1) {
-                    it->setText(it->text() + QStringLiteral("  \u25be %1 HDUs").arg(hdus.size()));
-                    for (const io::FitsHduEntry& e : hdus) {
-                        auto* child = new QListWidgetItem(
-                            QStringLiteral("    \u2937 HDU %1 \u00b7 %2").arg(e.hdu).arg(e.summary),
-                            m_fileList);
-                        child->setData(Qt::UserRole, makeHduKey(base, e.hdu));
-                        child->setToolTip(QStringLiteral("%1 \u2014 HDU %2").arg(base).arg(e.hdu));
-                        child->setForeground(QColor("#8fa3b8"));
-                    }
-                }
-            }
+            if (ext == "fits" || ext == "fit" || ext == "fts" || ext == "fz")
+                m_hduProbeQueue << base;
         }
     }
+    scheduleHduProbe();
     // Show the first newly added file: in the first empty view if one exists
     // (multi-view workflow), else the active view. Selecting the row fires
     // currentRowChanged -> showRow -> displayPath into the active cell.
@@ -1294,6 +1290,68 @@ void MainWindow::addPaths(const QStringList& paths) {
         }
     }
     syncFileWatcher();
+}
+
+// Probe one queued FITS per event-loop tick for image HDUs; when a file has
+// more than one, decorate its row and insert indented child rows behind it.
+void MainWindow::scheduleHduProbe() {
+    if (m_hduProbeQueue.isEmpty()) return;
+    QTimer::singleShot(0, this, [this] {
+        if (m_hduProbeQueue.isEmpty()) return;
+        const QString base = m_hduProbeQueue.takeFirst();
+        const QList<io::FitsHduEntry> hdus = io::listFitsImageHdus(base);
+        if (hdus.size() > 1) {
+            for (int i = 0; i < m_fileList->count(); ++i) {
+                QListWidgetItem* it = m_fileList->item(i);
+                if (it->data(Qt::UserRole).toString() != base) continue;
+                it->setText(it->text() + QStringLiteral("  ▾ %1 HDUs").arg(hdus.size()));
+                int row = i;
+                for (const io::FitsHduEntry& e : hdus) {
+                    auto* child = new QListWidgetItem(
+                        QStringLiteral("    ⤷ HDU %1 · %2").arg(e.hdu).arg(e.summary));
+                    child->setData(Qt::UserRole, makeHduKey(base, e.hdu));
+                    child->setToolTip(QStringLiteral("%1 — HDU %2").arg(base).arg(e.hdu));
+                    child->setForeground(QColor("#8fa3b8"));
+                    m_fileList->insertItem(++row, child);
+                }
+                break;
+            }
+        }
+        scheduleHduProbe();                       // next file, next tick
+    });
+}
+
+// Share the displayed stretch with the whole session: write it into every
+// list image's stretch memory (it applies as each image is shown), and
+// re-render already-visible cells immediately.
+void MainWindow::applyStretchToAllList() {
+    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
+    const StretchModel::State st = m_model.state();
+    int n = 0;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        const QString key = m_fileList->item(i)->data(Qt::UserRole).toString();
+        if (key.isEmpty() || key == m_currentPath) continue;
+        m_stfByPath.insert(key, st);
+        ++n;
+    }
+    for (int i = 0; i < m_grid->rows() * m_grid->cols(); ++i) {
+        ViewCell* c = m_grid->cellAt(i);
+        if (!c || c == m_grid->activeCell() || !c->image.isValid()) continue;
+        c->stretch = st;
+        c->hasStretch = true;
+        StretchModel cm;
+        cm.setChannelCount(c->image.channels());
+        cm.setState(st);
+        c->view()->setDisplayImage(DisplayRenderer::render(c->image, cm));
+    }
+    statusBar()->showMessage(
+        QStringLiteral("Stretch shared with %1 other image(s) — applies as each loads").arg(n), 4000);
+}
+
+void MainWindow::sharedStfStartup() {
+    if (!m_image.isValid() || m_curStats.empty()) return;
+    m_model.autoStretch(m_curStats);
+    applyStretchToAllList();
 }
 
 // ---- debayer ----------------------------------------------------------------

@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QFileOpenEvent>
 #include <QPointer>
+#include <QTimer>
 #include <cstdio>
 #include <cstdlib>
 
@@ -28,8 +29,24 @@ protected:
         if (e->type() == QEvent::FileOpen) {
             const QString f = static_cast<QFileOpenEvent*>(e)->file();
             if (!f.isEmpty()) {
-                if (m_win) { m_win->openPaths({ f }); raiseWindow(); }
-                else       m_pending << f;
+                // Finder delivers a multi-selection as one event per file:
+                // coalesce briefly and open them as ONE batch (a single
+                // decode+display instead of one per file).
+                m_pending << f;
+                if (m_win) {
+                    if (!m_batchTimer) {
+                        m_batchTimer = new QTimer(this);
+                        m_batchTimer->setSingleShot(true);
+                        m_batchTimer->setInterval(150);
+                        connect(m_batchTimer, &QTimer::timeout, this, [this] {
+                            if (!m_win || m_pending.isEmpty()) return;
+                            m_win->openPaths(m_pending);
+                            m_pending.clear();
+                            raiseWindow();
+                        });
+                    }
+                    m_batchTimer->start();
+                }
             }
             return true;
         }
@@ -49,6 +66,7 @@ private:
 private:
     QPointer<astro::MainWindow> m_win;
     QStringList m_pending;
+    QTimer* m_batchTimer = nullptr;
 };
 
 static void printUsage() {
@@ -69,6 +87,8 @@ static void printUsage() {
         "      --split <RxC>     Split the view into R rows \u00d7 C columns (max 5x5) and\n"
         "                        assign the first R*C images to the cells in raster\n"
         "                        order, e.g. --split 2x1.\n"
+        "      --shared-stf      Auto-stretch the first image and share that stretch\n"
+        "                        with every loaded image (same-session frames).\n"
         "      --run <script>    Execute a line-based command script (testing/batch)\n"
         "                        and exit with the number of failed assertions.\n"
         "                        Headless: QT_QPA_PLATFORM=offscreen. See docs/MANUAL.md.\n"
@@ -170,6 +190,7 @@ int main(int argc, char** argv) {
     QStringList files;
     int splitR = 0, splitC = 0;
     QString scriptPath;
+    bool sharedStf = false;
     const QStringList args = app.arguments().mid(1);
     for (int i = 0; i < args.size(); ++i) {
         const QString& a = args[i];
@@ -192,6 +213,8 @@ int main(int argc, char** argv) {
                 printUsage();
                 return 2;
             }
+        } else if (a == "--shared-stf") {
+            sharedStf = true;
         } else if (a == "--run" && i + 1 < args.size()) {
             scriptPath = args[++i];
         } else if (a.startsWith('-')) {
@@ -209,6 +232,7 @@ int main(int argc, char** argv) {
     }
     if (!files.isEmpty()) w.openPaths(files);
     if (splitR > 0) w.applySplitLayout(splitR, splitC);
+    if (sharedStf) w.sharedStfStartup();
 
     astro::ScriptRunner* runner = nullptr;
     if (!scriptPath.isEmpty()) {

@@ -231,9 +231,13 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     auto* autoLinkedBtn = new QPushButton("Auto Linked");
     autoLinkedBtn->setToolTip("One shared auto stretch for all channels — preserves colour balance");
     auto* resetBtn = new QPushButton("Reset");
+    auto* applyAllBtn = new QPushButton("Apply to All");
+    applyAllBtn->setToolTip("Share this stretch + adjustments with every image in the list\n"
+                            "(each applies as that image loads — same-session frames)");
     btnRow->addWidget(autoBtn);
     btnRow->addWidget(autoLinkedBtn);
     btnRow->addWidget(resetBtn);
+    btnRow->addWidget(applyAllBtn);
     btnRow->addStretch();
     root->addLayout(btnRow);
 
@@ -263,6 +267,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         if (m_src) m_model->autoStretchLinked(computeStats(*m_src));
     });
     connect(resetBtn, &QPushButton::clicked, this, [this] { m_model->reset(); });
+    connect(applyAllBtn, &QPushButton::clicked, this, &HistogramPanel::applyToAllRequested);
     connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });
     connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncFromModel);
 

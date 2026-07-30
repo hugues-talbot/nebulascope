@@ -24,6 +24,10 @@ public:
     explicit HistogramPanel(StretchModel* model, QWidget* parent = nullptr);
     void setSource(const ImageData* img);
 
+signals:
+    // "Apply to All": the owner shares the current stretch with its list.
+    void applyToAllRequested();
+
 private slots:
     void syncFromModel();
     void onParamEdited(int idx);
