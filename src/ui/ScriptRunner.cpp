@@ -329,13 +329,13 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         // debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel]
         if (!needArgs(1)) return false;
         if (m_w->m_currentPath.isEmpty()) { err = "no image shown"; return false; }
+        int method = MainWindow::kKeepDebayer;
         if (t.size() > 2) {
             const QString meth = t[2].toLower();
-            int m = meth == QLatin1String("superpixel") ? 0
-                  : meth == QLatin1String("bilinear")   ? 1
-                  : meth == QLatin1String("rcd")        ? 2 : -1;
-            if (m < 0) { err = "method rcd|bilinear|superpixel"; return false; }
-            Preferences::get().debayerMethod = m;
+            method = meth == QLatin1String("superpixel") ? 0
+                   : meth == QLatin1String("bilinear")   ? 1
+                   : meth == QLatin1String("rcd")        ? 2 : -1;
+            if (method < 0) { err = "method rcd|bilinear|superpixel"; return false; }
         }
         const QString want = t[1].toLower();
         int mode = 0;
@@ -346,8 +346,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
             if (p == BayerPattern::None) { err = "debayer auto|off|rggb|bggr|grbg|gbrg"; return false; }
             mode = int(p);
         }
-        m_w->m_debayerByPath[m_w->m_currentPath] = mode;
-        m_w->displayPath(m_w->m_currentPath);
+        m_w->requestDebayerChange(mode, method);           // undoable
         return true;
     }
     if (cmd == QLatin1String("transport")) {

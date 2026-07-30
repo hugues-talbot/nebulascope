@@ -63,4 +63,13 @@ debayer auto
 waitloaded
 assert channels 3
 
+# Debayer changes are undoable: undo the `debayer auto` above (back to the
+# raw mosaic), redo it (colour again).
+action undo
+waitloaded
+assert channels 1
+action redo
+waitloaded
+assert channels 3
+
 quit

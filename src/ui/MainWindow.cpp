@@ -872,6 +872,8 @@ void MainWindow::buildMenusAndToolbar() {
     aRedo->setShortcut(QKeySequence::Redo);
     editMenu->addAction(aUndo);
     editMenu->addAction(aRedo);
+    acts["undo"] = aUndo;               // registry: remappable + scriptable
+    acts["redo"] = aRedo;
 
     // View
     QMenu* view = menuBar()->addMenu("&View");
@@ -1010,9 +1012,6 @@ void MainWindow::buildMenusAndToolbar() {
     // Debayer: per-image pattern mode + the global algorithm.
     image->addSeparator();
     QMenu* deb = image->addMenu("De&bayer");
-    auto redisplay = [this] {
-        if (!m_currentPath.isEmpty()) displayPath(m_currentPath);
-    };
     auto* modeGroup = new QActionGroup(this);
     const struct { const char* label; int mode; const char* key; } kModes[] = {
         { "&Auto-Detect (header)", 0,  "debayer_auto" },
@@ -1024,10 +1023,8 @@ void MainWindow::buildMenusAndToolbar() {
     };
     for (int i = 0; i < 6; ++i) {
         const int mode = kModes[i].mode;
-        QAction* a = deb->addAction(kModes[i].label, this, [this, mode, redisplay] {
-            if (m_currentPath.isEmpty()) return;
-            m_debayerByPath[m_currentPath] = mode;
-            redisplay();
+        QAction* a = deb->addAction(kModes[i].label, this, [this, mode] {
+            requestDebayerChange(mode, kKeepDebayer);      // undoable
         });
         a->setCheckable(true);
         a->setActionGroup(modeGroup);
@@ -1044,10 +1041,8 @@ void MainWindow::buildMenusAndToolbar() {
     };
     for (int i = 0; i < 3; ++i) {
         const int m = kMeth[i].m;
-        QAction* a = deb->addAction(kMeth[i].label, this, [this, m, redisplay] {
-            Preferences::get().debayerMethod = m;
-            Preferences::get().save();
-            redisplay();
+        QAction* a = deb->addAction(kMeth[i].label, this, [this, m] {
+            requestDebayerChange(kKeepDebayer, m);         // undoable
         });
         a->setCheckable(true);
         a->setActionGroup(methodGroup);
@@ -1085,9 +1080,13 @@ void MainWindow::buildMenusAndToolbar() {
         if (dlg.exec() == QDialog::Accepted) {
             m_annColor = Preferences::get().annColor;   // new-annotation default
             refreshAnnotations();                       // grid density, stroke width
-            if (Preferences::get().debayerMethod != oldDebayer) {
-                syncDebayerMenu();                      // radio state follows the pref
-                if (!m_currentPath.isEmpty()) displayPath(m_currentPath);
+            const int newDebayer = Preferences::get().debayerMethod;
+            if (newDebayer != oldDebayer) {
+                // Route through the undo stack: rewind the pref the dialog
+                // already wrote, then apply as one undoable change.
+                Preferences::get().debayerMethod = oldDebayer;
+                requestDebayerChange(kKeepDebayer, newDebayer);
+                syncDebayerMenu();                      // covers the no-image case
             }
         }
     });
@@ -1360,6 +1359,64 @@ void MainWindow::sharedStfStartup() {
 }
 
 // ---- debayer ----------------------------------------------------------------
+
+namespace {
+// Debayer change (per-image mode and/or global algorithm): applied by the
+// caller first, so redo skips its first invocation (RotateAngleCmd idiom).
+class DebayerCmd : public QUndoCommand {
+public:
+    DebayerCmd(MainWindow* w, QString path, int prevMode, int nextMode,
+               int prevMethod, int nextMethod)
+        : m_w(w), m_path(std::move(path)),
+          m_prevMode(prevMode), m_nextMode(nextMode),
+          m_prevMethod(prevMethod), m_nextMethod(nextMethod) {
+        static const char* meth[] = { "superpixel", "bilinear", "RCD" };
+        QString t = QStringLiteral("debayer");
+        if (prevMode != nextMode)
+            t += QStringLiteral(" %1").arg(nextMode == -1 ? QStringLiteral("off")
+                 : nextMode == 0 ? QStringLiteral("auto")
+                 : QLatin1String(bayerPatternName(static_cast<BayerPattern>(nextMode))));
+        if (prevMethod != nextMethod)
+            t += QStringLiteral(" %1").arg(QLatin1String(meth[qBound(0, nextMethod, 2)]));
+        setText(t);
+    }
+    void undo() override {
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->applyDebayerChange(m_path, m_prevMode, m_prevMethod);
+    }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->applyDebayerChange(m_path, m_nextMode, m_nextMethod);
+    }
+private:
+    MainWindow* m_w;
+    QString m_path;
+    int m_prevMode, m_nextMode, m_prevMethod, m_nextMethod;
+    bool m_first = true;
+};
+} // namespace
+
+void MainWindow::applyDebayerChange(const QString& path, int mode, int method) {
+    m_debayerByPath[path] = mode;
+    if (method >= 0 && method != Preferences::get().debayerMethod) {
+        Preferences::get().debayerMethod = method;
+        Preferences::get().save();
+    }
+    syncDebayerMenu();
+    if (path == m_currentPath) displayPath(m_currentPath);
+}
+
+void MainWindow::requestDebayerChange(int newMode, int newMethod) {
+    if (m_currentPath.isEmpty()) return;
+    const int oldMode   = m_debayerByPath.value(m_currentPath, 0);
+    const int oldMethod = Preferences::get().debayerMethod;
+    const int nm    = (newMode   == kKeepDebayer) ? oldMode   : newMode;
+    const int nmeth = (newMethod == kKeepDebayer) ? oldMethod : newMethod;
+    if (nm == oldMode && nmeth == oldMethod) return;
+    applyDebayerChange(m_currentPath, nm, nmeth);
+    m_undo->push(new DebayerCmd(this, m_currentPath, oldMode, nm, oldMethod, nmeth));
+}
 
 // Demosaic a freshly loaded mono frame according to the image's mode (auto /
 // forced pattern / off) and the global algorithm preference. Non-CFA frames

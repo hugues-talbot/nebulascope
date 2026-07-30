@@ -10,6 +10,7 @@
 #include <QImage>
 #include <QHash>
 #include <QSet>
+#include <climits>
 #include <QFileSystemWatcher>
 #include <QTimer>
 #include <functional>
@@ -115,6 +116,11 @@ public:
 public:
     enum class Xform { RotCW, RotCCW, FlipH, FlipV };
     // Undo plumbing (used by the QUndoCommand classes in MainWindow.cpp):
+    // Debayer changes: apply without pushing / apply + push one undo entry.
+    // kKeep leaves that half unchanged (mode is per-image, method global).
+    static constexpr int kKeepDebayer = INT_MIN;
+    void applyDebayerChange(const QString& path, int mode, int method);
+    void requestDebayerChange(int newMode, int newMethod);
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
     void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push
     void resetOrientation();                   // drop stored rotate/flip history, re-decode
