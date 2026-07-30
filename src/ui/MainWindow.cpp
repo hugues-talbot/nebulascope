@@ -1057,6 +1057,18 @@ void MainWindow::buildMenusAndToolbar() {
 
     // Stretch — transfer the current image's stretch to others in the list.
     QMenu* stretch = menuBar()->addMenu("&Stretch");
+    acts["auto_stf"] = stretch->addAction("Auto ST&F", QKeySequence("U"), this, [this] {
+        if (!m_curStats.empty()) m_model.autoStretch(m_curStats);
+    });
+    acts["auto_stf_linked"] = stretch->addAction("Auto STF (&Linked)", QKeySequence("Shift+U"), this, [this] {
+        if (!m_curStats.empty()) m_model.autoStretchLinked(m_curStats);
+    });
+    acts["reset_stretch"] = stretch->addAction("&Reset Stretch", QKeySequence("R"), this, [this] {
+        m_model.reset();
+    });
+    acts["apply_stf_all"] = stretch->addAction("Apply Stretch to All", QKeySequence("Shift+A"),
+                                               this, &MainWindow::applyStretchToAllList);
+    stretch->addSeparator();
     acts["copy_stretch"] = stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
     acts["paste_stretch_normalized"] = stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Alt+V"), this, [this]{ pasteStretchToSelected(true); });
     acts["paste_stretch_absolute"] = stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });

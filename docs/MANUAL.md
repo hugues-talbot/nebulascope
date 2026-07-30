@@ -86,11 +86,11 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
 - **Editable value boxes** — exact numeric entry; RGB images get a full
   **3×3 grid** (R/G/B × Black/Mid/White) in raw data units.
 - **Log axis** button toggles logarithmic frequency scaling of the histogram.
-- **Auto STF** — per-channel automatic stretch (background → ~0.25).
-- **Auto STF (linked)** — one shared stretch from pooled statistics;
+- **Auto STF** (**U**) — per-channel automatic stretch (background → ~0.25).
+- **Auto STF (linked)** (**Shift+U**) — one shared stretch from pooled statistics;
   preserves colour balance (use for colour-calibrated data).
-- **Reset** — back to the plain linear window (also clears adjustments).
-- **Apply to All** — share the current stretch (+ adjustments) with **every
+- **Reset** (**R**) — back to the plain linear window (also clears adjustments).
+- **Apply to All** (**Shift+A**) — share the current stretch (+ adjustments) with **every
   image in the list**: each one applies it as it loads. Made for
   same-acquisition-session batches — set up one frame, share, then blink
   through the rest. From the command line: `--shared-stf` (auto-stretch the
