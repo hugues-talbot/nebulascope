@@ -236,6 +236,9 @@ A pure **vector overlay** — never rasterized into the data.
 - **Edit** — click to select (grab handles: axis/endpoint resize, drag body
   to move), **double-click** to edit text & colour, **Delete** to remove,
   **⌘⇧C / ⌘⇧V** copy / paste-at-cursor, full **undo/redo**.
+- **Save Annotations** is available whenever there is sidecar-worthy state —
+  shapes, a rotation/flip history, or non-identity adjustments — so an
+  orientation alone can be persisted and restored next session.
 - **Show/hide** — key **A** (grid overlay is separate). Loading or importing
   annotations always makes them visible.
 - **Invert contrast** — right-click menu, for bright fields.

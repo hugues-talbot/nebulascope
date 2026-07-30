@@ -3583,12 +3583,17 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     QAction* aPasteAnn = menu.addAction(QStringLiteral("Paste Annotation Here"));
     aPasteAnn->setEnabled(onImage && m_hasCopiedAnn);
     const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
+    // The sidecar persists more than shapes: a rotation/flip history or
+    // non-identity adjustments alone are worth saving.
+    const bool hasSidecarState = hasAnn ||
+        !m_xformByPath.value(m_currentPath).isEmpty() ||
+        !m_model.adjust().identity();
     QAction* aClearAnn = menu.addAction(QStringLiteral("Clear Annotations"));
     aClearAnn->setEnabled(hasAnn);
     QAction* aSaveAnn = menu.addAction(QStringLiteral("Save Annotations"));
-    aSaveAnn->setEnabled(hasAnn);
+    aSaveAnn->setEnabled(hasSidecarState);
     QAction* aSaveAnnAs = menu.addAction(QStringLiteral("Save Annotations As\u2026"));
-    aSaveAnnAs->setEnabled(hasAnn);
+    aSaveAnnAs->setEnabled(hasSidecarState);
     QAction* aLoadAnn = menu.addAction(QStringLiteral("Load Annotations\u2026"));
     QAction* aInvAnn = menu.addAction(QStringLiteral("Invert Annotation Contrast"));
     aInvAnn->setCheckable(true);
