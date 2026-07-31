@@ -290,7 +290,8 @@ div.csl-indent {
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">NebulaScope</a> 
-        <div class="sidebar-tools-main">
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./fr/index.html" title="Version française" class="quarto-navigation-tool px-1" aria-label="Version française"><i class="bi bi-translate"></i></a>
     <a href="https://github.com/hugues-talbot/nebulascope" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
   <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
 </div>
@@ -699,6 +700,8 @@ div.csl-indent {
                          images to the cells in raster order.
       --shared-stf       Auto-stretch the first image and share that stretch
                          with every loaded image (same-session frames).
+      --lang &lt;code&gt;      Override the UI language for this run (en, fr, or
+                         system). The default is Preferences ▸ Language.
       --run list         List all script commands (one-line summaries);
                          detailed help: --help &lt;command&gt;.
       --run &lt;script&gt;     Execute a command script and exit with the number of
@@ -748,7 +751,7 @@ div.csl-indent {
 <li><strong>Tab</strong> — image-only mode (all panels hidden; Esc exits). <strong>Fullscreen</strong> on its own shortcut. <strong>H</strong> hides the scrollbars in every view for a clean canvas (pans still work).</li>
 <li><strong>Preferences…</strong> (application menu on macOS):
 <ul>
-<li><strong>General</strong> — default annotation colour, text size, line thickness; RA/Dec grid density; sidecar auto-load; overlay panel opacity; recent files list sizes.</li>
+<li><strong>General</strong> — interface language (system default / English / Français — applied at the next launch; the <code>.nsc</code> script language and CLI output stay English, as a locale-independent API); default annotation colour, text size, line thickness; RA/Dec grid density; sidecar auto-load; overlay panel opacity; recent files list sizes.</li>
 <li><strong>Shortcuts</strong> — every action’s binding, editable; stored in <code>shortcuts.ini</code> (empty value disables; stale clashes revert).</li>
 </ul></li>
 <li><strong>About</strong> — version and copyright come from <code>src/app/AppInfo.h</code> (user-maintained).</li>

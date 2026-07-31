@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
 
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.10.18">
@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>References – NebulaScope</title>
+<title>Transport de couleurs — théorie et ajustement par étirement – NebulaScope</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -55,7 +55,8 @@ div.csl-indent {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./RELEASES.html" rel="prev">
+<link href="./references.html" rel="next">
+<link href="./MANUAL.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -84,20 +85,49 @@ div.csl-indent {
   ],
   "show-item-context": false,
   "language": {
-    "search-no-results-text": "No results",
-    "search-matching-documents-text": "matching documents",
-    "search-copy-link-title": "Copy link to search",
-    "search-hide-matches-text": "Hide additional matches",
-    "search-more-match-text": "more match in this document",
-    "search-more-matches-text": "more matches in this document",
-    "search-clear-button-title": "Clear",
+    "search-no-results-text": "Pas de résultats",
+    "search-matching-documents-text": "documents trouvés",
+    "search-copy-link-title": "Copier le lien vers la recherche",
+    "search-hide-matches-text": "Cacher les correspondances additionnelles",
+    "search-more-match-text": "correspondance de plus dans ce document",
+    "search-more-matches-text": "correspondances de plus dans ce document",
+    "search-clear-button-title": "Effacer",
     "search-text-placeholder": "",
-    "search-detached-cancel-button-title": "Cancel",
-    "search-submit-button-title": "Submit",
-    "search-label": "Search"
+    "search-detached-cancel-button-title": "Annuler",
+    "search-submit-button-title": "Envoyer",
+    "search-label": "Recherche"
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="web.css">
 </head>
@@ -270,13 +300,13 @@ div.csl-indent {
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav">
     <div class="container-fluid d-flex">
-      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./BUILDING-macos.html">Appendices</a></li><li class="breadcrumb-item"><a href="./references.html">References</a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./TRANSPORT.html"><span class="chapter-title">Transport de couleurs — théorie et ajustement par étirement</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
-      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+      <button type="button" class="btn quarto-search-button" aria-label="Recherche" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -290,15 +320,15 @@ div.csl-indent {
     <div class="sidebar-title mb-0 py-0">
       <a href="./">NebulaScope</a> 
         <div class="sidebar-tools-main tools-wide">
-    <a href="./fr/index.html" title="Version française" class="quarto-navigation-tool px-1" aria-label="Version française"><i class="bi bi-translate"></i></a>
-    <a href="https://github.com/hugues-talbot/nebulascope" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+    <a href="./../index.html" title="English edition" class="quarto-navigation-tool px-1" aria-label="English edition"><i class="bi bi-translate"></i></a>
+    <a href="https://github.com/hugues-talbot/nebulascope" title="Code source" class="quarto-navigation-tool px-1" aria-label="Code source"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre"><i class="bi"></i></a>
 </div>
     </div>
       </div>
         <div class="mt-2 flex-shrink-0 align-items-center">
         <div class="sidebar-search">
-        <div id="quarto-search" class="" title="Search"></div>
+        <div id="quarto-search" class="" title="Recherche"></div>
         </div>
         </div>
     <div class="sidebar-menu-container"> 
@@ -306,81 +336,62 @@ div.csl-indent {
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Preface</span></a>
+ <span class="menu-text">Préface</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./MANUAL.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — User Manual</span></a>
+  <a href="./MANUAL.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Manuel de l’utilisateur</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./TRANSPORT.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></a>
+  <a href="./TRANSPORT.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Transport de couleurs — théorie et ajustement par étirement</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./ARCHITECTURE.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Architecture</span></a>
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Références</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./DECISIONS.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Design Decisions</span></a>
-  </div>
-</li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Appendices</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./BUILDING-macos.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on macOS (Apple Silicon / Homebrew)</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./BUILDING-linux.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Linux</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./BUILDING-windows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Windows (MSVC + vcpkg)</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./RELEASES.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Release notes</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./references.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">References</span></a>
-  </div>
-</li>
-      </ul>
-  </li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table des matières</h2>
+   
+  <ul>
+  <li><a href="#le-problème-du-transfert-de-distribution" id="toc-le-problème-du-transfert-de-distribution" class="nav-link active" data-scroll-target="#le-problème-du-transfert-de-distribution">1. Le problème du transfert de distribution</a>
+  <ul class="collapse">
+  <li><a href="#la-dimension-un-se-résout-exactement" id="toc-la-dimension-un-se-résout-exactement" class="nav-link" data-scroll-target="#la-dimension-un-se-résout-exactement">1.1 La dimension un se résout exactement</a></li>
+  <li><a href="#transport-par-tranches-en-dimension-trois" id="toc-transport-par-tranches-en-dimension-trois" class="nav-link" data-scroll-target="#transport-par-tranches-en-dimension-trois">1.2 Transport par tranches en dimension trois</a></li>
+  </ul></li>
+  <li><a href="#pourquoi-le-transport-exact-dégrade-les-données" id="toc-pourquoi-le-transport-exact-dégrade-les-données" class="nav-link" data-scroll-target="#pourquoi-le-transport-exact-dégrade-les-données">2. Pourquoi le transport exact dégrade les données</a>
+  <ul class="collapse">
+  <li><a href="#postérisation-par-échantillons-ex-æquo" id="toc-postérisation-par-échantillons-ex-æquo" class="nav-link" data-scroll-target="#postérisation-par-échantillons-ex-æquo">2.1 Postérisation par échantillons ex æquo</a></li>
+  <li><a href="#amplification-du-bruit-par-la-pente-de-lapplication" id="toc-amplification-du-bruit-par-la-pente-de-lapplication" class="nav-link" data-scroll-target="#amplification-du-bruit-par-la-pente-de-lapplication">2.2 Amplification du bruit par la pente de l’application</a></li>
+  </ul></li>
+  <li><a href="#lajustement-par-étirement-épouser-lapparence-pas-les-pixels" id="toc-lajustement-par-étirement-épouser-lapparence-pas-les-pixels" class="nav-link" data-scroll-target="#lajustement-par-étirement-épouser-lapparence-pas-les-pixels">3. L’ajustement par étirement : épouser l’apparence, pas les pixels</a>
+  <ul class="collapse">
+  <li><a href="#garanties" id="toc-garanties" class="nav-link" data-scroll-target="#garanties">3.1 Garanties</a></li>
+  <li><a href="#seconde-étape-ajuster-les-réglages-de-couleur" id="toc-seconde-étape-ajuster-les-réglages-de-couleur" class="nav-link" data-scroll-target="#seconde-étape-ajuster-les-réglages-de-couleur">3.2 Seconde étape : ajuster les réglages de couleur</a></li>
+  <li><a href="#lécart-dapproximation" id="toc-lécart-dapproximation" class="nav-link" data-scroll-target="#lécart-dapproximation">3.3 L’écart d’approximation</a></li>
+  </ul></li>
+  <li><a href="#en-pratique" id="toc-en-pratique" class="nav-link" data-scroll-target="#en-pratique">4. En pratique</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Faire part d'un problème</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./BUILDING-macos.html">Appendices</a></li><li class="breadcrumb-item"><a href="./references.html">References</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">References</h1>
+<h1 class="title"><span class="chapter-title">Transport de couleurs — théorie et ajustement par étirement</span></h1>
 </div>
 
 
@@ -397,46 +408,122 @@ div.csl-indent {
 </header>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<p>Le transport de couleurs de NebulaScope transfère la <em>distribution</em> des couleurs d’une image de référence sur l’image affichée. Il possède deux modes d’application aux propriétés d’intégrité très différentes :</p>
+<ol type="1">
+<li><strong>Transport exact</strong> — les pixels sont réécrits à travers une application de transport optimal empirique (une nouvelle entrée de liste ; la source n’est jamais modifiée).</li>
+<li><strong>Ajustement par étirement</strong> — aucun pixel n’est écrit : NebulaScope <em>ajuste l’étirement d’affichage</em> pour que la source <strong>ressemble</strong> au résultat transporté. La perte de données est nulle par construction.</li>
+</ol>
+<p>Ce chapitre dérive les deux, et explique précisément pourquoi le mode 1 peut postériser et amplifier le bruit, et pourquoi le mode 2 ne le peut pas.</p>
+<section id="le-problème-du-transfert-de-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="le-problème-du-transfert-de-distribution">1. Le problème du transfert de distribution</h2>
+<p>Travaillons dans l’espace d’affichage : chaque pixel de la source est un vecteur couleur <span class="math inline">\(u \in [0,1]^3\)</span> tiré d’une distribution <span class="math inline">\(\mu_s\)</span> ; les pixels de la référence suivent <span class="math inline">\(\mu_r\)</span>. On cherche une application <span class="math inline">\(T : [0,1]^3 \to [0,1]^3\)</span> telle que si <span class="math inline">\(u\)</span> suit <span class="math inline">\(\mu_s\)</span>, alors <span class="math inline">\(T(u)\)</span> suit <span class="math inline">\(\mu_r\)</span> — ce qu’on note <span class="math inline">\(T_\# \mu_s = \mu_r\)</span> (« <span class="math inline">\(T\)</span> pousse <span class="math inline">\(\mu_s\)</span> vers <span class="math inline">\(\mu_r\)</span> »). Parmi toutes ces applications, le transport optimal choisit celle qui déplace le moins les couleurs, c’est-à-dire qui minimise <span class="math inline">\(\mathbb{E}\,\lVert T(u) - u \rVert^2\)</span>.</p>
+<p>L’alignement des images est sans objet : seules comptent les deux distributions de couleurs — les images n’ont besoin ni de se recouvrir, ni d’avoir la même taille, ni même de montrer le même champ.</p>
+<section id="la-dimension-un-se-résout-exactement" class="level3">
+<h3 class="anchored" data-anchor-id="la-dimension-un-se-résout-exactement">1.1 La dimension un se résout exactement</h3>
+<p>Pour des distributions scalaires de fonctions de répartition <span class="math inline">\(F_s\)</span> et <span class="math inline">\(F_r\)</span>, l’application optimale est le <em>réarrangement monotone</em> classique</p>
+<p><span class="math display">\[T = F_r^{-1} \circ F_s ,\]</span></p>
+<p>c’est-à-dire que la valeur au quantile <span class="math inline">\(q\)</span> de la source s’envoie sur la valeur de la référence au même quantile. C’est exactement une spécification d’histogramme, et c’est l’unique solution monotone.</p>
+</section>
+<section id="transport-par-tranches-en-dimension-trois" class="level3">
+<h3 class="anchored" data-anchor-id="transport-par-tranches-en-dimension-trois">1.2 Transport par tranches en dimension trois</h3>
+<p>Dans <span class="math inline">\(\mathbb{R}^3\)</span> il n’existe pas de forme close, mais la solution 1-D peut être appliquée <em>par tranches</em> (le transfert de distribution itératif de Pitié et al., de la même famille que les méthodes de Wasserstein par tranches) : répéter, pour <span class="math inline">\(k = 1 \dots K\)</span>,</p>
+<ol type="1">
+<li>tirer une rotation aléatoire <span class="math inline">\(R_k \in SO(3)\)</span> ;</li>
+<li>projeter les deux nuages de points sur les trois axes tournés ;</li>
+<li>appliquer le réarrangement monotone 1-D indépendamment sur chaque axe ;</li>
+<li>appliquer la rotation inverse.</li>
+</ol>
+<p>Chaque itération réduit l’écart entre la distribution courante et celle de la référence ; après <span class="math inline">\(K \approx 15\)</span> passes, les marginales coïncident dans suffisamment de directions pour que les distributions 3-D complètes coïncident pour l’essentiel.</p>
+<p><strong>Notes d’implémentation.</strong> NebulaScope estime les applications sur au plus <span class="math inline">\(2 \times 10^5\)</span> échantillons par image, restreints à la région visible de chaque vue (les détails hors écran ne doivent pas orienter la correspondance) et en excluant les pixels proches de la saturation (leurs couleurs sont inappariables). Chaque application 1-D est tabulée sur 1024 nœuds de quantiles avec interpolation linéaire, et la suite des rotations est initialisée de façon déterministe : les résultats sont reproductibles. Une <em>force</em> <span class="math inline">\(s \in [0,1]\)</span> mélange le résultat avec l’original : <span class="math inline">\(u' = u + s\,(T(u) - u)\)</span>. Les paires d’images mono sautent le découpage en tranches et utilisent directement le réarrangement 1-D.</p>
+</section>
+</section>
+<section id="pourquoi-le-transport-exact-dégrade-les-données" class="level2">
+<h2 class="anchored" data-anchor-id="pourquoi-le-transport-exact-dégrade-les-données">2. Pourquoi le transport exact dégrade les données</h2>
+<p>Deux artefacts sont <em>inhérents</em> au passage des pixels à travers une application empirique — aucun détail d’implémentation ne les supprime entièrement.</p>
+<section id="postérisation-par-échantillons-ex-æquo" class="level3">
+<h3 class="anchored" data-anchor-id="postérisation-par-échantillons-ex-æquo">2.1 Postérisation par échantillons ex æquo</h3>
+<p>L’application empirique est construite sur des données finies et quantifiées. Là où de nombreux échantillons partagent une même valeur <span class="math inline">\(v\)</span> (les ex æquo sont garantis dès que la source a un jour été entière), la fonction de répartition empirique saute : l’application envoie toute la série d’ex æquo sur une même sortie, et la valeur d’entrée distincte <em>suivante</em> atterrit un cran fini plus loin. L’histogramme transporté développe des trous et des pics — visibles comme du <em>banding</em> dans les dégradés doux. L’itération des tranches aggrave l’effet.</p>
+</section>
+<section id="amplification-du-bruit-par-la-pente-de-lapplication" class="level3">
+<h3 class="anchored" data-anchor-id="amplification-du-bruit-par-la-pente-de-lapplication">2.2 Amplification du bruit par la pente de l’application</h3>
+<p>Pour des densités lisses <span class="math inline">\(f_s, f_r\)</span>, la différentiation de <span class="math inline">\(F_r(T(v)) = F_s(v)\)</span> donne la pente locale de l’application 1-D :</p>
+<p><span class="math display">\[T'(v) \;=\; \frac{f_s(v)}{f_r\!\big(T(v)\big)} .\]</span></p>
+<p>Les petites perturbations (le bruit) sont multipliées par cette pente : <span class="math inline">\(\sigma_\text{sortie} \approx T'(v)\,\sigma_\text{entrée}\)</span>. Partout où la distribution de la référence est localement <em>plus fine</em> que celle de la source — c’est-à-dire là où la référence a plus de contraste, précisément ce qu’on demandait — on a <span class="math inline">\(T' &gt; 1\)</span> et le bruit est étiré avec le signal. Épouser une référence contrastée amplifie donc <em>nécessairement</em> le bruit de fond, sous n’importe quelle spécification d’histogramme exacte.</p>
+</section>
+</section>
+<section id="lajustement-par-étirement-épouser-lapparence-pas-les-pixels" class="level2">
+<h2 class="anchored" data-anchor-id="lajustement-par-étirement-épouser-lapparence-pas-les-pixels">3. L’ajustement par étirement : épouser l’apparence, pas les pixels</h2>
+<p>L’affichage de NebulaScope applique, par canal <span class="math inline">\(c\)</span>, un transfert paramétrique lisse à la valeur brute <span class="math inline">\(v\)</span> :</p>
+<p><span class="math display">\[D_c(v) \;=\; \mathrm{MTF}\!\big(W_c(v);\, m_c\big),\]</span></p>
+<p>où le <em>fenêtrage</em> normalise et écrête,</p>
+<p><span class="math display">\[W_c(v) \;=\; \operatorname{clip}_{[0,1]}
+\left( \frac{\dfrac{v - \ell_c}{h_c - \ell_c} - b_c}{w_c - b_c} \right),\]</span></p>
+<p>avec la plage de données <span class="math inline">\([\ell_c, h_c]\)</span> et les points noir/blanc <span class="math inline">\(b_c, w_c\)</span>, et où la fonction de transfert des tons moyens est la courbe rationnelle</p>
+<p><span class="math display">\[\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m},
+\qquad m_c = \frac{\mathrm{mid}_c - b_c}{w_c - b_c},\]</span></p>
+<p>qui impose <span class="math inline">\(\mathrm{MTF}(0)=0\)</span>, <span class="math inline">\(\mathrm{MTF}(1)=1\)</span> et <span class="math inline">\(\mathrm{MTF}(m)=\tfrac12\)</span>. Toute courbe de cette famille est lisse et strictement monotone sur la fenêtre.</p>
+<p><strong>L’ajustement.</strong> Soient <span class="math inline">\(t_i = T_c(u_i)\)</span> les valeurs d’affichage transportées d’un échantillon de pixels et <span class="math inline">\(v_i\)</span> les valeurs <em>brutes</em> correspondantes. L’ajustement par étirement résout, indépendamment par canal,</p>
+<p><span class="math display">\[\min_{\,b_c,\ \mathrm{mid}_c,\ w_c}\;
+\sum_i \omega_i \Big( D_c(v_i;\, b_c, \mathrm{mid}_c, w_c) - t_i \Big)^{2},
+\qquad \omega_i = 0.05 + t_i,\]</span></p>
+<p>un problème de moindres carrés pondérés borné à trois paramètres. La <em>pondération par l’intensité</em> <span class="math inline">\(\omega_i\)</span> est essentielle : les pixels de fond sont infiniment plus nombreux que les pixels de signal, et un ajustement non pondéré épouserait le ciel en négligeant la nébuleuse. Pondérer chaque résidu par la luminosité (avec plancher) de la cible fait gouverner l’ajustement par les couleurs du signal, tandis que le petit plancher maintient le point noir ancré. Les étoiles s’excluent au mieux à la source — faites correspondre des rendus sans étoiles des deux images. NebulaScope résout le problème par descente par coordonnées — quatre passes de recherches linéaires par section dorée sur <span class="math inline">\(b_c \in [0, w_c)\)</span>, <span class="math inline">\(w_c \in (b_c, 1]\)</span>, <span class="math inline">\(\mathrm{mid}_c \in (b_c, w_c)\)</span> — sur jusqu’à <span class="math inline">\(6 \times 10^4\)</span> paires d’échantillons. Le résidu quadratique moyen par canal est rapporté dans la barre d’état.</p>
+<p>Le résultat n’est <strong>qu’un état d’étirement</strong> : il vit au même endroit que n’importe quel Auto STF, se compose avec copier/coller et <em>Appliquer à tout</em>, persiste dans le fichier annexe, et les données sous-jacentes restent intouchées.</p>
+<section id="garanties" class="level3">
+<h3 class="anchored" data-anchor-id="garanties">3.1 Garanties</h3>
+<ul>
+<li><strong>Perte de données nulle</strong> — rien n’est écrit ; le « résultat » est une vue.</li>
+<li><strong>Aucune postérisation</strong> — la courbe ajustée est lisse et strictement monotone ; il n’existe aucune marche empirique sur laquelle des ex æquo pourraient s’effondrer.</li>
+<li><strong>Comportement du bruit maîtrisé</strong> — la pente de la courbe est le <span class="math inline">\(D_c'(v)\)</span> paramétrique lisse, exempt des pentes localement extrêmes qu’un rapport de densités empiriques peut produire.</li>
+</ul>
+</section>
+<section id="seconde-étape-ajuster-les-réglages-de-couleur" class="level3">
+<h3 class="anchored" data-anchor-id="seconde-étape-ajuster-les-réglages-de-couleur">3.2 Seconde étape : ajuster les réglages de couleur</h3>
+<p>En option, une seconde étape réduit l’écart de séparabilité. Les courbes par canal étant figées, NebulaScope ajuste les quatre réglages de couleur inter-canaux — température, teinte (<em>tint</em>), rotation de teinte (<em>hue</em>), saturation — en minimisant l’erreur pondérée par l’intensité sur les <em>triplets</em> RVB complets :</p>
+<p><span class="math display">\[\min_{\theta}\; \sum_i \omega_i\,
+\big\lVert A_\theta\big(D(v_i)\big) - T(u_i) \big\rVert^2 ,\]</span></p>
+<p>où <span class="math inline">\(A_\theta\)</span> est l’opérateur d’ajustement. Ces quatre paramètres mélangent les canaux — précisément ce que font les rotations du transport par tranches et ce que des courbes séparables ne peuvent pas faire — de sorte que des cibles à rotation de teinte hors de portée de l’étape 1 deviennent atteignables. La barre d’état rapporte l’erreur RMS globale après cette étape ; l’annulation étant à une touche, essayer les deux variantes ne coûte rien.</p>
+</section>
+<section id="lécart-dapproximation" class="level3">
+<h3 class="anchored" data-anchor-id="lécart-dapproximation">3.3 L’écart d’approximation</h3>
+<p>La famille des étirements est <em>séparable</em> : trois courbes monotones indépendantes. L’application de transport optimal ne l’est en général pas — ses rotations mélangent les canaux, ce qui lui permet de faire tourner les teintes. La projection de <span class="math inline">\(T\)</span> sur la famille séparable reproduit donc fidèlement l’équilibre global des couleurs et la tonalité, mais ne peut exprimer une rotation de teinte. L’erreur RMS par canal rapportée quantifie cet écart pour votre paire d’images ; quand il compte, le mode exact reste à une case à cocher.</p>
+</section>
+</section>
+<section id="en-pratique" class="level2">
+<h2 class="anchored" data-anchor-id="en-pratique">4. En pratique</h2>
+<ul>
+<li>Boîte de dialogue : <strong>Outils ▸ Transporter les couleurs d’une référence…</strong>, cochez <em>Appliquer comme ajustement d’étirement</em>. Scripts : <code>transport &lt;ligne&gt; [force%] stretch</code>.</li>
+<li>La force s’applique <em>avant</em> l’ajustement — l’ajustement vise le résultat mélangé.</li>
+<li>Les deux modes sont <strong>annulables</strong> : le mode exact comme ajout d’entrée de liste, l’ajustement par étirement comme changement d’état d’étirement (⌘Z restaure l’étirement précédent).</li>
+<li>L’ajustement absorbe l’affichage courant (ajustements compris) dans de nouvelles valeurs Linéaire noir/médian/blanc et remet les curseurs d’ajustement à zéro : ce que vous voyez juste après est la correspondance ajustée elle-même.</li>
+<li>Juger l’erreur RMS : les valeurs sont en unités d’affichage sur <span class="math inline">\([0,1]\)</span> ; l’expérience suggère qu’un ajustement sous <span class="math inline">\(\sim 0{,}02\)</span> est visuellement convaincant, tandis que des résidus plus grands indiquent en général que la référence exigeait une rotation de teinte.</li>
+</ul>
+<p><em>Lectures : Pitié, Kokaram &amp; Dahyot 2007 (le transfert de distribution itératif implémenté ici) ; Rabin et al.&nbsp;2012 pour le point de vue Wasserstein par tranches — références complètes en bibliographie.</em></p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-bertin1996" class="csl-entry" role="listitem">
-Bertin, E., and S. Arnouts. 1996. <span>“<span>SExtractor</span>:
-Software for Source Extraction.”</span> <em>Astronomy and Astrophysics
-Supplement Series</em> 117: 393–404. <a href="https://doi.org/10.1051/aas:1996164">https://doi.org/10.1051/aas:1996164</a>.
+Bertin, E., et S. Arnouts. 1996. <span>«&nbsp;<span>SExtractor</span>: Software for source extraction&nbsp;»</span>. <em>Astronomy and Astrophysics Supplement Series</em> 117: 393‑404. <a href="https://doi.org/10.1051/aas:1996164">https://doi.org/10.1051/aas:1996164</a>.
 </div>
 <div id="ref-xisf10" class="csl-entry" role="listitem">
-Conejero, Juan. 2015. <em><span>XISF</span> Version 1.0 Specification:
-Extensible Image Serialization Format</em>. Pleiades Astrophoto, <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html" class="uri">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a>.
+Conejero, Juan. 2015. <em><span>XISF</span> Version 1.0 Specification: Extensible Image Serialization Format</em>. Pleiades Astrophoto, <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html" class="uri">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a>.
 </div>
 <div id="ref-joye2003" class="csl-entry" role="listitem">
-Joye, W. A., and E. Mandel. 2003. <span>“New Features of <span>SAOImage
-DS9</span>.”</span> <em>Astronomical Data Analysis Software and Systems
-XII</em>, ASP conference series, vol. 295: 489.
+Joye, W. A., et E. Mandel. 2003. <span>«&nbsp;New Features of <span>SAOImage DS9</span>&nbsp;»</span>. <em>Astronomical Data Analysis Software and Systems XII</em>, ASP Conference Series, vol. 295: 489.
 </div>
 <div id="ref-ghs2022" class="csl-entry" role="listitem">
-Payne, M., D. Robbins, and S. Carr. 2022. <em>The Generalised Hyperbolic
-Stretch: Equations and Rationale</em>. <a href="https://ghsastro.co.uk/">https://ghsastro.co.uk/</a>.
+Payne, M., D. Robbins, et S. Carr. 2022. <em>The Generalised Hyperbolic Stretch: equations and rationale</em>. <a href="https://ghsastro.co.uk/">https://ghsastro.co.uk/</a>.
 </div>
 <div id="ref-pence2010" class="csl-entry" role="listitem">
-Pence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie.
-2010. <span>“Definition of the Flexible Image Transport System
-(<span>FITS</span>), Version 3.0.”</span> <em>Astronomy &amp;
-Astrophysics</em> 524: A42. <a href="https://doi.org/10.1051/0004-6361/201015362">https://doi.org/10.1051/0004-6361/201015362</a>.
+Pence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, et E. Stobie. 2010. <span>«&nbsp;Definition of the Flexible Image Transport System (<span>FITS</span>), version 3.0&nbsp;»</span>. <em>Astronomy &amp; Astrophysics</em> 524: A42. <a href="https://doi.org/10.1051/0004-6361/201015362">https://doi.org/10.1051/0004-6361/201015362</a>.
 </div>
 <div id="ref-pitie2007" class="csl-entry" role="listitem">
-Pitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007.
-<span>“Automated Colour Grading Using Colour Distribution
-Transfer.”</span> <em>Computer Vision and Image Understanding</em> 107
-(1–2): 123–37. <a href="https://doi.org/10.1016/j.cviu.2006.11.011">https://doi.org/10.1016/j.cviu.2006.11.011</a>.
+Pitié, François, Anil C. Kokaram, et Rozenn Dahyot. 2007. <span>«&nbsp;Automated colour grading using colour distribution transfer&nbsp;»</span>. <em>Computer Vision and Image Understanding</em> 107 (1–2): 123‑37. <a href="https://doi.org/10.1016/j.cviu.2006.11.011">https://doi.org/10.1016/j.cviu.2006.11.011</a>.
 </div>
 <div id="ref-rabin2012" class="csl-entry" role="listitem">
-Rabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012.
-<span>“Wasserstein Barycenter and Its Application to Texture
-Mixing.”</span> <em>Scale Space and Variational Methods in Computer
-Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
+Rabin, Julien, Gabriel Peyré, Julie Delon, et Marc Bernot. 2012. <span>«&nbsp;Wasserstein Barycenter and Its Application to Texture Mixing&nbsp;»</span>. <em>Scale Space and Variational Methods in Computer Vision (SSVM), LNCS</em> 6667: 435‑46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
 </div>
 </div>
-
-
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -477,12 +564,12 @@ Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-
       // flash "checked"
       button.classList.add('code-copy-button-checked');
       var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copied!");
+      button.setAttribute("title", "Copié");
       let tooltip;
       if (window.bootstrap) {
         button.setAttribute("data-bs-toggle", "tooltip");
         button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copied!");
+        button.setAttribute("data-bs-title", "Copié");
         tooltip = new bootstrap.Tooltip(button, 
           { trigger: "manual", 
             customClass: "code-copy-button-tooltip",
@@ -525,7 +612,7 @@ Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/hugues-talbot\.github\.io\/nebulascope\/");
+        var filterRegex = new RegExp("https:\/\/hugues-talbot\.github\.io\/nebulascope\/fr\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -854,11 +941,14 @@ Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./RELEASES.html" class="pagination-link" aria-label="Release notes">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">Release notes</span></span>
+      <a href="./MANUAL.html" class="pagination-link" aria-label="NebulaScope — Manuel de l'utilisateur">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">NebulaScope — Manuel de l’utilisateur</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
+      <a href="./references.html" class="pagination-link" aria-label="Références">
+        <span class="nav-page-text">Références</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
   </div>
 </nav>
 </div> <!-- /content -->
@@ -866,4 +956,4 @@ Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Faire part d'un problème</a></li></ul></div></div></div></footer></body></html>
