@@ -27,6 +27,7 @@ public:
     void setSource(const ImageData* img) { m_src = img; }   // for pixel readout
     void zoomToFit();
     void zoomActualSize();          // 1:1 — one image pixel per screen pixel, centred on the current view
+    void zoomBy(double factor);     // keyboard zoom about the viewport centre
 
     // The image-pixel rectangle currently visible in the viewport, clamped to
     // the image bounds (empty if nothing is shown). Used for region export.

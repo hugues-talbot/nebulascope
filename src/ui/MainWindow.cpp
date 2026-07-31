@@ -919,6 +919,19 @@ void MainWindow::buildMenusAndToolbar() {
     view->addSeparator();
     acts["zoom_to_fit"] = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
     acts["zoom_actual_size"] = view->addAction("Zoom &1:1", QKeySequence("1"), m_view, &ImageView::zoomActualSize);
+    // Keyboard zoom (no wheel needed): > / < coarse, . / , fine — step
+    // percentages configurable in Preferences. Lambdas read m_view live so
+    // they always target the ACTIVE cell.
+    auto zoomStep = [this](bool fine, bool in) {
+        const double pct = fine ? double(Preferences::get().zoomStepFine)
+                                : double(Preferences::get().zoomStepCoarse);
+        const double f = 1.0 + pct / 100.0;
+        if (m_view && m_image.isValid()) m_view->zoomBy(in ? f : 1.0 / f);
+    };
+    acts["zoom_in"]       = view->addAction("Zoom In",  QKeySequence(">"), this, [zoomStep] { zoomStep(false, true);  });
+    acts["zoom_out"]      = view->addAction("Zoom Out", QKeySequence("<"), this, [zoomStep] { zoomStep(false, false); });
+    acts["zoom_in_fine"]  = view->addAction("Zoom In (Fine)",  QKeySequence("."), this, [zoomStep] { zoomStep(true, true);  });
+    acts["zoom_out_fine"] = view->addAction("Zoom Out (Fine)", QKeySequence(","), this, [zoomStep] { zoomStep(true, false); });
     // QKeySequence::FullScreen is the platform-correct binding (⌃⌘F on macOS —
     // F11 there is taken by the system — and F11 on Windows/Linux).
     acts["fullscreen"] = view->addAction("&Fullscreen", QKeySequence::FullScreen, this, [this] {
@@ -1160,11 +1173,6 @@ void MainWindow::buildMenusAndToolbar() {
     aboutQt->setMenuRole(QAction::AboutQtRole);
 
     // Walk the loaded-image list: Space = next, Shift+Space = previous.
-    // Arrow keys walk the list too (the sliders keep click+wheel editing).
-    auto* nextArrow = new QShortcut(QKeySequence(Qt::Key_Down), this);
-    connect(nextArrow, &QShortcut::activated, this, &MainWindow::nextImage);
-    auto* prevArrow = new QShortcut(QKeySequence(Qt::Key_Up), this);
-    connect(prevArrow, &QShortcut::activated, this, &MainWindow::prevImage);
     auto* next = new QShortcut(QKeySequence(Qt::Key_Space), this);
     connect(next, &QShortcut::activated, this, &MainWindow::nextImage);
     auto* prev = new QShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Space), this);

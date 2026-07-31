@@ -111,6 +111,20 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                             "Also switchable per session in Image \u25b8 Debayer.");
     form->addRow("Debayer algorithm:", debayerMeth);
 
+    auto* zoomCoarse = new QSpinBox();
+    zoomCoarse->setRange(1, 100);
+    zoomCoarse->setSuffix(" %");
+    zoomCoarse->setValue(p.zoomStepCoarse);
+    zoomCoarse->setToolTip("Keyboard zoom step for > and <");
+    form->addRow("Zoom step (> / <):", zoomCoarse);
+
+    auto* zoomFine = new QSpinBox();
+    zoomFine->setRange(1, 50);
+    zoomFine->setSuffix(" %");
+    zoomFine->setValue(p.zoomStepFine);
+    zoomFine->setToolTip("Keyboard zoom step for . and ,");
+    form->addRow("Fine zoom step (. / ,):", zoomFine);
+
     // ---- Shortcuts tab ----
     // Edits the same INI the startup shortcut loader reads (Help ▸ Configure
     // Shortcuts… opens it in a file manager). New actions appear here after
@@ -165,6 +179,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         recentJson->setValue(d.recentJsonMax);
         overlayOp->setValue(int(d.overlayOpacity * 100 + 0.5));
         debayerMeth->setCurrentIndex(qBound(0, d.debayerMethod, 2));
+        zoomCoarse->setValue(d.zoomStepCoarse);
+        zoomFine->setValue(d.zoomStepFine);
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
@@ -178,6 +194,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.recentJsonMax   = recentJson->value();
         p.overlayOpacity  = overlayOp->value() / 100.0;
         p.debayerMethod   = debayerMeth->currentIndex();
+        p.zoomStepCoarse  = zoomCoarse->value();
+        p.zoomStepFine    = zoomFine->value();
         p.save();
         // Persist the shortcut edits back to the INI the startup loader reads.
         QSettings sc(QSettings::IniFormat, QSettings::UserScope,

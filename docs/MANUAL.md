@@ -164,7 +164,11 @@ Mouse (in any view):
   plate solution exists.
 
 Zoom commands: **Zoom to Fit** and **1:1** (key **1**) in the View menu and
-toolbar.
+toolbar — and keyboard zoom for mouse-free work: **>** / **<** step by 10%,
+**.** / **,** by 3% (both percentages configurable in Preferences), centred
+on the view. With the image view focused, the **arrow keys pan**; with the
+image list focused, ↑/↓ walk the list (blinking itself stays on
+**Space**/**Shift+Space**).
 
 The **Info panel** (**P** or F4) shows dimensions, pixel format, per-channel
 min / max / median / MAD, the FITS HDU structure, and the full header (FITS
@@ -172,8 +176,7 @@ cards or XISF properties) in a filterable, copyable table.
 
 ## 7. Sessions, blinking & the image list
 
-- **Space** / **Shift+Space** — and **↓** / **↑** — next / previous image,
-  looping. Zoom and pan are preserved across same-size images, so you can
+- **Space** / **Shift+Space** — next / previous image, looping. Zoom and pan are preserved across same-size images, so you can
   blink a small region.
 - **Shift+L** (or **F2**) toggles the image list; **C** closes the current image (closing the
   last image empties all views).

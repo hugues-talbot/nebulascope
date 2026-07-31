@@ -24,6 +24,8 @@ struct Preferences {
     int    recentJsonMax   = 5;                // history length: annotation files
     int    debayerMethod   = 2;                // DebayerMethod: 0 superpixel,
                                                // 1 bilinear, 2 RCD (default)
+    int    zoomStepCoarse  = 10;               // keyboard zoom > / < step, percent
+    int    zoomStepFine    = 3;                // keyboard zoom . / , step, percent
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

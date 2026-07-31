@@ -29,6 +29,8 @@ void Preferences::load() {
     recentImagesMax = s.value(QStringLiteral("recent_images_max"), recentImagesMax).toInt();
     recentJsonMax   = s.value(QStringLiteral("recent_json_max"), recentJsonMax).toInt();
     debayerMethod   = s.value(QStringLiteral("debayer_method"), debayerMethod).toInt();
+    zoomStepCoarse  = s.value(QStringLiteral("zoom_step_coarse"), zoomStepCoarse).toInt();
+    zoomStepFine    = s.value(QStringLiteral("zoom_step_fine"), zoomStepFine).toInt();
     s.endGroup();
     gridTargetLines = qBound(3, gridTargetLines, 20);
     annTextSize     = qBound(5.0, annTextSize, 72.0);
@@ -37,6 +39,8 @@ void Preferences::load() {
     recentImagesMax = qBound(0, recentImagesMax, 50);
     recentJsonMax   = qBound(0, recentJsonMax, 50);
     debayerMethod   = qBound(0, debayerMethod, 2);
+    zoomStepCoarse  = qBound(1, zoomStepCoarse, 100);
+    zoomStepFine    = qBound(1, zoomStepFine, 50);
     overlayOpacity  = qBound(0.5, overlayOpacity, 1.0);
 }
 
@@ -53,6 +57,8 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("recent_images_max"), recentImagesMax);
     s.setValue(QStringLiteral("recent_json_max"), recentJsonMax);
     s.setValue(QStringLiteral("debayer_method"), debayerMethod);
+    s.setValue(QStringLiteral("zoom_step_coarse"), zoomStepCoarse);
+    s.setValue(QStringLiteral("zoom_step_fine"), zoomStepFine);
     s.endGroup();
 }
 

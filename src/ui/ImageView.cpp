@@ -280,6 +280,17 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
     QGraphicsView::mouseReleaseEvent(e);
 }
 
+void ImageView::zoomBy(double factor) {
+    if (factor <= 0.0 || !scene()) return;
+    // Keyboard zoom: anchor on the viewport centre (the wheel anchors on the
+    // cursor), then restore the wheel behaviour.
+    const ViewportAnchor prev = transformationAnchor();
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
+    scale(factor, factor);
+    setTransformationAnchor(prev);
+    if (!m_adopting) emit viewNavigated();
+}
+
 void ImageView::wheelEvent(QWheelEvent* e) {
     // Shift = fine zoom for precise framing (e.g. before calibration-linking).
     // NOTE: with Shift held, Qt reports the wheel on the X axis (horizontal-
