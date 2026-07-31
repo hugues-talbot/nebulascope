@@ -7,6 +7,9 @@ book:
   subtitle: "An astronomical image inspector — User Manual & Developer Guide"
   author: "Hugues Talbot"
   date: today
+  site-url: https://hugues-talbot.github.io/nebulascope/
+  repo-url: https://github.com/hugues-talbot/nebulascope
+  repo-actions: [issue]
   chapters:
     - index.qmd
     - MANUAL.md
@@ -27,6 +30,15 @@ nocite: |
   @*
 
 format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    # UI screenshots are dark-themed; keep them framed in light mode too.
+    css: web.css
   pdf:
     documentclass: scrreprt
     pdf-engine: xelatex
