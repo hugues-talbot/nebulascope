@@ -32,6 +32,16 @@ struct GHSParams {
 
 // PixInsight midtones-transfer function.
 double mtf(double x, double m);
+
+// Fit a Linear+MTF channel stretch (black/mid/white over the window lo..hi)
+// so that stretching the raw samples best matches `target` display values
+// ([0,1]) in least squares. Strided sampling: uses raw[i*stride] pairs.
+// Returns the RMSE of the fit; `out` receives the fitted parameters.
+// This is how a colour-transport result becomes a NON-DESTRUCTIVE stretch:
+// smooth parametric curves cannot posterize and touch no pixel data.
+double fitChannelStretch(const float* raw, const float* target, std::size_t n,
+                         std::size_t stride, double lo, double hi,
+                         ChannelStretch& out);
 // Base curve shape for Linear/Log/Asinh on a black/white-normalized t in [0,1].
 double baseShape(double t, StretchFn fn);
 // GHS local stretch intensity (the slope of the transfer); max at SP.

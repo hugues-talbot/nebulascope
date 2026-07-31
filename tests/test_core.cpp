@@ -135,6 +135,31 @@ NS_TEST(stats_ramp) {
     NS_CHECK(st[0].p99 > 19.5f && st[0].p99 <= 20.0f);
 }
 
+NS_TEST(fit_channel_stretch_recovers_parameters) {
+    // Generate display values with a KNOWN Linear+MTF stretch, then fit —
+    // the recovered curve must reproduce the display to tight tolerance
+    // (this is the "colour transport as stretch" fitting core).
+    const std::size_t n = 20000;
+    std::vector<float> raw(n), disp(n);
+    ChannelStretch truth; truth.black = 0.15; truth.mid = 0.35; truth.white = 0.85;
+    const double m = (truth.mid - truth.black) / (truth.white - truth.black);
+    for (std::size_t i = 0; i < n; ++i) {
+        raw[i] = float(i) / (n - 1);
+        disp[i] = float(mtf(windowCoord(raw[i], 0.0, 1.0, truth), m));
+    }
+    ChannelStretch fit;
+    const double rmse = fitChannelStretch(raw.data(), disp.data(), n, 1, 0.0, 1.0, fit);
+    NS_CHECK(rmse < 5e-3);
+    // Functional agreement matters more than parameter identity.
+    const double fm = (fit.mid - fit.black) / std::max(1e-6, fit.white - fit.black);
+    double worst = 0;
+    for (std::size_t i = 0; i < n; i += 97) {
+        const double d = mtf(windowCoord(raw[i], 0.0, 1.0, fit), fm);
+        worst = std::max(worst, std::fabs(d - disp[i]));
+    }
+    NS_CHECK(worst < 0.02);
+}
+
 NS_TEST(screen_blend_math) {
     // The star-recomposition op: 1-(1-a)(1-b). Identity with black stars,
     // saturation-safe, commutative.

@@ -2190,6 +2190,12 @@ void MainWindow::transportColorsFromRef() {
                             "the transported colours with the original.");
     hint->setStyleSheet("color:#7e8b98; font-size:11px;");
     form->addRow(QString(), hint);
+    auto* asStretchBox = new QCheckBox("Apply as stretch fit (non-destructive)");
+    asStretchBox->setToolTip("Instead of writing new pixels, fit per-channel B/M/W so the\n"
+                             "display matches the transported colours — the data is untouched,\n"
+                             "so nothing can posterize. Colour match is close, not exact\n"
+                             "(cross-channel rotations are outside the stretch family).");
+    form->addRow(QString(), asStretchBox);
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
@@ -2198,14 +2204,16 @@ void MainWindow::transportColorsFromRef() {
     if (!ok) return;
     s_lastStrength = strength->value();
     QString terr;
-    if (!runColorTransport(keys[combo->currentIndex()], strength->value(), &terr) &&
+    if (!runColorTransport(keys[combo->currentIndex()], strength->value(), &terr,
+                           asStretchBox->isChecked()) &&
         !terr.isEmpty())
         QMessageBox::warning(this, "Transport Colors", terr);
 }
 
 // The transport proper, shared by the picker slot and ScriptRunner: reference
 // by list key, strength in percent. False (+ *errOut) on failure.
-bool MainWindow::runColorTransport(const QString& key, int strengthPct, QString* errOut) {
+bool MainWindow::runColorTransport(const QString& key, int strengthPct,
+                                   QString* errOut, bool asStretch) {
     if (!m_image.isValid()) { if (errOut) *errOut = "no image displayed"; return false; }
     // Decode the reference (or fetch the in-memory synthetic).
     std::shared_ptr<ImageData> refImg;
@@ -2307,6 +2315,33 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct, QString*
                 o[i] = float(orig[i] + s * (o[i] - orig[i]));
         }
     }
+    // "As stretch": fit per-channel Linear B/M/W so the DISPLAY matches the
+    // transported result — no pixel is touched, so nothing can posterize.
+    // Cross-channel OT rotations are outside this family: report the RMSE.
+    if (asStretch) {
+        StretchModel::State st = m_model.state();
+        const std::size_t np = srcDisp.samplesPerChannel();
+        const std::size_t stride = std::max<std::size_t>(1, np / 60000);
+        const int nch = std::min(3, srcPix->channels());
+        QStringList rms;
+        for (int c = 0; c < nch; ++c) {
+            const int rc = std::min(c, res.image.channels() - 1);
+            const double e = fitChannelStretch(srcPix->plane<float>(c),
+                                               res.image.plane<float>(rc),
+                                               np, stride,
+                                               st.lo[c], st.hi[c], st.chan[c]);
+            rms << QString::number(e, 'f', 4);
+        }
+        if (nch == 1) { st.chan[1] = st.chan[0]; st.chan[2] = st.chan[0]; }
+        st.fn = StretchFn::Linear;
+        st.adj = AdjustParams{};             // the fit absorbed the old display
+        m_model.setState(st);
+        statusBar()->showMessage(
+            QStringLiteral("Colour match fitted as stretch (non-destructive) — RMSE %1")
+                .arg(rms.join(QLatin1String(" / "))), 6000);
+        return true;
+    }
+
     if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
     const QSize srcDiskSize(srcPix->width(), srcPix->height());
     const QString newKey = addSyntheticImage(

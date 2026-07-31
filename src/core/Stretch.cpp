@@ -61,6 +61,53 @@ static std::vector<float> buildGhsLut(const GHSParams& g, int N) {
     return lut;
 }
 
+double fitChannelStretch(const float* raw, const float* target, std::size_t n,
+                         std::size_t stride, double lo, double hi,
+                         ChannelStretch& out) {
+    // Collect finite sample pairs (strided).
+    std::vector<std::pair<float, float>> s;
+    s.reserve(n / std::max<std::size_t>(1, stride) + 1);
+    for (std::size_t i = 0; i < n; i += std::max<std::size_t>(1, stride))
+        if (std::isfinite(raw[i]) && std::isfinite(target[i]))
+            s.push_back({ raw[i], target[i] });
+    if (s.size() < 64) { out = ChannelStretch{}; return 1.0; }
+
+    auto mse = [&](double black, double mid, double white) {
+        ChannelStretch cs; cs.black = black; cs.mid = mid; cs.white = white;
+        const double denom = std::max(1e-6, white - black);
+        const double m = std::min(0.999, std::max(0.001, (mid - black) / denom));
+        double e = 0.0;
+        for (const auto& p : s) {
+            const double d = mtf(windowCoord(p.first, lo, hi, cs), m) - p.second;
+            e += d * d;
+        }
+        return e / s.size();
+    };
+    // Golden-section line search on one coordinate.
+    auto lineSearch = [&](double a, double b, auto eval) {
+        const double phi = 0.6180339887498949;
+        double x1 = b - phi * (b - a), x2 = a + phi * (b - a);
+        double f1 = eval(x1), f2 = eval(x2);
+        for (int it = 0; it < 40 && (b - a) > 1e-5; ++it) {
+            if (f1 < f2) { b = x2; x2 = x1; f2 = f1; x1 = b - phi * (b - a); f1 = eval(x1); }
+            else         { a = x1; x1 = x2; f1 = f2; x2 = a + phi * (b - a); f2 = eval(x2); }
+        }
+        return 0.5 * (a + b);
+    };
+
+    double black = 0.0, white = 1.0, mid = 0.5;
+    for (int sweep = 0; sweep < 4; ++sweep) {           // coordinate descent
+        black = lineSearch(0.0, white - 0.02,
+                           [&](double v) { return mse(v, mid, white); });
+        white = lineSearch(black + 0.02, 1.0,
+                           [&](double v) { return mse(black, mid, v); });
+        mid   = lineSearch(black + 1e-4, white - 1e-4,
+                           [&](double v) { return mse(black, v, white); });
+    }
+    out.black = black; out.mid = mid; out.white = white;
+    return std::sqrt(mse(black, mid, white));
+}
+
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N) {
     // The LUT is indexed by the windowed coordinate t in [0,1] (the caller maps
