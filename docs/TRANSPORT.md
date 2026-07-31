@@ -117,9 +117,16 @@ pixel sample and $v_i$ the corresponding *raw* values. The stretch fit
 solves, independently per channel,
 
 $$\min_{\,b_c,\ \mathrm{mid}_c,\ w_c}\;
-\sum_i \Big( D_c(v_i;\, b_c, \mathrm{mid}_c, w_c) - t_i \Big)^{2},$$
+\sum_i \omega_i \Big( D_c(v_i;\, b_c, \mathrm{mid}_c, w_c) - t_i \Big)^{2},
+\qquad \omega_i = 0.05 + t_i,$$
 
-a bounded three-parameter least-squares problem. NebulaScope solves it by
+a bounded three-parameter weighted least-squares problem. The *intensity
+weighting* $\omega_i$ matters: background pixels vastly outnumber signal
+pixels, and an unweighted fit would match the sky while shrugging at the
+nebula. Weighting each residual by the (floored) target brightness makes
+the signal colours govern the fit while the small floor keeps the black
+point anchored. Stars are best excluded at the source — match starless
+renditions of both images. NebulaScope solves it by
 coordinate descent — four sweeps of golden-section line searches over
 $b_c \in [0, w_c)$, $w_c \in (b_c, 1]$, $\mathrm{mid}_c \in (b_c, w_c)$ —
 on up to $6 \times 10^4$ sample pairs. The root-mean-square residual per

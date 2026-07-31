@@ -39,9 +39,12 @@ double mtf(double x, double m);
 // Returns the RMSE of the fit; `out` receives the fitted parameters.
 // This is how a colour-transport result becomes a NON-DESTRUCTIVE stretch:
 // smooth parametric curves cannot posterize and touch no pixel data.
+// With intensityWeight, residuals are weighted by (0.05 + target): the
+// abundant near-black background no longer dominates the fit — signal
+// colours govern it (use starless references to keep stars out entirely).
 double fitChannelStretch(const float* raw, const float* target, std::size_t n,
                          std::size_t stride, double lo, double hi,
-                         ChannelStretch& out);
+                         ChannelStretch& out, bool intensityWeight = false);
 // Base curve shape for Linear/Log/Asinh on a black/white-normalized t in [0,1].
 double baseShape(double t, StretchFn fn);
 // GHS local stretch intensity (the slope of the transfer); max at SP.

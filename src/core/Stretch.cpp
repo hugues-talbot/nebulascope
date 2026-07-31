@@ -63,7 +63,7 @@ static std::vector<float> buildGhsLut(const GHSParams& g, int N) {
 
 double fitChannelStretch(const float* raw, const float* target, std::size_t n,
                          std::size_t stride, double lo, double hi,
-                         ChannelStretch& out) {
+                         ChannelStretch& out, bool intensityWeight) {
     // Collect finite sample pairs (strided).
     std::vector<std::pair<float, float>> s;
     s.reserve(n / std::max<std::size_t>(1, stride) + 1);
@@ -76,12 +76,16 @@ double fitChannelStretch(const float* raw, const float* target, std::size_t n,
         ChannelStretch cs; cs.black = black; cs.mid = mid; cs.white = white;
         const double denom = std::max(1e-6, white - black);
         const double m = std::min(0.999, std::max(0.001, (mid - black) / denom));
-        double e = 0.0;
+        double e = 0.0, wsum = 0.0;
         for (const auto& p : s) {
             const double d = mtf(windowCoord(p.first, lo, hi, cs), m) - p.second;
-            e += d * d;
+            // Intensity weighting: the sky is legion; without it the fit
+            // matches the background and shrugs at the nebula.
+            const double w = intensityWeight ? 0.05 + p.second : 1.0;
+            e += w * d * d;
+            wsum += w;
         }
-        return e / s.size();
+        return e / std::max(1e-12, wsum);
     };
     // Golden-section line search on one coordinate.
     auto lineSearch = [&](double a, double b, auto eval) {

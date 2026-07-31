@@ -2329,7 +2329,8 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
             const double e = fitChannelStretch(srcPix->plane<float>(c),
                                                res.image.plane<float>(rc),
                                                np, stride,
-                                               st.lo[c], st.hi[c], st.chan[c]);
+                                               st.lo[c], st.hi[c], st.chan[c],
+                                               /*intensityWeight=*/true);
             rms << QString::number(e, 'f', 4);
         }
         if (nch == 1) { st.chan[1] = st.chan[0]; st.chan[2] = st.chan[0]; }

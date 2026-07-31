@@ -160,6 +160,39 @@ NS_TEST(fit_channel_stretch_recovers_parameters) {
     NS_CHECK(worst < 0.02);
 }
 
+NS_TEST(fit_channel_stretch_intensity_weighting) {
+    // A corrupted background must not drag the fit away from the signal:
+    // build a target that follows a known curve for bright pixels but is
+    // biased in the dark region — the intensity-weighted fit should track
+    // the bright-region curve clearly better than the uniform fit.
+    const std::size_t n = 20000;
+    std::vector<float> raw(n), tgt(n);
+    ChannelStretch truth; truth.black = 0.1; truth.mid = 0.4; truth.white = 0.9;
+    const double m = (truth.mid - truth.black) / (truth.white - truth.black);
+    for (std::size_t i = 0; i < n; ++i) {
+        raw[i] = float(i) / (n - 1);
+        double d = mtf(windowCoord(raw[i], 0.0, 1.0, truth), m);
+        if (raw[i] < 0.25) d = std::min(1.0, d + 0.08);   // background bias
+        tgt[i] = float(d);
+    }
+    ChannelStretch fitU, fitW;
+    fitChannelStretch(raw.data(), tgt.data(), n, 1, 0.0, 1.0, fitU, false);
+    fitChannelStretch(raw.data(), tgt.data(), n, 1, 0.0, 1.0, fitW, true);
+    auto brightErr = [&](const ChannelStretch& cs) {
+        const double fm = (cs.mid - cs.black) / std::max(1e-6, cs.white - cs.black);
+        double worst = 0;
+        for (std::size_t i = 0; i < n; i += 61) {
+            if (raw[i] < 0.4) continue;
+            const double want = mtf(windowCoord(raw[i], 0.0, 1.0, truth), m);
+            const double got  = mtf(windowCoord(raw[i], 0.0, 1.0, cs), fm);
+            worst = std::max(worst, std::fabs(got - want));
+        }
+        return worst;
+    };
+    NS_CHECK(brightErr(fitW) < brightErr(fitU));
+    NS_CHECK(brightErr(fitW) < 0.03);
+}
+
 NS_TEST(screen_blend_math) {
     // The star-recomposition op: 1-(1-a)(1-b). Identity with black stars,
     // saturation-safe, commutative.
