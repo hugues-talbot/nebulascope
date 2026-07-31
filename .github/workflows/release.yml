@@ -38,6 +38,13 @@ jobs:
         with:
           tinytex: true
 
+      # actions/checkout peels annotated tags to lightweight ones; on those,
+      # %(contents:body) falls through to the COMMIT message — which would
+      # put the wrong text in the release body and the PDF appendix. Refetch
+      # the real tag objects first.
+      - name: Restore annotated tag objects
+        run: git fetch --force --tags origin
+
       - name: Render documentation PDF
         continue-on-error: true
         run: |
