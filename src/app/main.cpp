@@ -31,7 +31,13 @@ public:
 protected:
     bool event(QEvent* e) override {
         if (e->type() == QEvent::FileOpen) {
-            const QString f = static_cast<QFileOpenEvent*>(e)->file();
+            const auto* fo = static_cast<QFileOpenEvent*>(e);
+            QString f = fo->file();
+            if (f.isEmpty()) f = fo->url().toLocalFile();  // some senders pass a URL
+            // Breadcrumb for the intermittent "right-click open did nothing"
+            // reports — visible in Console.app (filter: NebulaScope).
+            qInfo("NebulaScope FileOpen: %s",
+                  qPrintable(f.isEmpty() ? "<empty> url=" + fo->url().toString() : f));
             if (!f.isEmpty()) {
                 // Finder delivers a multi-selection as one event per file:
                 // coalesce briefly and open them as ONE batch (a single

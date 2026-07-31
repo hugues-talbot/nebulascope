@@ -51,6 +51,8 @@ public:
 
 private slots:
     void openFile();
+    QString openDialogDir() const;
+    void rememberOpenDialogDir(const QString& firstPath);
     void saveFile();
     void saveStretched();   // bake the current stretch into Float32 data, save
     void exportView();

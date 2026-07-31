@@ -918,8 +918,13 @@ void MainWindow::buildMenusAndToolbar() {
         removeSelected();
     });
     view->addSeparator();
-    acts["zoom_to_fit"] = view->addAction(tr("Zoom to &Fit"), QKeySequence("F"), m_view, &ImageView::zoomToFit);
-    acts["zoom_actual_size"] = view->addAction(tr("Zoom &1:1"), QKeySequence("1"), m_view, &ImageView::zoomActualSize);
+    // Receiver must be resolved at INVOCATION time: binding m_view directly
+    // would freeze the receiver to whichever cell was active when the menu was
+    // built — in split views, F/1 would then always act on cell 0.
+    acts["zoom_to_fit"] = view->addAction(tr("Zoom to &Fit"), QKeySequence("F"),
+                                          this, [this] { m_view->zoomToFit(); });
+    acts["zoom_actual_size"] = view->addAction(tr("Zoom &1:1"), QKeySequence("1"),
+                                               this, [this] { m_view->zoomActualSize(); });
     // Keyboard zoom (no wheel needed): > / < coarse, . / , fine — step
     // percentages configurable in Preferences. Lambdas read m_view live so
     // they always target the ACTIVE cell.
@@ -1211,8 +1216,8 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addAction(tr("Save"), this, &MainWindow::saveFile);
     tb->addAction(tr("Export"), this, &MainWindow::exportView);
     tb->addSeparator();
-    tb->addAction(tr("Fit"), m_view, &ImageView::zoomToFit);
-    tb->addAction("1:1", m_view, &ImageView::zoomActualSize);
+    tb->addAction(tr("Fit"), this, [this] { m_view->zoomToFit(); });
+    tb->addAction("1:1", this, [this] { m_view->zoomActualSize(); });
     tb->addSeparator();
     tb->addAction("\u21bb", this, [this]{ applyTransform(Xform::RotCW); })->setToolTip(tr("Rotate 90\u00b0 clockwise ( ] )"));
     tb->addAction("\u21ba", this, [this]{ applyTransform(Xform::RotCCW); })->setToolTip(tr("Rotate 90\u00b0 counter-clockwise ( [ )"));
@@ -1291,15 +1296,47 @@ void MainWindow::buildMenusAndToolbar() {
     });
 }
 
+static QString splitHduKey(const QString& key, int& hdu);   // defined below
+
+// Where the Open/Append dialogs start. An empty dir means Qt falls back to
+// the process working directory — "/" when Finder launched the app, which is
+// useless. Prefer the directory of the most recently loaded image, then the
+// last directory a file dialog picked (persisted), then home.
+QString MainWindow::openDialogDir() const {
+    int hdu = -1;
+    const QString base = splitHduKey(m_currentPath, hdu);
+    if (!base.isEmpty() && !base.startsWith(QLatin1String("mem://"))) {
+        const QFileInfo fi(base);
+        if (fi.dir().exists()) return fi.absolutePath();
+    }
+    QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                QStringLiteral("NebulaScope"), QStringLiteral("recent"));
+    const QString last = s.value(QStringLiteral("last_open_dir")).toString();
+    if (!last.isEmpty() && QDir(last).exists()) return last;
+    return QDir::homePath();
+}
+
+void MainWindow::rememberOpenDialogDir(const QString& firstPath) {
+    const QFileInfo fi(firstPath);
+    if (!fi.exists()) return;
+    QSettings s(QSettings::IniFormat, QSettings::UserScope,
+                QStringLiteral("NebulaScope"), QStringLiteral("recent"));
+    s.setValue(QStringLiteral("last_open_dir"), fi.absolutePath());
+}
+
 void MainWindow::openFile() {
     const QStringList paths = QFileDialog::getOpenFileNames(
-        this, tr("Open image(s)"), QString(),
+        this, tr("Open image(s)"), openDialogDir(),
         tr("Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)"));
-    if (!paths.isEmpty()) addPaths(paths);
+    if (!paths.isEmpty()) { rememberOpenDialogDir(paths.first()); addPaths(paths); }
 }
 
 void MainWindow::openPaths(const QStringList& paths) {
     addPaths(paths);
+    // Visible confirmation even when the window is buried — Finder "Open
+    // With" reports of silent no-ops are otherwise undiagnosable.
+    if (!paths.isEmpty())
+        statusBar()->showMessage(tr("Opened %n file(s)", nullptr, int(paths.size())), 4000);
 }
 
 // ---- multi-HDU list keys ----------------------------------------------------
@@ -2041,9 +2078,9 @@ void MainWindow::combineStars() {
 
 void MainWindow::appendToList() {
     const QStringList paths = QFileDialog::getOpenFileNames(
-        this, tr("Append image(s)"), QString(),
+        this, tr("Append image(s)"), openDialogDir(),
         tr("Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)"));
-    if (!paths.isEmpty()) addPaths(paths);
+    if (!paths.isEmpty()) { rememberOpenDialogDir(paths.first()); addPaths(paths); }
 }
 
 void MainWindow::removeSelected() {
