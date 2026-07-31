@@ -225,6 +225,16 @@ orientation is recorded per image (and in sidecars), so an image re-opens the
 way you left it. Note: after an *arbitrary* rotation, **Save Data As** writes
 resampled pixels — do photometry on unrotated data.
 
+**Crop to Visible Region** (**Shift+C**, Image menu; scripts: `crop x y w h`
+or `crop view`): frame the region by zooming — exactly as you would for a
+screenshot — and crop it into a NEW in-memory list entry at **full bit
+depth**; the original is untouched. *The plate solution survives exactly*: a
+crop only translates the reference pixel (CRPIX), so the rebased solution is
+written into the crop's header as standard FITS cards — even when the source
+carried it only as PixInsight XISF properties. Annotations translate with
+the pixels, the current stretch carries over, and **Save Data As…** writes
+the result as FITS/XISF/16-bit TIFF. Undoable like any synthetic result.
+
 ## 9. Annotations
 
 A pure **vector overlay** — never rasterized into the data.

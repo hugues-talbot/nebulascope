@@ -213,6 +213,12 @@ private:
     // memory — each applies as that image loads. Refreshes visible cells.
     void applyStretchToAllList();
 
+    // Crop: the visible region (menu) or an explicit rect (script) becomes a
+    // new in-memory entry — pixels copied at full depth, WCS rebased (pure
+    // CRPIX shift), annotations translated, header carried for saving.
+    void cropCurrentToRect(QRect r);
+    QHash<QString, ImageHeader> m_syntheticHeaders;   // header per mem:// entry
+
     // Blink culling (checked = keep):
     void toggleCurrentTag();                    // B — flip the shown frame's check
     void setSelectedTags(bool checked);         // check/uncheck the list selection

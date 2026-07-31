@@ -90,4 +90,16 @@ show 3                           # the moved row re-keyed to its new home
 waitloaded
 assert size 128 128
 
+# Full-depth crop: a new in-memory entry at the exact size, saveable and
+# reloadable (WCS rebasing is covered by the wcs unit tests).
+crop 10 20 64 48
+waitloaded
+assert size 64 48
+assert rows 4
+save smoke_crop.fits
+open smoke_crop.fits
+waitloaded
+assert size 64 48
+assert rows 5
+
 quit

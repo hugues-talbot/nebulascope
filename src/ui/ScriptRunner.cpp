@@ -1,6 +1,7 @@
 #include "ui/ScriptRunner.h"
 #include "ui/MainWindow.h"
 #include "ui/ViewGrid.h"
+#include "ui/ImageView.h"
 #include "ui/RotateDialog.h"
 #include "ui/CombineDialog.h"
 #include "ui/PreferencesDialog.h"
@@ -54,6 +55,11 @@ const CommandRef kCommands[] = {
   {"adjust",     {"adjust <name> <value>",
     "Post-stretch adjustment. Names: brightness contrast gamma shadows\n"
     "highlights blackpoint whitepoint temperature tint hue saturation vibrance."}},
+  {"crop",       {"crop <x> <y> <w> <h> | crop view",
+    "Full-depth crop into a new in-memory list entry (save it with `save`).\n"
+    "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
+    "standard FITS cards; annotations translate with the pixels. `view`\n"
+    "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
   {"rot90",      {"rot90 cw|ccw", "Lossless 90-degree rotation of the data."}},
   {"flip",       {"flip h|v", "Lossless horizontal/vertical flip of the data."}},
   {"rotate",     {"rotate <deg>",
@@ -328,6 +334,20 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!needArgs(1)) return false;
         const bool wantPanels = t[1].toLower() != QLatin1String("off");
         if (wantPanels == m_w->m_imageOnly) m_w->toggleImageOnly();
+        return true;
+    }
+    if (cmd == QLatin1String("crop")) {
+        // crop <x> <y> <w> <h>  |  crop view — full-depth crop into a new
+        // in-memory entry (WCS rebased, annotations translated).
+        if (!needArgs(1)) return false;
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        if (t[1].toLower() == QLatin1String("view")) {
+            m_w->cropCurrentToRect(m_w->m_view->visibleImageRect());
+            return true;
+        }
+        if (t.size() < 5) { err = "crop <x> <y> <w> <h> | crop view"; return false; }
+        m_w->cropCurrentToRect(QRect(t[1].toInt(), t[2].toInt(),
+                                     t[3].toInt(), t[4].toInt()));
         return true;
     }
     if (cmd == QLatin1String("tag")) {

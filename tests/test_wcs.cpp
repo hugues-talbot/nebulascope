@@ -133,6 +133,39 @@ NS_TEST(wcs_arbitrary_rotation_keeps_centre) {
     NS_CHECK_NEAR(dec1, dec2, 1e-6);
 }
 
+NS_TEST(wcs_crop_is_exact_translation) {
+    // The sky at pixel (x, y) of the original must equal the sky at
+    // (x - x0, y - y0) of the crop — bit-exact, no resampling involved.
+    Wcs w = Wcs::fromHeader(tanHeader(148.9, 69.07, 1030.5, 694.5, 1.2));
+    const int x0 = 350, y0 = 120;
+    Wcs c = w.cropped(x0, y0);
+    NS_CHECK(c.valid());
+    for (double x : { 400.0, 700.0, 1200.5 })
+        for (double y : { 150.0, 600.0, 900.25 }) {
+            double ra1, dec1, ra2, dec2;
+            NS_CHECK(w.pixelToSky(x, y, ra1, dec1));
+            NS_CHECK(c.pixelToSky(x - x0, y - y0, ra2, dec2));
+            NS_CHECK_NEAR(ra1, ra2, 1e-12);
+            NS_CHECK_NEAR(dec1, dec2, 1e-12);
+        }
+    NS_CHECK_NEAR(c.pixelScaleArcsec(), w.pixelScaleArcsec(), 1e-12);
+}
+
+NS_TEST(wcs_emitted_cards_reparse_identically) {
+    // appendFitsCards must round-trip through the keyword parser exactly —
+    // this is how a crop of a property-only XISF keeps its plate solution.
+    Wcs w = Wcs::fromHeader(tanHeader(210.5, 54.3, 400.5, 300.5, 1.2)).cropped(37, 91);
+    ImageHeader h;
+    w.appendFitsCards(h);
+    Wcs r = Wcs::fromHeader(h);
+    NS_CHECK(r.valid());
+    double ra1, dec1, ra2, dec2;
+    NS_CHECK(w.pixelToSky(123.25, 456.75, ra1, dec1));
+    NS_CHECK(r.pixelToSky(123.25, 456.75, ra2, dec2));
+    NS_CHECK_NEAR(ra1, ra2, 1e-10);
+    NS_CHECK_NEAR(dec1, dec2, 1e-10);
+}
+
 NS_TEST(wcs_formatting) {
     NS_CHECK(Wcs::formatRa(0.0).startsWith("00:00:00"));
     NS_CHECK(Wcs::formatRa(187.5).startsWith("12:30:00"));

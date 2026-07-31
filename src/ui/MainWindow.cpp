@@ -1027,6 +1027,11 @@ void MainWindow::buildMenusAndToolbar() {
     acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
 
+    image->addSeparator();
+    acts["crop_visible"] = image->addAction("&Crop to Visible Region", QKeySequence("Shift+C"), this, [this] {
+        if (m_image.isValid()) cropCurrentToRect(m_view->visibleImageRect());
+    });
+
     // Debayer: per-image pattern mode + the global algorithm.
     image->addSeparator();
     QMenu* deb = image->addMenu("De&bayer");
@@ -1422,6 +1427,73 @@ void MainWindow::sharedStfStartup() {
     if (!m_image.isValid() || m_curStats.empty()) return;
     m_model.autoStretch(m_curStats);
     applyStretchToAllList();
+}
+
+// ---- crop -------------------------------------------------------------------
+
+// Copy rect `r` of the current image into a new in-memory list entry at full
+// depth. The plate solution survives EXACTLY: a crop only translates CRPIX,
+// and the rebased solution is written as standard FITS cards — so even a
+// property-only PixInsight XISF yields a crop that stays solved when saved.
+void MainWindow::cropCurrentToRect(QRect r) {
+    if (!m_image.isValid()) return;
+    r = r.intersected(QRect(0, 0, m_image.width(), m_image.height()));
+    if (r.width() < 2 || r.height() < 2) {
+        statusBar()->showMessage("Crop region is empty", 3000);
+        return;
+    }
+    const int ch = m_image.channels();
+    ImageData out(r.width(), r.height(), ch, SampleFormat::Float32,
+                  ch == 3 ? ColorSpace::RGB : ColorSpace::Gray);
+    for (int c = 0; c < ch; ++c) {
+        const float* src = m_image.plane<float>(c);
+        float* dst = out.plane<float>(c);
+        for (int y = 0; y < r.height(); ++y)
+            std::memcpy(dst + std::size_t(y) * r.width(),
+                        src + std::size_t(y + r.y()) * m_image.width() + r.x(),
+                        std::size_t(r.width()) * sizeof(float));
+    }
+
+    // Header: keep everything except the now-stale WCS cards, then append the
+    // rebased solution (also covers sources that were property-only).
+    ImageHeader hdr = m_header;
+    static const char* kWcsKeys[] = { "CTYPE1","CTYPE2","CRVAL1","CRVAL2",
+        "CRPIX1","CRPIX2","CD1_1","CD1_2","CD2_1","CD2_2",
+        "PC1_1","PC1_2","PC2_1","PC2_2","CDELT1","CDELT2","CROTA2" };
+    hdr.cards.erase(std::remove_if(hdr.cards.begin(), hdr.cards.end(),
+        [](const HeaderCard& c) {
+            for (const char* k : kWcsKeys)
+                if (c.key.compare(QLatin1String(k), Qt::CaseInsensitive) == 0) return true;
+            return false;
+        }), hdr.cards.end());
+    const Wcs cw = m_wcs.valid() ? m_wcs.cropped(r.x(), r.y()) : Wcs();
+    if (cw.valid()) cw.appendFitsCards(hdr);
+    hdr.container = "In-memory";
+    hdr.structure = QStringList{
+        QStringLiteral("Crop of %1 · origin (%2, %3) · %4×%5%6")
+            .arg(QFileInfo(m_currentPath).fileName()).arg(r.x()).arg(r.y())
+            .arg(r.width()).arg(r.height())
+            .arg(cw.valid() ? QStringLiteral(" · plate solution rebased") : QString()) };
+
+    // Annotations translate with the pixels.
+    std::vector<Annotation> anns = m_annByPath.value(m_currentPath);
+    for (Annotation& a : anns) {
+        a.x -= r.x(); a.y -= r.y();
+        a.x2 -= r.x(); a.y2 -= r.y();
+    }
+
+    const StretchModel::State st = m_model.state();       // keep the look
+    const QString srcName = QFileInfo(m_currentPath).completeBaseName();
+    const QString key = addSyntheticImage(srcName + QStringLiteral("_crop"),
+                                          std::move(out));
+    m_syntheticHeaders.insert(key, hdr);
+    if (!anns.empty()) m_annByPath.insert(key, anns);
+    m_stfByPath.insert(key, st);
+    displayPath(key);                                     // re-display with header+stretch
+    statusBar()->showMessage(
+        QStringLiteral("Cropped %1×%2 at (%3, %4)%5 — Save Data As… keeps it")
+            .arg(r.width()).arg(r.height()).arg(r.x()).arg(r.y())
+            .arg(cw.valid() ? QStringLiteral(", plate solution rebased") : QString()), 5000);
 }
 
 // ---- blink culling ----------------------------------------------------------
@@ -1956,6 +2028,7 @@ void MainWindow::removeSelected() {
         const QString p = it->data(Qt::UserRole).toString();
         m_stfByPath.remove(p);
         m_synthetic.remove(p);                           // free any in-memory combine
+        m_syntheticHeaders.remove(p);
         delete m_fileList->takeItem(m_fileList->row(it));
     }
     syncFileWatcher();
@@ -2411,11 +2484,16 @@ void MainWindow::displayPath(const QString& path) {
     ImageData loaded; ImageHeader hdr;
     auto syn = m_synthetic.constFind(path);
     if (syn != m_synthetic.constEnd() && syn.value()) {
-        loaded = *syn.value();                           // in-memory combine result (copy)
-        hdr.container  = "In-memory";
-        hdr.nativeType = "32-bit float (channel combine)";
-        hdr.structure  = QStringList{ QString("RGB combine · %1×%2 · 3 channels")
-                                        .arg(loaded.width()).arg(loaded.height()) };
+        loaded = *syn.value();                           // in-memory result (copy)
+        auto sh = m_syntheticHeaders.constFind(path);
+        if (sh != m_syntheticHeaders.constEnd()) {
+            hdr = sh.value();                            // crop: carried header (WCS etc.)
+        } else {
+            hdr.container  = "In-memory";
+            hdr.nativeType = "32-bit float (channel combine)";
+            hdr.structure  = QStringList{ QString("RGB combine · %1×%2 · 3 channels")
+                                            .arg(loaded.width()).arg(loaded.height()) };
+        }
     } else {
         int hduReq = -1;
         const QString base = splitHduKey(path, hduReq);

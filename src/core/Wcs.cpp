@@ -110,6 +110,34 @@ Wcs Wcs::fromPclProperties(const ImageHeader& h) {
     return w;
 }
 
+Wcs Wcs::cropped(int x0, int y0) const {
+    Wcs w = *this;
+    if (!w.m_valid) return w;
+    w.m_crpix1 -= x0;                    // CRPIX is 1-based but a crop is a
+    w.m_crpix2 -= y0;                    // pure offset — the base cancels out
+    return w;
+}
+
+void Wcs::appendFitsCards(ImageHeader& h) const {
+    if (!m_valid) return;
+    auto num = [&h](const char* k, double v, const char* c) {
+        h.cards.push_back({ QLatin1String(k), QString::number(v, 'g', 16),
+                            QLatin1String(c) });
+    };
+    h.cards.push_back({ QStringLiteral("CTYPE1"), QStringLiteral("'RA---TAN'"),
+                        QStringLiteral("Gnomonic projection") });
+    h.cards.push_back({ QStringLiteral("CTYPE2"), QStringLiteral("'DEC--TAN'"),
+                        QStringLiteral("Gnomonic projection") });
+    num("CRVAL1", m_crval1, "RA at reference pixel (deg)");
+    num("CRVAL2", m_crval2, "Dec at reference pixel (deg)");
+    num("CRPIX1", m_crpix1, "Reference pixel X (1-based)");
+    num("CRPIX2", m_crpix2, "Reference pixel Y (1-based)");
+    num("CD1_1", m_cd11, "Transformation matrix (deg/px)");
+    num("CD1_2", m_cd12, "Transformation matrix (deg/px)");
+    num("CD2_1", m_cd21, "Transformation matrix (deg/px)");
+    num("CD2_2", m_cd22, "Transformation matrix (deg/px)");
+}
+
 Wcs Wcs::fromHeader(const ImageHeader& h) {
     // FITS WCS keywords first (both containers can carry them); fall back to
     // PixInsight's structured astrometric-solution properties (XISF).

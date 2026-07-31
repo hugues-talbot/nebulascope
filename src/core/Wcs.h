@@ -40,6 +40,16 @@ public:
     // newW/newH the expanded canvas.
     Wcs rotated(double angleDeg, int w, int h, int newW, int newH) const;
 
+    // Rebase onto a crop whose top-left is at (x0, y0) in 0-based pixels: a
+    // pure CRPIX translation — CRVAL and the CD matrix are untouched, so the
+    // solution stays exact over the kept pixels.
+    Wcs cropped(int x0, int y0) const;
+
+    // Emit the linear TAN solution as standard FITS cards (CTYPE/CRVAL/
+    // CRPIX/CD) — e.g. so a crop of a property-only XISF still saves with a
+    // readable plate solution. No-op when !valid().
+    void appendFitsCards(ImageHeader& h) const;
+
     double pixelScaleArcsec() const;   // mean scale, arcsec/pixel
     double rotationDeg() const;        // position angle of +Y axis, approx.
 
