@@ -562,7 +562,51 @@
     "href": "RELEASES.html",
     "title": "Appendix D — Release notes",
     "section": "",
-    "text": "v0.88 — 2026-07-28\nGenerated from the annotated v* tags (docs/make-releases.sh).\nv0.88: scripted documentation complete, dialog automation, transport CLI, macOS open fix",
+    "text": "v0.91 — 2026-08-01\nGenerated from the annotated v* tags (docs/make-releases.sh).\nv0.91 — French localization, blink culling, crop tool, transport stretch fit\nHighlights:\nFixes: large TIFF re-open (Qt decode allocation limit), XISF→FITS metadata preservation (typed keyword values; standard cards synthesized from PixInsight properties), Save Annotations enabled for orientation-only state.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.91-2026-08-01",
+    "href": "RELEASES.html#v0.91-2026-08-01",
+    "title": "Appendix D — Release notes",
+    "section": "",
+    "text": "Français — the full UI is localized (system-language default, Preferences ▸ Language override, --lang CLI flag), alongside a French user manual and colour-transport chapter: on the manual site, and as a second PDF on every release. The .nsc script language and CLI output stay English as a stable, locale-independent API.\nColour transport, stage two — the non-destructive stretch fit (matches the transported look with zero data loss — cannot posterize, never amplifies noise) gains intensity weighting and an optional cross-channel colour-adjust stage for hue-rotation targets. Undoable; derivations in the new Colour Transport chapter.\nBlink culling — keep-checks on every list row (toggle with B while blinking), then sort / move / remove checked frames; scriptable via tag/tagsort/tagmove/tagremove.\nCrop to Visible Region (Shift+C) — full-bit-depth crop into a new list entry; the astrometric solution survives exactly (CRPIX rebase), annotations and stretch follow.\nKeyboard zoom — &gt; / &lt; (10%) and . / , (3%), configurable; arrow keys reserved for panning.\nManual online — the documentation book is published at https://hugues-talbot.github.io/nebulascope/ (English) and /fr/ (français), rebuilt on every docs change.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.90-2026-07-30",
+    "href": "RELEASES.html#v0.90-2026-07-30",
+    "title": "Appendix D — Release notes",
+    "section": "v0.90 — 2026-07-30",
+    "text": "v0.90 — 2026-07-30\nv0.90: OSC debayering (RCD validated against Siril, undoable), auto-reload interop, fast batch opens, shared STF, stretch-function shortcuts",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.89-2026-07-28",
+    "href": "RELEASES.html#v0.89-2026-07-28",
+    "title": "Appendix D — Release notes",
+    "section": "v0.89 — 2026-07-28",
+    "text": "v0.89 — 2026-07-28\nv0.89: script-command CLI reference (–run list / –help ), Quarto documentation book, PDF attached to releases",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.88-2026-07-28",
+    "href": "RELEASES.html#v0.88-2026-07-28",
+    "title": "Appendix D — Release notes",
+    "section": "v0.88 — 2026-07-28",
+    "text": "v0.88 — 2026-07-28\nv0.88: scripted documentation complete, dialog automation, transport CLI, macOS open fix",
     "crumbs": [
       "Appendices",
       "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
@@ -651,6 +695,17 @@
     "title": "Appendix D — Release notes",
     "section": "v0.80 — 2026-07-23",
     "text": "v0.80 — 2026-07-23\nThis version sets up a workable distribution system on Github",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.73-2026-07-23",
+    "href": "RELEASES.html#v0.73-2026-07-23",
+    "title": "Appendix D — Release notes",
+    "section": "v0.73 — 2026-07-23",
+    "text": "v0.73 — 2026-07-23\nThis version is deployed on github",
     "crumbs": [
       "Appendices",
       "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"

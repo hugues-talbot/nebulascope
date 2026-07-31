@@ -377,7 +377,10 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#v0.88-2026-07-28" id="toc-v0.88-2026-07-28" class="nav-link active" data-scroll-target="#v0.88-2026-07-28">v0.88 — 2026-07-28</a></li>
+  <li><a href="#v0.91-2026-08-01" id="toc-v0.91-2026-08-01" class="nav-link active" data-scroll-target="#v0.91-2026-08-01">v0.91 — 2026-08-01</a></li>
+  <li><a href="#v0.90-2026-07-30" id="toc-v0.90-2026-07-30" class="nav-link" data-scroll-target="#v0.90-2026-07-30">v0.90 — 2026-07-30</a></li>
+  <li><a href="#v0.89-2026-07-28" id="toc-v0.89-2026-07-28" class="nav-link" data-scroll-target="#v0.89-2026-07-28">v0.89 — 2026-07-28</a></li>
+  <li><a href="#v0.88-2026-07-28" id="toc-v0.88-2026-07-28" class="nav-link" data-scroll-target="#v0.88-2026-07-28">v0.88 — 2026-07-28</a></li>
   <li><a href="#v0.87-2026-07-28" id="toc-v0.87-2026-07-28" class="nav-link" data-scroll-target="#v0.87-2026-07-28">v0.87 — 2026-07-28</a></li>
   <li><a href="#v0.86-2026-07-26" id="toc-v0.86-2026-07-26" class="nav-link" data-scroll-target="#v0.86-2026-07-26">v0.86 — 2026-07-26</a></li>
   <li><a href="#v0.85-2026-07-24" id="toc-v0.85-2026-07-24" class="nav-link" data-scroll-target="#v0.85-2026-07-24">v0.85 — 2026-07-24</a></li>
@@ -386,6 +389,7 @@ div.csl-indent {
   <li><a href="#v0.82-2026-07-24" id="toc-v0.82-2026-07-24" class="nav-link" data-scroll-target="#v0.82-2026-07-24">v0.82 — 2026-07-24</a></li>
   <li><a href="#v0.81-2026-07-23" id="toc-v0.81-2026-07-23" class="nav-link" data-scroll-target="#v0.81-2026-07-23">v0.81 — 2026-07-23</a></li>
   <li><a href="#v0.80-2026-07-23" id="toc-v0.80-2026-07-23" class="nav-link" data-scroll-target="#v0.80-2026-07-23">v0.80 — 2026-07-23</a></li>
+  <li><a href="#v0.73-2026-07-23" id="toc-v0.73-2026-07-23" class="nav-link" data-scroll-target="#v0.73-2026-07-23">v0.73 — 2026-07-23</a></li>
   <li><a href="#v0.72-2026-07-23" id="toc-v0.72-2026-07-23" class="nav-link" data-scroll-target="#v0.72-2026-07-23">v0.72 — 2026-07-23</a></li>
   <li><a href="#v0.71-2026-07-22" id="toc-v0.71-2026-07-22" class="nav-link" data-scroll-target="#v0.71-2026-07-22">v0.71 — 2026-07-22</a></li>
   <li><a href="#v0.70-2026-07-21" id="toc-v0.70-2026-07-21" class="nav-link" data-scroll-target="#v0.70-2026-07-21">v0.70 — 2026-07-21</a></li>
@@ -419,6 +423,28 @@ div.csl-indent {
 
 
 <p>Generated from the annotated <code>v*</code> tags (<code>docs/make-releases.sh</code>).</p>
+<section id="v0.91-2026-08-01" class="level2">
+<h2 class="anchored" data-anchor-id="v0.91-2026-08-01">v0.91 — 2026-08-01</h2>
+<p>v0.91 — French localization, blink culling, crop tool, transport stretch fit</p>
+<p>Highlights:</p>
+<ul>
+<li><strong>Français</strong> — the full UI is localized (system-language default, Preferences ▸ Language override, <code>--lang</code> CLI flag), alongside a French user manual and colour-transport chapter: on the manual site, and as a second PDF on every release. The <code>.nsc</code> script language and CLI output stay English as a stable, locale-independent API.</li>
+<li><strong>Colour transport, stage two</strong> — the non-destructive stretch fit (matches the transported look with zero data loss — cannot posterize, never amplifies noise) gains intensity weighting and an optional cross-channel colour-adjust stage for hue-rotation targets. Undoable; derivations in the new Colour Transport chapter.</li>
+<li><strong>Blink culling</strong> — keep-checks on every list row (toggle with B while blinking), then sort / move / remove checked frames; scriptable via tag/tagsort/tagmove/tagremove.</li>
+<li><strong>Crop to Visible Region</strong> (Shift+C) — full-bit-depth crop into a new list entry; the astrometric solution survives exactly (CRPIX rebase), annotations and stretch follow.</li>
+<li><strong>Keyboard zoom</strong> — &gt; / &lt; (10%) and . / , (3%), configurable; arrow keys reserved for panning.</li>
+<li><strong>Manual online</strong> — the documentation book is published at https://hugues-talbot.github.io/nebulascope/ (English) and /fr/ (français), rebuilt on every docs change.</li>
+</ul>
+<p>Fixes: large TIFF re-open (Qt decode allocation limit), XISF→FITS metadata preservation (typed keyword values; standard cards synthesized from PixInsight properties), Save Annotations enabled for orientation-only state.</p>
+</section>
+<section id="v0.90-2026-07-30" class="level2">
+<h2 class="anchored" data-anchor-id="v0.90-2026-07-30">v0.90 — 2026-07-30</h2>
+<p>v0.90: OSC debayering (RCD validated against Siril, undoable), auto-reload interop, fast batch opens, shared STF, stretch-function shortcuts</p>
+</section>
+<section id="v0.89-2026-07-28" class="level2">
+<h2 class="anchored" data-anchor-id="v0.89-2026-07-28">v0.89 — 2026-07-28</h2>
+<p>v0.89: script-command CLI reference (–run list / –help <cmd>), Quarto documentation book, PDF attached to releases</cmd></p>
+</section>
 <section id="v0.88-2026-07-28" class="level2">
 <h2 class="anchored" data-anchor-id="v0.88-2026-07-28">v0.88 — 2026-07-28</h2>
 <p>v0.88: scripted documentation complete, dialog automation, transport CLI, macOS open fix</p>
@@ -454,6 +480,10 @@ div.csl-indent {
 <section id="v0.80-2026-07-23" class="level2">
 <h2 class="anchored" data-anchor-id="v0.80-2026-07-23">v0.80 — 2026-07-23</h2>
 <p>This version sets up a workable distribution system on Github</p>
+</section>
+<section id="v0.73-2026-07-23" class="level2">
+<h2 class="anchored" data-anchor-id="v0.73-2026-07-23">v0.73 — 2026-07-23</h2>
+<p>This version is deployed on github</p>
 </section>
 <section id="v0.72-2026-07-23" class="level2">
 <h2 class="anchored" data-anchor-id="v0.72-2026-07-23">v0.72 — 2026-07-23</h2>
