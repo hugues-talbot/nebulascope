@@ -83,23 +83,31 @@ jobs:
           # macOS artifact already contains NebulaScope-macos-arm64.zip — lift it out.
           [ -d NebulaScope-macos-arm64 ] && mv NebulaScope-macos-arm64/*.zip . || true
 
+      # The release notes live ONCE, in the annotated tag message (the same
+      # source docs/make-releases.sh renders into the manual's appendix):
+      # tag body first, then the asset table.
+      - name: Compose release body from the tag annotation
+        run: |
+          git tag -l "${{ github.ref_name }}" --format='%(contents:body)' > release_body.md
+          echo '' >> release_body.md
+          printf '%s\n' \
+            '| Platform | File | Notes |' \
+            '|---|---|---|' \
+            '| macOS (Apple Silicon) | `NebulaScope-macos-arm64.zip` | Unsigned — right-click ▸ Open on first launch |' \
+            '| Windows (x64) | `NebulaScope-windows-x64.zip` | Unzip and run `nebulascope.exe` |' \
+            '| Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |' \
+            '| Ubuntu/Debian | `nebulascope_*_amd64.deb` | `sudo apt install ./nebulascope_*.deb` (deps auto-resolved) |' \
+            '| Documentation | `NebulaScope-docs-*.pdf` | Manual + architecture + build guides + release notes |' \
+            '| Documentation (français) | `NebulaScope-docs-fr-*.pdf` | Manuel de l'"'"'utilisateur + transport de couleurs |' \
+            >> release_body.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: NebulaScope ${{ github.ref_name }}
           draft: false
           generate_release_notes: true
-          body: |
-            Cross-platform builds of NebulaScope ${{ github.ref_name }}.
-
-            | Platform | File | Notes |
-            |---|---|---|
-            | macOS (Apple Silicon) | `NebulaScope-macos-arm64.zip` | Unsigned — right-click ▸ Open on first launch |
-            | Windows (x64) | `NebulaScope-windows-x64.zip` | Unzip and run `nebulascope.exe` |
-            | Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |
-            | Ubuntu/Debian | `nebulascope_*_amd64.deb` | `sudo apt install ./nebulascope_*.deb` (deps auto-resolved) |
-            | Documentation | `NebulaScope-docs-*.pdf` | Manual + architecture + build guides + release notes |
-            | Documentation (français) | `NebulaScope-docs-fr-*.pdf` | Manuel de l'utilisateur + transport de couleurs |
+          body_path: release_body.md
           files: |
             artifacts/*.zip
             artifacts/*.deb

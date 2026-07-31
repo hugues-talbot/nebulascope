@@ -2,6 +2,49 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.91 — 2026-08-01
+
+v0.91 — French localization, blink culling, crop tool, transport stretch fit
+
+Highlights:
+
+- **Français** — the full UI is localized (system-language default,
+  Preferences ▸ Language override, `--lang` CLI flag), alongside a French
+  user manual and colour-transport chapter: on the manual site, and as a
+  second PDF on every release. The `.nsc` script language and CLI output
+  stay English as a stable, locale-independent API.
+- **Colour transport, stage two** — the non-destructive stretch fit
+  (matches the transported look with zero data loss — cannot posterize,
+  never amplifies noise) gains intensity weighting and an optional
+  cross-channel colour-adjust stage for hue-rotation targets. Undoable;
+  derivations in the new Colour Transport chapter.
+- **Blink culling** — keep-checks on every list row (toggle with B while
+  blinking), then sort / move / remove checked frames; scriptable via
+  tag/tagsort/tagmove/tagremove.
+- **Crop to Visible Region** (Shift+C) — full-bit-depth crop into a new
+  list entry; the astrometric solution survives exactly (CRPIX rebase),
+  annotations and stretch follow.
+- **Keyboard zoom** — > / < (10%) and . / , (3%), configurable; arrow
+  keys reserved for panning.
+- **Manual online** — the documentation book is published at
+  https://hugues-talbot.github.io/nebulascope/ (English) and /fr/
+  (français), rebuilt on every docs change.
+
+Fixes: large TIFF re-open (Qt decode allocation limit), XISF→FITS
+metadata preservation (typed keyword values; standard cards synthesized
+from PixInsight properties), Save Annotations enabled for
+orientation-only state.
+
+## v0.90 — 2026-07-30
+
+v0.90: OSC debayering (RCD validated against Siril, undoable), auto-reload interop, fast batch opens, shared STF, stretch-function shortcuts
+
+
+## v0.89 — 2026-07-28
+
+v0.89: script-command CLI reference (--run list / --help <cmd>), Quarto documentation book, PDF attached to releases
+
+
 ## v0.88 — 2026-07-28
 
 v0.88: scripted documentation complete, dialog automation, transport CLI, macOS open fix
@@ -45,6 +88,11 @@ General improvements to the user interface
 ## v0.80 — 2026-07-23
 
 This version sets up a workable distribution system on Github
+
+
+## v0.73 — 2026-07-23
+
+This version is deployed on github
 
 
 ## v0.72 — 2026-07-23
