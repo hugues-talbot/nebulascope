@@ -97,7 +97,7 @@ void AngleKnob::paintEvent(QPaintEvent*) {
 RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northUpDeg,
                            QWidget* parent)
     : QDialog(parent), m_thumb(thumb), m_baseDeg(currentDeg) {
-    setWindowTitle(QStringLiteral("Rotate Image"));
+    setWindowTitle(tr("Rotate Image"));
     setModal(true);
 
     auto* root = new QVBoxLayout(this);
@@ -116,12 +116,12 @@ RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northU
     side->addWidget(m_knob, 0, Qt::AlignHCenter);
 
     auto* spinRow = new QHBoxLayout();
-    auto* lab = new QLabel(QStringLiteral("Angle"));
+    auto* lab = new QLabel(tr("Angle"));
     m_spin = new QDoubleSpinBox();
     m_spin->setRange(-180.0, 180.0);
     m_spin->setDecimals(2);
     m_spin->setSingleStep(0.1);
-    m_spin->setSuffix(QStringLiteral(" \u00b0"));
+    m_spin->setSuffix(tr(" \u00b0"));
     m_spin->setValue(currentDeg);
     spinRow->addStretch();
     spinRow->addWidget(lab);
@@ -132,15 +132,18 @@ RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northU
     // WCS-derived preset: rotate so the central Dec line is horizontal and
     // north points up — the standard orientation for comparing telescopes/sessions.
     if (std::isfinite(northUpDeg)) {
-        auto* northBtn = new QPushButton(QStringLiteral("\u2B06 North Up (%1\u00b0)")
+        // i18n note: this button is addressable by ScriptRunner's `dlgclick`
+        // (matched by visible text), but its text is already dynamic (embeds
+        // the angle), so scripts cannot match it portably anyway.
+        auto* northBtn = new QPushButton(tr("\u2B06 North Up (%1\u00b0)")
                                              .arg(northUpDeg, 0, 'f', 2));
-        northBtn->setToolTip(QStringLiteral("Set the angle that puts celestial north up at the image centre"));
+        northBtn->setToolTip(tr("Set the angle that puts celestial north up at the image centre"));
         connect(northBtn, &QPushButton::clicked, this,
                 [this, northUpDeg] { m_spin->setValue(northUpDeg); });   // syncs knob+preview via valueChanged
         side->addWidget(northBtn);
     }
 
-    auto* hint = new QLabel(QStringLiteral(
+    auto* hint = new QLabel(tr(
         "Total rotation of this image.\nPositive = counter-clockwise.\n"
         "Drag the dial (Shift = fine), scroll,\nor type. Double-click resets to 0\u00b0.\n"
         "Re-rotation always resamples once\nfrom the original data."));

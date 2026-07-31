@@ -23,6 +23,7 @@
 #include <QDockWidget>
 #include <QListWidget>
 #include <QApplication>
+#include <QCoreApplication>
 #include <QClipboard>
 #include <QtConcurrent/QtConcurrent>
 #include <QInputDialog>
@@ -86,7 +87,7 @@ static QJsonObject adjustToJson(const AdjustParams& a);
 static AdjustParams adjustFromJson(const QJsonObject& o);
 
 MainWindow::MainWindow() {
-    setWindowTitle("NebulaScope — Inspector");
+    setWindowTitle(tr("NebulaScope — Inspector"));
     m_undo = new QUndoStack(this);
     m_annColor = Preferences::get().annColor;   // user default for new annotations
     buildUi();
@@ -134,7 +135,7 @@ void MainWindow::buildUi() {
     m_view->setSource(&m_image);
 
     // left dock: open images (with an append / remove / export button bar)
-    m_leftDock = new QDockWidget("Open Images", this);
+    m_leftDock = new QDockWidget(tr("Open Images"), this);
     m_leftDock->setObjectName("leftDock");
     auto* listHost = new QWidget(m_leftDock);
     auto* lv = new QVBoxLayout(listHost);
@@ -142,9 +143,9 @@ void MainWindow::buildUi() {
     lv->setSpacing(4);
     auto* bar = new QHBoxLayout();
     bar->setSpacing(4);
-    auto* addBtn = new QToolButton(); addBtn->setText("+");  addBtn->setToolTip("Append files\u2026");
-    auto* remBtn = new QToolButton(); remBtn->setText("\u2212"); remBtn->setToolTip("Remove selected (Del)");
-    auto* expBtn = new QToolButton(); expBtn->setText("\u2913"); expBtn->setToolTip("Export list\u2026");
+    auto* addBtn = new QToolButton(); addBtn->setText("+");  addBtn->setToolTip(tr("Append files\u2026"));
+    auto* remBtn = new QToolButton(); remBtn->setText("\u2212"); remBtn->setToolTip(tr("Remove selected (Del)"));
+    auto* expBtn = new QToolButton(); expBtn->setText("\u2913"); expBtn->setToolTip(tr("Export list\u2026"));
     bar->addWidget(addBtn);
     bar->addWidget(remBtn);
     bar->addStretch();
@@ -169,7 +170,7 @@ void MainWindow::buildUi() {
     connect(del, &QShortcut::activated, this, &MainWindow::removeSelected);
 
     // left dock (tabbed): image info / FITS structure / header
-    m_infoDock = new QDockWidget("Info", this);
+    m_infoDock = new QDockWidget(tr("Info"), this);
     m_infoDock->setObjectName("infoDock");
     m_info = new InfoPanel(&m_model, m_infoDock);
     m_infoDock->setWidget(m_info);
@@ -178,7 +179,7 @@ void MainWindow::buildUi() {
     m_leftDock->raise();
 
     // right dock: histogram
-    m_rightDock = new QDockWidget("Histogram", this);
+    m_rightDock = new QDockWidget(tr("Histogram"), this);
     m_rightDock->setObjectName("rightDock");
     m_hist = new HistogramPanel(&m_model, m_rightDock);
     connect(m_hist, &HistogramPanel::applyToAllRequested,
@@ -245,7 +246,7 @@ class RotateAngleCmd : public QUndoCommand {
 public:
     RotateAngleCmd(MainWindow* w, QString path, double prevDeg, double nextDeg)
         : m_w(w), m_path(std::move(path)), m_prev(prevDeg), m_next(nextDeg) {
-        setText(QStringLiteral("rotate to %1\u00b0").arg(nextDeg));
+        setText(QCoreApplication::translate("astro::MainWindowHelpers", "rotate to %1\u00b0").arg(nextDeg));
     }
     void undo() override {
         if (m_w->currentPath() != m_path) { setObsolete(true); return; }
@@ -271,7 +272,7 @@ class SyntheticImageCmd : public QUndoCommand {
 public:
     SyntheticImageCmd(MainWindow* w, QString key, QString name, std::shared_ptr<ImageData> img)
         : m_w(w), m_key(std::move(key)), m_name(std::move(name)), m_img(std::move(img)) {
-        setText(QStringLiteral("create %1").arg(m_name));
+        setText(QCoreApplication::translate("astro::MainWindowHelpers", "create %1").arg(m_name));
     }
     void undo() override { m_w->removeSyntheticEntry(m_key); }
     void redo() override {
@@ -298,7 +299,7 @@ MainWindow::Xform inverseXform(MainWindow::Xform x) {
 class TransformCmd : public QUndoCommand {
 public:
     TransformCmd(MainWindow* w, QString path, MainWindow::Xform x)
-        : m_w(w), m_path(std::move(path)), m_x(x) { setText(QStringLiteral("transform image")); }
+        : m_w(w), m_path(std::move(path)), m_x(x) { setText(QCoreApplication::translate("astro::MainWindowHelpers", "transform image")); }
     void undo() override {
         if (m_w->currentPath() != m_path) { setObsolete(true); return; }
         m_w->doTransform(inverseXform(m_x));
@@ -462,7 +463,7 @@ void MainWindow::doRotateArbitrary(double angleDeg) {
     m_view->zoomToFit();
     m_lastW = nw; m_lastH = nh;
     statusBar()->showMessage(
-        QStringLiteral("Rotated %1\u00b0 — resampled onto %2\u00d7%3 (corners are blank)")
+        tr("Rotated %1\u00b0 — resampled onto %2\u00d7%3 (corners are blank)")
             .arg(angleDeg).arg(nw).arg(nh), 4000);
 }
 
@@ -580,8 +581,8 @@ void MainWindow::applyUserShortcuts(const QHash<QString, QAction*>& acts,
 }
 
 void MainWindow::showShortcutSettings() {
-    QMessageBox::information(this, "Configure Shortcuts",
-        QString("Shortcuts are read at startup from:<br><code>%1</code><br><br>"
+    QMessageBox::information(this, tr("Configure Shortcuts"),
+        tr("Shortcuts are read at startup from:<br><code>%1</code><br><br>"
                 "Edit the <b>[shortcuts]</b> section using Qt key strings \u2014 e.g. "
                 "<code>Ctrl+Shift+F</code>, <code>F11</code>, <code>Meta+Ctrl+F</code> "
                 "(Meta = \u2318 on macOS). An empty value disables a shortcut. "
@@ -591,10 +592,10 @@ void MainWindow::showShortcutSettings() {
 
 void MainWindow::showAbout() {
     QMessageBox box(this);
-    box.setWindowTitle("About NebulaScope");
+    box.setWindowTitle(tr("About NebulaScope"));
     box.setIconPixmap(windowIcon().pixmap(96, 96));
     box.setTextFormat(Qt::RichText);
-    box.setText(QString(
+    box.setText(tr(
         "<h2 style='margin:0'>NebulaScope</h2>"
         "<p style='color:#9fabb8;margin:2px 0 10px'>Astronomical image inspector — v%1</p>"
         "<p>Interactive FITS / XISF / JPEG / PNG / TIFF / WebP viewer with precise RGB"
@@ -663,7 +664,7 @@ void MainWindow::copyStretch() {
         }
         m_copiedStretch.anchored = true;
     }
-    statusBar()->showMessage("Copied stretch — right-click a list entry to paste", 2500);
+    statusBar()->showMessage(tr("Copied stretch — right-click a list entry to paste"), 2500);
 }
 
 // Apply the copied stretch to one file. Normalized rebuilds the window from the
@@ -693,21 +694,21 @@ void MainWindow::applyCopiedStretch(const QString& path, bool normalized) {
 }
 
 void MainWindow::pasteStretchToSelected(bool normalized) {
-    if (!m_copiedStretch.valid) { statusBar()->showMessage("No stretch copied yet", 2000); return; }
+    if (!m_copiedStretch.valid) { statusBar()->showMessage(tr("No stretch copied yet"), 2000); return; }
     auto sel = m_fileList->selectedItems();
     if (sel.isEmpty() && m_fileList->currentItem()) sel << m_fileList->currentItem();
     int n = 0;
     for (QListWidgetItem* it : sel) { applyCopiedStretch(it->data(Qt::UserRole).toString(), normalized); ++n; }
-    statusBar()->showMessage(QStringLiteral("Pasted %1 stretch to %2 image(s)")
-        .arg(normalized ? "normalized" : "absolute").arg(n), 3000);
+    statusBar()->showMessage(tr("Pasted %1 stretch to %2 image(s)")
+        .arg(normalized ? tr("normalized") : tr("absolute")).arg(n), 3000);
 }
 
 void MainWindow::pasteStretchToAll(bool normalized) {
-    if (!m_copiedStretch.valid) { statusBar()->showMessage("No stretch copied yet", 2000); return; }
+    if (!m_copiedStretch.valid) { statusBar()->showMessage(tr("No stretch copied yet"), 2000); return; }
     for (int i = 0; i < m_fileList->count(); ++i)
         applyCopiedStretch(m_fileList->item(i)->data(Qt::UserRole).toString(), normalized);
-    statusBar()->showMessage(QStringLiteral("Pasted %1 stretch to all %2 image(s)")
-        .arg(normalized ? "normalized" : "absolute").arg(m_fileList->count()), 3000);
+    statusBar()->showMessage(tr("Pasted %1 stretch to all %2 image(s)")
+        .arg(normalized ? tr("normalized") : tr("absolute")).arg(m_fileList->count()), 3000);
 }
 
 void MainWindow::onListContextMenu(const QPoint& pos) {
@@ -721,29 +722,29 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     const int nSel = m_fileList->selectedItems().size();
 
     QMenu menu(this);
-    QAction* aCopy = menu.addAction("Copy Stretch");
+    QAction* aCopy = menu.addAction(tr("Copy Stretch"));
     aCopy->setEnabled(!m_currentPath.isEmpty() && m_image.isValid());
     menu.addSeparator();
-    QAction* aPasteN = menu.addAction(QStringLiteral("Paste Stretch — Normalized (%1)").arg(nSel));
-    QAction* aPasteA = menu.addAction(QStringLiteral("Paste Stretch — Absolute (%1)").arg(nSel));
-    QAction* aAllN = menu.addAction("Paste Stretch to All — Normalized");
+    QAction* aPasteN = menu.addAction(tr("Paste Stretch — Normalized (%1)").arg(nSel));
+    QAction* aPasteA = menu.addAction(tr("Paste Stretch — Absolute (%1)").arg(nSel));
+    QAction* aAllN = menu.addAction(tr("Paste Stretch to All — Normalized"));
     const bool canPaste = m_copiedStretch.valid && nSel > 0;
     aPasteN->setEnabled(canPaste);
     aPasteA->setEnabled(canPaste);
     aAllN->setEnabled(m_copiedStretch.valid && m_fileList->count() > 0);
     menu.addSeparator();
     // Blink culling (checked = keep): tag the selection, then act on tags.
-    QAction* aCheckSel   = menu.addAction(QStringLiteral("Check Selected (%1)").arg(nSel));
-    QAction* aUncheckSel = menu.addAction(QStringLiteral("Uncheck Selected (%1)").arg(nSel));
+    QAction* aCheckSel   = menu.addAction(tr("Check Selected (%1)").arg(nSel));
+    QAction* aUncheckSel = menu.addAction(tr("Uncheck Selected (%1)").arg(nSel));
     aCheckSel->setEnabled(nSel > 0);
     aUncheckSel->setEnabled(nSel > 0);
-    QAction* aSortTag  = menu.addAction("Sort: Checked First");
-    QAction* aMoveUnch = menu.addAction("Move Unchecked To…");
-    QAction* aMoveChk  = menu.addAction("Move Checked To…");
-    QAction* aRemUnch  = menu.addAction("Remove Unchecked from List");
-    QAction* aRemChk   = menu.addAction("Remove Checked from List");
+    QAction* aSortTag  = menu.addAction(tr("Sort: Checked First"));
+    QAction* aMoveUnch = menu.addAction(tr("Move Unchecked To…"));
+    QAction* aMoveChk  = menu.addAction(tr("Move Checked To…"));
+    QAction* aRemUnch  = menu.addAction(tr("Remove Unchecked from List"));
+    QAction* aRemChk   = menu.addAction(tr("Remove Checked from List"));
     menu.addSeparator();
-    QAction* aRemove = menu.addAction("Remove from List");
+    QAction* aRemove = menu.addAction(tr("Remove from List"));
     aRemove->setEnabled(nSel > 0);
 
     QAction* chosen = menu.exec(m_fileList->viewport()->mapToGlobal(pos));
@@ -791,7 +792,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         if (m_annotations->commitMoves(m_annByPath[m_currentPath])) {
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
-            pushAnnotationEdit(QStringLiteral("move/resize annotation"), m_currentPath, std::move(before));
+            pushAnnotationEdit(tr("move/resize annotation"), m_currentPath, std::move(before));
         }
     });
     connect(v, &ImageView::drawToolFinished, this, [this] {
@@ -867,26 +868,26 @@ void MainWindow::buildMenusAndToolbar() {
     QHash<QString, QShortcut*> keys;
 
     // File
-    QMenu* file = menuBar()->addMenu("&File");
-    acts["open"] = file->addAction("&Open…", QKeySequence::Open, this, &MainWindow::openFile);
-    m_recentImagesMenu = file->addMenu("Open &Recent");
-    m_recentJsonMenu = file->addMenu("Recent A&nnotations");
+    QMenu* file = menuBar()->addMenu(tr("&File"));
+    acts["open"] = file->addAction(tr("&Open…"), QKeySequence::Open, this, &MainWindow::openFile);
+    m_recentImagesMenu = file->addMenu(tr("Open &Recent"));
+    m_recentJsonMenu = file->addMenu(tr("Recent A&nnotations"));
     rebuildRecentMenus();
-    acts["save_data_as"] = file->addAction("&Save Data As…", QKeySequence::SaveAs, this, &MainWindow::saveFile);
-    acts["save_stretched_as"] = file->addAction("Save Stretc&hed As…", this, &MainWindow::saveStretched);
-    acts["export_view"] = file->addAction("&Export View As…", QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
-    acts["export_region"] = file->addAction("Export &Zoomed Region As…", QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
+    acts["save_data_as"] = file->addAction(tr("&Save Data As…"), QKeySequence::SaveAs, this, &MainWindow::saveFile);
+    acts["save_stretched_as"] = file->addAction(tr("Save Stretc&hed As…"), this, &MainWindow::saveStretched);
+    acts["export_view"] = file->addAction(tr("&Export View As…"), QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
+    acts["export_region"] = file->addAction(tr("Export &Zoomed Region As…"), QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
-    acts["export_list"] = file->addAction("Export Image &List…", this, &MainWindow::exportList);
-    acts["import_list"] = file->addAction("&Import Image List…", this, &MainWindow::importList);
+    acts["export_list"] = file->addAction(tr("Export Image &List…"), this, &MainWindow::exportList);
+    acts["import_list"] = file->addAction(tr("&Import Image List…"), this, &MainWindow::importList);
     file->addSeparator();
-    file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
+    file->addAction(tr("&Quit"), QKeySequence::Quit, this, &QWidget::close);
 
     // Edit — undo/redo for annotation edits and image transforms.
-    QMenu* editMenu = menuBar()->addMenu("&Edit");
-    QAction* aUndo = m_undo->createUndoAction(this, "&Undo");
+    QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
+    QAction* aUndo = m_undo->createUndoAction(this, tr("&Undo"));
     aUndo->setShortcut(QKeySequence::Undo);
-    QAction* aRedo = m_undo->createRedoAction(this, "&Redo");
+    QAction* aRedo = m_undo->createRedoAction(this, tr("&Redo"));
     aRedo->setShortcut(QKeySequence::Redo);
     editMenu->addAction(aUndo);
     editMenu->addAction(aRedo);
@@ -894,7 +895,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["redo"] = aRedo;
 
     // View
-    QMenu* view = menuBar()->addMenu("&View");
+    QMenu* view = menuBar()->addMenu(tr("&View"));
     QAction* aLeft = m_leftDock->toggleViewAction();
     aLeft->setShortcuts({ QKeySequence("F2"), QKeySequence("Shift+L") });
     QAction* aRight = m_rightDock->toggleViewAction();
@@ -907,7 +908,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["toggle_image_list"] = aLeft;
     acts["toggle_info_panel"] = aInfo;
     acts["toggle_histogram"]  = aRight;
-    acts["close_image"] = view->addAction("&Close Current Image", QKeySequence("C"), this, [this] {
+    acts["close_image"] = view->addAction(tr("&Close Current Image"), QKeySequence("C"), this, [this] {
         // Remove the displayed image from the list, reusing removeSelected()'s
         // cleanup (stretch memory, annotations, HDU children, next-row pick).
         QListWidgetItem* it = m_fileList->currentItem();
@@ -917,8 +918,8 @@ void MainWindow::buildMenusAndToolbar() {
         removeSelected();
     });
     view->addSeparator();
-    acts["zoom_to_fit"] = view->addAction("Zoom to &Fit", QKeySequence("F"), m_view, &ImageView::zoomToFit);
-    acts["zoom_actual_size"] = view->addAction("Zoom &1:1", QKeySequence("1"), m_view, &ImageView::zoomActualSize);
+    acts["zoom_to_fit"] = view->addAction(tr("Zoom to &Fit"), QKeySequence("F"), m_view, &ImageView::zoomToFit);
+    acts["zoom_actual_size"] = view->addAction(tr("Zoom &1:1"), QKeySequence("1"), m_view, &ImageView::zoomActualSize);
     // Keyboard zoom (no wheel needed): > / < coarse, . / , fine — step
     // percentages configurable in Preferences. Lambdas read m_view live so
     // they always target the ACTIVE cell.
@@ -928,30 +929,30 @@ void MainWindow::buildMenusAndToolbar() {
         const double f = 1.0 + pct / 100.0;
         if (m_view && m_image.isValid()) m_view->zoomBy(in ? f : 1.0 / f);
     };
-    acts["zoom_in"]       = view->addAction("Zoom In",  QKeySequence(">"), this, [zoomStep] { zoomStep(false, true);  });
-    acts["zoom_out"]      = view->addAction("Zoom Out", QKeySequence("<"), this, [zoomStep] { zoomStep(false, false); });
-    acts["zoom_in_fine"]  = view->addAction("Zoom In (Fine)",  QKeySequence("."), this, [zoomStep] { zoomStep(true, true);  });
-    acts["zoom_out_fine"] = view->addAction("Zoom Out (Fine)", QKeySequence(","), this, [zoomStep] { zoomStep(true, false); });
+    acts["zoom_in"]       = view->addAction(tr("Zoom In"),  QKeySequence(">"), this, [zoomStep] { zoomStep(false, true);  });
+    acts["zoom_out"]      = view->addAction(tr("Zoom Out"), QKeySequence("<"), this, [zoomStep] { zoomStep(false, false); });
+    acts["zoom_in_fine"]  = view->addAction(tr("Zoom In (Fine)"),  QKeySequence("."), this, [zoomStep] { zoomStep(true, true);  });
+    acts["zoom_out_fine"] = view->addAction(tr("Zoom Out (Fine)"), QKeySequence(","), this, [zoomStep] { zoomStep(true, false); });
     // QKeySequence::FullScreen is the platform-correct binding (⌃⌘F on macOS —
     // F11 there is taken by the system — and F11 on Windows/Linux).
-    acts["fullscreen"] = view->addAction("&Fullscreen", QKeySequence::FullScreen, this, [this] {
+    acts["fullscreen"] = view->addAction(tr("&Fullscreen"), QKeySequence::FullScreen, this, [this] {
         isFullScreen() ? showNormal() : showFullScreen();
     });
-    acts["image_only"] = view->addAction("&Image Only", QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
+    acts["image_only"] = view->addAction(tr("&Image Only"), QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
     // Interop: refresh images that PixInsight/Siril/GraXpert overwrite on disk.
-    m_autoReloadAct = view->addAction("Auto-&Reload Changed Files");
+    m_autoReloadAct = view->addAction(tr("Auto-&Reload Changed Files"));
     m_autoReloadAct->setCheckable(true);
     m_autoReloadAct->setChecked(true);
-    m_autoReloadAct->setToolTip("Re-decode a list image when another program overwrites it");
+    m_autoReloadAct->setToolTip(tr("Re-decode a list image when another program overwrites it"));
     acts["auto_reload"] = m_autoReloadAct;
     view->addSeparator();
-    QAction* aGrid = view->addAction("Coordinate &Grid", QKeySequence("Shift+G"), this, [this](bool) {
+    QAction* aGrid = view->addAction(tr("Coordinate &Grid"), QKeySequence("Shift+G"), this, [this](bool) {
         m_annotations->setGridVisible(!m_annotations->gridVisible());
         refreshAnnotations();
     });
     aGrid->setCheckable(true);
     acts["toggle_grid"] = aGrid;
-    QAction* aAnnVis = view->addAction("Show &Annotations", QKeySequence("A"), this, [this] {
+    QAction* aAnnVis = view->addAction(tr("Show &Annotations"), QKeySequence("A"), this, [this] {
         m_annotations->setAnnotationsVisible(!m_annotations->annotationsVisible());
         refreshAnnotations();
     });
@@ -961,13 +962,13 @@ void MainWindow::buildMenusAndToolbar() {
     acts["toggle_annotations"] = aAnnVis;
     // Hide the scrollbars ("elevators") for a clean canvas — pans still work
     // (right-drag / Shift-drag / middle-drag). Applies to every split cell.
-    QAction* aScroll = view->addAction("Hide Scroll&bars", QKeySequence("H"), this, [this] {
+    QAction* aScroll = view->addAction(tr("Hide Scroll&bars"), QKeySequence("H"), this, [this] {
         m_grid->setScrollBarsVisible(!m_grid->scrollBarsVisible());
     });
     aScroll->setCheckable(true);
     aScroll->setChecked(false);
     acts["toggle_scrollbars"] = aScroll;
-    QAction* aOverlay = view->addAction("&Overlay Panels", QKeySequence("O"), this, [this] {
+    QAction* aOverlay = view->addAction(tr("&Overlay Panels"), QKeySequence("O"), this, [this] {
         setOverlayPanels(!m_overlay);
     });
     aOverlay->setCheckable(true);
@@ -997,24 +998,24 @@ void MainWindow::buildMenusAndToolbar() {
 
     // Split main view — compare several decoded images side by side. Same-size
     // images pan/zoom together (each cell's ⇄ button opts out).
-    QMenu* split = view->addMenu("Split &View");
+    QMenu* split = view->addMenu(tr("Split &View"));
     auto addPreset = [&](const QString& label, int r, int c) {
         split->addAction(label, this, [this, r, c] { m_grid->setGrid(r, c); });
     };
-    addPreset(QStringLiteral("Single"), 1, 1);
-    addPreset(QStringLiteral("1 \u00d7 2 (side by side)"), 1, 2);
-    addPreset(QStringLiteral("2 \u00d7 1 (stacked)"), 2, 1);
-    addPreset(QStringLiteral("2 \u00d7 2"), 2, 2);
+    addPreset(tr("Single"), 1, 1);
+    addPreset(tr("1 \u00d7 2 (side by side)"), 1, 2);
+    addPreset(tr("2 \u00d7 1 (stacked)"), 2, 1);
+    addPreset(tr("2 \u00d7 2"), 2, 2);
     split->addSeparator();
-    split->addAction(QStringLiteral("Custom\u2026"), this, [this] {
+    split->addAction(tr("Custom\u2026"), this, [this] {
         // One dialog, two spinboxes (little up/down arrows), 1-5 each.
         QDialog dlg(this);
-        dlg.setWindowTitle(QStringLiteral("Split view"));
+        dlg.setWindowTitle(tr("Split view"));
         auto* form = new QFormLayout(&dlg);
         auto* rowsSpin = new QSpinBox(); rowsSpin->setRange(1, 5); rowsSpin->setValue(m_grid->rows());
         auto* colsSpin = new QSpinBox(); colsSpin->setRange(1, 5); colsSpin->setValue(m_grid->cols());
-        form->addRow(QStringLiteral("Rows:"), rowsSpin);
-        form->addRow(QStringLiteral("Columns:"), colsSpin);
+        form->addRow(tr("Rows:"), rowsSpin);
+        form->addRow(tr("Columns:"), colsSpin);
         auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
         connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
         connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
@@ -1027,39 +1028,39 @@ void MainWindow::buildMenusAndToolbar() {
     connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
 
     // Image — lossless 90° rotations and flips (applied to the pixel data).
-    QMenu* image = menuBar()->addMenu("&Image");
-    acts["rotate_cw"]  = image->addAction("Rotate 90\u00b0 CW",  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
-    acts["rotate_ccw"] = image->addAction("Rotate 90\u00b0 CCW", QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
-    acts["rotate_by_angle"] = image->addAction("Rotate by &Angle\u2026", QKeySequence("Ctrl+R"), this, [this]{
+    QMenu* image = menuBar()->addMenu(tr("&Image"));
+    acts["rotate_cw"]  = image->addAction(tr("Rotate 90\u00b0 CW"),  QKeySequence("]"),       this, [this]{ applyTransform(Xform::RotCW); });
+    acts["rotate_ccw"] = image->addAction(tr("Rotate 90\u00b0 CCW"), QKeySequence("["),       this, [this]{ applyTransform(Xform::RotCCW); });
+    acts["rotate_by_angle"] = image->addAction(tr("Rotate by &Angle\u2026"), QKeySequence("Ctrl+R"), this, [this]{
         RotateDialog* dlg = makeRotateDialog();
         if (!dlg) return;
         if (dlg->exec() == QDialog::Accepted) pushRotateTo(dlg->angle());
         dlg->deleteLater();
     });
     image->addSeparator();
-    acts["flip_horizontal"] = image->addAction("Flip &Horizontal", QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
-    acts["flip_vertical"]   = image->addAction("Flip &Vertical",   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
+    acts["flip_horizontal"] = image->addAction(tr("Flip &Horizontal"), QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
+    acts["flip_vertical"]   = image->addAction(tr("Flip &Vertical"),   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
 
     image->addSeparator();
-    acts["crop_visible"] = image->addAction("&Crop to Visible Region", QKeySequence("Shift+C"), this, [this] {
+    acts["crop_visible"] = image->addAction(tr("&Crop to Visible Region"), QKeySequence("Shift+C"), this, [this] {
         if (m_image.isValid()) cropCurrentToRect(m_view->visibleImageRect());
     });
 
     // Debayer: per-image pattern mode + the global algorithm.
     image->addSeparator();
-    QMenu* deb = image->addMenu("De&bayer");
+    QMenu* deb = image->addMenu(tr("De&bayer"));
     auto* modeGroup = new QActionGroup(this);
     const struct { const char* label; int mode; const char* key; } kModes[] = {
-        { "&Auto-Detect (header)", 0,  "debayer_auto" },
-        { "Force RGGB",            1,  "debayer_rggb" },
-        { "Force BGGR",            2,  "debayer_bggr" },
-        { "Force GRBG",            3,  "debayer_grbg" },
-        { "Force GBRG",            4,  "debayer_gbrg" },
-        { "&Off (raw mosaic)",     -1, "debayer_off" },
+        { QT_TR_NOOP("&Auto-Detect (header)"), 0,  "debayer_auto" },
+        { QT_TR_NOOP("Force RGGB"),            1,  "debayer_rggb" },
+        { QT_TR_NOOP("Force BGGR"),            2,  "debayer_bggr" },
+        { QT_TR_NOOP("Force GRBG"),            3,  "debayer_grbg" },
+        { QT_TR_NOOP("Force GBRG"),            4,  "debayer_gbrg" },
+        { QT_TR_NOOP("&Off (raw mosaic)"),     -1, "debayer_off" },
     };
     for (int i = 0; i < 6; ++i) {
         const int mode = kModes[i].mode;
-        QAction* a = deb->addAction(kModes[i].label, this, [this, mode] {
+        QAction* a = deb->addAction(tr(kModes[i].label), this, [this, mode] {
             requestDebayerChange(mode, kKeepDebayer);      // undoable
         });
         a->setCheckable(true);
@@ -1071,13 +1072,13 @@ void MainWindow::buildMenusAndToolbar() {
     deb->addSeparator();
     auto* methodGroup = new QActionGroup(this);
     const struct { const char* label; int m; const char* key; } kMeth[] = {
-        { "Superpixel (half size)", 0, "debayer_superpixel" },
-        { "Bilinear",               1, "debayer_bilinear" },
-        { "RCD (best)",             2, "debayer_rcd" },
+        { QT_TR_NOOP("Superpixel (half size)"), 0, "debayer_superpixel" },
+        { QT_TR_NOOP("Bilinear"),               1, "debayer_bilinear" },
+        { QT_TR_NOOP("RCD (best)"),             2, "debayer_rcd" },
     };
     for (int i = 0; i < 3; ++i) {
         const int m = kMeth[i].m;
-        QAction* a = deb->addAction(kMeth[i].label, this, [this, m] {
+        QAction* a = deb->addAction(tr(kMeth[i].label), this, [this, m] {
             requestDebayerChange(kKeepDebayer, m);         // undoable
         });
         a->setCheckable(true);
@@ -1087,25 +1088,25 @@ void MainWindow::buildMenusAndToolbar() {
     }
     m_debayerMethodActs[qBound(0, Preferences::get().debayerMethod, 2)]->setChecked(true);
     image->addSeparator();
-    acts["reset_orientation"] = image->addAction("Reset &Orientation", this, &MainWindow::resetOrientation);
+    acts["reset_orientation"] = image->addAction(tr("Reset &Orientation"), this, &MainWindow::resetOrientation);
     image->addSeparator();
-    acts["apply_saved_orientation"] = image->addAction("Apply &Saved Orientation", this, &MainWindow::applySavedOrientation);
+    acts["apply_saved_orientation"] = image->addAction(tr("Apply &Saved Orientation"), this, &MainWindow::applySavedOrientation);
 
     // Stretch — transfer the current image's stretch to others in the list.
-    QMenu* stretch = menuBar()->addMenu("&Stretch");
+    QMenu* stretch = menuBar()->addMenu(tr("&Stretch"));
     // Transfer-function radio group: I / L / S / G (the list and grid view
     // toggles moved to Shift+L / Shift+G to free the mnemonics).
     auto* fnGroup = new QActionGroup(this);
     const struct { const char* label; const char* key; const char* reg; StretchFn fn; } kFns[] = {
-        { "L&inear", "I", "fn_linear", StretchFn::Linear },
-        { "&Log",    "L", "fn_log",    StretchFn::Log },
-        { "A&sinh",  "S", "fn_asinh",  StretchFn::Asinh },
-        { "&GHS",    "G", "fn_ghs",    StretchFn::GHS },
+        { QT_TR_NOOP("L&inear"), "I", "fn_linear", StretchFn::Linear },
+        { QT_TR_NOOP("&Log"),    "L", "fn_log",    StretchFn::Log },
+        { QT_TR_NOOP("A&sinh"),  "S", "fn_asinh",  StretchFn::Asinh },
+        { QT_TR_NOOP("&GHS"),    "G", "fn_ghs",    StretchFn::GHS },
     };
     QAction* fnActs[4];
     for (int i = 0; i < 4; ++i) {
         const StretchFn fn = kFns[i].fn;
-        QAction* a = stretch->addAction(kFns[i].label, QKeySequence(kFns[i].key),
+        QAction* a = stretch->addAction(tr(kFns[i].label), QKeySequence(kFns[i].key),
                                         this, [this, fn] { m_model.setFn(fn); });
         a->setCheckable(true);
         a->setActionGroup(fnGroup);
@@ -1121,36 +1122,36 @@ void MainWindow::buildMenusAndToolbar() {
         }
     });
     stretch->addSeparator();
-    acts["auto_stf"] = stretch->addAction("Auto ST&F", QKeySequence("U"), this, [this] {
+    acts["auto_stf"] = stretch->addAction(tr("Auto ST&F"), QKeySequence("U"), this, [this] {
         if (!m_curStats.empty()) m_model.autoStretch(m_curStats);
     });
-    acts["auto_stf_linked"] = stretch->addAction("Auto STF (&Linked)", QKeySequence("Shift+U"), this, [this] {
+    acts["auto_stf_linked"] = stretch->addAction(tr("Auto STF (&Linked)"), QKeySequence("Shift+U"), this, [this] {
         if (!m_curStats.empty()) m_model.autoStretchLinked(m_curStats);
     });
-    acts["reset_stretch"] = stretch->addAction("&Reset Stretch", QKeySequence("R"), this, [this] {
+    acts["reset_stretch"] = stretch->addAction(tr("&Reset Stretch"), QKeySequence("R"), this, [this] {
         m_model.reset();
     });
-    acts["apply_stf_all"] = stretch->addAction("Apply Stretch to All", QKeySequence("Shift+A"),
+    acts["apply_stf_all"] = stretch->addAction(tr("Apply Stretch to All"), QKeySequence("Shift+A"),
                                                this, &MainWindow::applyStretchToAllList);
     stretch->addSeparator();
-    acts["copy_stretch"] = stretch->addAction("&Copy Stretch", QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
-    acts["paste_stretch_normalized"] = stretch->addAction("&Paste Stretch (Normalized)", QKeySequence("Ctrl+Alt+V"), this, [this]{ pasteStretchToSelected(true); });
-    acts["paste_stretch_absolute"] = stretch->addAction("Paste Stretch (&Absolute)", QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
+    acts["copy_stretch"] = stretch->addAction(tr("&Copy Stretch"), QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
+    acts["paste_stretch_normalized"] = stretch->addAction(tr("&Paste Stretch (Normalized)"), QKeySequence("Ctrl+Alt+V"), this, [this]{ pasteStretchToSelected(true); });
+    acts["paste_stretch_absolute"] = stretch->addAction(tr("Paste Stretch (&Absolute)"), QKeySequence("Ctrl+Alt+Shift+V"), this, [this]{ pasteStretchToSelected(false); });
     stretch->addSeparator();
-    acts["paste_stretch_all"] = stretch->addAction("Paste Stretch to &All", this, [this]{ pasteStretchToAll(true); });
+    acts["paste_stretch_all"] = stretch->addAction(tr("Paste Stretch to &All"), this, [this]{ pasteStretchToAll(true); });
 
     // Tools — pixel-math utilities.
-    QMenu* tools = menuBar()->addMenu("&Tools");
-    acts["combine_channels"] = tools->addAction("&Combine Channels…", this, &MainWindow::combineChannels);
-    acts["combine_stars"] = tools->addAction("Combine &Stars (screen)…", this, &MainWindow::combineStars);
-    acts["transport_colors"] = tools->addAction("&Transport Colors from Reference…", this, &MainWindow::transportColorsFromRef);
-    acts["import_sextractor"] = tools->addAction("Import &SExtractor Catalog…", this, &MainWindow::importSexCatalog);
+    QMenu* tools = menuBar()->addMenu(tr("&Tools"));
+    acts["combine_channels"] = tools->addAction(tr("&Combine Channels…"), this, &MainWindow::combineChannels);
+    acts["combine_stars"] = tools->addAction(tr("Combine &Stars (screen)…"), this, &MainWindow::combineStars);
+    acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
+    acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
-    QMenu* help = menuBar()->addMenu("&Help");
-    help->addAction("Configure &Shortcuts…", this, &MainWindow::showShortcutSettings);
-    QAction* prefsAct = help->addAction("&Preferences…", this, [this] {
+    QMenu* help = menuBar()->addMenu(tr("&Help"));
+    help->addAction(tr("Configure &Shortcuts…"), this, &MainWindow::showShortcutSettings);
+    QAction* prefsAct = help->addAction(tr("&Preferences…"), this, [this] {
         const int oldDebayer = Preferences::get().debayerMethod;
         PreferencesDialog dlg(this);
         if (dlg.exec() == QDialog::Accepted) {
@@ -1167,9 +1168,9 @@ void MainWindow::buildMenusAndToolbar() {
         }
     });
     prefsAct->setMenuRole(QAction::PreferencesRole);   // macOS: app menu ▸ Settings…
-    QAction* about = help->addAction("&About NebulaScope", this, &MainWindow::showAbout);
+    QAction* about = help->addAction(tr("&About NebulaScope"), this, &MainWindow::showAbout);
     about->setMenuRole(QAction::AboutRole);
-    QAction* aboutQt = help->addAction("About &Qt", qApp, &QApplication::aboutQt);
+    QAction* aboutQt = help->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
     aboutQt->setMenuRole(QAction::AboutQtRole);
 
     // Walk the loaded-image list: Space = next, Shift+Space = previous.
@@ -1203,24 +1204,24 @@ void MainWindow::buildMenusAndToolbar() {
     m_actionRegistry = acts;            // kept: ScriptRunner triggers by name
 
     // Toolbar
-    QToolBar* tb = addToolBar("Main");
+    QToolBar* tb = addToolBar(tr("Main"));
     tb->setObjectName("mainToolbar");
     tb->setMovable(false);
-    tb->addAction("Open", this, &MainWindow::openFile);
-    tb->addAction("Save", this, &MainWindow::saveFile);
-    tb->addAction("Export", this, &MainWindow::exportView);
+    tb->addAction(tr("Open"), this, &MainWindow::openFile);
+    tb->addAction(tr("Save"), this, &MainWindow::saveFile);
+    tb->addAction(tr("Export"), this, &MainWindow::exportView);
     tb->addSeparator();
-    tb->addAction("Fit", m_view, &ImageView::zoomToFit);
+    tb->addAction(tr("Fit"), m_view, &ImageView::zoomToFit);
     tb->addAction("1:1", m_view, &ImageView::zoomActualSize);
     tb->addSeparator();
-    tb->addAction("\u21bb", this, [this]{ applyTransform(Xform::RotCW); })->setToolTip("Rotate 90\u00b0 clockwise ( ] )");
-    tb->addAction("\u21ba", this, [this]{ applyTransform(Xform::RotCCW); })->setToolTip("Rotate 90\u00b0 counter-clockwise ( [ )");
-    tb->addAction("\u2194", this, [this]{ applyTransform(Xform::FlipH); })->setToolTip("Flip horizontal (Ctrl+H)");
-    tb->addAction("\u2195", this, [this]{ applyTransform(Xform::FlipV); })->setToolTip("Flip vertical (Ctrl+J)");
+    tb->addAction("\u21bb", this, [this]{ applyTransform(Xform::RotCW); })->setToolTip(tr("Rotate 90\u00b0 clockwise ( ] )"));
+    tb->addAction("\u21ba", this, [this]{ applyTransform(Xform::RotCCW); })->setToolTip(tr("Rotate 90\u00b0 counter-clockwise ( [ )"));
+    tb->addAction("\u2194", this, [this]{ applyTransform(Xform::FlipH); })->setToolTip(tr("Flip horizontal (Ctrl+H)"));
+    tb->addAction("\u2195", this, [this]{ applyTransform(Xform::FlipV); })->setToolTip(tr("Flip vertical (Ctrl+J)"));
     tb->addSeparator();
 
     // False-colour map for mono images.
-    tb->addWidget(new QLabel(" Colormap "));
+    tb->addWidget(new QLabel(tr(" Colormap ")));
     m_cmapCombo = new QComboBox();
     for (int i = 0; i < kColormapCount; ++i)
         m_cmapCombo->addItem(colormapName(static_cast<Colormap>(i)));
@@ -1230,15 +1231,15 @@ void MainWindow::buildMenusAndToolbar() {
     });
 
     // Modifiers that compose with any base map.
-    m_invertCheck = new QCheckBox("Inv");
-    m_invertCheck->setToolTip("Invert the colormap (reverse the ramp)");
+    m_invertCheck = new QCheckBox(tr("Inv"));
+    m_invertCheck->setToolTip(tr("Invert the colormap (reverse the ramp)"));
     tb->addWidget(m_invertCheck);
     connect(m_invertCheck, &QCheckBox::toggled, this, [this](bool on) {
         m_model.setCmapInvert(on);
     });
 
-    m_splitCheck = new QCheckBox("Split");
-    m_splitCheck->setToolTip("Fold the ramp at a threshold: inverted below, normal above");
+    m_splitCheck = new QCheckBox(tr("Split"));
+    m_splitCheck->setToolTip(tr("Fold the ramp at a threshold: inverted below, normal above"));
     tb->addWidget(m_splitCheck);
     connect(m_splitCheck, &QCheckBox::toggled, this, [this](bool on) {
         m_model.setCmapSplit(on);
@@ -1249,7 +1250,7 @@ void MainWindow::buildMenusAndToolbar() {
     m_splitWidget = new QWidget();
     auto* sl = new QHBoxLayout(m_splitWidget);
     sl->setContentsMargins(0, 0, 0, 0);
-    sl->addWidget(new QLabel(" break "));
+    sl->addWidget(new QLabel(tr(" break ")));
     m_splitSlider = new QSlider(Qt::Horizontal);
     m_splitSlider->setRange(0, 100);
     m_splitSlider->setValue(int(m_model.splitThreshold() * 100));
@@ -1269,12 +1270,12 @@ void MainWindow::buildMenusAndToolbar() {
     tb->addSeparator();
     auto* toolGroup = new QActionGroup(this);
     toolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
-    m_toolEllipse = tb->addAction("\u25ef Ellipse");
-    m_toolEllipse->setToolTip("Draw an ellipse annotation — drag outward from the centre");
-    m_toolLine = tb->addAction("\u2571 Line");
-    m_toolLine->setToolTip("Draw a line annotation — drag from start to end");
-    m_toolText = tb->addAction("T Text");
-    m_toolText->setToolTip("Place a text annotation — click the anchor point");
+    m_toolEllipse = tb->addAction(tr("\u25ef Ellipse"));
+    m_toolEllipse->setToolTip(tr("Draw an ellipse annotation — drag outward from the centre"));
+    m_toolLine = tb->addAction(tr("\u2571 Line"));
+    m_toolLine->setToolTip(tr("Draw a line annotation — drag from start to end"));
+    m_toolText = tb->addAction(tr("T Text"));
+    m_toolText->setToolTip(tr("Place a text annotation — click the anchor point"));
     for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText }) {
         a->setCheckable(true);
         toolGroup->addAction(a);
@@ -1292,8 +1293,8 @@ void MainWindow::buildMenusAndToolbar() {
 
 void MainWindow::openFile() {
     const QStringList paths = QFileDialog::getOpenFileNames(
-        this, "Open image(s)", QString(),
-        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)");
+        this, tr("Open image(s)"), QString(),
+        tr("Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)"));
     if (!paths.isEmpty()) addPaths(paths);
 }
 
@@ -1340,7 +1341,7 @@ void MainWindow::addPaths(const QStringList& paths) {
         const QString base = splitHduKey(p, hduReq);   // re-imported lists may carry ||hdu=
         auto* it = new QListWidgetItem(
             hduReq < 0 ? QFileInfo(base).fileName()
-                       : QStringLiteral("%1 [HDU %2]").arg(QFileInfo(base).fileName()).arg(hduReq),
+                       : tr("%1 [HDU %2]").arg(QFileInfo(base).fileName()).arg(hduReq),
             m_fileList);
         it->setData(Qt::UserRole, p);
         it->setToolTip(p);
@@ -1387,13 +1388,13 @@ void MainWindow::scheduleHduProbe() {
             for (int i = 0; i < m_fileList->count(); ++i) {
                 QListWidgetItem* it = m_fileList->item(i);
                 if (it->data(Qt::UserRole).toString() != base) continue;
-                it->setText(it->text() + QStringLiteral("  ▾ %1 HDUs").arg(hdus.size()));
+                it->setText(it->text() + tr("  ▾ %1 HDUs").arg(hdus.size()));
                 int row = i;
                 for (const io::FitsHduEntry& e : hdus) {
                     auto* child = new QListWidgetItem(
-                        QStringLiteral("    ⤷ HDU %1 · %2").arg(e.hdu).arg(e.summary));
+                        tr("    ⤷ HDU %1 · %2").arg(e.hdu).arg(e.summary));
                     child->setData(Qt::UserRole, makeHduKey(base, e.hdu));
-                    child->setToolTip(QStringLiteral("%1 — HDU %2").arg(base).arg(e.hdu));
+                    child->setToolTip(tr("%1 — HDU %2").arg(base).arg(e.hdu));
                     child->setForeground(QColor("#8fa3b8"));
                     m_fileList->insertItem(++row, child);
                 }
@@ -1428,7 +1429,7 @@ void MainWindow::applyStretchToAllList() {
         c->view()->setDisplayImage(DisplayRenderer::render(c->image, cm));
     }
     statusBar()->showMessage(
-        QStringLiteral("Stretch shared with %1 other image(s) — applies as each loads").arg(n), 4000);
+        tr("Stretch shared with %1 other image(s) — applies as each loads").arg(n), 4000);
 }
 
 void MainWindow::sharedStfStartup() {
@@ -1447,7 +1448,7 @@ void MainWindow::cropCurrentToRect(QRect r) {
     if (!m_image.isValid()) return;
     r = r.intersected(QRect(0, 0, m_image.width(), m_image.height()));
     if (r.width() < 2 || r.height() < 2) {
-        statusBar()->showMessage("Crop region is empty", 3000);
+        statusBar()->showMessage(tr("Crop region is empty"), 3000);
         return;
     }
     const int ch = m_image.channels();
@@ -1499,9 +1500,9 @@ void MainWindow::cropCurrentToRect(QRect r) {
     m_stfByPath.insert(key, st);
     displayPath(key);                                     // re-display with header+stretch
     statusBar()->showMessage(
-        QStringLiteral("Cropped %1×%2 at (%3, %4)%5 — Save Data As… keeps it")
+        tr("Cropped %1×%2 at (%3, %4)%5 — Save Data As… keeps it")
             .arg(r.width()).arg(r.height()).arg(r.x()).arg(r.y())
-            .arg(cw.valid() ? QStringLiteral(", plate solution rebased") : QString()), 5000);
+            .arg(cw.valid() ? tr(", plate solution rebased") : QString()), 5000);
 }
 
 // ---- blink culling ----------------------------------------------------------
@@ -1514,9 +1515,9 @@ void MainWindow::toggleCurrentTag() {
     if (!it || !(it->flags() & Qt::ItemIsUserCheckable)) return;
     const bool nowChecked = it->checkState() != Qt::Checked;
     it->setCheckState(nowChecked ? Qt::Checked : Qt::Unchecked);
-    statusBar()->showMessage(QStringLiteral("%1 — %2")
-        .arg(it->text().trimmed(), nowChecked ? QStringLiteral("checked (keep)")
-                                              : QStringLiteral("unchecked")), 2000);
+    statusBar()->showMessage(tr("%1 — %2")
+        .arg(it->text().trimmed(), nowChecked ? tr("checked (keep)")
+                                              : tr("unchecked")), 2000);
 }
 
 void MainWindow::setSelectedTags(bool checked) {
@@ -1582,15 +1583,15 @@ void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
         if (QFileInfo::exists(base) && !files.contains(base)) files << base;
     }
     if (files.isEmpty()) {
-        QMessageBox::information(this, "Move Frames",
-            QStringLiteral("No %1 files to move.").arg(checked ? "checked" : "unchecked"));
+        QMessageBox::information(this, tr("Move Frames"),
+            tr("No %1 files to move.").arg(checked ? tr("checked") : tr("unchecked")));
         return;
     }
     QString dir = destDir;
     if (dir.isEmpty())
         dir = QFileDialog::getExistingDirectory(this,
-            QStringLiteral("Move %1 %2 frame(s) to…")
-                .arg(files.size()).arg(checked ? "checked" : "unchecked"));
+            tr("Move %1 %2 frame(s) to…")
+                .arg(files.size()).arg(checked ? tr("checked") : tr("unchecked")));
     if (dir.isEmpty()) return;
     QDir().mkpath(dir);                        // scripted destinations may be new
 
@@ -1598,7 +1599,7 @@ void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
     QStringList failed;
     for (const QString& base : files) {
         const QString dest = dir + QLatin1Char('/') + QFileInfo(base).fileName();
-        if (QFileInfo::exists(dest)) { failed << QFileInfo(base).fileName() + " (exists)"; continue; }
+        if (QFileInfo::exists(dest)) { failed << QFileInfo(base).fileName() + tr(" (exists)"); continue; }
         if (!QFile::rename(base, dest)) {
             // Cross-volume: copy then remove.
             if (!QFile::copy(base, dest) || !QFile::remove(base)) {
@@ -1630,9 +1631,9 @@ void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
         ++moved;
     }
     syncFileWatcher();
-    QString msg = QStringLiteral("Moved %1 file(s) to %2").arg(moved).arg(QDir(dir).dirName());
+    QString msg = tr("Moved %1 file(s) to %2").arg(moved).arg(QDir(dir).dirName());
     if (!failed.isEmpty())
-        msg += QStringLiteral(" — FAILED: %1").arg(failed.join(QLatin1String(", ")));
+        msg += tr(" — FAILED: %1").arg(failed.join(QLatin1String(", ")));
     statusBar()->showMessage(msg, 6000);
 }
 
@@ -1675,10 +1676,10 @@ public:
           m_prevMode(prevMode), m_nextMode(nextMode),
           m_prevMethod(prevMethod), m_nextMethod(nextMethod) {
         static const char* meth[] = { "superpixel", "bilinear", "RCD" };
-        QString t = QStringLiteral("debayer");
+        QString t = QCoreApplication::translate("astro::MainWindowHelpers", "debayer");
         if (prevMode != nextMode)
-            t += QStringLiteral(" %1").arg(nextMode == -1 ? QStringLiteral("off")
-                 : nextMode == 0 ? QStringLiteral("auto")
+            t += QStringLiteral(" %1").arg(nextMode == -1 ? QCoreApplication::translate("astro::MainWindowHelpers", "off")
+                 : nextMode == 0 ? QCoreApplication::translate("astro::MainWindowHelpers", "auto")
                  : QLatin1String(bayerPatternName(static_cast<BayerPattern>(nextMode))));
         if (prevMethod != nextMethod)
             t += QStringLiteral(" %1").arg(QLatin1String(meth[qBound(0, nextMethod, 2)]));
@@ -1827,7 +1828,7 @@ void MainWindow::reloadChangedFiles() {
             c->view()->setDisplayImage(DisplayRenderer::render(c->image, cellModel));
         }
         statusBar()->showMessage(
-            QStringLiteral("Reloaded (changed on disk): %1").arg(QFileInfo(base).fileName()), 4000);
+            tr("Reloaded (changed on disk): %1").arg(QFileInfo(base).fileName()), 4000);
     }
 }
 
@@ -1840,7 +1841,7 @@ QString MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     m_synthetic.insert(key, std::make_shared<ImageData>(std::move(img)));
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
-    it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
+    it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
     m_fileList->setCurrentItem(it);               // triggers showRow -> displayPath
     m_undo->push(new SyntheticImageCmd(this, key, name, m_synthetic.value(key)));
     return key;
@@ -1862,7 +1863,7 @@ void MainWindow::restoreSyntheticEntry(const QString& key, const QString& name,
     m_synthetic.insert(key, std::move(img));
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
-    it->setToolTip(name + "  (in-memory combine — use Save Data As… to keep)");
+    it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
     m_fileList->setCurrentItem(it);
 }
 
@@ -1944,7 +1945,7 @@ CombineDialog* MainWindow::makeCombineDialog(QString* whyNot) {
         }
     }
     if (mono.size() < 2) {
-        if (whyNot) *whyNot = QStringLiteral(
+        if (whyNot) *whyNot = tr(
             "Load at least two single-channel (mono) images into the list first.");
         return nullptr;
     }
@@ -1955,7 +1956,7 @@ void MainWindow::combineChannels() {
     QString whyNot;
     CombineDialog* dlgp = makeCombineDialog(&whyNot);
     if (!dlgp) {
-        QMessageBox::information(this, "Combine Channels", whyNot);
+        QMessageBox::information(this, tr("Combine Channels"), whyNot);
         return;
     }
     if (dlgp->exec() == QDialog::Accepted) adoptCombineResult(*dlgp);
@@ -2019,8 +2020,8 @@ void MainWindow::combineStars() {
         srcs.push_back({ item->text(), img, std::move(toDisplay) });
     }
     if (srcs.size() < 2) {
-        QMessageBox::information(this, "Combine Stars",
-            "Load the starless and the stars-only image into the list first.");
+        QMessageBox::information(this, tr("Combine Stars"),
+            tr("Load the starless and the stars-only image into the list first."));
         return;
     }
     StarCombineDialog dlg(std::move(srcs), this);
@@ -2040,8 +2041,8 @@ void MainWindow::combineStars() {
 
 void MainWindow::appendToList() {
     const QStringList paths = QFileDialog::getOpenFileNames(
-        this, "Append image(s)", QString(),
-        "Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)");
+        this, tr("Append image(s)"), QString(),
+        tr("Astronomy & images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)"));
     if (!paths.isEmpty()) addPaths(paths);
 }
 
@@ -2083,7 +2084,7 @@ void MainWindow::removeSelected() {
         m_hist->setSource(nullptr);
         m_info->setData(nullptr, nullptr, {});
         m_pixelLabel->setText("\u2014");
-        setWindowTitle("NebulaScope \u2014 Inspector");
+        setWindowTitle(tr("NebulaScope \u2014 Inspector"));
     } else if (m_fileList->currentRow() < 0) {
         m_fileList->setCurrentRow(0);
     }
@@ -2092,22 +2093,22 @@ void MainWindow::removeSelected() {
 void MainWindow::exportList() {
     if (m_fileList->count() == 0) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Export image list", "images.txt", "Text file (*.txt);;All files (*)");
+        this, tr("Export image list"), "images.txt", tr("Text file (*.txt);;All files (*)"));
     if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "Export failed", "Could not write " + path);
+        QMessageBox::warning(this, tr("Export failed"), tr("Could not write %1").arg(path));
         return;
     }
     QTextStream out(&f);
     for (int i = 0; i < m_fileList->count(); ++i)
         out << m_fileList->item(i)->data(Qt::UserRole).toString() << '\n';
-    statusBar()->showMessage(QStringLiteral("Exported list of %1 file(s)").arg(m_fileList->count()), 3000);
+    statusBar()->showMessage(tr("Exported list of %1 file(s)").arg(m_fileList->count()), 3000);
 }
 
 void MainWindow::importList() {
     const QString path = QFileDialog::getOpenFileName(
-        this, "Import image list", QString(), "Text file (*.txt);;All files (*)");
+        this, tr("Import image list"), QString(), tr("Text file (*.txt);;All files (*)"));
     if (!path.isEmpty()) importListFile(path);
 }
 
@@ -2132,7 +2133,7 @@ void MainWindow::applySplitLayout(int rows, int cols) {
 void MainWindow::importListFile(const QString& listPath) {
     QFile f(listPath);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "Import failed", "Could not read " + listPath);
+        QMessageBox::warning(this, tr("Import failed"), tr("Could not read %1").arg(listPath));
         return;
     }
     // Relative paths in the list are resolved against the list file's directory.
@@ -2145,11 +2146,11 @@ void MainWindow::importListFile(const QString& listPath) {
         paths << (QFileInfo(line).isAbsolute() ? line : base.absoluteFilePath(line));
     }
     if (paths.isEmpty()) {
-        statusBar()->showMessage("List file had no entries", 3000);
+        statusBar()->showMessage(tr("List file had no entries"), 3000);
         return;
     }
     addPaths(paths);
-    statusBar()->showMessage(QStringLiteral("Imported %1 file(s)").arg(paths.size()), 3000);
+    statusBar()->showMessage(tr("Imported %1 file(s)").arg(paths.size()), 3000);
 }
 
 void MainWindow::showRow(int row) {
@@ -2194,18 +2195,18 @@ void MainWindow::transportColorsFromRef() {
         keys << p;
     }
     if (names.isEmpty()) {
-        QMessageBox::information(this, "Transport Colors",
-            "Load a second image to use as the colour reference.");
+        QMessageBox::information(this, tr("Transport Colors"),
+            tr("Load a second image to use as the colour reference."));
         return;
     }
     bool ok = false;
     // Reference picker + transport strength in one small dialog.
     QDialog dlg(this);
-    dlg.setWindowTitle("Transport Colors");
+    dlg.setWindowTitle(tr("Transport Colors"));
     auto* form = new QFormLayout(&dlg);
     auto* combo = new QComboBox();
     combo->addItems(names);
-    form->addRow("Reference (colours to adopt):", combo);
+    form->addRow(tr("Reference (colours to adopt):"), combo);
     auto* strengthRow = new QHBoxLayout();
     auto* strength = new QSlider(Qt::Horizontal);
     strength->setRange(0, 100);
@@ -2217,21 +2218,21 @@ void MainWindow::transportColorsFromRef() {
             [strengthLbl](int v) { strengthLbl->setText(QStringLiteral("%1%").arg(v)); });
     strengthRow->addWidget(strength, 1);
     strengthRow->addWidget(strengthLbl);
-    form->addRow("Strength:", strengthRow);
-    auto* hint = new QLabel("100% = full palette adoption; lower values blend\n"
-                            "the transported colours with the original.");
+    form->addRow(tr("Strength:"), strengthRow);
+    auto* hint = new QLabel(tr("100% = full palette adoption; lower values blend\n"
+                            "the transported colours with the original."));
     hint->setStyleSheet("color:#7e8b98; font-size:11px;");
     form->addRow(QString(), hint);
-    auto* asStretchBox = new QCheckBox("Apply as stretch fit (non-destructive)");
-    asStretchBox->setToolTip("Instead of writing new pixels, fit per-channel B/M/W so the\n"
+    auto* asStretchBox = new QCheckBox(tr("Apply as stretch fit (non-destructive)"));
+    asStretchBox->setToolTip(tr("Instead of writing new pixels, fit per-channel B/M/W so the\n"
                              "display matches the transported colours — the data is untouched,\n"
                              "so nothing can posterize. Colour match is close, not exact\n"
-                             "(cross-channel rotations are outside the stretch family).");
+                             "(cross-channel rotations are outside the stretch family)."));
     form->addRow(QString(), asStretchBox);
-    auto* colourFitBox = new QCheckBox("Also fit colour adjustments (hue/temperature)");
-    colourFitBox->setToolTip("A second fitting stage over temperature/tint/hue/saturation —\n"
+    auto* colourFitBox = new QCheckBox(tr("Also fit colour adjustments (hue/temperature)"));
+    colourFitBox->setToolTip(tr("A second fitting stage over temperature/tint/hue/saturation —\n"
                              "the cross-channel part per-channel curves cannot express.\n"
-                             "Try with and without: both are one Undo apart.");
+                             "Try with and without: both are one Undo apart."));
     colourFitBox->setEnabled(false);
     connect(asStretchBox, &QCheckBox::toggled, colourFitBox, &QCheckBox::setEnabled);
     form->addRow(QString(), colourFitBox);
@@ -2247,7 +2248,7 @@ void MainWindow::transportColorsFromRef() {
                            asStretchBox->isChecked(),
                            asStretchBox->isChecked() && colourFitBox->isChecked()) &&
         !terr.isEmpty())
-        QMessageBox::warning(this, "Transport Colors", terr);
+        QMessageBox::warning(this, tr("Transport Colors"), terr);
 }
 
 // The transport proper, shared by the picker slot and ScriptRunner: reference
@@ -2255,7 +2256,7 @@ void MainWindow::transportColorsFromRef() {
 bool MainWindow::runColorTransport(const QString& key, int strengthPct,
                                    QString* errOut, bool asStretch,
                                    bool fitColourAdj) {
-    if (!m_image.isValid()) { if (errOut) *errOut = "no image displayed"; return false; }
+    if (!m_image.isValid()) { if (errOut) *errOut = tr("no image displayed"); return false; }
     // Decode the reference (or fetch the in-memory synthetic).
     std::shared_ptr<ImageData> refImg;
     auto syn = m_synthetic.constFind(key);
@@ -2400,14 +2401,14 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
                                              tv[0].data(), tv[1].data(), tv[2].data(),
                                              d[0].size(), 1, fitted);
             st.adj = fitted;
-            colourNote = QStringLiteral(" · with colour fit: %1").arg(e2, 0, 'f', 4);
+            colourNote = tr(" · with colour fit: %1").arg(e2, 0, 'f', 4);
         }
         const StretchModel::State prev = m_model.state();
         m_model.setState(st);
         m_undo->push(new StretchStateCmd(this, m_currentPath, prev, st,
-                                         QStringLiteral("colour-match stretch")));
+                                         tr("colour-match stretch")));
         statusBar()->showMessage(
-            QStringLiteral("Colour match fitted as stretch (non-destructive) — RMSE %1%2")
+            tr("Colour match fitted as stretch (non-destructive) — RMSE %1%2")
                 .arg(rms.join(QLatin1String(" / ")), colourNote), 6000);
         return true;
     }
@@ -2430,7 +2431,7 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         m_diskSizeByPath[newKey] = srcDiskSize;
         displayPath(newKey);
     }
-    statusBar()->showMessage(QStringLiteral("Colours transported from %1")
+    statusBar()->showMessage(tr("Colours transported from %1")
                                  .arg(QFileInfo(key).fileName()), 4000);
     return true;
 }
@@ -2438,7 +2439,7 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
 void MainWindow::resetOrientation() {
     if (m_currentPath.isEmpty() || !m_image.isValid()) return;
     const QStringList ops = m_xformByPath.value(m_currentPath);
-    if (ops.isEmpty()) { statusBar()->showMessage("No stored orientation for this image", 3000); return; }
+    if (ops.isEmpty()) { statusBar()->showMessage(tr("No stored orientation for this image"), 3000); return; }
     auto it = m_annByPath.find(m_currentPath);
     if (it != m_annByPath.end() && !it.value().empty()) {
         unmapAnnotationsToDiskFrame(it.value(), ops);
@@ -2450,7 +2451,7 @@ void MainWindow::resetOrientation() {
     m_rotBase = ImageData();
     m_undo->clear();
     displayPath(m_currentPath);               // fresh decode; replay is now a no-op
-    statusBar()->showMessage(QStringLiteral("Orientation reset — showing disk pixels (%1\u00d7%2)")
+    statusBar()->showMessage(tr("Orientation reset — showing disk pixels (%1\u00d7%2)")
                                  .arg(m_image.width()).arg(m_image.height()), 4000);
 }
 
@@ -2462,7 +2463,7 @@ void MainWindow::applySavedOrientation() {
     if (m_currentPath.isEmpty() || !m_image.isValid()) return;
     const QStringList ops = m_sidecarOrientByPath.value(m_currentPath);
     if (ops.isEmpty()) {
-        statusBar()->showMessage("No saved orientation for this image", 3000);
+        statusBar()->showMessage(tr("No saved orientation for this image"), 3000);
         return;
     }
     for (const QString& n : ops) {
@@ -2471,7 +2472,7 @@ void MainWindow::applySavedOrientation() {
     }
     m_sidecarOrientByPath.remove(m_currentPath);   // now carried by the live history
     normalizeOrientation();
-    statusBar()->showMessage(QStringLiteral("Saved orientation applied (%1×%2)")
+    statusBar()->showMessage(tr("Saved orientation applied (%1×%2)")
                                  .arg(m_image.width()).arg(m_image.height()), 4000);
 }
 
@@ -2614,7 +2615,7 @@ void MainWindow::displayPath(const QString& path) {
         lopts.fitsHdu = hduReq;                          // -1 = first image HDU
         io::LoadResult res = io::loadImage(base, lopts); // promoteToFloat = true
         if (!res.ok) {
-            QMessageBox::warning(this, "Open failed", res.error);
+            QMessageBox::warning(this, tr("Open failed"), res.error);
             return;
         }
         loaded = std::move(res.image);
@@ -2684,10 +2685,10 @@ void MainWindow::displayPath(const QString& path) {
                     m_annByPath[path] = std::move(anns);
                     mapAnnotationsFromDiskFrame(m_annByPath[path]);   // through in-session ops, if any
                     statusBar()->showMessage(
-                        QStringLiteral("Loaded %1 annotation(s) from %2%3")
+                        tr("Loaded %1 annotation(s) from %2%3")
                             .arg(m_annByPath[path].size()).arg(QFileInfo(sc).fileName(),
                                  canon.isEmpty() ? QString()
-                                 : QStringLiteral(" — saved orientation available (Image ▸ Apply Saved Orientation)")), 6000);
+                                 : tr(" — saved orientation available (Image ▸ Apply Saved Orientation)")), 6000);
                 }
             }
         }
@@ -2762,15 +2763,15 @@ void MainWindow::displayPath(const QString& path) {
     m_lastH = m_image.height();
 
     const QString name = QFileInfo(path).fileName();
-    setWindowTitle(QStringLiteral("NebulaScope \u2014 %1").arg(name));
+    setWindowTitle(tr("NebulaScope \u2014 %1").arg(name));
     // Surface the demosaic decision right where the eye lands on open.
     QString debayerNote;
     for (const QString& s : m_header.structure)
         if (s.startsWith(QLatin1String("Debayered: "))) {
-            debayerNote = QStringLiteral("   \u00b7 debayered %1").arg(s.mid(11));
+            debayerNote = tr("   \u00b7 debayered %1").arg(s.mid(11));
             break;
         }
-    statusBar()->showMessage(QStringLiteral("%1   %2\u00d7%3   %4 ch   [%5/%6]%7")
+    statusBar()->showMessage(tr("%1   %2\u00d7%3   %4 ch   [%5/%6]%7")
         .arg(name).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels())
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count())
         .arg(debayerNote), 4000);
@@ -2780,12 +2781,14 @@ void MainWindow::displayPath(const QString& path) {
 // session, like JPEG quality / export bit depth). False = user cancelled.
 static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
     static int lastChoice = 0;                         // 0 = Zstd
-    const QStringList choices{ "Zstd (smallest)",
-                               "Zlib (widest compatibility)",
-                               "Uncompressed" };
+    const QStringList choices{ QCoreApplication::translate("astro::MainWindowHelpers", "Zstd (smallest)"),
+                               QCoreApplication::translate("astro::MainWindowHelpers", "Zlib (widest compatibility)"),
+                               QCoreApplication::translate("astro::MainWindowHelpers", "Uncompressed") };
     bool ok = false;
-    const QString c = QInputDialog::getItem(parent, "XISF compression",
-        "Data-block compression:", choices, lastChoice, false, &ok);
+    const QString c = QInputDialog::getItem(parent,
+        QCoreApplication::translate("astro::MainWindowHelpers", "XISF compression"),
+        QCoreApplication::translate("astro::MainWindowHelpers", "Data-block compression:"),
+        choices, lastChoice, false, &ok);
     if (!ok) return false;
     lastChoice = choices.indexOf(c);
     using C = io::SaveOptions::Compression;
@@ -2800,33 +2803,33 @@ static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
 void MainWindow::saveStretched() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Save stretched image", QString(),
-        "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
+        this, tr("Save stretched image"), QString(),
+        tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
     if (path.isEmpty()) return;
     io::SaveOptions opts;
     if (QFileInfo(path).suffix().toLower() == "xisf" &&
         !askXisfCompression(this, opts)) return;
     ImageData baked = DisplayRenderer::renderFloat(m_image, m_model);
-    if (!baked.isValid()) { QMessageBox::warning(this, "Save failed", "Could not bake the stretch."); return; }
+    if (!baked.isValid()) { QMessageBox::warning(this, tr("Save failed"), tr("Could not bake the stretch.")); return; }
     ImageHeader hdr = m_header;
     hdr.cards.push_back({ QStringLiteral("HISTORY"),
                           QStringLiteral("NebulaScope: baked display stretch"), QString() });
     io::SaveResult sr = io::saveImage(path, baked, hdr, opts);
-    if (!sr.ok) QMessageBox::warning(this, "Save failed", sr.error);
-    else statusBar()->showMessage("Saved stretched " + QFileInfo(path).fileName(), 3000);
+    if (!sr.ok) QMessageBox::warning(this, tr("Save failed"), sr.error);
+    else statusBar()->showMessage(tr("Saved stretched %1").arg(QFileInfo(path).fileName()), 3000);
 }
 
 void MainWindow::saveFile() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Save image", QString(), "FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)");
+        this, tr("Save image"), QString(), tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
     if (path.isEmpty()) return;
     io::SaveOptions opts;
     if (QFileInfo(path).suffix().toLower() == "xisf" &&
         !askXisfCompression(this, opts)) return;
     io::SaveResult sr = io::saveImage(path, m_image, m_header, opts);
-    if (!sr.ok) { QMessageBox::warning(this, "Save failed", sr.error); return; }
-    statusBar()->showMessage("Saved " + QFileInfo(path).fileName(), 3000);
+    if (!sr.ok) { QMessageBox::warning(this, tr("Save failed"), sr.error); return; }
+    statusBar()->showMessage(tr("Saved %1").arg(QFileInfo(path).fileName()), 3000);
 
     // A synthetic (in-memory) image that was just written to disk becomes that
     // file: rebrand its list row and migrate per-image state to the new key, so
@@ -2880,7 +2883,7 @@ static QImage floatToRgb64(const ImageData& f) {
 void MainWindow::exportView() {
     if (!m_image.isValid()) return;
     // The exact 8-bit RGB image currently on screen — stretch, colormap and all.
-    saveRenderedImage(DisplayRenderer::render(m_image, m_model), "Export view (full frame)",
+    saveRenderedImage(DisplayRenderer::render(m_image, m_model), tr("Export view (full frame)"),
         [this] { return floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model)); });
 }
 
@@ -2888,12 +2891,12 @@ void MainWindow::exportRegion() {
     if (!m_image.isValid()) return;
     const QRect roi = m_view->visibleImageRect();
     if (roi.isEmpty()) {
-        QMessageBox::information(this, "Export region", "Nothing is visible to export.");
+        QMessageBox::information(this, tr("Export region"), tr("Nothing is visible to export."));
         return;
     }
     // Render the whole frame, then crop to the currently visible image pixels.
     const QImage full = DisplayRenderer::render(m_image, m_model);
-    saveRenderedImage(full.copy(roi.intersected(full.rect())), "Export zoomed region",
+    saveRenderedImage(full.copy(roi.intersected(full.rect())), tr("Export zoomed region"),
         [this, roi] {
             QImage f16 = floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model));
             return f16.copy(roi.intersected(f16.rect()));
@@ -2904,7 +2907,7 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
                                    const std::function<QImage()>& make16) {
     if (img.isNull()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, title, QString(), "PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)");
+        this, title, QString(), tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
     if (path.isEmpty()) return;
     const QString ext = QFileInfo(path).suffix().toLower();
 
@@ -2913,32 +2916,32 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
     if (ext == "jpg" || ext == "jpeg") {
         static int lastQuality = 90;                   // remembered for the session
         bool ok = false;
-        const int q = QInputDialog::getInt(this, "JPEG quality",
-            "Quality (1\u2013100):", lastQuality, 1, 100, 1, &ok);
+        const int q = QInputDialog::getInt(this, tr("JPEG quality"),
+            tr("Quality (1\u2013100):"), lastQuality, 1, 100, 1, &ok);
         if (!ok) return;
         lastQuality = quality = q;
     } else if ((ext == "png" || ext == "tiff" || ext == "tif") && make16) {
         static int lastDepth = 0;                      // 0 = 8-bit
         bool ok = false;
-        const QStringList depths{ "8-bit per channel", "16-bit per channel" };
-        const QString depth = QInputDialog::getItem(this, "Bit depth",
-            "Pixel depth:", depths, lastDepth, false, &ok);
+        const QStringList depths{ tr("8-bit per channel"), tr("16-bit per channel") };
+        const QString depth = QInputDialog::getItem(this, tr("Bit depth"),
+            tr("Pixel depth:"), depths, lastDepth, false, &ok);
         if (!ok) return;
         lastDepth = depth.startsWith("16") ? 1 : 0;
         if (lastDepth == 1) {
             toSave = make16();
-            if (toSave.isNull()) { QMessageBox::warning(this, "Export failed", "16-bit render failed."); return; }
+            if (toSave.isNull()) { QMessageBox::warning(this, tr("Export failed"), tr("16-bit render failed.")); return; }
         }
     }
 
     if (!toSave.save(path, nullptr, quality)) {
-        QMessageBox::warning(this, "Export failed",
-                             QStringLiteral("Could not write %1").arg(QFileInfo(path).fileName()));
+        QMessageBox::warning(this, tr("Export failed"),
+                             tr("Could not write %1").arg(QFileInfo(path).fileName()));
         return;
     }
-    statusBar()->showMessage(QStringLiteral("Exported %1 (%2\u00d7%3%4)")
+    statusBar()->showMessage(tr("Exported %1 (%2\u00d7%3%4)")
         .arg(QFileInfo(path).fileName()).arg(toSave.width()).arg(toSave.height())
-        .arg(toSave.format() == QImage::Format_RGBX64 ? QStringLiteral(" \u00b7 16-bit") : QString()), 3000);
+        .arg(toSave.format() == QImage::Format_RGBX64 ? tr(" \u00b7 16-bit") : QString()), 3000);
 }
 
 void MainWindow::updateDisplay() {
@@ -3282,15 +3285,15 @@ void MainWindow::copySelectedAnnotation() {
     const auto& anns = m_annByPath.value(m_currentPath);
     const int idx = m_annotations->activeIndex();
     if (idx < 0 || idx >= int(anns.size())) {
-        statusBar()->showMessage(QStringLiteral("Click an annotation first to copy it"), 3000);
+        statusBar()->showMessage(tr("Click an annotation first to copy it"), 3000);
         return;
     }
     m_copiedAnn = anns[std::size_t(idx)];
     m_hasCopiedAnn = true;
     QApplication::clipboard()->setText(QString::fromUtf8(
         QJsonDocument(m_copiedAnn.toJson()).toJson(QJsonDocument::Compact)));
-    statusBar()->showMessage(QStringLiteral("Copied %1")
-        .arg(m_copiedAnn.label.isEmpty() ? QStringLiteral("annotation") : m_copiedAnn.label), 3000);
+    statusBar()->showMessage(tr("Copied %1")
+        .arg(m_copiedAnn.label.isEmpty() ? tr("annotation") : m_copiedAnn.label), 3000);
 }
 
 // Ctrl/Cmd+Shift+V: paste at the pointer's image position (image centre if the
@@ -3307,7 +3310,7 @@ void MainWindow::pasteAnnotationAtCursor() {
     m_annByPath[m_currentPath].push_back(a);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("paste annotation"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("paste annotation"), m_currentPath, std::move(before));
 }
 
 // Delete key: remove the selected annotation (handles showing), or the most
@@ -3322,7 +3325,7 @@ void MainWindow::deleteActiveAnnotation() {
     it.value().erase(it.value().begin() + idx);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("delete annotation"), m_currentPath, std::move(before));
 }
 
 // Double-click editor: one small dialog for an annotation's text and colour.
@@ -3332,7 +3335,7 @@ void MainWindow::editAnnotationDialog(int annIdx) {
     Annotation& cur = it.value()[std::size_t(annIdx)];
 
     QDialog dlg(this);
-    dlg.setWindowTitle("Edit annotation");
+    dlg.setWindowTitle(tr("Edit annotation"));
     auto* form = new QVBoxLayout(&dlg);
     auto* edit = new QLineEdit(cur.label);
     QColor chosen = cur.color;
@@ -3344,14 +3347,14 @@ void MainWindow::editAnnotationDialog(int annIdx) {
     };
     setSwatch(chosen);
     connect(colorBtn, &QPushButton::clicked, &dlg, [&] {
-        const QColor c = QColorDialog::getColor(chosen, &dlg, "Annotation colour");
+        const QColor c = QColorDialog::getColor(chosen, &dlg, tr("Annotation colour"));
         if (c.isValid()) { chosen = c; setSwatch(c); }
     });
     auto* row1 = new QHBoxLayout();
-    row1->addWidget(new QLabel("Text:"));
+    row1->addWidget(new QLabel(tr("Text:")));
     row1->addWidget(edit, 1);
     auto* row2 = new QHBoxLayout();
-    row2->addWidget(new QLabel("Colour:"));
+    row2->addWidget(new QLabel(tr("Colour:")));
     row2->addWidget(colorBtn, 1);
     form->addLayout(row1);
     form->addLayout(row2);
@@ -3369,7 +3372,7 @@ void MainWindow::editAnnotationDialog(int annIdx) {
     cur.color = chosen;
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("edit annotation"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("edit annotation"), m_currentPath, std::move(before));
 }
 
 // Fallback path for the Delete (Backspace) key: reaches here only when no
@@ -3389,43 +3392,43 @@ void MainWindow::keyPressEvent(QKeyEvent* e) {
 void MainWindow::importSexCatalog() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getOpenFileName(
-        this, "Import SExtractor catalog", QString(),
-        "SExtractor catalogs (*.cat *.txt);;All files (*)");
+        this, tr("Import SExtractor catalog"), QString(),
+        tr("SExtractor catalogs (*.cat *.txt);;All files (*)"));
     if (path.isEmpty()) return;
 
     QString err;
     const SexCatalog cat = SexCatalog::parse(path, &err);
-    if (!cat.isValid()) { QMessageBox::warning(this, "Import failed", err); return; }
+    if (!cat.isValid()) { QMessageBox::warning(this, tr("Import failed"), err); return; }
     if (!cat.has("X_IMAGE") || !cat.has("Y_IMAGE")) {
-        QMessageBox::warning(this, "Import failed",
-            "Catalog has no X_IMAGE/Y_IMAGE columns — add them to default.param.");
+        QMessageBox::warning(this, tr("Import failed"),
+            tr("Catalog has no X_IMAGE/Y_IMAGE columns — add them to default.param."));
         return;
     }
 
     // Options dialog.
     QDialog dlg(this);
-    dlg.setWindowTitle("Import SExtractor catalog");
+    dlg.setWindowTitle(tr("Import SExtractor catalog"));
     auto* form = new QVBoxLayout(&dlg);
-    form->addWidget(new QLabel(QStringLiteral("%1 source(s), %2")
+    form->addWidget(new QLabel(tr("%1 source(s), %2")
         .arg(cat.rowCount()).arg(QFileInfo(path).fileName())));
     auto* scaleRow = new QHBoxLayout();
-    scaleRow->addWidget(new QLabel("Ellipse scale × A/B_IMAGE:"));
+    scaleRow->addWidget(new QLabel(tr("Ellipse scale × A/B_IMAGE:")));
     auto* scale = new QDoubleSpinBox();
     scale->setRange(0.5, 20.0); scale->setSingleStep(0.5); scale->setValue(3.0);
     scaleRow->addWidget(scale, 1);
     form->addLayout(scaleRow);
     auto* labelRow = new QHBoxLayout();
-    labelRow->addWidget(new QLabel("Label with:"));
+    labelRow->addWidget(new QLabel(tr("Label with:")));
     auto* labelBy = new QComboBox();
-    labelBy->addItem("None");
+    labelBy->addItem(tr("None"));
     if (cat.has("NUMBER"))   labelBy->addItem("NUMBER");
     if (cat.has("MAG_AUTO")) labelBy->addItem("MAG_AUTO");
     labelRow->addWidget(labelBy, 1);
     form->addLayout(labelRow);
-    auto* cleanOnly = new QCheckBox("Skip flagged sources (FLAGS ≠ 0)");
+    auto* cleanOnly = new QCheckBox(tr("Skip flagged sources (FLAGS ≠ 0)"));
     cleanOnly->setEnabled(cat.has("FLAGS"));
     form->addWidget(cleanOnly);
-    auto* classColor = new QCheckBox("Colour stars gold (CLASS_STAR > 0.9)");
+    auto* classColor = new QCheckBox(tr("Colour stars gold (CLASS_STAR > 0.9)"));
     classColor->setEnabled(cat.has("CLASS_STAR"));
     classColor->setChecked(cat.has("CLASS_STAR"));
     form->addWidget(classColor);
@@ -3467,16 +3470,16 @@ void MainWindow::importSexCatalog() {
     m_annDirty.insert(m_currentPath);
     ensureAnnotationsVisible();                    // importing implies wanting to see them
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("import SExtractor catalog"), m_currentPath, std::move(before));
-    statusBar()->showMessage(QStringLiteral("Imported %1 source(s)%2")
-        .arg(added).arg(skipped ? QStringLiteral(", skipped %1 flagged").arg(skipped) : QString()), 4000);
+    pushAnnotationEdit(tr("import SExtractor catalog"), m_currentPath, std::move(before));
+    statusBar()->showMessage(tr("Imported %1 source(s)%2")
+        .arg(added).arg(skipped ? tr(", skipped %1 flagged").arg(skipped) : QString()), 4000);
 }
 
 // Warn when annotation edits would be lost on quit.
 void MainWindow::closeEvent(QCloseEvent* e) {
     if (m_annDirty.isEmpty()) { e->accept(); return; }
-    const auto btn = QMessageBox::warning(this, "Unsaved annotations",
-        QStringLiteral("Annotations on %1 image(s) have not been saved.\n"
+    const auto btn = QMessageBox::warning(this, tr("Unsaved annotations"),
+        tr("Annotations on %1 image(s) have not been saved.\n"
                        "Use Save Annotations\u2026 (right-click the image) to keep them.\n\n"
                        "Quit anyway?").arg(m_annDirty.size()),
         QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Cancel);
@@ -3516,7 +3519,7 @@ bool MainWindow::writeAnnotationsFile(const QString& path) {
     const auto& anns = m_annByPath.value(m_currentPath);
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "Save failed", "Could not write " + path);
+        QMessageBox::warning(this, tr("Save failed"), tr("Could not write %1").arg(path));
         return false;
     }
     QJsonDocument doc = AnnotationLayer::toJson(anns);
@@ -3536,9 +3539,9 @@ bool MainWindow::writeAnnotationsFile(const QString& path) {
     doc.setObject(root);
     f.write(doc.toJson(QJsonDocument::Indented));
     m_annDirty.remove(m_currentPath);
-    statusBar()->showMessage(QStringLiteral("Saved %1 annotation(s)%2 to %3")
+    statusBar()->showMessage(tr("Saved %1 annotation(s)%2 to %3")
                                  .arg(anns.size())
-                                 .arg(m_model.adjust().identity() ? QString() : QStringLiteral(" + adjustments"))
+                                 .arg(m_model.adjust().identity() ? QString() : tr(" + adjustments"))
                                  .arg(QFileInfo(path).fileName()), 3000);
     return true;
 }
@@ -3557,18 +3560,18 @@ void MainWindow::saveAnnotationsAs() {
     const QString sc = annotationSidecar(m_currentPath);
     const QString suggest = sc.isEmpty() ? QStringLiteral("annotation.json") : sc;
     const QString path = QFileDialog::getSaveFileName(
-        this, "Save annotations as", suggest, "Annotations (*_annotation.json *.json)");
+        this, tr("Save annotations as"), suggest, tr("Annotations (*_annotation.json *.json)"));
     if (path.isEmpty()) return;
     if (!sc.isEmpty() && QFileInfo(path).absoluteFilePath() == QFileInfo(sc).absoluteFilePath()) {
-        QMessageBox::information(this, "Save annotations as",
-            "That is the image's default sidecar — plain Save Annotations writes it directly.");
+        QMessageBox::information(this, tr("Save annotations as"),
+            tr("That is the image's default sidecar — plain Save Annotations writes it directly."));
     }
     writeAnnotationsFile(path);
 }
 
 void MainWindow::loadAnnotations() {
     const QString path = QFileDialog::getOpenFileName(
-        this, "Load annotations", QString(), "Annotations (*_annotation.json *.json)");
+        this, tr("Load annotations"), QString(), tr("Annotations (*_annotation.json *.json)"));
     if (path.isEmpty()) return;
     loadAnnotationsFile(path);
 }
@@ -3576,13 +3579,13 @@ void MainWindow::loadAnnotations() {
 void MainWindow::loadAnnotationsFile(const QString& path) {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "Load failed", "Could not read " + path);
+        QMessageBox::warning(this, tr("Load failed"), tr("Could not read %1").arg(path));
         return;
     }
     QJsonParseError perr;
     const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &perr);
     if (perr.error != QJsonParseError::NoError) {
-        QMessageBox::warning(this, "Load failed", "JSON error: " + perr.errorString());
+        QMessageBox::warning(this, tr("Load failed"), tr("JSON error: %1").arg(perr.errorString()));
         return;
     }
     QString err;
@@ -3593,10 +3596,10 @@ void MainWindow::loadAnnotationsFile(const QString& path) {
         m_model.setAdjust(adjustFromJson(doc.object()["adjustments"].toObject()));
     if (anns.empty()) {
         if (hasAdj) {
-            statusBar()->showMessage("Loaded display adjustments (no annotations in file)", 3000);
+            statusBar()->showMessage(tr("Loaded display adjustments (no annotations in file)"), 3000);
             return;
         }
-        QMessageBox::warning(this, "Load failed", err.isEmpty() ? QStringLiteral("No annotations in file") : err);
+        QMessageBox::warning(this, tr("Load failed"), err.isEmpty() ? tr("No annotations in file") : err);
         return;
     }
     std::vector<Annotation> before = m_annByPath.value(m_currentPath);
@@ -3612,11 +3615,11 @@ void MainWindow::loadAnnotationsFile(const QString& path) {
     m_annDirty.remove(m_currentPath);              // matches the file just read
     ensureAnnotationsVisible();                    // loading implies wanting to see them
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("load annotations"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("load annotations"), m_currentPath, std::move(before));
     rememberRecent(QStringLiteral("recentJson"), path, Preferences::get().recentJsonMax);
-    statusBar()->showMessage(QStringLiteral("Loaded %1 annotation(s)%2")
+    statusBar()->showMessage(tr("Loaded %1 annotation(s)%2")
         .arg(m_annByPath[m_currentPath].size())
-        .arg(hasAdj ? QStringLiteral(" + adjustments") : QString()), 3000);
+        .arg(hasAdj ? tr(" + adjustments") : QString()), 3000);
 }
 
 // ---- recent-files history ----------------------------------------------------
@@ -3642,14 +3645,14 @@ void MainWindow::rebuildRecentMenus() {
         const QStringList lst = s.value(key).toStringList();
         for (const QString& p : lst) {
             // Show "name — dir" but act on the full path.
-            QAction* a = menu->addAction(QStringLiteral("%1 \u2014 %2")
+            QAction* a = menu->addAction(tr("%1 \u2014 %2")
                 .arg(QFileInfo(p).fileName(), QFileInfo(p).absolutePath()));
             connect(a, &QAction::triggered, this, [opener, p] { opener(p); });
         }
         menu->setEnabled(!lst.isEmpty());
         if (!lst.isEmpty()) {
             menu->addSeparator();
-            QAction* clr = menu->addAction(QStringLiteral("Clear List"));
+            QAction* clr = menu->addAction(tr("Clear List"));
             connect(clr, &QAction::triggered, this, [this, key] {
                 QSettings s2(QSettings::IniFormat, QSettings::UserScope,
                              QStringLiteral("NebulaScope"), QStringLiteral("recent"));
@@ -3667,8 +3670,8 @@ void MainWindow::rebuildRecentMenus() {
 void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
     if (!m_image.isValid()) return;
     bool ok = false;
-    const QString label = QInputDialog::getText(this, "Ellipse annotation",
-        "Label (optional):", QLineEdit::Normal, QString(), &ok);
+    const QString label = QInputDialog::getText(this, tr("Ellipse annotation"),
+        tr("Label (optional):"), QLineEdit::Normal, QString(), &ok);
     if (!ok) return;                              // cancelled — discard the shape
     Annotation an;
     an.type = Annotation::Type::Ellipse;
@@ -3679,14 +3682,14 @@ void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("add ellipse"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("add ellipse"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
     if (!m_image.isValid()) return;
     bool ok = false;
-    const QString label = QInputDialog::getText(this, "Line annotation",
-        "Label (optional):", QLineEdit::Normal, QString(), &ok);
+    const QString label = QInputDialog::getText(this, tr("Line annotation"),
+        tr("Label (optional):"), QLineEdit::Normal, QString(), &ok);
     if (!ok) return;
     Annotation an;
     an.type = Annotation::Type::Line;
@@ -3697,14 +3700,14 @@ void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("add line"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("add line"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onTextPointPicked(double x, double y) {
     if (!m_image.isValid()) return;
     bool ok = false;
-    const QString text = QInputDialog::getText(this, "Text annotation",
-        "Text:", QLineEdit::Normal, QString(), &ok);
+    const QString text = QInputDialog::getText(this, tr("Text annotation"),
+        tr("Text:"), QLineEdit::Normal, QString(), &ok);
     if (!ok || text.trimmed().isEmpty()) return;
     Annotation an;
     an.type = Annotation::Type::Text;
@@ -3716,7 +3719,7 @@ void MainWindow::onTextPointPicked(double x, double y) {
     m_annByPath[m_currentPath].push_back(an);
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
-    pushAnnotationEdit(QStringLiteral("add text"), m_currentPath, std::move(before));
+    pushAnnotationEdit(tr("add text"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage) {
@@ -3726,8 +3729,8 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     const bool sky = onImage && m_wcs.pixelToSky(x, y, ra, dec);
     const QString raS = sky ? Wcs::formatRa(ra) : QString();
     const QString decS = sky ? Wcs::formatDec(dec) : QString();
-    QAction* aSky = menu.addAction(sky ? QStringLiteral("Copy RA/Dec \u2014 %1 %2").arg(raS, decS)
-                                       : QStringLiteral("Copy RA/Dec (no astrometric solution)"));
+    QAction* aSky = menu.addAction(sky ? tr("Copy RA/Dec \u2014 %1 %2").arg(raS, decS)
+                                       : tr("Copy RA/Dec (no astrometric solution)"));
     aSky->setEnabled(sky);
 
     QString pixText;
@@ -3742,7 +3745,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             pixText = QStringLiteral("(%1, %2)  %3").arg(x).arg(y)
                           .arg(m_image.plane<float>(0)[i], 0, 'g', 6);
     }
-    QAction* aPix = menu.addAction(QStringLiteral("Copy Pixel Value"));
+    QAction* aPix = menu.addAction(tr("Copy Pixel Value"));
     aPix->setEnabled(!pixText.isEmpty());
 
     menu.addSeparator();
@@ -3752,11 +3755,11 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     QAction* aCopyAnn = nullptr;
     if (annIdx >= 0 && annIdx < int(m_annByPath[m_currentPath].size())) {
         const Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
-        const QString what = cur.label.isEmpty() ? QStringLiteral("annotation")
-                                                 : QStringLiteral("\u201c%1\u201d").arg(cur.label);
-        aEditText  = menu.addAction(QStringLiteral("Edit Text of %1\u2026").arg(what));
-        aEditColor = menu.addAction(QStringLiteral("Change Colour of %1\u2026").arg(what));
-        aDelete    = menu.addAction(QStringLiteral("Delete %1").arg(what));
+        const QString what = cur.label.isEmpty() ? tr("annotation")
+                                                 : tr("\u201c%1\u201d").arg(cur.label);
+        aEditText  = menu.addAction(tr("Edit Text of %1\u2026").arg(what));
+        aEditColor = menu.addAction(tr("Change Colour of %1\u2026").arg(what));
+        aDelete    = menu.addAction(tr("Delete %1").arg(what));
         menu.addSeparator();
     }
     // Copy targets the SELECTED annotation (the one showing handles) when there
@@ -3765,13 +3768,13 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     const int copyIdx = (m_annotations->activeIndex() >= 0) ? m_annotations->activeIndex() : annIdx;
     if (copyIdx >= 0 && copyIdx < int(m_annByPath[m_currentPath].size())) {
         const Annotation& cc = m_annByPath[m_currentPath][std::size_t(copyIdx)];
-        const QString ccName = cc.label.isEmpty() ? QStringLiteral("annotation")
-                                                  : QStringLiteral("\u201c%1\u201d").arg(cc.label);
-        aCopyAnn = menu.addAction(QStringLiteral("Copy %1").arg(ccName));
+        const QString ccName = cc.label.isEmpty() ? tr("annotation")
+                                                  : tr("\u201c%1\u201d").arg(cc.label);
+        aCopyAnn = menu.addAction(tr("Copy %1").arg(ccName));
     }
-    QAction* aAnnotate = menu.addAction(QStringLiteral("Annotate Here\u2026"));
+    QAction* aAnnotate = menu.addAction(tr("Annotate Here\u2026"));
     aAnnotate->setEnabled(onImage);
-    QAction* aPasteAnn = menu.addAction(QStringLiteral("Paste Annotation Here"));
+    QAction* aPasteAnn = menu.addAction(tr("Paste Annotation Here"));
     aPasteAnn->setEnabled(onImage && m_hasCopiedAnn);
     const bool hasAnn = !m_annByPath.value(m_currentPath).empty();
     // The sidecar persists more than shapes: a rotation/flip history or
@@ -3779,14 +3782,14 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     const bool hasSidecarState = hasAnn ||
         !m_xformByPath.value(m_currentPath).isEmpty() ||
         !m_model.adjust().identity();
-    QAction* aClearAnn = menu.addAction(QStringLiteral("Clear Annotations"));
+    QAction* aClearAnn = menu.addAction(tr("Clear Annotations"));
     aClearAnn->setEnabled(hasAnn);
-    QAction* aSaveAnn = menu.addAction(QStringLiteral("Save Annotations"));
+    QAction* aSaveAnn = menu.addAction(tr("Save Annotations"));
     aSaveAnn->setEnabled(hasSidecarState);
-    QAction* aSaveAnnAs = menu.addAction(QStringLiteral("Save Annotations As\u2026"));
+    QAction* aSaveAnnAs = menu.addAction(tr("Save Annotations As\u2026"));
     aSaveAnnAs->setEnabled(hasSidecarState);
-    QAction* aLoadAnn = menu.addAction(QStringLiteral("Load Annotations\u2026"));
-    QAction* aInvAnn = menu.addAction(QStringLiteral("Invert Annotation Contrast"));
+    QAction* aLoadAnn = menu.addAction(tr("Load Annotations\u2026"));
+    QAction* aInvAnn = menu.addAction(tr("Invert Annotation Contrast"));
     aInvAnn->setCheckable(true);
     aInvAnn->setChecked(m_annotations->invertedContrast());
 
@@ -3809,15 +3812,15 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         }
         if (m_wcs.pixelToSky(cx, cy, alRa, alDec)) {
             const QString where = QStringLiteral("%1 %2").arg(Wcs::formatRa(alRa), Wcs::formatDec(alDec));
-            aAladin = menu.addAction(QStringLiteral("Look up in Aladin — %1").arg(where));
-            aSimbad = menu.addAction(QStringLiteral("Identify in SIMBAD — %1").arg(where));
+            aAladin = menu.addAction(tr("Look up in Aladin — %1").arg(where));
+            aSimbad = menu.addAction(tr("Identify in SIMBAD — %1").arg(where));
             aSimbad->setData(radiusArcmin);
         }
     }
 
     menu.addSeparator();
-    QAction* aFit = menu.addAction(QStringLiteral("Zoom to Fit"));
-    QAction* a11  = menu.addAction(QStringLiteral("Zoom 1:1"));
+    QAction* aFit = menu.addAction(tr("Zoom to Fit"));
+    QAction* a11  = menu.addAction(tr("Zoom 1:1"));
 
     QAction* chosen = menu.exec(globalPos);
     if (!chosen) return;
@@ -3825,9 +3828,9 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     else if (chosen == aPix) QApplication::clipboard()->setText(pixText);
     else if (chosen == aAnnotate) {
         bool ok = false;
-        const QString label = QInputDialog::getText(this, "Annotate",
-            sky ? QStringLiteral("Label for %1 %2:").arg(raS, decS)
-                : QStringLiteral("Label for pixel (%1, %2):").arg(x).arg(y),
+        const QString label = QInputDialog::getText(this, tr("Annotate"),
+            sky ? tr("Label for %1 %2:").arg(raS, decS)
+                : tr("Label for pixel (%1, %2):").arg(x).arg(y),
             QLineEdit::Normal, QString(), &ok);
         if (ok && !label.trimmed().isEmpty()) {
             Annotation a;
@@ -3839,31 +3842,31 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             m_annByPath[m_currentPath].push_back(a);
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
-            pushAnnotationEdit(QStringLiteral("add annotation"), m_currentPath, std::move(before));
+            pushAnnotationEdit(tr("add annotation"), m_currentPath, std::move(before));
         }
     }
     else if (aEditText && chosen == aEditText) {
         Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
         bool ok = false;
-        const QString t = QInputDialog::getText(this, "Edit annotation text",
-            "Text:", QLineEdit::Normal, cur.label, &ok);
+        const QString t = QInputDialog::getText(this, tr("Edit annotation text"),
+            tr("Text:"), QLineEdit::Normal, cur.label, &ok);
         if (ok) {
             std::vector<Annotation> before = m_annByPath.value(m_currentPath);
             cur.label = t.trimmed();
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
-            pushAnnotationEdit(QStringLiteral("edit annotation text"), m_currentPath, std::move(before));
+            pushAnnotationEdit(tr("edit annotation text"), m_currentPath, std::move(before));
         }
     }
     else if (aEditColor && chosen == aEditColor) {
         Annotation& cur = m_annByPath[m_currentPath][std::size_t(annIdx)];
-        const QColor c = QColorDialog::getColor(cur.color, this, "Annotation colour");
+        const QColor c = QColorDialog::getColor(cur.color, this, tr("Annotation colour"));
         if (c.isValid()) {
             std::vector<Annotation> before = m_annByPath.value(m_currentPath);
             cur.color = c;
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
-            pushAnnotationEdit(QStringLiteral("change annotation colour"), m_currentPath, std::move(before));
+            pushAnnotationEdit(tr("change annotation colour"), m_currentPath, std::move(before));
         }
     }
     else if (aDelete && chosen == aDelete) {
@@ -3872,7 +3875,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         anns.erase(anns.begin() + annIdx);
         m_annDirty.insert(m_currentPath);
         refreshAnnotations();
-        pushAnnotationEdit(QStringLiteral("delete annotation"), m_currentPath, std::move(before));
+        pushAnnotationEdit(tr("delete annotation"), m_currentPath, std::move(before));
     }
     else if (aAladin && chosen == aAladin) {
         QUrl url(QStringLiteral("https://aladin.cds.unistra.fr/AladinLite/"));
@@ -3911,14 +3914,14 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         m_annByPath[m_currentPath].push_back(a);
         m_annDirty.insert(m_currentPath);
         refreshAnnotations();
-        pushAnnotationEdit(QStringLiteral("paste annotation"), m_currentPath, std::move(before));
+        pushAnnotationEdit(tr("paste annotation"), m_currentPath, std::move(before));
     }
     else if (chosen == aClearAnn) {
         std::vector<Annotation> before = m_annByPath.value(m_currentPath);
         m_annByPath.remove(m_currentPath);
         m_annDirty.insert(m_currentPath);
         refreshAnnotations();
-        pushAnnotationEdit(QStringLiteral("clear annotations"), m_currentPath, std::move(before));
+        pushAnnotationEdit(tr("clear annotations"), m_currentPath, std::move(before));
     }
     else if (chosen == aSaveAnn) saveAnnotations();
     else if (chosen == aSaveAnnAs) saveAnnotationsAs();
@@ -3936,10 +3939,10 @@ void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool
     if (!valid) { m_pixelLabel->setText("—"); return; }
     QString txt;
     if (m_image.channels() >= 3)
-        txt = QString("(%1, %2)   R %3  G %4  B %5")
+        txt = tr("(%1, %2)   R %3  G %4  B %5")
             .arg(x).arg(y).arg(r, 0, 'g', 5).arg(g, 0, 'g', 5).arg(b, 0, 'g', 5);
     else
-        txt = QString("(%1, %2)   %3").arg(x).arg(y).arg(r, 0, 'g', 5);
+        txt = tr("(%1, %2)   %3").arg(x).arg(y).arg(r, 0, 'g', 5);
     double ra = 0, dec = 0;
     if (m_wcs.pixelToSky(x, y, ra, dec))
         txt += QStringLiteral("   ·   %1  %2").arg(Wcs::formatRa(ra), Wcs::formatDec(dec));

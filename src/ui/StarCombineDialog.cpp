@@ -22,7 +22,7 @@ int     StarCombineDialog::s_amount = 100;
 
 StarCombineDialog::StarCombineDialog(std::vector<Source> sources, QWidget* parent)
     : QDialog(parent), m_sources(std::move(sources)) {
-    setWindowTitle("Combine Stars (screen)");
+    setWindowTitle(tr("Combine Stars (screen)"));
     auto* root = new QVBoxLayout(this);
 
     auto* form = new QFormLayout();
@@ -32,23 +32,23 @@ StarCombineDialog::StarCombineDialog(std::vector<Source> sources, QWidget* paren
         m_starlessCombo->addItem(s.name);
         m_starsCombo->addItem(s.name);
     }
-    form->addRow("Starless image:", m_starlessCombo);
-    form->addRow("Stars-only image:", m_starsCombo);
+    form->addRow(tr("Starless image:"), m_starlessCombo);
+    form->addRow(tr("Stars-only image:"), m_starsCombo);
 
     auto* amtRow = new QHBoxLayout();
     m_amount = new QSlider(Qt::Horizontal);
     m_amount->setRange(0, 150);
     m_amount->setValue(100);
-    m_amount->setToolTip("Star intensity k in  1 \u2212 (1\u2212starless)(1\u2212k\u00b7stars).\n"
-                         "100% = plain screen; <100% dims stars; >100% boosts them.");
+    m_amount->setToolTip(tr("Star intensity k in  1 \u2212 (1\u2212starless)(1\u2212k\u00b7stars).\n"
+                            "100% = plain screen; <100% dims stars; >100% boosts them."));
     m_amountLbl = new QLabel("100%");
     m_amountLbl->setMinimumWidth(40);
     amtRow->addWidget(m_amount, 1);
     amtRow->addWidget(m_amountLbl);
-    form->addRow("Star amount:", amtRow);
+    form->addRow(tr("Star amount:"), amtRow);
 
     m_nameEdit = new QLineEdit("stars_recombined");
-    form->addRow("Result name:", m_nameEdit);
+    form->addRow(tr("Result name:"), m_nameEdit);
     root->addLayout(form);
 
     m_preview = new QLabel();
@@ -105,18 +105,18 @@ QString StarCombineDialog::resultName() const {
 ImageData StarCombineDialog::blend(bool preview, QString& err) {
     const int ia = m_starlessCombo->currentIndex();
     const int ib = m_starsCombo->currentIndex();
-    if (ia < 0 || ib < 0) { err = "Pick both images."; return {}; }
-    if (ia == ib) { err = "Starless and stars-only must be different images."; return {}; }
+    if (ia < 0 || ib < 0) { err = tr("Pick both images."); return {}; }
+    if (ia == ib) { err = tr("Starless and stars-only must be different images."); return {}; }
     const Source& A = m_sources[ia];
     const Source& B = m_sources[ib];
     if (A.img->width() != B.img->width() || A.img->height() != B.img->height()) {
-        err = QStringLiteral("Size mismatch: %1\u00d7%2 vs %3\u00d7%4.")
+        err = tr("Size mismatch: %1\u00d7%2 vs %3\u00d7%4.")
                   .arg(A.img->width()).arg(A.img->height())
                   .arg(B.img->width()).arg(B.img->height());
         return {};
     }
     if ((A.img->channels() >= 3) != (B.img->channels() >= 3)) {
-        err = "Both images must be RGB (or both mono).";
+        err = tr("Both images must be RGB (or both mono).");
         return {};
     }
 

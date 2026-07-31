@@ -21,7 +21,7 @@
 namespace astro {
 
 PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
-    setWindowTitle("Preferences");
+    setWindowTitle(tr("Preferences"));
     Preferences& p = Preferences::get();
 
     auto* root = new QVBoxLayout(this);
@@ -31,13 +31,23 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     // ---- Defaults tab ----
     auto* defaultsTab = new QWidget();
     auto* form = new QFormLayout(defaultsTab);
-    tabs->addTab(defaultsTab, "Defaults");
+    tabs->addTab(defaultsTab, tr("Defaults"));
+
+    // Language names are shown in their own language on purpose: a user facing
+    // a UI they can't read must still recognise their own entry.
+    auto* language = new QComboBox();
+    language->addItems({ tr("System default"), QStringLiteral("English"),
+                         QStringLiteral("Français") });
+    language->setCurrentIndex(p.language == QLatin1String("en") ? 1
+                            : p.language == QLatin1String("fr") ? 2 : 0);
+    language->setToolTip(tr("Takes effect at the next launch"));
+    form->addRow(tr("Language:"), language);
 
     auto* grid = new QSpinBox();
     grid->setRange(3, 20);
     grid->setValue(p.gridTargetLines);
-    grid->setToolTip("Approximate number of RA/Dec grid lines across the frame");
-    form->addRow("Grid line density:", grid);
+    grid->setToolTip(tr("Approximate number of RA/Dec grid lines across the frame"));
+    form->addRow(tr("Grid line density:"), grid);
 
     // The picked colour lives as a property on the button — the dialog outlives
     // this constructor, so no local may be captured by reference.
@@ -51,79 +61,79 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     setSwatch(p.annColor);
     connect(colorBtn, &QPushButton::clicked, this, [this, colorBtn, setSwatch] {
         const QColor c = QColorDialog::getColor(
-            colorBtn->property("color").value<QColor>(), this, "Default annotation colour");
+            colorBtn->property("color").value<QColor>(), this, tr("Default annotation colour"));
         if (c.isValid()) setSwatch(c);
     });
-    form->addRow("Default annotation colour:", colorBtn);
+    form->addRow(tr("Default annotation colour:"), colorBtn);
 
     auto* textSize = new QDoubleSpinBox();
     textSize->setRange(5.0, 72.0);
     textSize->setDecimals(1);
     textSize->setValue(p.annTextSize);
-    textSize->setSuffix(" pt");
-    form->addRow("Annotation text size:", textSize);
+    textSize->setSuffix(tr(" pt"));
+    form->addRow(tr("Annotation text size:"), textSize);
 
     auto* lineW = new QDoubleSpinBox();
     lineW->setRange(0.0, 8.0);
     lineW->setDecimals(1);
     lineW->setSingleStep(0.5);
     lineW->setValue(p.annLineWidth);
-    lineW->setSuffix(" px");
-    lineW->setToolTip("Stroke width of ellipses and lines, in screen pixels (0 = hairline)");
-    form->addRow("Annotation line width:", lineW);
+    lineW->setSuffix(tr(" px"));
+    lineW->setToolTip(tr("Stroke width of ellipses and lines, in screen pixels (0 = hairline)"));
+    form->addRow(tr("Annotation line width:"), lineW);
 
     auto* marker = new QDoubleSpinBox();
     marker->setRange(5.0, 200.0);
     marker->setDecimals(0);
     marker->setValue(p.markerFrac);
-    marker->setToolTip("\u201cAnnotate Here\u201d marker radius = image width \u00f7 this value");
-    form->addRow("Marker size (width \u00f7 n):", marker);
+    marker->setToolTip(tr("\u201cAnnotate Here\u201d marker radius = image width \u00f7 this value"));
+    form->addRow(tr("Marker size (width \u00f7 n):"), marker);
 
-    auto* sidecar = new QCheckBox("Auto-load <image>_annotation.json on open");
+    auto* sidecar = new QCheckBox(tr("Auto-load <image>_annotation.json on open"));
     sidecar->setChecked(p.autoLoadSidecar);
     form->addRow(QString(), sidecar);
 
     auto* overlayOp = new QSpinBox();
     overlayOp->setRange(50, 100);
-    overlayOp->setSuffix(" %");
+    overlayOp->setSuffix(QStringLiteral(" %"));
     overlayOp->setValue(int(p.overlayOpacity * 100 + 0.5));
-    overlayOp->setToolTip("Floating-panel background opacity. 100% is fastest — any\n"
-                          "translucency forces extra repaints while zooming/panning.\n"
-                          "Takes effect when overlay mode is next entered (O twice).");
-    form->addRow("Overlay panel opacity:", overlayOp);
+    overlayOp->setToolTip(tr("Floating-panel background opacity. 100% is fastest — any\n"
+                             "translucency forces extra repaints while zooming/panning.\n"
+                             "Takes effect when overlay mode is next entered (O twice)."));
+    form->addRow(tr("Overlay panel opacity:"), overlayOp);
 
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
     recentImg->setValue(p.recentImagesMax);
-    recentImg->setToolTip("How many images File \u25b8 Open Recent remembers (0 disables)");
-    form->addRow("Recent images history:", recentImg);
+    recentImg->setToolTip(tr("How many images File \u25b8 Open Recent remembers (0 disables)"));
+    form->addRow(tr("Recent images history:"), recentImg);
 
     auto* recentJson = new QSpinBox();
     recentJson->setRange(0, 50);
     recentJson->setValue(p.recentJsonMax);
-    recentJson->setToolTip("How many annotation files File \u25b8 Recent Annotations remembers (0 disables)");
-    form->addRow("Recent annotations history:", recentJson);
+    recentJson->setToolTip(tr("How many annotation files File \u25b8 Recent Annotations remembers (0 disables)"));
+    form->addRow(tr("Recent annotations history:"), recentJson);
 
     auto* debayerMeth = new QComboBox();
-    debayerMeth->addItems({ "Superpixel (half size)", "Bilinear", "RCD (best)" });
+    debayerMeth->addItems({ tr("Superpixel (half size)"), tr("Bilinear"), tr("RCD (best)") });
     debayerMeth->setCurrentIndex(qBound(0, p.debayerMethod, 2));
-    debayerMeth->setToolTip("Demosaic algorithm for one-shot-colour (Bayer) frames.\n"
-                            "Also switchable per session in Image \u25b8 Debayer.");
-    form->addRow("Debayer algorithm:", debayerMeth);
+    debayerMeth->setToolTip(tr("Demosaic algorithm for one-shot-colour (Bayer) frames.\n"
+                               "Also switchable per session in Image \u25b8 Debayer."));
+    form->addRow(tr("Debayer algorithm:"), debayerMeth);
 
     auto* zoomCoarse = new QSpinBox();
     zoomCoarse->setRange(1, 100);
-    zoomCoarse->setSuffix(" %");
+    zoomCoarse->setSuffix(QStringLiteral(" %"));
     zoomCoarse->setValue(p.zoomStepCoarse);
-    zoomCoarse->setToolTip("Keyboard zoom step for > and <");
-    form->addRow("Zoom step (> / <):", zoomCoarse);
+    zoomCoarse->setToolTip(tr("Keyboard zoom step for > and <"));
+    form->addRow(tr("Zoom step (> / <):"), zoomCoarse);
 
     auto* zoomFine = new QSpinBox();
     zoomFine->setRange(1, 50);
-    zoomFine->setSuffix(" %");
+    zoomFine->setSuffix(QStringLiteral(" %"));
     zoomFine->setValue(p.zoomStepFine);
-    zoomFine->setToolTip("Keyboard zoom step for . and ,");
-    form->addRow("Fine zoom step (. / ,):", zoomFine);
+    zoomFine->setToolTip(tr("Keyboard zoom step for . and ,"));
+    form->addRow(tr("Fine zoom step (. / ,):"), zoomFine);
 
     // ---- Shortcuts tab ----
     // Edits the same INI the startup shortcut loader reads (Help ▸ Configure
@@ -132,7 +142,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     auto* shortcutsTab = new QWidget();
     auto* sv = new QVBoxLayout(shortcutsTab);
     auto* table = new QTableWidget(0, 2);
-    table->setHorizontalHeaderLabels({ "Action", "Shortcut" });
+    table->setHorizontalHeaderLabels({ tr("Action"), tr("Shortcut") });
     table->horizontalHeader()->setStretchLastSection(true);
     table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     table->verticalHeader()->setVisible(false);
@@ -155,12 +165,12 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         }
         sc.endGroup();
     }
-    auto* note = new QLabel("Backspace in a field clears it (shortcut disabled). "
-                            "Changes apply at the next launch.");
+    auto* note = new QLabel(tr("Backspace in a field clears it (shortcut disabled). "
+                               "Changes apply at the next launch."));
     note->setWordWrap(true);
     sv->addWidget(table, 1);
     sv->addWidget(note);
-    tabs->addTab(shortcutsTab, "Shortcuts");
+    tabs->addTab(shortcutsTab, tr("Shortcuts"));
     resize(520, 480);
 
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel
@@ -169,6 +179,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     connect(bb->button(QDialogButtonBox::RestoreDefaults), &QPushButton::clicked, this,
             [=]() {
         const Preferences d;                      // struct defaults
+        language->setCurrentIndex(0);
         grid->setValue(d.gridTargetLines);
         setSwatch(d.annColor);
         textSize->setValue(d.annTextSize);
@@ -184,6 +195,9 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
+        p.language        = language->currentIndex() == 1 ? QStringLiteral("en")
+                          : language->currentIndex() == 2 ? QStringLiteral("fr")
+                          : QString();
         p.gridTargetLines = grid->value();
         p.annColor        = colorBtn->property("color").value<QColor>();
         p.annTextSize     = textSize->value();

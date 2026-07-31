@@ -1,0 +1,5 @@
+/* Thin frame around UI screenshots (dark-themed captures on light pages). */
+p img {
+  border: 1px solid var(--bs-border-color, #888);
+  max-width: 100%;
+}

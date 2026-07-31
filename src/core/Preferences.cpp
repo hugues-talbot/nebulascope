@@ -18,6 +18,7 @@ Preferences& Preferences::get() {
 void Preferences::load() {
     QSettings s = prefStore();
     s.beginGroup(QStringLiteral("defaults"));
+    language        = s.value(QStringLiteral("language"), language).toString();
     gridTargetLines = s.value(QStringLiteral("grid_target_lines"), gridTargetLines).toInt();
     const QColor c(s.value(QStringLiteral("annotation_color"), annColor.name()).toString());
     if (c.isValid()) annColor = c;
@@ -32,6 +33,8 @@ void Preferences::load() {
     zoomStepCoarse  = s.value(QStringLiteral("zoom_step_coarse"), zoomStepCoarse).toInt();
     zoomStepFine    = s.value(QStringLiteral("zoom_step_fine"), zoomStepFine).toInt();
     s.endGroup();
+    if (language != QLatin1String("en") && language != QLatin1String("fr"))
+        language.clear();                      // anything else = follow the system
     gridTargetLines = qBound(3, gridTargetLines, 20);
     annTextSize     = qBound(5.0, annTextSize, 72.0);
     annLineWidth    = qBound(0.0, annLineWidth, 8.0);
@@ -47,6 +50,7 @@ void Preferences::load() {
 void Preferences::save() const {
     QSettings s = prefStore();
     s.beginGroup(QStringLiteral("defaults"));
+    s.setValue(QStringLiteral("language"), language);
     s.setValue(QStringLiteral("grid_target_lines"), gridTargetLines);
     s.setValue(QStringLiteral("annotation_color"), annColor.name());
     s.setValue(QStringLiteral("annotation_text_size"), annTextSize);

@@ -19,7 +19,7 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
     m_layer = new AnnotationLayer(m_view->scene(), this);
     lay->addWidget(m_view);
 
-    m_placeholder = new QLabel(QStringLiteral("Click here, then pick an image\nfrom the Open Images list"), this);
+    m_placeholder = new QLabel(tr("Click here, then pick an image\nfrom the Open Images list"), this);
     m_placeholder->setAlignment(Qt::AlignCenter);
     m_placeholder->setStyleSheet(QStringLiteral("color:#3f4c5a;font-size:12px;background:transparent;border:none;"));
     m_placeholder->setAttribute(Qt::WA_TransparentForMouseEvents);   // clicks reach the view
@@ -28,7 +28,7 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
     m_linkBtn->setText(QStringLiteral("\u21c4"));
     m_linkBtn->setCheckable(true);
     m_linkBtn->setChecked(true);
-    m_linkBtn->setToolTip(QStringLiteral(
+    m_linkBtn->setToolTip(tr(
         "Linked navigation.\nSame-size images link automatically.\nDifferent sizes: align both views as desired,\n"
         "then tick \u21c4 here to calibrate-link them at this alignment."));
     connect(m_linkBtn, &QToolButton::toggled, this,
@@ -188,7 +188,7 @@ bool ViewGrid::linkablePair(const ViewCell* a, const ViewCell* b) {
 // views show right now corresponds". Unticking forgets it.
 void ViewGrid::onLinkToggled(ViewCell* c, bool on) {
     if (!on) {
-        if (c->calibrated) emit linkMessage(QStringLiteral("View unlinked — calibration forgotten"));
+        if (c->calibrated) emit linkMessage(tr("View unlinked — calibration forgotten"));
         c->calibrated = false;
         c->world = QTransform();
         return;
@@ -209,7 +209,7 @@ void ViewGrid::onLinkToggled(ViewCell* c, bool on) {
     c->world = c->view()->viewportTransform() * X.inverted();
     c->calibrated = true;
     anchor->calibrated = true;            // keeps its current world (identity or prior)
-    emit linkMessage(QStringLiteral("Views calibration-linked at the current alignment"));
+    emit linkMessage(tr("Views calibration-linked at the current alignment"));
 }
 
 void ViewGrid::remapActiveScene(const QTransform& forward) {

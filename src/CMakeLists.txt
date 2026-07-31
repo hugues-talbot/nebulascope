@@ -93,6 +93,21 @@ target_link_libraries(nebulascope PRIVATE
     Qt6::Concurrent
 )
 
+# ---- translations -----------------------------------------------------------
+# .ts sources live in src/i18n/ (versioned; refresh with the update_translations
+# target after adding tr() strings). lrelease compiles them into .qm files that
+# are embedded under :/i18n and loaded in main.cpp. English is the source
+# language, so only non-English catalogs exist here.
+if(Qt6LinguistTools_FOUND)
+    qt_add_translations(nebulascope
+        TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/i18n/nebulascope_fr.ts
+        RESOURCE_PREFIX "/i18n"
+        LUPDATE_OPTIONS -no-obsolete
+    )
+else()
+    message(STATUS "Qt6 LinguistTools not found - building without translations")
+endif()
+
 # ---- tests (ctest) ----------------------------------------------------------
 # Framework-free unit tests for the core math and IO round-trips.
 # Run with:  ctest --test-dir build --output-on-failure

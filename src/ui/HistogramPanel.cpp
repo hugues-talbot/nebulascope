@@ -49,7 +49,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     auto* fnRow = new QHBoxLayout();
     fnRow->setSpacing(4);
     m_fnGroup = new QButtonGroup(this);
-    const char* fns[] = { "Linear", "Log", "Asinh", "GHS" };
+    const QString fns[] = { tr("Linear"), tr("Log"), tr("Asinh"), tr("GHS") };
     for (int i = 0; i < 4; ++i) { auto* b = tab(fns[i]); m_fnGroup->addButton(b, i); fnRow->addWidget(b); }
     root->addLayout(fnRow);
 
@@ -60,11 +60,11 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     const char* chips[] = { "RGB", "R", "G", "B" };
     for (int i = 0; i < 4; ++i) { auto* b = tab(chips[i]); m_chanGroup->addButton(b, i - 1); chRow->addWidget(b); }
     chRow->addStretch();
-    auto* logBtn = new QPushButton("Log");
+    auto* logBtn = new QPushButton(tr("Log"));
     logBtn->setCheckable(true);
     logBtn->setChecked(true);
     logBtn->setCursor(Qt::PointingHandCursor);
-    logBtn->setToolTip("Logarithmic vs linear histogram frequency axis");
+    logBtn->setToolTip(tr("Logarithmic vs linear histogram frequency axis"));
     chRow->addWidget(logBtn);
     root->addLayout(chRow);
 
@@ -103,7 +103,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         gl2->setContentsMargins(0, 0, 0, 0);
         gl2->setHorizontalSpacing(8);
         gl2->setVerticalSpacing(3);
-        const char* cols[3] = { "Black", "Mid", "White" };
+        const QString cols[3] = { tr("Black"), tr("Mid"), tr("White") };
         const char* rows[3] = { "R", "G", "B" };
         const char* rowCol[3] = { "#ff6b6b", "#3fd07f", "#5aa9ff" };
         for (int j = 0; j < 3; ++j) {
@@ -148,19 +148,19 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         gl->addLayout(row);
         return s;
     };
-    m_dSlider = addSlider("D · strength", 0, 800, 160);     // /100
-    m_bSlider = addSlider("b · focus", -500, 1500, 600);    // /100
+    m_dSlider = addSlider(tr("D · strength"), 0, 800, 160);     // /100
+    m_bSlider = addSlider(tr("b · focus"), -500, 1500, 600);    // /100
     root->addWidget(m_ghsBox);
 
     // --- post-stretch display adjustments (always visible, any mode) ---
     {
         auto* hdr = new QHBoxLayout();
-        auto* al = new QLabel("ADJUST");
+        auto* al = new QLabel(tr("ADJUST"));
         al->setStyleSheet("color:#5b6876; font-size:10px; letter-spacing:1.5px; font-weight:600;");
-        auto* adjReset = new QPushButton("Reset");
+        auto* adjReset = new QPushButton(tr("Reset"));
         adjReset->setCursor(Qt::PointingHandCursor);
         adjReset->setStyleSheet("font-size:10px; padding:1px 8px;");
-        adjReset->setToolTip("Reset adjustments only (stretch untouched)");
+        adjReset->setToolTip(tr("Reset adjustments only (stretch untouched)"));
         hdr->addWidget(al);
         hdr->addStretch();
         hdr->addWidget(adjReset);
@@ -169,20 +169,20 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         auto* ag = new QGridLayout();
         ag->setHorizontalSpacing(10);
         ag->setVerticalSpacing(2);
-        struct Def { const char* name; int lo, hi; const char* tip; };
+        struct Def { QString name; int lo, hi; QString tip; };
         const Def defs[kAdjSliders] = {
-            { "Bright",   -100, 100, "Brightness" },
-            { "Contrast", -100, 100, "Contrast (pivot at mid-gray)" },
-            { "Gamma",    -100, 100, "Gamma 0.33–3 (log scale)" },
-            { "Shadows",  -100, 100, "Lift / crush dark tones (black point pinned)" },
-            { "Highlights",-100, 100, "Boost / recover bright tones (white point pinned)" },
-            { "Black pt",    0, 100, "Clip-in from black (display space)" },
-            { "White pt",    0, 100, "Clip-in from white (display space)" },
-            { "Temp",     -100, 100, "Colour temperature: blue ↔ amber" },
-            { "Tint",     -100, 100, "Tint: green ↔ magenta" },
-            { "Hue",      -180, 180, "Hue rotation (degrees)" },
-            { "Saturation",-100, 100, "Saturation about luminance" },
-            { "Vibrance", -100, 100, "Saturation weighted to muted pixels (protects stars)" },
+            { tr("Bright"),   -100, 100, tr("Brightness") },
+            { tr("Contrast"), -100, 100, tr("Contrast (pivot at mid-gray)") },
+            { tr("Gamma"),    -100, 100, tr("Gamma 0.33–3 (log scale)") },
+            { tr("Shadows"),  -100, 100, tr("Lift / crush dark tones (black point pinned)") },
+            { tr("Highlights"),-100, 100, tr("Boost / recover bright tones (white point pinned)") },
+            { tr("Black pt"),    0, 100, tr("Clip-in from black (display space)") },
+            { tr("White pt"),    0, 100, tr("Clip-in from white (display space)") },
+            { tr("Temp"),     -100, 100, tr("Colour temperature: blue ↔ amber") },
+            { tr("Tint"),     -100, 100, tr("Tint: green ↔ magenta") },
+            { tr("Hue"),      -180, 180, tr("Hue rotation (degrees)") },
+            { tr("Saturation"),-100, 100, tr("Saturation about luminance") },
+            { tr("Vibrance"), -100, 100, tr("Saturation weighted to muted pixels (protects stars)") },
         };
         // Grid placement pairs complementary controls across the two columns:
         //   Bright|Contrast, Highlights|Shadows, White pt|Black pt,
@@ -226,14 +226,14 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
 
     // --- Auto / Reset ---
     auto* btnRow = new QHBoxLayout();
-    auto* autoBtn = new QPushButton("Auto STF");
-    autoBtn->setToolTip("Per-channel auto stretch — equalises the channels (neutralises colour cast)");
-    auto* autoLinkedBtn = new QPushButton("Auto Linked");
-    autoLinkedBtn->setToolTip("One shared auto stretch for all channels — preserves colour balance");
-    auto* resetBtn = new QPushButton("Reset");
-    auto* applyAllBtn = new QPushButton("Apply to All");
-    applyAllBtn->setToolTip("Share this stretch + adjustments with every image in the list\n"
-                            "(each applies as that image loads — same-session frames)");
+    auto* autoBtn = new QPushButton(tr("Auto STF"));
+    autoBtn->setToolTip(tr("Per-channel auto stretch — equalises the channels (neutralises colour cast)"));
+    auto* autoLinkedBtn = new QPushButton(tr("Auto Linked"));
+    autoLinkedBtn->setToolTip(tr("One shared auto stretch for all channels — preserves colour balance"));
+    auto* resetBtn = new QPushButton(tr("Reset"));
+    auto* applyAllBtn = new QPushButton(tr("Apply to All"));
+    applyAllBtn->setToolTip(tr("Share this stretch + adjustments with every image in the list\n"
+                               "(each applies as that image loads — same-session frames)"));
     btnRow->addWidget(autoBtn);
     btnRow->addWidget(autoLinkedBtn);
     btnRow->addWidget(resetBtn);
@@ -242,7 +242,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     root->addLayout(btnRow);
 
     // --- colorbar legend (value -> display, reflects stretch + colormap) ---
-    auto* cbLabel = new QLabel("COLORBAR");
+    auto* cbLabel = new QLabel(tr("COLORBAR"));
     cbLabel->setStyleSheet("color:#5b6876; font-size:10px; letter-spacing:1.5px; font-weight:600;");
     root->addWidget(cbLabel);
     root->addWidget(new ColorBar(m_model));
@@ -356,9 +356,9 @@ void HistogramPanel::syncFromModel() {
         const int ec = editChannel();
         const double lo = m_model->lo(ec), hi = m_model->hi(ec);
         const ChannelStretch cs = m_model->channel(ec);
-        setField(0, "Black", lo + cs.black * (hi - lo), 6);
-        setField(1, "Mid",   lo + cs.mid   * (hi - lo), 6);
-        setField(2, "White", lo + cs.white * (hi - lo), 6);
+        setField(0, tr("Black"), lo + cs.black * (hi - lo), 6);
+        setField(1, tr("Mid"),   lo + cs.mid   * (hi - lo), 6);
+        setField(2, tr("White"), lo + cs.white * (hi - lo), 6);
         m_pRow[0]->setVisible(linear);                     // B/W are the window: edit in Linear
         m_pRow[2]->setVisible(linear);
         m_pRow[3]->setVisible(false);

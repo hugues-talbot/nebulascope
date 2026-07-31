@@ -8,9 +8,15 @@ namespace astro {
 
 // Role indices used by the per-row combo box.
 enum { RoleUnused = 0, RoleR, RoleG, RoleB, RoleS, RoleH, RoleO, RoleL };
+// i18n: deliberately NOT tr()'d — ScriptRunner's `dlgcombo` resolves combo
+// items by visible-text prefix (documented example: `dlgcombo 0 S` -> "S (SII)"),
+// so translating these would break .nsc scripts.
 static const char* kRoleNames[] = { "Unused", "R", "G", "B", "S (SII)", "H (Ha)", "O (OIII)", "L (lum)" };
 
 // Preset list (order matches the buttons).
+// i18n: deliberately NOT tr()'d — ScriptRunner's `dlgclick` matches buttons by
+// visible text (documented example: `dlgclick SHO`), and the names also feed
+// the result-name suffix ("%1_combine").
 enum { PreSHO = 0, PreHOO, PreHSO, PreLRGB, PreRGB, PreBicolor, PresetCount };
 static const char* kPresetNames[] = { "SHO", "HOO", "HSO", "LRGB", "RGB", "Bicolor" };
 
@@ -101,7 +107,7 @@ static Mapper makeMapper(const float* p, std::size_t n) {
 
 CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     : QDialog(parent), m_sources(std::move(monoSources)) {
-    setWindowTitle("Combine Channels");
+    setWindowTitle(tr("Combine Channels"));
     setModal(true);
     resize(880, 680);
 
@@ -109,7 +115,7 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
 
     // Presets row
     auto* presetRow = new QHBoxLayout();
-    presetRow->addWidget(new QLabel("<b>Preset:</b>"));
+    presetRow->addWidget(new QLabel(tr("<b>Preset:</b>")));
     for (int i = 0; i < PresetCount; ++i) {
         auto* b = new QPushButton(kPresetNames[i]);
         connect(b, &QPushButton::clicked, this, [this, i]{ applyPreset(i); });
@@ -121,7 +127,7 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     // Channel table: enable | name | role | →R | →G | →B
     auto* grid = new QGridLayout();
     grid->setHorizontalSpacing(10);
-    const char* heads[] = { "", "Image", "Role", "→ R", "→ G", "→ B" };
+    const QString heads[] = { QString(), tr("Image"), tr("Role"), tr("→ R"), tr("→ G"), tr("→ B") };
     for (int c = 0; c < 6; ++c) { auto* l = new QLabel(QString("<b>%1</b>").arg(heads[c])); grid->addWidget(l, 0, c); }
 
     int r = 1;
@@ -157,25 +163,28 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
 
     // Options row
     auto* opt = new QGridLayout();
-    opt->addWidget(new QLabel("Pre-normalize:"), 0, 0);
+    // i18n: the three option combos below are deliberately NOT tr()'d —
+    // ScriptRunner's `dlgcombo <n> <prefix>` matches items by visible-text
+    // prefix, so translating them would break .nsc scripts.
+    opt->addWidget(new QLabel(tr("Pre-normalize:")), 0, 0);
     m_preNormCombo = new QComboBox();
     m_preNormCombo->addItems({ "None (raw × weight)", "Median (equalize background)", "Min/Max → [0,1]", "Pedestal (subtract median)", "As displayed (view stretch)" });
     opt->addWidget(m_preNormCombo, 0, 1);
 
-    opt->addWidget(new QLabel("Data:"), 0, 2);
+    opt->addWidget(new QLabel(tr("Data:")), 0, 2);
     m_domainCombo = new QComboBox();
     m_domainCombo->addItems({ "Linear (raw)", "Stretched (auto-STF)" });
     opt->addWidget(m_domainCombo, 0, 3);
 
-    opt->addWidget(new QLabel("Luminance (L):"), 1, 0);
+    opt->addWidget(new QLabel(tr("Luminance (L):")), 1, 0);
     m_lumCombo = new QComboBox();
     m_lumCombo->addItems({ "None", "Linear (add)", "Luminance (LRGB ratio)" });
     opt->addWidget(m_lumCombo, 1, 1);
-    opt->addWidget(new QLabel("Amount:"), 1, 2);
+    opt->addWidget(new QLabel(tr("Amount:")), 1, 2);
     m_lumAmount = new QDoubleSpinBox(); m_lumAmount->setRange(0, 4); m_lumAmount->setValue(1.0); m_lumAmount->setSingleStep(0.05);
     opt->addWidget(m_lumAmount, 1, 3);
 
-    opt->addWidget(new QLabel("Name:"), 2, 0);
+    opt->addWidget(new QLabel(tr("Name:")), 2, 0);
     m_nameEdit = new QLineEdit("SHO_combine");
     opt->addWidget(m_nameEdit, 2, 1, 1, 3);
     root->addLayout(opt);
@@ -189,13 +198,16 @@ CombineDialog::CombineDialog(std::vector<Source> monoSources, QWidget* parent)
     m_preview = new QLabel(); m_preview->setFixedSize(440, 320); m_preview->setStyleSheet("background:#05070a;border:1px solid #1b2530;");
     m_preview->setAlignment(Qt::AlignCenter);
     prevRow->addWidget(m_preview);
-    m_status = new QLabel("Assign roles and pick a preset."); m_status->setWordWrap(true);
+    m_status = new QLabel(tr("Assign roles and pick a preset.")); m_status->setWordWrap(true);
     m_status->setStyleSheet("color:#8492a0;");
     prevRow->addWidget(m_status, 1);
     root->addLayout(prevRow);
 
     // Buttons
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Reset | QDialogButtonBox::Cancel);
+    // i18n: "Create Image" deliberately NOT tr()'d — ScriptRunner's `dlgclick`
+    // matches buttons by visible text and lands the non-modal result on this
+    // button; translating it would break .nsc scripts.
     bb->button(QDialogButtonBox::Ok)->setText("Create Image");
     connect(bb, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -244,7 +256,7 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
     // reference dimensions = first enabled source with data
     for (std::size_t i = 0; i < m_rows.size(); ++i)
         if (m_rows[i].enable->isChecked() && m_sources[i].img) { refW = m_rows[i].w; refH = m_rows[i].h; break; }
-    if (refW <= 0) { err = "No channels enabled."; return false; }
+    if (refW <= 0) { err = tr("No channels enabled."); return false; }
 
     // preview downsample factor
     int dw = refW, dh = refH, stride = 1;
@@ -285,7 +297,7 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
     for (std::size_t i = 0; i < m_rows.size(); ++i) {
         Row& row = m_rows[i];
         if (!row.enable->isChecked() || !m_sources[i].img) continue;
-        if (row.w != refW || row.h != refH) { err = QString("“%1” is %2×%3 — all channels must match %4×%5.")
+        if (row.w != refW || row.h != refH) { err = tr("“%1” is %2×%3 — all channels must match %4×%5.")
                 .arg(m_sources[i].name).arg(row.w).arg(row.h).arg(refW).arg(refH); return false; }
 
         if (row.role->currentIndex() == RoleL) {                 // luminance source
@@ -297,7 +309,7 @@ bool CombineDialog::gatherPlanes(bool preview, std::vector<CombinePlane>& planes
         CombinePlane p; p.data = buildWorking(i); p.wR = wR; p.wG = wG; p.wB = wB;
         planes.push_back(p);
     }
-    if (planes.empty() && !(lum && lumMode() != LumMode::None)) { err = "Assign at least one channel to R, G or B."; return false; }
+    if (planes.empty() && !(lum && lumMode() != LumMode::None)) { err = tr("Assign at least one channel to R, G or B."); return false; }
     return true;
 }
 
@@ -338,10 +350,10 @@ void CombineDialog::updatePreview() {
     for (int y = 0; y < h; ++y) { uchar* row = img.scanLine(y); for (int x = 0; x < w; ++x) { const std::size_t i = std::size_t(y)*w+x;
         row[x*3+0] = dith8(mm.map(pr[i]), i, 0); row[x*3+1] = dith8(mm.map(pg[i]), i, 1); row[x*3+2] = dith8(mm.map(pb[i]), i, 2); } }
     m_preview->setPixmap(QPixmap::fromImage(img).scaled(m_preview->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    m_status->setText(QString("%1 colour channel(s)%2 · %3 · output %4×%5")
+    m_status->setText(tr("%1 colour channel(s)%2 · %3 · output %4×%5")
         .arg(planes.size())
-        .arg(lum ? " + L" : "")
-        .arg(m_domainCombo->currentIndex() == 1 ? "stretched" : "linear")
+        .arg(lum ? tr(" + L") : QString())
+        .arg(m_domainCombo->currentIndex() == 1 ? tr("stretched") : tr("linear"))
         .arg(m_sources.empty() ? 0 : m_rows[0].w).arg(m_sources.empty() ? 0 : m_rows[0].h));
 }
 
@@ -349,11 +361,11 @@ void CombineDialog::accept() {
     std::vector<CombinePlane> planes; const float* lum = nullptr;
     std::vector<std::vector<float>> scratch; int w = 0, h = 0; QString err;
     if (!gatherPlanes(false, planes, lum, scratch, w, h, err)) {
-        QMessageBox::warning(this, "Combine Channels", err); return;
+        QMessageBox::warning(this, tr("Combine Channels"), err); return;
     }
     const PreNorm pn = (m_domainCombo->currentIndex() == 1) ? PreNorm::None : preNorm();
     CombineResult res = combineChannels(w, h, planes, pn, lum, lumMode(), m_lumAmount->value());
-    if (!res.ok) { QMessageBox::warning(this, "Combine Channels", QString::fromStdString(res.error)); return; }
+    if (!res.ok) { QMessageBox::warning(this, tr("Combine Channels"), QString::fromStdString(res.error)); return; }
     m_result = std::move(res.image);
     m_resultDisplayReady = (m_preNormCombo->currentIndex() == 4) || (m_domainCombo->currentIndex() == 1);
     rememberSettings();     // persist for the next time the dialog opens

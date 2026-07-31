@@ -1,6 +1,10 @@
 #include "ui/MainWindow.h"
 #include "ui/ScriptRunner.h"
+#include "core/Preferences.h"
 #include <QApplication>
+#include <QLibraryInfo>
+#include <QLocale>
+#include <QTranslator>
 #include <QPalette>
 #include <QStyleFactory>
 #include <QDir>
@@ -89,6 +93,8 @@ static void printUsage() {
         "                        order, e.g. --split 2x1.\n"
         "      --shared-stf      Auto-stretch the first image and share that stretch\n"
         "                        with every loaded image (same-session frames).\n"
+        "      --lang <code>     Override the UI language for this run (en, fr, or\n"
+        "                        system). The default is Preferences ▸ Language.\n"
         "      --run <script>    Execute a line-based command script (testing/batch)\n"
         "                        and exit with the number of failed assertions.\n"
         "                        Headless: QT_QPA_PLATFORM=offscreen. See docs/MANUAL.md.\n"
@@ -181,6 +187,26 @@ int main(int argc, char** argv) {
     app.setWindowIcon(QIcon(":/appicon.png"));   // bundled via Qt resource; .icns drives the macOS dock
     applyTheme(app);
 
+    // UI language: Preferences ▸ Language ("" = follow the system), overridable
+    // per-run with --lang (parsed here, before any widget is constructed, so
+    // every tr() call resolves against the right translator). English is the
+    // source language: no translator is installed for it.
+    QString lang = astro::Preferences::get().language;
+    {
+        const QStringList a = app.arguments();
+        const int i = a.indexOf(QLatin1String("--lang"));
+        if (i >= 0 && i + 1 < a.size()) lang = a[i + 1].toLower();
+        if (lang == QLatin1String("system")) lang.clear();
+    }
+    const QLocale uiLocale = lang.isEmpty() ? QLocale::system() : QLocale(lang);
+    static QTranslator appTr, qtTr;              // must outlive app.exec()
+    if (appTr.load(uiLocale, QStringLiteral("nebulascope"), QStringLiteral("_"),
+                   QStringLiteral(":/i18n")))
+        app.installTranslator(&appTr);
+    if (qtTr.load(uiLocale, QStringLiteral("qtbase"), QStringLiteral("_"),
+                  QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        app.installTranslator(&qtTr);            // Qt's own dialogs/buttons
+
     astro::MainWindow w;
     w.show();
     app.setWindow(&w);                           // replays any Finder open-file events
@@ -215,6 +241,8 @@ int main(int argc, char** argv) {
             }
         } else if (a == "--shared-stf") {
             sharedStf = true;
+        } else if (a == "--lang" && i + 1 < args.size()) {
+            ++i;                                    // consumed above, before the GUI existed
         } else if (a == "--run" && i + 1 < args.size()) {
             scriptPath = args[++i];
         } else if (a.startsWith('-')) {

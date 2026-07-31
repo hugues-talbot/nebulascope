@@ -6,10 +6,13 @@
 // that were previously hardcoded around the UI.
 //
 #include <QColor>
+#include <QString>
 
 namespace astro {
 
 struct Preferences {
+    QString language;                          // UI language: "" = system, "en", "fr"
+                                               // (applied at startup; --lang overrides)
     int    gridTargetLines = 6;               // RA/Dec grid density: ~lines across the frame
     QColor annColor        = QColor("#8fc0f5"); // default colour for new annotations
     double annTextSize     = 12.0;             // default text size (screen points)

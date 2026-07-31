@@ -20,8 +20,13 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Render HTML book
+      # Order matters: the English render cleans docs/_book, so the French
+      # edition (which nests into _book/fr) must render second.
+      - name: Render HTML book (English)
         run: quarto render docs --to html
+
+      - name: Render HTML book (French)
+        run: quarto render docs/fr --to html
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4

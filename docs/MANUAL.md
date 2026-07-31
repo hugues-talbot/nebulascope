@@ -381,6 +381,8 @@ nebulascope [options] [files...]
                          images to the cells in raster order.
       --shared-stf       Auto-stretch the first image and share that stretch
                          with every loaded image (same-session frames).
+      --lang <code>      Override the UI language for this run (en, fr, or
+                         system). The default is Preferences ▸ Language.
       --run list         List all script commands (one-line summaries);
                          detailed help: --help <command>.
       --run <script>     Execute a command script and exit with the number of
@@ -453,9 +455,11 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   on its own shortcut. **H** hides the scrollbars in every view for a clean
   canvas (pans still work).
 - **Preferences…** (application menu on macOS):
-  - **General** — default annotation colour, text size, line thickness;
-    RA/Dec grid density; sidecar auto-load; overlay panel opacity; recent
-    files list sizes.
+  - **General** — interface language (system default / English / Français —
+    applied at the next launch; the `.nsc` script language and CLI output
+    stay English, as a locale-independent API); default annotation colour,
+    text size, line thickness; RA/Dec grid density; sidecar auto-load;
+    overlay panel opacity; recent files list sizes.
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert).
 - **About** — version and copyright come from `src/app/AppInfo.h`

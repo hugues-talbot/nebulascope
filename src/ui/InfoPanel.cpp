@@ -30,28 +30,28 @@ InfoPanel::InfoPanel(StretchModel* model, QWidget* parent)
         return l;
     };
 
-    root->addWidget(sectionTitle("STRUCTURE"));
+    root->addWidget(sectionTitle(tr("STRUCTURE")));
     m_structure = new QLabel("—");
     m_structure->setTextFormat(Qt::RichText);
     m_structure->setWordWrap(true);
     m_structure->setTextInteractionFlags(Qt::TextSelectableByMouse);
     root->addWidget(m_structure);
 
-    root->addWidget(sectionTitle("DATA RANGE"));
+    root->addWidget(sectionTitle(tr("DATA RANGE")));
     m_stats = new QLabel("—");
     m_stats->setTextFormat(Qt::RichText);
     m_stats->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     m_stats->setTextInteractionFlags(Qt::TextSelectableByMouse);
     root->addWidget(m_stats);
 
-    root->addWidget(sectionTitle("HEADER"));
+    root->addWidget(sectionTitle(tr("HEADER")));
     m_filter = new QLineEdit();
-    m_filter->setPlaceholderText("Filter keywords…");
+    m_filter->setPlaceholderText(tr("Filter keywords…"));
     m_filter->setClearButtonEnabled(true);
     root->addWidget(m_filter);
 
     m_table = new QTableWidget(0, 3);
-    m_table->setHorizontalHeaderLabels({ "Keyword", "Value", "Comment" });
+    m_table->setHorizontalHeaderLabels({ tr("Keyword"), tr("Value"), tr("Comment") });
     m_table->verticalHeader()->setVisible(false);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -120,14 +120,14 @@ void InfoPanel::rebuildTable() {
         QString val = it.value().toString();
         auto* valItem = new QTableWidgetItem();
         if (val.size() > 300) {
-            valItem->setText(val.left(300) + QStringLiteral(" … (%1 chars)").arg(val.size()));
+            valItem->setText(val.left(300) + tr(" … (%1 chars)").arg(val.size()));
             valItem->setToolTip(val.left(2000));
             valItem->setData(Qt::UserRole, val);          // full value for copy
         } else {
             valItem->setText(val);
         }
         m_table->setItem(row, 1, valItem);
-        m_table->setItem(row, 2, new QTableWidgetItem(QStringLiteral("XISF property")));
+        m_table->setItem(row, 2, new QTableWidgetItem(tr("XISF property")));
         ++row;
     }
     applyFilter(m_filter->text());
@@ -149,7 +149,7 @@ void InfoPanel::applyFilter(const QString& text) {
 
 void InfoPanel::refresh() {
     if (!m_img || !m_img->isValid()) {
-        m_structure->setText("<i>No image loaded</i>");
+        m_structure->setText(tr("<i>No image loaded</i>"));
         m_stats->setText("—");
         return;
     }
@@ -158,15 +158,15 @@ void InfoPanel::refresh() {
     QString s;
     const QString container = m_hdr ? m_hdr->container : QString();
     const QString ntype = m_hdr ? m_hdr->nativeType : QString();
-    s += QStringLiteral("<b>%1</b> &nbsp; %2 × %3 &nbsp; %4 channel%5<br>")
-            .arg(container.isEmpty() ? "Image" : container)
+    s += tr("<b>%1</b> &nbsp; %2 × %3 &nbsp; %4<br>")
+            .arg(container.isEmpty() ? tr("Image") : container)
             .arg(m_img->width()).arg(m_img->height())
-            .arg(m_img->channels()).arg(m_img->channels() == 1 ? "" : "s");
-    s += QStringLiteral("<span style='color:#7e8b98'>On disk:</span> %1 &nbsp; "
-                        "<span style='color:#7e8b98'>In memory:</span> 32-bit float<br>")
+            .arg(tr("%n channel(s)", nullptr, m_img->channels()));
+    s += tr("<span style='color:#7e8b98'>On disk:</span> %1 &nbsp; "
+            "<span style='color:#7e8b98'>In memory:</span> 32-bit float<br>")
             .arg(ntype.isEmpty() ? "—" : ntype);
     if (m_hdr && !m_hdr->structure.isEmpty()) {
-        s += "<span style='color:#7e8b98'>HDUs:</span><br>";
+        s += tr("<span style='color:#7e8b98'>HDUs:</span><br>");
         for (const QString& line : m_hdr->structure)
             s += "&nbsp;&nbsp;" + line.toHtmlEscaped() + "<br>";
     }
@@ -174,8 +174,8 @@ void InfoPanel::refresh() {
 
     // ---- per-channel statistics + display clip range ----
     QString t = "<table cellspacing='6' style='color:#c8d2dc'>";
-    t += "<tr style='color:#5b6876'><td></td><td>min</td><td>max</td>"
-         "<td>median</td><td>&sigma;(MAD)</td></tr>";
+    t += tr("<tr style='color:#5b6876'><td></td><td>min</td><td>max</td>"
+            "<td>median</td><td>&sigma;(MAD)</td></tr>");
     const int n = int(m_statVals.size());
     for (int c = 0; c < n; ++c) {
         const QString name = (m_img->channels() >= 3 && c < 3) ? CH_NAME[c] : QString("L");
@@ -192,9 +192,9 @@ void InfoPanel::refresh() {
 
     // display clip range in raw units, from the model
     const StretchFn fn = m_model->fn();
-    const char* fnName = fn == StretchFn::Linear ? "Linear" : fn == StretchFn::Log ? "Log"
-                       : fn == StretchFn::Asinh ? "Asinh" : "GHS";
-    t += QStringLiteral("<br><span style='color:#7e8b98'>Display (%1):</span><br>").arg(fnName);
+    const QString fnName = fn == StretchFn::Linear ? tr("Linear") : fn == StretchFn::Log ? tr("Log")
+                         : fn == StretchFn::Asinh ? tr("Asinh") : tr("GHS");
+    t += tr("<br><span style='color:#7e8b98'>Display (%1):</span><br>").arg(fnName);
     const int nc = m_img->channels();
     for (int c = 0; c < nc && c < 3; ++c) {
         const double lo = m_model->lo(c), hi = m_model->hi(c);
@@ -202,7 +202,7 @@ void InfoPanel::refresh() {
         const double blackRaw = lo + cs.black * (hi - lo);
         const double whiteRaw = lo + cs.white * (hi - lo);
         const QString name = nc >= 3 ? CH_NAME[c] : "L";
-        t += QStringLiteral("&nbsp;%1 black %2 &nbsp; white %3<br>")
+        t += tr("&nbsp;%1 black %2 &nbsp; white %3<br>")
                  .arg(name, fmt(blackRaw), fmt(whiteRaw));
     }
     m_stats->setText(t);

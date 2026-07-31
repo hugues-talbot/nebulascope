@@ -67,10 +67,10 @@ QJsonDocument AnnotationLayer::toJson(const std::vector<Annotation>& annotations
 
 std::vector<Annotation> AnnotationLayer::fromJson(const QJsonDocument& doc, QString* err) {
     std::vector<Annotation> out;
-    if (!doc.isObject()) { if (err) *err = QStringLiteral("Not a JSON object"); return out; }
+    if (!doc.isObject()) { if (err) *err = tr("Not a JSON object"); return out; }
     const QJsonObject root = doc.object();
     if (root["format"].toString() != QLatin1String("nebulascope-annotations")) {
-        if (err) *err = QStringLiteral("Not a NebulaScope annotation file");
+        if (err) *err = tr("Not a NebulaScope annotation file");
         return out;
     }
     for (const auto& v : root["annotations"].toArray())

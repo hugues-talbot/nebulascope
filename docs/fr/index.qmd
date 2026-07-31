@@ -1,0 +1,38 @@
+# Préface {.unnumbered}
+
+NebulaScope est un outil de bureau multiplateforme (Qt 6) pour inspecter et
+annoter les images astronomiques, centré sur ce que la plupart des outils
+font mal : un contrôle précis et directement manipulable de l'histogramme
+RVB — y compris l'étirement hyperbolique généralisé (GHS), pour extraire le
+signal ténu d'une galaxie d'un fond à grande dynamique sans saturer les
+cœurs ni les étoiles.
+
+Il lit le format FITS [@pence2010] — y compris les fichiers multi-HDU et
+compressés par tuiles — le format XISF de PixInsight [@xisf10] avec ses
+solutions astrométriques embarquées, ainsi que les images ordinaires
+JPEG/PNG/TIFF/WebP. Les catalogues d'étoiles produits par SExtractor
+[@bertin1996] s'importent directement comme calques d'annotation, et la
+palette de couleurs d'une image de référence peut être transférée sur
+l'image affichée par transport optimal par tranches [@pitie2007].
+
+Sa place : entre les visualiseurs comme SAOImage DS9 [@joye2003] (régions,
+lecture WCS, mais une ergonomie d'étirement datée) et les suites de
+traitement comme PixInsight ou Siril (étirements puissants, mais pas
+d'inspection rapide centrée sur l'annotation). NebulaScope combine la
+manipulation moderne de l'histogramme — dont l'étirement hyperbolique
+généralisé [@ghs2022] — la comparaison par clignotement (*blink*) avec
+mémoire d'étirement par image, et un calque d'annotations vectoriel,
+éditable et annulable, qui peut être alimenté par des catalogues
+SExtractor, par exemple pour constituer des jeux d'entraînement en
+apprentissage automatique.
+
+Ce document rassemble le manuel de l'utilisateur complet et le chapitre
+théorique sur le transport de couleurs ; les chapitres destinés aux
+développeurs (architecture, journal des décisions), les guides de
+compilation par plateforme et l'historique des versions restent en anglais
+et figurent dans l'édition anglaise et en annexe. Chaque capture d'écran de
+ce livre est générée de façon reproductible par le mode script de
+NebulaScope, à partir de données réellement acquises.
+
+Le code source et le suivi des tickets du projet se trouvent à
+<https://github.com/hugues-talbot/nebulascope>.

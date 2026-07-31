@@ -43,8 +43,10 @@ jobs:
         run: |
           ./docs/make-releases.sh
           (cd docs && quarto render --to pdf)
+          (cd docs/fr && quarto render --to pdf)
           mkdir -p artifacts
           cp docs/_book/NebulaScope.pdf "artifacts/NebulaScope-docs-${{ github.ref_name }}.pdf" || true
+          cp docs/_book/fr/NebulaScope-fr.pdf "artifacts/NebulaScope-docs-fr-${{ github.ref_name }}.pdf" || true
 
       - name: Download Windows artifact
         uses: dawidd6/action-download-artifact@v6
@@ -97,6 +99,7 @@ jobs:
             | Linux (x64) | `NebulaScope-linux-x64.zip` | Needs system Qt6/cfitsio/ccfits — see `run.sh` |
             | Ubuntu/Debian | `nebulascope_*_amd64.deb` | `sudo apt install ./nebulascope_*.deb` (deps auto-resolved) |
             | Documentation | `NebulaScope-docs-*.pdf` | Manual + architecture + build guides + release notes |
+            | Documentation (français) | `NebulaScope-docs-fr-*.pdf` | Manuel de l'utilisateur + transport de couleurs |
           files: |
             artifacts/*.zip
             artifacts/*.deb

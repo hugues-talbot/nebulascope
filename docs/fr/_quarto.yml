@@ -1,36 +1,34 @@
+# French edition — a standalone Quarto book project (a profile of the parent
+# project would MERGE chapter lists rather than replace them). Renders into
+# ../_book/fr so the deployed site serves it under /fr/. Developer chapters and
+# build guides stay in the English edition only; the preface says so.
 project:
   type: book
-  output-dir: _book
+  output-dir: ../_book/fr
+
+lang: fr
 
 book:
   title: "NebulaScope"
-  subtitle: "An astronomical image inspector — User Manual & Developer Guide"
+  subtitle: "Inspecteur d'images astronomiques — Manuel de l'utilisateur"
   author: "Hugues Talbot"
   date: today
-  site-url: https://hugues-talbot.github.io/nebulascope/
+  output-file: NebulaScope-fr
+  site-url: https://hugues-talbot.github.io/nebulascope/fr/
   repo-url: https://github.com/hugues-talbot/nebulascope
   repo-actions: [issue]
   sidebar:
     tools:
       - icon: translate
-        text: "Version française"
-        href: fr/index.html
+        text: "English edition"
+        href: ../index.html
   chapters:
     - index.qmd
     - MANUAL.md
     - TRANSPORT.md
-    - ARCHITECTURE.md
-    - DECISIONS.md
-  appendices:
-    - BUILDING-macos.md
-    - BUILDING-linux.md
-    - BUILDING-windows.md
-    - RELEASES.md
     - references.qmd
 
-bibliography: references.bib
-# Every reference appears in the bibliography even without an inline citation
-# (the .md chapters stay free of citation syntax so GitHub renders them clean).
+bibliography: ../references.bib
 nocite: |
   @*
 
@@ -42,15 +40,12 @@ format:
     toc: true
     toc-depth: 3
     number-sections: false
-    # UI screenshots are dark-themed; keep them framed in light mode too.
     css: web.css
   pdf:
     documentclass: scrreprt
     pdf-engine: xelatex
     toc: true
     toc-depth: 2
-    # The manual carries its own section numbers (§1..§16) — Quarto numbering
-    # on top would double them up.
     number-sections: false
     colorlinks: true
     fig-align: center
