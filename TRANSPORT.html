@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Colour Transport — Theory and the Stretch Fit – NebulaScope</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./ARCHITECTURE.html" rel="next">
+<link href="./MANUAL.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-febdc0bd1cf710de19db6afa0751cb89.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="web.css">
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./TRANSPORT.html"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">NebulaScope</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/hugues-talbot/nebulascope" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./MANUAL.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — User Manual</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./TRANSPORT.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARCHITECTURE.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Architecture</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DECISIONS.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Design Decisions</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-macos.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on macOS (Apple Silicon / Homebrew)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-linux.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Linux</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-windows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Windows (MSVC + vcpkg)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./RELEASES.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Release notes</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-distribution-transfer-problem" id="toc-the-distribution-transfer-problem" class="nav-link active" data-scroll-target="#the-distribution-transfer-problem">1. The distribution-transfer problem</a>
+  <ul class="collapse">
+  <li><a href="#one-dimension-is-solved-exactly" id="toc-one-dimension-is-solved-exactly" class="nav-link" data-scroll-target="#one-dimension-is-solved-exactly">1.1 One dimension is solved exactly</a></li>
+  <li><a href="#sliced-transport-in-three-dimensions" id="toc-sliced-transport-in-three-dimensions" class="nav-link" data-scroll-target="#sliced-transport-in-three-dimensions">1.2 Sliced transport in three dimensions</a></li>
+  </ul></li>
+  <li><a href="#why-exact-transport-degrades-data" id="toc-why-exact-transport-degrades-data" class="nav-link" data-scroll-target="#why-exact-transport-degrades-data">2. Why exact transport degrades data</a>
+  <ul class="collapse">
+  <li><a href="#posterization-from-tied-samples" id="toc-posterization-from-tied-samples" class="nav-link" data-scroll-target="#posterization-from-tied-samples">2.1 Posterization from tied samples</a></li>
+  <li><a href="#noise-amplification-from-map-slope" id="toc-noise-amplification-from-map-slope" class="nav-link" data-scroll-target="#noise-amplification-from-map-slope">2.2 Noise amplification from map slope</a></li>
+  </ul></li>
+  <li><a href="#the-stretch-fit-match-the-look-not-the-pixels" id="toc-the-stretch-fit-match-the-look-not-the-pixels" class="nav-link" data-scroll-target="#the-stretch-fit-match-the-look-not-the-pixels">3. The stretch fit: match the look, not the pixels</a>
+  <ul class="collapse">
+  <li><a href="#guarantees" id="toc-guarantees" class="nav-link" data-scroll-target="#guarantees">3.1 Guarantees</a></li>
+  <li><a href="#stage-two-fitting-the-colour-adjustments" id="toc-stage-two-fitting-the-colour-adjustments" class="nav-link" data-scroll-target="#stage-two-fitting-the-colour-adjustments">3.2 Stage two: fitting the colour adjustments</a></li>
+  <li><a href="#the-approximation-gap" id="toc-the-approximation-gap" class="nav-link" data-scroll-target="#the-approximation-gap">3.3 The approximation gap</a></li>
+  </ul></li>
+  <li><a href="#practice" id="toc-practice" class="nav-link" data-scroll-target="#practice">4. Practice</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>NebulaScope’s colour transport transfers the colour <em>distribution</em> of a reference image onto the displayed image. It has two application modes with very different data-integrity properties:</p>
+<ol type="1">
+<li><strong>Exact transport</strong> — pixels are rewritten through an empirical optimal transport map (a new list entry; the source is never modified).</li>
+<li><strong>Stretch fit</strong> — no pixel is written at all: NebulaScope <em>fits the display stretch</em> so that the source <strong>looks</strong> like the transported result. Data loss is zero by construction.</li>
+</ol>
+<p>This chapter derives both, and explains precisely why mode 1 can posterize and amplify noise, and why mode 2 cannot.</p>
+<section id="the-distribution-transfer-problem" class="level2">
+<h2 class="anchored" data-anchor-id="the-distribution-transfer-problem">1. The distribution-transfer problem</h2>
+<p>Work in display space: each pixel of the source is a colour vector <span class="math inline">\(u \in [0,1]^3\)</span> drawn from a distribution <span class="math inline">\(\mu_s\)</span>; the reference’s pixels follow <span class="math inline">\(\mu_r\)</span>. We seek a map <span class="math inline">\(T : [0,1]^3 \to [0,1]^3\)</span> such that when <span class="math inline">\(u\)</span> is distributed as <span class="math inline">\(\mu_s\)</span>, <span class="math inline">\(T(u)\)</span> is distributed as <span class="math inline">\(\mu_r\)</span> — written <span class="math inline">\(T_\# \mu_s = \mu_r\)</span> (“<span class="math inline">\(T\)</span> pushes <span class="math inline">\(\mu_s\)</span> forward onto <span class="math inline">\(\mu_r\)</span>”). Among all such maps, optimal transport selects the one moving colours the least, i.e. minimising <span class="math inline">\(\mathbb{E}\,\lVert T(u) - u \rVert^2\)</span>.</p>
+<p>Alignment is irrelevant: only the two colour distributions matter, which is why the images need not overlap, match in size, or even show the same field.</p>
+<section id="one-dimension-is-solved-exactly" class="level3">
+<h3 class="anchored" data-anchor-id="one-dimension-is-solved-exactly">1.1 One dimension is solved exactly</h3>
+<p>For scalar distributions with cumulative distribution functions <span class="math inline">\(F_s\)</span> and <span class="math inline">\(F_r\)</span>, the optimal map is the classical <em>monotone rearrangement</em></p>
+<p><span class="math display">\[T = F_r^{-1} \circ F_s ,\]</span></p>
+<p>i.e.&nbsp;the value at source quantile <span class="math inline">\(q\)</span> maps to the reference value at the same quantile. This is exactly a histogram specification, and it is the unique monotone solution.</p>
+</section>
+<section id="sliced-transport-in-three-dimensions" class="level3">
+<h3 class="anchored" data-anchor-id="sliced-transport-in-three-dimensions">1.2 Sliced transport in three dimensions</h3>
+<p>In <span class="math inline">\(\mathbb{R}^3\)</span> no closed form exists, but the 1-D solution can be <em>sliced</em> (Pitié et al.’s iterative distribution transfer, the same family as the sliced Wasserstein methods): repeat, for <span class="math inline">\(k = 1 \dots K\)</span>,</p>
+<ol type="1">
+<li>draw a random rotation <span class="math inline">\(R_k \in SO(3)\)</span>;</li>
+<li>project both point clouds onto the three rotated axes;</li>
+<li>apply the 1-D monotone rearrangement independently along each axis;</li>
+<li>rotate back.</li>
+</ol>
+<p>Each iteration reduces the discrepancy between the current and reference distributions; after <span class="math inline">\(K \approx 15\)</span> sweeps the marginals agree along enough directions that the full 3-D distributions essentially match.</p>
+<p><strong>Implementation notes.</strong> NebulaScope estimates the maps from at most <span class="math inline">\(2 \times 10^5\)</span> samples per image, restricted to each view’s visible region (off-screen features must not steer the match) and excluding near-saturated pixels (their colours are unmatchable). Each 1-D map is tabulated at 1024 quantile knots with linear interpolation between them, and the rotation sequence is deterministically seeded, so results are reproducible. A <em>strength</em> <span class="math inline">\(s \in [0,1]\)</span> blends the result with the original: <span class="math inline">\(u' = u + s\,(T(u) - u)\)</span>. Mono image pairs skip the slicing and use the 1-D rearrangement directly.</p>
+</section>
+</section>
+<section id="why-exact-transport-degrades-data" class="level2">
+<h2 class="anchored" data-anchor-id="why-exact-transport-degrades-data">2. Why exact transport degrades data</h2>
+<p>Two artefacts are <em>inherent</em> to pushing pixels through an empirical map — no implementation detail removes them entirely.</p>
+<section id="posterization-from-tied-samples" class="level3">
+<h3 class="anchored" data-anchor-id="posterization-from-tied-samples">2.1 Posterization from tied samples</h3>
+<p>The empirical map is built from finite, quantized data. Where many samples share one value <span class="math inline">\(v\)</span> (ties are guaranteed when the source was ever integer data), the empirical CDF jumps: the map sends the whole tie-run to a single output, and the <em>next</em> distinct input value lands a finite step away. The transported histogram develops gaps and spikes — visible as banding in smooth gradients. Iterating the slicing compounds the effect.</p>
+</section>
+<section id="noise-amplification-from-map-slope" class="level3">
+<h3 class="anchored" data-anchor-id="noise-amplification-from-map-slope">2.2 Noise amplification from map slope</h3>
+<p>For smooth densities <span class="math inline">\(f_s, f_r\)</span>, differentiating <span class="math inline">\(F_r(T(v)) = F_s(v)\)</span> gives the local slope of the 1-D map:</p>
+<p><span class="math display">\[T'(v) \;=\; \frac{f_s(v)}{f_r\!\big(T(v)\big)} .\]</span></p>
+<p>Small perturbations (noise) scale by this slope: <span class="math inline">\(\sigma_\text{out} \approx T'(v)\,\sigma_\text{in}\)</span>. Wherever the reference distribution is locally <em>thinner</em> than the source — i.e.&nbsp;the reference has more contrast in that range, exactly what you asked for — <span class="math inline">\(T' &gt; 1\)</span> and the noise is stretched with the signal. Matching a punchy reference therefore <em>necessarily</em> amplifies background noise under any exact histogram match.</p>
+</section>
+</section>
+<section id="the-stretch-fit-match-the-look-not-the-pixels" class="level2">
+<h2 class="anchored" data-anchor-id="the-stretch-fit-match-the-look-not-the-pixels">3. The stretch fit: match the look, not the pixels</h2>
+<p>NebulaScope’s display applies, per channel <span class="math inline">\(c\)</span>, a smooth parametric transfer to the raw value <span class="math inline">\(v\)</span>:</p>
+<p><span class="math display">\[D_c(v) \;=\; \mathrm{MTF}\!\big(W_c(v);\, m_c\big),\]</span></p>
+<p>where the <em>window</em> normalises and clips,</p>
+<p><span class="math display">\[W_c(v) \;=\; \operatorname{clip}_{[0,1]}
+\left( \frac{\dfrac{v - \ell_c}{h_c - \ell_c} - b_c}{w_c - b_c} \right),\]</span></p>
+<p>with data range <span class="math inline">\([\ell_c, h_c]\)</span> and black/white points <span class="math inline">\(b_c, w_c\)</span>, and the midtone transfer function is the rational curve</p>
+<p><span class="math display">\[\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m},
+\qquad m_c = \frac{\mathrm{mid}_c - b_c}{w_c - b_c},\]</span></p>
+<p>which fixes <span class="math inline">\(\mathrm{MTF}(0)=0\)</span>, <span class="math inline">\(\mathrm{MTF}(1)=1\)</span> and <span class="math inline">\(\mathrm{MTF}(m)=\tfrac12\)</span>. Every such curve is smooth and strictly monotone on the window.</p>
+<p><strong>The fit.</strong> Let <span class="math inline">\(t_i = T_c(u_i)\)</span> be the transported display values of a pixel sample and <span class="math inline">\(v_i\)</span> the corresponding <em>raw</em> values. The stretch fit solves, independently per channel,</p>
+<p><span class="math display">\[\min_{\,b_c,\ \mathrm{mid}_c,\ w_c}\;
+\sum_i \omega_i \Big( D_c(v_i;\, b_c, \mathrm{mid}_c, w_c) - t_i \Big)^{2},
+\qquad \omega_i = 0.05 + t_i,\]</span></p>
+<p>a bounded three-parameter weighted least-squares problem. The <em>intensity weighting</em> <span class="math inline">\(\omega_i\)</span> matters: background pixels vastly outnumber signal pixels, and an unweighted fit would match the sky while shrugging at the nebula. Weighting each residual by the (floored) target brightness makes the signal colours govern the fit while the small floor keeps the black point anchored. Stars are best excluded at the source — match starless renditions of both images. NebulaScope solves it by coordinate descent — four sweeps of golden-section line searches over <span class="math inline">\(b_c \in [0, w_c)\)</span>, <span class="math inline">\(w_c \in (b_c, 1]\)</span>, <span class="math inline">\(\mathrm{mid}_c \in (b_c, w_c)\)</span> — on up to <span class="math inline">\(6 \times 10^4\)</span> sample pairs. The root-mean-square residual per channel is reported in the status bar.</p>
+<p>The result is <strong>only a stretch state</strong>: it lives in the same place as any Auto STF, composes with copy/paste and <em>Apply to All</em>, persists in the sidecar, and the underlying data is untouched.</p>
+<section id="guarantees" class="level3">
+<h3 class="anchored" data-anchor-id="guarantees">3.1 Guarantees</h3>
+<ul>
+<li><strong>Zero data loss</strong> — nothing is written; the “result” is a view.</li>
+<li><strong>No posterization</strong> — the fitted curve is smooth and strictly monotone; there are no empirical steps for ties to collapse onto.</li>
+<li><strong>Controlled noise behaviour</strong> — the curve’s slope is the smooth parametric <span class="math inline">\(D_c'(v)\)</span>, free of the locally extreme slopes an empirical density ratio can produce.</li>
+</ul>
+</section>
+<section id="stage-two-fitting-the-colour-adjustments" class="level3">
+<h3 class="anchored" data-anchor-id="stage-two-fitting-the-colour-adjustments">3.2 Stage two: fitting the colour adjustments</h3>
+<p>Optionally, a second stage narrows the separability gap. With the fitted per-channel curves held fixed, NebulaScope fits the four cross-channel colour adjustments — temperature, tint, hue, saturation — minimising the intensity-weighted error over full RGB <em>triples</em>:</p>
+<p><span class="math display">\[\min_{\theta}\; \sum_i \omega_i\,
+\big\lVert A_\theta\big(D(v_i)\big) - T(u_i) \big\rVert^2 ,\]</span></p>
+<p>where <span class="math inline">\(A_\theta\)</span> is the adjustment operator. These four parameters mix channels — which is precisely what OT’s slicing rotations do and what separable curves cannot — so hue-rotation targets that stage 1 misses become reachable. The status bar reports the overall RMSE after this stage; with undo one keystroke away, trying both variants costs nothing.</p>
+</section>
+<section id="the-approximation-gap" class="level3">
+<h3 class="anchored" data-anchor-id="the-approximation-gap">3.3 The approximation gap</h3>
+<p>The stretch family is <em>separable</em>: three independent monotone curves. The optimal transport map is generally <em>not</em> — its slicing rotations mix channels, which is how it can rotate hues. The projection of <span class="math inline">\(T\)</span> onto the separable family therefore reproduces global colour balance and tonality closely, but cannot express hue rotation. The reported per-channel RMSE quantifies this gap for your pair of images; when it matters, the exact mode remains one checkbox away.</p>
+</section>
+</section>
+<section id="practice" class="level2">
+<h2 class="anchored" data-anchor-id="practice">4. Practice</h2>
+<ul>
+<li>Dialog: <strong>Tools ▸ Transport Colors from Reference…</strong>, tick <em>Apply as stretch fit</em>. Scripts: <code>transport &lt;row&gt; [strength%] stretch</code>.</li>
+<li>Strength applies <em>before</em> the fit — the fit targets the blended result.</li>
+<li>Both modes are <strong>undoable</strong>: the exact mode as a list-entry addition, the stretch fit as a stretch-state change (⌘Z restores the previous stretch).</li>
+<li>The fit absorbs the current display (including adjustments) into fresh Linear black/mid/white values and resets the adjustment sliders, so what you see immediately after is the fitted match itself.</li>
+<li>Judging RMSE: values are in display units on <span class="math inline">\([0,1]\)</span>; experience suggests a fit below <span class="math inline">\(\sim 0.02\)</span> is visually convincing, while larger residuals usually indicate the reference demanded a hue rotation.</li>
+</ul>
+<p><em>Background reading: Pitié, Kokaram &amp; Dahyot 2007 (the iterative distribution transfer this implements); Rabin et al.&nbsp;2012 for the sliced Wasserstein viewpoint — full citations in the References.</em></p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-bertin1996" class="csl-entry" role="listitem">
+Bertin, E., and S. Arnouts. 1996. <span>“<span>SExtractor</span>: Software for Source Extraction.”</span> <em>Astronomy and Astrophysics Supplement Series</em> 117: 393–404. <a href="https://doi.org/10.1051/aas:1996164">https://doi.org/10.1051/aas:1996164</a>.
+</div>
+<div id="ref-xisf10" class="csl-entry" role="listitem">
+Conejero, Juan. 2015. <em><span>XISF</span> Version 1.0 Specification: Extensible Image Serialization Format</em>. Pleiades Astrophoto, <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html" class="uri">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a>.
+</div>
+<div id="ref-joye2003" class="csl-entry" role="listitem">
+Joye, W. A., and E. Mandel. 2003. <span>“New Features of <span>SAOImage DS9</span>.”</span> <em>Astronomical Data Analysis Software and Systems XII</em>, ASP conference series, vol. 295: 489.
+</div>
+<div id="ref-ghs2022" class="csl-entry" role="listitem">
+Payne, M., D. Robbins, and S. Carr. 2022. <em>The Generalised Hyperbolic Stretch: Equations and Rationale</em>. <a href="https://ghsastro.co.uk/">https://ghsastro.co.uk/</a>.
+</div>
+<div id="ref-pence2010" class="csl-entry" role="listitem">
+Pence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. <span>“Definition of the Flexible Image Transport System (<span>FITS</span>), Version 3.0.”</span> <em>Astronomy &amp; Astrophysics</em> 524: A42. <a href="https://doi.org/10.1051/0004-6361/201015362">https://doi.org/10.1051/0004-6361/201015362</a>.
+</div>
+<div id="ref-pitie2007" class="csl-entry" role="listitem">
+Pitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. <span>“Automated Colour Grading Using Colour Distribution Transfer.”</span> <em>Computer Vision and Image Understanding</em> 107 (1–2): 123–37. <a href="https://doi.org/10.1016/j.cviu.2006.11.011">https://doi.org/10.1016/j.cviu.2006.11.011</a>.
+</div>
+<div id="ref-rabin2012" class="csl-entry" role="listitem">
+Rabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. <span>“Wasserstein Barycenter and Its Application to Texture Mixing.”</span> <em>Scale Space and Variational Methods in Computer Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/hugues-talbot\.github\.io\/nebulascope\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./MANUAL.html" class="pagination-link" aria-label="NebulaScope — User Manual">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">NebulaScope — User Manual</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./ARCHITECTURE.html" class="pagination-link" aria-label="NebulaScope — Architecture">
+        <span class="nav-page-text"><span class="chapter-title">NebulaScope — Architecture</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

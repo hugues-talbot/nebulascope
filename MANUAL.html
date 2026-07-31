@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>NebulaScope — User Manual – NebulaScope</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./TRANSPORT.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-febdc0bd1cf710de19db6afa0751cb89.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="web.css">
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./MANUAL.html"><span class="chapter-title">NebulaScope — User Manual</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">NebulaScope</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/hugues-talbot/nebulascope" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./MANUAL.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">NebulaScope — User Manual</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./TRANSPORT.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ARCHITECTURE.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Architecture</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./DECISIONS.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Design Decisions</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Appendices</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-macos.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on macOS (Apple Silicon / Homebrew)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-linux.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Linux</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./BUILDING-windows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Building on Windows (MSVC + vcpkg)</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./RELEASES.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Release notes</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#opening-images" id="toc-opening-images" class="nav-link active" data-scroll-target="#opening-images">1. Opening images</a></li>
+  <li><a href="#the-display-pipeline" id="toc-the-display-pipeline" class="nav-link" data-scroll-target="#the-display-pipeline">2. The display pipeline</a></li>
+  <li><a href="#histogram-stretch-control" id="toc-histogram-stretch-control" class="nav-link" data-scroll-target="#histogram-stretch-control">3. Histogram &amp; stretch control</a></li>
+  <li><a href="#adjustments-post-stretch" id="toc-adjustments-post-stretch" class="nav-link" data-scroll-target="#adjustments-post-stretch">4. Adjustments (post-stretch)</a></li>
+  <li><a href="#colormaps-mono-images" id="toc-colormaps-mono-images" class="nav-link" data-scroll-target="#colormaps-mono-images">5. Colormaps (mono images)</a></li>
+  <li><a href="#inspecting" id="toc-inspecting" class="nav-link" data-scroll-target="#inspecting">6. Inspecting</a></li>
+  <li><a href="#sessions-blinking-the-image-list" id="toc-sessions-blinking-the-image-list" class="nav-link" data-scroll-target="#sessions-blinking-the-image-list">7. Sessions, blinking &amp; the image list</a></li>
+  <li><a href="#geometry-rotate-flip" id="toc-geometry-rotate-flip" class="nav-link" data-scroll-target="#geometry-rotate-flip">8. Geometry: rotate &amp; flip</a></li>
+  <li><a href="#annotations" id="toc-annotations" class="nav-link" data-scroll-target="#annotations">9. Annotations</a></li>
+  <li><a href="#astrometry" id="toc-astrometry" class="nav-link" data-scroll-target="#astrometry">10. Astrometry</a></li>
+  <li><a href="#combining-images" id="toc-combining-images" class="nav-link" data-scroll-target="#combining-images">11. Combining images</a>
+  <ul class="collapse">
+  <li><a href="#combine-channels-tools-combine-channels" id="toc-combine-channels-tools-combine-channels" class="nav-link" data-scroll-target="#combine-channels-tools-combine-channels">Combine Channels (Tools ▸ Combine Channels…)</a></li>
+  <li><a href="#combine-stars-tools-combine-stars-screen" id="toc-combine-stars-tools-combine-stars-screen" class="nav-link" data-scroll-target="#combine-stars-tools-combine-stars-screen">Combine Stars (Tools ▸ Combine Stars (screen)…)</a></li>
+  <li><a href="#transport-colors-tools-transport-colors-from-reference" id="toc-transport-colors-tools-transport-colors-from-reference" class="nav-link" data-scroll-target="#transport-colors-tools-transport-colors-from-reference">Transport Colors (Tools ▸ Transport Colors from Reference…)</a></li>
+  </ul></li>
+  <li><a href="#split-views-linked-navigation" id="toc-split-views-linked-navigation" class="nav-link" data-scroll-target="#split-views-linked-navigation">12. Split views &amp; linked navigation</a></li>
+  <li><a href="#command-line" id="toc-command-line" class="nav-link" data-scroll-target="#command-line">13. Command line</a></li>
+  <li><a href="#export" id="toc-export" class="nav-link" data-scroll-target="#export">14. Export</a></li>
+  <li><a href="#layout-preferences-customization" id="toc-layout-preferences-customization" class="nav-link" data-scroll-target="#layout-preferences-customization">15. Layout, preferences &amp; customization</a></li>
+  <li><a href="#troubleshooting" id="toc-troubleshooting" class="nav-link" data-scroll-target="#troubleshooting">16. Troubleshooting</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-title">NebulaScope — User Manual</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><em>Version 0.90. This is the complete guide; for a quick start see the <a href="https://github.com/hugues-talbot/nebulascope#readme">README</a>. Every keyboard shortcut named here is a default — all of them are reconfigurable in <strong>Preferences ▸ Shortcuts</strong> (stored in <code>shortcuts.ini</code>, whose location is shown in the dialog).</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/overview.png" class="img-fluid figure-img"></p>
+<figcaption>Main window: overlay layout, image loaded, histogram panel open</figcaption>
+</figure>
+</div>
+<hr>
+<section id="opening-images" class="level2">
+<h2 class="anchored" data-anchor-id="opening-images">1. Opening images</h2>
+<p><strong>Formats read:</strong> FITS (<code>.fits .fit .fts .fz</code>, including multi-HDU files and tile-compressed images; integer data are scaled via BSCALE/BZERO), PixInsight XISF (<code>.xisf</code>, including image properties and astrometric solutions), and JPEG / PNG / TIFF / WebP. Everything is promoted to 32-bit float on load, so the full pipeline is one code path; NaN/Inf blanks are respected throughout.</p>
+<p>Ways to open: - <strong>File ▸ Open…</strong> or the toolbar <strong>Open</strong> button (multi-select works). - <strong>Drag &amp; drop</strong> onto the window — or onto the app icon (macOS; the bundle declares the file types, so Finder’s <em>Open With</em> also lists NebulaScope). - <strong>File ▸ Open Recent</strong> — the last 10 images and last 5 annotation files. - <strong>Command line</strong> — see §13. - <strong>Multi-HDU FITS</strong> appear in the image list as an expandable entry, one row per image HDU; click the HDU you want.</p>
+<p>A newly opened image displays immediately — in the first <em>empty</em> view cell if the view is split, otherwise in the active view. On first view it gets a plain <strong>min→max linear ramp</strong> (predictable, no guessing); press <strong>Auto STF</strong> for a boosted stretch (§3).</p>
+<p><strong>One-shot-colour (OSC) frames are debayered automatically.</strong> A mono frame whose header carries a Bayer pattern (<code>BAYERPAT</code>, honouring <code>XBAYROFF</code>/<code>YBAYROFF</code> — written by ASIAIR, ASICAP, NINA, SGP, …) opens as RGB. <strong>Image ▸ Debayer</strong> controls it per image: <em>Auto-Detect</em>, a forced pattern (for frames with missing or wrong keywords), or <em>Off</em> to inspect the raw mosaic. The algorithm is a global choice — in the same menu or in Preferences: <strong>RCD</strong> (default; directional, best on stars — validated against Siril’s RCD), <strong>Bilinear</strong>, or <strong>Superpixel</strong> (each 2×2 cell becomes one RGB pixel: half size, zero artifacts, fastest). Debayer changes (pattern mode or algorithm) are <strong>undoable</strong> (⌘Z). Debayering happens at load — the status bar notes the decision (e.g.&nbsp;<em>debayered RGGB, RCD</em>), the Info panel records it, and auto-reload (§7) and per-image stretch memory compose with it naturally.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/debayer.png" class="img-fluid figure-img"></p>
+<figcaption>Raw Bayer mosaic beside its RCD demosaic, 1×2 split</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/image-list-hdu.png" class="img-fluid figure-img"></p>
+<figcaption>Image list with a multi-HDU FITS entry expanded</figcaption>
+</figure>
+</div>
+</section>
+<section id="the-display-pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="the-display-pipeline">2. The display pipeline</h2>
+<p>Raw data are never modified by display operations. Each frame goes through:</p>
+<ol type="1">
+<li><strong>Window</strong> — per-channel black/white points inside the data range.</li>
+<li><strong>Transfer function</strong> — Linear (with midtone), Log, Asinh, or GHS, applied at full float precision across the window (all 4096 LUT samples and all output levels span the window — no posterization however narrow it is).</li>
+<li><strong>Adjustments</strong> — post-stretch tone &amp; colour controls (§4).</li>
+<li><strong>Colormap</strong> (mono images) — false-colour lookup.</li>
+<li><strong>Dithered 8-bit conversion</strong> — removes banding in smooth gradients.</li>
+</ol>
+<p>Rendering is asynchronous: dragging any control stays fluid, the image catches up at render rate (intermediate positions are skipped, never queued).</p>
+</section>
+<section id="histogram-stretch-control" class="level2">
+<h2 class="anchored" data-anchor-id="histogram-stretch-control">3. Histogram &amp; stretch control</h2>
+<p>The Histogram panel (toggle <strong>F3</strong>) is the heart of the tool:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/histogram-linear.png" class="img-fluid figure-img"></p>
+<figcaption>Histogram panel: Linear mode, RGB image, per-channel lines</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>Stretch functions</strong> — tabs for <strong>Linear / Log / Asinh / GHS</strong> (keys: <strong>I</strong> / <strong>L</strong> / <strong>S</strong> / <strong>G</strong>).
+<ul>
+<li><em>Linear</em> acts as the windowing stage: drag <strong>B</strong> (black), <strong>M</strong> (midtone), <strong>W</strong> (white) directly on the plot. RGB images additionally show each channel’s own B/M/W as thin coloured lines — grab one <strong>in the plot body</strong> to move that channel alone; the labelled grips on the top strip move all three together.</li>
+<li><em>Log</em> and <em>Asinh</em> compose with the linear window; the plot zooms into the window so their controls use the full widget width.</li>
+<li><em>GHS</em> (Generalised Hyperbolic Stretch): <strong>D</strong> (strength) and <strong>b</strong> (local focus) sliders, plus draggable <strong>SP</strong> (symmetry point — where contrast is concentrated) and <strong>LP/HP</strong> (shadow/highlight protection) handles, all defined inside the window like the other nonlinear modes.</li>
+</ul></li>
+<li><strong>Channels</strong> — RGB (linked) or individual R / G / B chips.</li>
+<li><strong>Editable value boxes</strong> — exact numeric entry; RGB images get a full <strong>3×3 grid</strong> (R/G/B × Black/Mid/White) in raw data units.</li>
+<li><strong>Log axis</strong> button toggles logarithmic frequency scaling of the histogram.</li>
+<li><strong>Auto STF</strong> (<strong>U</strong>) — per-channel automatic stretch (background → ~0.25).</li>
+<li><strong>Auto STF (linked)</strong> (<strong>Shift+U</strong>) — one shared stretch from pooled statistics; preserves colour balance (use for colour-calibrated data).</li>
+<li><strong>Reset</strong> (<strong>R</strong>) — back to the plain linear window (also clears adjustments).</li>
+<li><strong>Apply to All</strong> (<strong>Shift+A</strong>) — share the current stretch (+ adjustments) with <strong>every image in the list</strong>: each one applies it as it loads. Made for same-acquisition-session batches — set up one frame, share, then blink through the rest. From the command line: <code>--shared-stf</code> (auto-stretch the first image, share with all); in scripts: <code>stfall</code>. For a <em>subset</em> — or for <strong>normalized</strong> pasting that re-anchors on each image’s own statistics — use Copy Stretch, select images in the list, and right-click ▸ Paste Stretch.</li>
+<li>The <strong>colorbar</strong> legend shows the current transfer over the window, with ticks in real data units; it follows the active colormap <em>and</em> the adjustments — what the bar shows is what a pixel of that value looks like.</li>
+</ul>
+<p><strong>Copy/paste stretch</strong> (Stretch menu; ⌘⌥C / ⌘⌥V): copies the full stretch. Pasting <strong>Normalized</strong> re-anchors the window on the target’s own median/MAD statistics (right for comparing different exposures/filters); <strong>Absolute</strong> carries the exact data-unit window.</p>
+<p><strong>Per-image stretch memory</strong> — every image remembers its last stretch (and adjustments) and re-applies them when you return to it.</p>
+</section>
+<section id="adjustments-post-stretch" class="level2">
+<h2 class="anchored" data-anchor-id="adjustments-post-stretch">4. Adjustments (post-stretch)</h2>
+<p>The <strong>ADJUST</strong> section sits under the stretch controls — always visible, in every stretch mode, with its own <strong>Reset</strong> (stretch untouched). All twelve apply to the stretched display values, so they compose identically with Linear/Log/Asinh/GHS:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/adjust-panel.png" class="img-fluid figure-img"></p>
+<figcaption>ADJUST sliders, a temperature/saturation edit in progress</figcaption>
+</figure>
+</div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Left column</th>
+<th>Right column</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bright</td>
+<td>Contrast</td>
+</tr>
+<tr class="even">
+<td>Highlights</td>
+<td>Shadows</td>
+</tr>
+<tr class="odd">
+<td>White pt</td>
+<td>Black pt</td>
+</tr>
+<tr class="even">
+<td>Gamma</td>
+<td>Temp</td>
+</tr>
+<tr class="odd">
+<td>Tint</td>
+<td>Hue</td>
+</tr>
+<tr class="even">
+<td>Saturation</td>
+<td>Vibrance</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Tone</strong> (Bright…Gamma): per-channel curves, pinned at black/white ends where sensible; reflected live in the transfer-curve overlay.</li>
+<li><strong>Colour</strong> (Temp…Vibrance): RGB images only. <strong>Vibrance</strong> is saturation weighted toward muted pixels — it boosts nebulosity without clipping star colour.</li>
+<li><strong>Click a slider, then use the mouse wheel</strong> for fine steps (hover alone never edits).</li>
+<li>Adjustments are <strong>per image</strong> — reset on first visit, remembered per image in-session, and <strong>persisted in the annotation sidecar</strong> (§9); a sidecar with adjustments restores them on the next session’s first view.</li>
+</ul>
+</section>
+<section id="colormaps-mono-images" class="level2">
+<h2 class="anchored" data-anchor-id="colormaps-mono-images">5. Colormaps (mono images)</h2>
+<p>Gray, Heat, Viridis, Magma, Inferno, Cividis — selected in the toolbar — plus two composable <strong>modifiers</strong> that work with <em>every</em> map:</p>
+<ul>
+<li><strong>inv()</strong> — full inversion.</li>
+<li><strong>split(t)</strong> — below threshold <em>t</em> the map runs inverted, above it normal; excellent for perceiving faint background structure. Threshold adjustable.</li>
+</ul>
+<p>RGB images ignore the colormap (the combo is disabled).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/colormap-split.png" class="img-fluid figure-img"></p>
+<figcaption>Split colormap on a galaxy field, colorbar visible</figcaption>
+</figure>
+</div>
+</section>
+<section id="inspecting" class="level2">
+<h2 class="anchored" data-anchor-id="inspecting">6. Inspecting</h2>
+<p>Mouse (in any view): - <strong>Left-drag</strong> — rubber-band zoom to the dragged region. - <strong>Wheel</strong> — zoom at the cursor (<strong>Shift+wheel</strong> = 5× finer steps). - <strong>Right-drag / middle-drag / Shift+left-drag</strong> — pan. - <strong>Right-click</strong> — context menu (§10). - <strong>Hover</strong> — status bar shows (x, y), raw channel values, and RA/Dec when a plate solution exists.</p>
+<p>Zoom commands: <strong>Zoom to Fit</strong> and <strong>1:1</strong> (key <strong>1</strong>) in the View menu and toolbar — and keyboard zoom for mouse-free work: <strong>&gt;</strong> / <strong>&lt;</strong> step by 10%, <strong>.</strong> / <strong>,</strong> by 3% (both percentages configurable in Preferences), centred on the view. With the image view focused, the <strong>arrow keys pan</strong>; with the image list focused, ↑/↓ walk the list (blinking itself stays on <strong>Space</strong>/<strong>Shift+Space</strong>).</p>
+<p>The <strong>Info panel</strong> (<strong>P</strong> or F4) shows dimensions, pixel format, per-channel min / max / median / MAD, the FITS HDU structure, and the full header (FITS cards or XISF properties) in a filterable, copyable table.</p>
+</section>
+<section id="sessions-blinking-the-image-list" class="level2">
+<h2 class="anchored" data-anchor-id="sessions-blinking-the-image-list">7. Sessions, blinking &amp; the image list</h2>
+<ul>
+<li><strong>Space</strong> / <strong>Shift+Space</strong> — next / previous image, looping. Zoom and pan are preserved across same-size images, so you can blink a small region.</li>
+<li><strong>Shift+L</strong> (or <strong>F2</strong>) toggles the image list; <strong>C</strong> closes the current image (closing the last image empties all views).</li>
+<li>List management: <strong>+</strong> append, <strong>−</strong> / context menu remove, drag to reorder, export (<strong>⤓</strong>) and <strong>File ▸ Import Image List…</strong> re-load a saved list (one path per line, <code>#</code> comments, relative paths resolve against the list file). <code>--list</code> does the same from the command line.</li>
+<li>In-memory results (combine, transport) are marked in the list; <strong>Save Data As…</strong> turns the entry into the saved file (name, sidecars, and per-image state follow).</li>
+<li><strong>Blink culling</strong> — every list row carries a <strong>keep-check</strong> (checked by default). Blink through a session with <strong>Space</strong>/<strong>↓</strong> and hit <strong>B</strong> to reject the bad frame under your eyes — debayering and live STF editing stay available the whole time, which is exactly what makes this blink different. Then act on the tags from the list’s right-click menu: <strong>Check/Uncheck Selected</strong>, <strong>Sort: Checked First</strong>, <strong>Move Checked/Unchecked To…</strong> (files move with their annotation sidecars, and the list follows them to the new location), and <strong>Remove Checked/Unchecked from List</strong>. Scriptable as <code>tag</code>, <code>tagsort</code>, <code>tagremove</code>, <code>tagmove</code> (§13) for scripted culling pipelines.</li>
+<li><strong>Auto-reload</strong> (View ▸ Auto-Reload Changed Files, default on): when another program — PixInsight, Siril, GraXpert, … — overwrites a listed file on disk, NebulaScope re-decodes it automatically (in every view that shows it, active or not). Stretch memory applies to the reloaded data, and zoom/pan survive when the dimensions are unchanged. Keep NebulaScope open beside your processing suite and every save appears as it lands.</li>
+</ul>
+</section>
+<section id="geometry-rotate-flip" class="level2">
+<h2 class="anchored" data-anchor-id="geometry-rotate-flip">8. Geometry: rotate &amp; flip</h2>
+<p>Image menu / toolbar: - <strong>Rotate 90° CW / CCW</strong> ( <code>]</code> / <code>[</code> ) and <strong>Flip Horizontal / Vertical</strong> (⌘H / ⌘J) — lossless, exact. - <strong>Rotate by Angle…</strong> (⌘R) — the rotation dialog: a draggable <strong>angle dial</strong> (Shift = fine, wheel = ±1°, double-click = 0°), a precision spinbox, and a live preview thumbnail. <strong>Apply</strong> rotates without closing (for hunting). The angle is <em>absolute</em>: re-rotating always resamples <strong>once</strong> from the original data, so trying many angles never degrades the image. Bilinear resampling; uncovered corners become blank (NaN). - <strong>⬆ North Up</strong> (in the dialog, when plate-solved) — one click sets the angle that puts celestial north up / the central Dec line horizontal.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/rotate-dialog.png" class="img-fluid figure-img"></p>
+<figcaption>Rotation dialog with dial, preview and North Up</figcaption>
+</figure>
+</div>
+<p>Everything follows the pixels through every transform: annotations, the astrometric solution (reference pixel + CD matrix), and view-link calibrations. Orientation histories are <strong>normalized</strong> — rotating back always restores the exact original canvas (expansion borders never accumulate). The orientation is recorded per image (and in sidecars), so an image re-opens the way you left it. Note: after an <em>arbitrary</em> rotation, <strong>Save Data As</strong> writes resampled pixels — do photometry on unrotated data.</p>
+<p><strong>Crop to Visible Region</strong> (<strong>Shift+C</strong>, Image menu; scripts: <code>crop x y w h</code> or <code>crop view</code>): frame the region by zooming — exactly as you would for a screenshot — and crop it into a NEW in-memory list entry at <strong>full bit depth</strong>; the original is untouched. <em>The plate solution survives exactly</em>: a crop only translates the reference pixel (CRPIX), so the rebased solution is written into the crop’s header as standard FITS cards — even when the source carried it only as PixInsight XISF properties. Annotations translate with the pixels, the current stretch carries over, and <strong>Save Data As…</strong> writes the result as FITS/XISF/16-bit TIFF. Undoable like any synthetic result.</p>
+</section>
+<section id="annotations" class="level2">
+<h2 class="anchored" data-anchor-id="annotations">9. Annotations</h2>
+<p>A pure <strong>vector overlay</strong> — never rasterized into the data.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/annotations.png" class="img-fluid figure-img"></p>
+<figcaption>Annotated field: ellipses, a labelled segment, the RA/Dec grid</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>Draw</strong> — toolbar tools: ellipse (drag), line segment (drag; the label sits beyond the start point, never crossing the segment), text (click).</li>
+<li><strong>Edit</strong> — click to select (grab handles: axis/endpoint resize, drag body to move), <strong>double-click</strong> to edit text &amp; colour, <strong>Delete</strong> to remove, <strong>⌘⇧C / ⌘⇧V</strong> copy / paste-at-cursor, full <strong>undo/redo</strong>.</li>
+<li><strong>Save Annotations</strong> is available whenever there is sidecar-worthy state — shapes, a rotation/flip history, or non-identity adjustments — so an orientation alone can be persisted and restored next session.</li>
+<li><strong>Show/hide</strong> — key <strong>A</strong> (grid overlay is separate). Loading or importing annotations always makes them visible.</li>
+<li><strong>Invert contrast</strong> — right-click menu, for bright fields.</li>
+<li><strong>Persistence</strong> — JSON sidecars (<code>&lt;image&gt;_annotation.json</code>), auto-loaded on open (Preferences toggle). <em>Save</em> overwrites silently; <em>Save As…</em> asks. Sidecars also carry the image <strong>orientation</strong> and the display <strong>adjustments</strong> (§4); saving works with adjustments alone (no shapes needed). Unsaved annotations warn on quit.</li>
+<li><strong>SExtractor import</strong> — Tools ▸ Import SExtractor Catalog… reads ASCII catalogs (needs <code>X_IMAGE</code>/<code>Y_IMAGE</code>; uses <code>A/B/THETA_IMAGE</code> ellipses when present), with ellipse scale factor, <code>FLAGS</code> filtering, <code>CLASS_STAR</code> colouring, and <code>NUMBER</code>/<code>MAG_AUTO</code> labels. Detections map correctly onto rotated views.</li>
+</ul>
+</section>
+<section id="astrometry" class="level2">
+<h2 class="anchored" data-anchor-id="astrometry">10. Astrometry</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/grid-astrometry.png" class="img-fluid figure-img"></p>
+<figcaption>RA/Dec grid over a plate-solved luminance master, SExtractor ellipses overlaid</figcaption>
+</figure>
+</div>
+<p>Solutions are read from FITS WCS keywords (TAN) and from PixInsight’s <code>PCL:AstrometricSolution</code> XISF properties; unsolved frames fall back to telescope-pointing keywords for approximate coordinates.</p>
+<ul>
+<li>Hover readout: RA/Dec of the pixel under the cursor.</li>
+<li><strong>RA/Dec grid overlay</strong> (<strong>Shift+G</strong>) with labelled, axis-aligned coordinate text (density set in Preferences).</li>
+<li><strong>Right-click menu</strong>, grouped readout / annotations / lookup / zoom: copy RA/Dec, copy pixel value, annotate here, paste annotation, <strong>Look up in Aladin</strong> (opens Aladin Lite framed ~10× the clicked annotation), <strong>Identify in SIMBAD</strong> (cone search scaled to the annotation).</li>
+</ul>
+</section>
+<section id="combining-images" class="level2">
+<h2 class="anchored" data-anchor-id="combining-images">11. Combining images</h2>
+<section id="combine-channels-tools-combine-channels" class="level3">
+<h3 class="anchored" data-anchor-id="combine-channels-tools-combine-channels">Combine Channels (Tools ▸ Combine Channels…)</h3>
+<p>Merges up to <strong>7 mono inputs</strong> — R, G, B, S(II), H(α), O(III), L — into a colour image via a linear-combination matrix:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/combine-channels.png" class="img-fluid figure-img"></p>
+<figcaption>Combine Channels dialog, SHO preset, preview visible</figcaption>
+</figure>
+</div>
+<p><em>The dialog with three narrowband masters (M1) assigned S/H/O and the live preview.</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/combine-result.png" class="img-fluid figure-img"></p>
+<figcaption>SII, Ha and OIII masters with their SHO combination in a 2×2 split</figcaption>
+</figure>
+</div>
+<p><em>The created image lands in the first empty view: each channel beside the Hubble-palette result.</em></p>
+<ul>
+<li><strong>Palette presets</strong>: SHO/Hubble, HOO, HSO, LRGB, plain RGB, bicolor.</li>
+<li>Per-channel <strong>pre-normalization</strong>: median / background-pedestal / min-max / none / <strong>As displayed</strong> — the last merges each channel <em>through its current view stretch</em>, i.e.&nbsp;exactly what you see is what combines.</li>
+<li>Both <strong>luminance modes</strong> (proper lightness transfer or linear add).</li>
+<li>Inputs must share dimensions (clear error otherwise).</li>
+<li>Large <strong>live preview</strong> responding to weight changes; per-channel toggles.</li>
+<li>The dialog <strong>remembers its settings</strong>; <strong>Reset</strong> restores defaults.</li>
+<li>The result lands in the first empty view (or the active one), auto-named from the palette; save it with <strong>File ▸ Save Data As…</strong>.</li>
+</ul>
+</section>
+<section id="combine-stars-tools-combine-stars-screen" class="level3">
+<h3 class="anchored" data-anchor-id="combine-stars-tools-combine-stars-screen">Combine Stars (Tools ▸ Combine Stars (screen)…)</h3>
+<p>Recomposes a <strong>starless</strong> image with a <strong>stars-only</strong> image via screen blending <code>1 − (1−starless)(1−k·stars)</code> — additive-like in the dark, saturation-safe in the bright:</p>
+<ul>
+<li>Both images RGB (or both mono), same dimensions; picked from the list (auto-guessed from names containing “starless”/“star”).</li>
+<li><strong>Star amount</strong> slider (0–150%) scales the stars before screening.</li>
+<li>Runs on each image’s <strong>as-displayed</strong> rendition; live preview; remembered pairing.</li>
+</ul>
+</section>
+<section id="transport-colors-tools-transport-colors-from-reference" class="level3">
+<h3 class="anchored" data-anchor-id="transport-colors-tools-transport-colors-from-reference">Transport Colors (Tools ▸ Transport Colors from Reference…)</h3>
+<p>Recolours the current image to match a reference’s colour distribution (sliced optimal transport on the displayed values):</p>
+<ul>
+<li>Distributions are estimated <strong>only from the pixels visible in each view</strong> — zoom both views onto the object first; off-screen field never steers the match. Saturated pixels are excluded (star cores can’t and shouldn’t match).</li>
+<li>Works across modalities (e.g.&nbsp;borrow an RGB rendition’s palette for an SHO image). Rotated images are handled in the disk frame — no borders are baked. The result is a new display-ready list entry; undoable.</li>
+</ul>
+<p><strong>Apply as stretch fit</strong> (checkbox in the dialog; scripts: <code>transport &lt;row&gt; [strength] stretch [colour]</code>; a second checkbox <em>Also fit colour adjustments</em> adds a cross-channel stage — temperature/tint/hue/saturation — for hue-rotation matches; full theory in the <em>Colour Transport</em> chapter / <a href="./TRANSPORT.html">docs/TRANSPORT.md</a>): instead of writing new pixels, NebulaScope fits each channel’s Black/Mid/White so the <em>display</em> matches the transported colours — completely non-destructive, so nothing can posterize and noise is never amplified by the mapping. The colour match is close rather than exact (cross-channel rotations lie outside the per-channel stretch family); the status bar reports the per-channel fit RMSE so you can judge. The exact pixel-writing mode remains available for when fidelity matters more than data purity.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/transport.png" class="img-fluid figure-img"></p>
+<figcaption>Colour transport in a 1×3 split: source, reference, transported result</figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="split-views-linked-navigation" class="level2">
+<h2 class="anchored" data-anchor-id="split-views-linked-navigation">12. Split views &amp; linked navigation</h2>
+<p><strong>View ▸ Split View…</strong> — one dialog with rows × columns spinners (max 5×5).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/split-views.png" class="img-fluid figure-img"></p>
+<figcaption>2×2 split comparing renditions, one active cell</figcaption>
+</figure>
+</div>
+<ul>
+<li>One cell is <strong>active</strong> (blue border) — the histogram, info panel, tools, and rotation act on it. Click any cell to activate; then click a list entry to load it there. Each cell keeps its own decoded image, so comparisons don’t re-decode (unlike blinking large files).</li>
+<li><strong>Automatic linking</strong> — cells with images of identical dimensions share zoom/pan. The <strong>⇄</strong> button on each cell opts out.</li>
+<li><strong>Calibrated linking</strong> (different sizes) — align the two views manually (zoom/pan/rotate until features match), then tick <strong>⇄</strong> on the second image: the current correspondence becomes the calibration, and from then on the views navigate together, each at its own pixel scale. Calibrations survive rotations and flips of either image.</li>
+<li><code>--split RxC</code> sets the grid from the command line (§13).</li>
+</ul>
+</section>
+<section id="command-line" class="level2">
+<h2 class="anchored" data-anchor-id="command-line">13. Command line</h2>
+<pre><code>nebulascope [options] [files...]
+
+  files                  Images to open (shell globs, or NebulaScope expands
+                         unexpanded * ? [ patterns itself).
+  -l, --list &lt;file&gt;      Load a saved image list.
+      --split &lt;RxC&gt;      Split the view (max 5x5) and assign the first R*C
+                         images to the cells in raster order.
+      --shared-stf       Auto-stretch the first image and share that stretch
+                         with every loaded image (same-session frames).
+      --run list         List all script commands (one-line summaries);
+                         detailed help: --help &lt;command&gt;.
+      --run &lt;script&gt;     Execute a command script and exit with the number of
+                         failed assertions (testing/batch; headless with
+                         QT_QPA_PLATFORM=offscreen). Commands: open, show,
+                         next/prev, split, fn, autostf [linked], reset,
+                         adjust &lt;name&gt; &lt;v&gt;, stfall (share stretch with the
+                         whole list), rot90, flip, rotate, export, save,
+                         assert size|channels|pixel|range, sleep,
+                         waitloaded [ms] (block until image + stats ready),
+                         screenshot &lt;file&gt; (grab the whole window to PNG),
+                         cmap &lt;name&gt;, cmapmod invert|split on|off [t],
+                         panels on|off (Image Only toggle),
+                         action &lt;name&gt; (trigger a menu action by its
+                         shortcut-registry name, e.g. toggle_grid; avoid
+                         modal dialogs — they block the script),
+                         debayer auto|off|&lt;pattern&gt; [method] (OSC demosaic
+                         mode for the displayed frame),
+                         tag on|off|toggle, tagsort, tagremove, tagmove
+                         (blink-culling: keep-checks and acting on them),
+                         transport &lt;row&gt; [strength%] (colour transport onto
+                         the displayed image, list row as reference),
+                         dialog rotate|combine|preferences|close (open a
+                         dialog NON-modally for scripted captures),
+                         dlgclick &lt;button text&gt;, dlgcombo &lt;n&gt; &lt;prefix&gt;
+                         (drive the open dialog's buttons / combos),
+                         screenshot &lt;file&gt; dialog (capture the open dialog),
+                         quit — one per line, #-comments; see tests/smoke.nsc.
+  -h, --help             This help.</code></pre>
+<p>Examples: <code>nebulascope *.fits</code> · <code>nebulascope --list tonight.txt</code> · <code>nebulascope --split 1x2 lum.fits ha.fits</code>. (macOS: invoke the binary inside the bundle, or symlink it onto your PATH — see docs/BUILDING-macos.md. Finder-injected <code>-psn</code> arguments are ignored.)</p>
+</section>
+<section id="export" class="level2">
+<h2 class="anchored" data-anchor-id="export">14. Export</h2>
+<ul>
+<li><strong>File ▸ Save Data As…</strong> — the <em>data</em> (Float32, current orientation): FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list entry to the file. <strong>XISF interop:</strong> float data are normalized to [0,1] (PixInsight’s convention; <code>NSSCALE</code>/<code>NSZERO</code> keywords record the original range). Saving <strong>FITS</strong> preserves metadata carefully: keyword values keep their natural types (numbers stay numeric, not quoted strings), and when a PixInsight-native XISF carries its metadata only as XISF <em>properties</em>, the standard keywords (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME, …) are synthesized from them — units converted where the conventions differ. Saving XISF asks for <strong>compression</strong> — Zstd (smallest; silently falls back to Zlib if your libXISF build lacks it), Zlib (widest compatibility), or Uncompressed; blocks are byte-shuffled for better ratios, and the choice is remembered for the session.</li>
+<li><strong>File ▸ Save Stretched As…</strong> — bakes the current display transfer (stretch + adjustments) into Float32 FITS/XISF/TIFF. Same XISF compression prompt.</li>
+<li><strong>File ▸ Export View As…</strong> (⌘E) — the <em>displayed</em> image (stretched, colormapped): PNG / JPEG / TIFF / WebP. JPEG asks for <strong>quality</strong>; PNG/TIFF ask for <strong>8- or 16-bit</strong> depth (16-bit is built from the float render — band-free gradients).</li>
+<li><strong>File ▸ Export Zoomed Region As…</strong> (⌘⇧E) — same, but only the visible region.</li>
+<li><strong>File ▸ Export / Import Image List…</strong> — session round-trip (§7).</li>
+<li>Annotations and adjustments export via their JSON sidecars (§9).</li>
+</ul>
+</section>
+<section id="layout-preferences-customization" class="level2">
+<h2 class="anchored" data-anchor-id="layout-preferences-customization">15. Layout, preferences &amp; customization</h2>
+<ul>
+<li><strong>Overlay layout</strong> (default): the image list/info and histogram float translucently over the canvas. <strong>O</strong> switches to the classic docked layout and back. Panel opacity is a preference — 100% (opaque) is fastest.</li>
+<li><strong>Tab</strong> — image-only mode (all panels hidden; Esc exits). <strong>Fullscreen</strong> on its own shortcut. <strong>H</strong> hides the scrollbars in every view for a clean canvas (pans still work).</li>
+<li><strong>Preferences…</strong> (application menu on macOS):
+<ul>
+<li><strong>General</strong> — default annotation colour, text size, line thickness; RA/Dec grid density; sidecar auto-load; overlay panel opacity; recent files list sizes.</li>
+<li><strong>Shortcuts</strong> — every action’s binding, editable; stored in <code>shortcuts.ini</code> (empty value disables; stale clashes revert).</li>
+</ul></li>
+<li><strong>About</strong> — version and copyright come from <code>src/app/AppInfo.h</code> (user-maintained).</li>
+</ul>
+</section>
+<section id="troubleshooting" class="level2">
+<h2 class="anchored" data-anchor-id="troubleshooting">16. Troubleshooting</h2>
+<ul>
+<li><em>“No 2-D image in primary HDU”</em> — the image lives in an extension; pick the HDU from the image list entry.</li>
+<li><em>Washed-out or black view</em> — Reset, then Auto STF; check the window handles aren’t collapsed.</li>
+<li><em>Adjustment sliders seem inert</em> — colour sliders (Temp…Vibrance) are disabled for mono images; tone sliders work everywhere.</li>
+<li><em>NebulaScope XISF looks like noise in PixInsight</em> — fixed in v0.84+ (floats normalized to [0,1]); re-save the file. Compressed blocks (v0.86+) are PI-verified and not the culprit.</li>
+<li><em>RA/Dec missing on an XISF</em> — confirm the file carries <code>PCL:AstrometricSolution:*</code> properties (Info panel filter: <code>Astrometric</code>).</li>
+<li><em>Annotations misplaced after import</em> — they map through the recorded orientation; if the sidecar predates v0.12, re-orient and re-save once.</li>
+<li><em>Slow zoom/pan with overlay panels</em> — set overlay opacity to 100% in Preferences (translucency costs repaints).</li>
+<li>Build issues — see <code>docs/BUILDING-{macos,linux,windows}.md</code>.</li>
+</ul>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-bertin1996" class="csl-entry" role="listitem">
+Bertin, E., and S. Arnouts. 1996. <span>“<span>SExtractor</span>: Software for Source Extraction.”</span> <em>Astronomy and Astrophysics Supplement Series</em> 117: 393–404. <a href="https://doi.org/10.1051/aas:1996164">https://doi.org/10.1051/aas:1996164</a>.
+</div>
+<div id="ref-xisf10" class="csl-entry" role="listitem">
+Conejero, Juan. 2015. <em><span>XISF</span> Version 1.0 Specification: Extensible Image Serialization Format</em>. Pleiades Astrophoto, <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html" class="uri">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a>.
+</div>
+<div id="ref-joye2003" class="csl-entry" role="listitem">
+Joye, W. A., and E. Mandel. 2003. <span>“New Features of <span>SAOImage DS9</span>.”</span> <em>Astronomical Data Analysis Software and Systems XII</em>, ASP conference series, vol. 295: 489.
+</div>
+<div id="ref-ghs2022" class="csl-entry" role="listitem">
+Payne, M., D. Robbins, and S. Carr. 2022. <em>The Generalised Hyperbolic Stretch: Equations and Rationale</em>. <a href="https://ghsastro.co.uk/">https://ghsastro.co.uk/</a>.
+</div>
+<div id="ref-pence2010" class="csl-entry" role="listitem">
+Pence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. <span>“Definition of the Flexible Image Transport System (<span>FITS</span>), Version 3.0.”</span> <em>Astronomy &amp; Astrophysics</em> 524: A42. <a href="https://doi.org/10.1051/0004-6361/201015362">https://doi.org/10.1051/0004-6361/201015362</a>.
+</div>
+<div id="ref-pitie2007" class="csl-entry" role="listitem">
+Pitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. <span>“Automated Colour Grading Using Colour Distribution Transfer.”</span> <em>Computer Vision and Image Understanding</em> 107 (1–2): 123–37. <a href="https://doi.org/10.1016/j.cviu.2006.11.011">https://doi.org/10.1016/j.cviu.2006.11.011</a>.
+</div>
+<div id="ref-rabin2012" class="csl-entry" role="listitem">
+Rabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. <span>“Wasserstein Barycenter and Its Application to Texture Mixing.”</span> <em>Scale Space and Variational Methods in Computer Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/hugues-talbot\.github\.io\/nebulascope\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./TRANSPORT.html" class="pagination-link" aria-label="Colour Transport — Theory and the Stretch Fit">
+        <span class="nav-page-text"><span class="chapter-title">Colour Transport — Theory and the Stretch Fit</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
