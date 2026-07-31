@@ -45,6 +45,18 @@ double mtf(double x, double m);
 double fitChannelStretch(const float* raw, const float* target, std::size_t n,
                          std::size_t stride, double lo, double hi,
                          ChannelStretch& out, bool intensityWeight = false);
+
+// Stage 2 of the transport stretch fit: with the per-channel curves fixed,
+// fit the CROSS-CHANNEL colour adjustments (temperature, tint, hue,
+// saturation) so applyColor(display) matches the target triples — the part
+// of an optimal-transport map that separable curves cannot express.
+// d*/t* are display/target planes; samples strided; intensity-weighted.
+// Returns the overall RMSE after the colour fit; `adj` receives the four
+// colour fields (tone fields left identity).
+struct AdjustParams;
+double fitColorAdjust(const float* dR, const float* dG, const float* dB,
+                      const float* tR, const float* tG, const float* tB,
+                      std::size_t n, std::size_t stride, AdjustParams& adj);
 // Base curve shape for Linear/Log/Asinh on a black/white-normalized t in [0,1].
 double baseShape(double t, StretchFn fn);
 // GHS local stretch intensity (the slope of the transfer); max at SP.

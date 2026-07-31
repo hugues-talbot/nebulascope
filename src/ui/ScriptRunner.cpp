@@ -104,13 +104,14 @@ const CommandRef kCommands[] = {
     "Demosaic mode for the displayed OSC frame: auto detects BAYERPAT from\n"
     "the header, a pattern name forces it, off shows the raw mosaic. The\n"
     "optional second argument sets the global algorithm (persisted)."}},
-  {"transport",  {"transport <row> [strength%] [stretch]",
+  {"transport",  {"transport <row> [strength%] [stretch [colour]]",
     "Colour-transport the displayed image toward list row <row> (1-based) as\n"
     "reference (sliced optimal transport, as-displayed data); the result\n"
     "becomes a new display-ready list entry. Default strength 100. With\n"
     "`stretch`, no pixels are written: per-channel B/M/W are FITTED so the\n"
     "display matches the transported colours — non-destructive, cannot\n"
-    "posterize; close (not exact) colour match."}},
+    "posterize. Adding `colour` also fits the cross-channel adjustments\n"
+    "(temperature/tint/hue/saturation) for hue-rotation matches."}},
   {"dialog",     {"dialog rotate|combine|preferences|close",
     "Open a dialog NON-modally (for dlgclick/dlgcombo/screenshot ... dialog),\n"
     "or close the open one."}},
@@ -429,8 +430,11 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         const int strength = t.size() > 2 ? t[2].toInt() : 100;
         const bool asStretch = t.size() > 3 &&
                                t[3].toLower() == QLatin1String("stretch");
+        const bool fitColour = asStretch && t.size() > 4 &&
+                               (t[4].toLower() == QLatin1String("colour") ||
+                                t[4].toLower() == QLatin1String("color"));
         QString terr;
-        if (!m_w->runColorTransport(key, strength, &terr, asStretch)) {
+        if (!m_w->runColorTransport(key, strength, &terr, asStretch, fitColour)) {
             err = terr.isEmpty() ? QStringLiteral("transport failed") : terr;
             return false;
         }

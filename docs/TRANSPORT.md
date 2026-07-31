@@ -145,7 +145,23 @@ sidecar, and the underlying data is untouched.
   parametric $D_c'(v)$, free of the locally extreme slopes an empirical
   density ratio can produce.
 
-### 3.2 The approximation gap
+### 3.2 Stage two: fitting the colour adjustments
+
+Optionally, a second stage narrows the separability gap. With the fitted
+per-channel curves held fixed, NebulaScope fits the four cross-channel
+colour adjustments — temperature, tint, hue, saturation — minimising the
+intensity-weighted error over full RGB *triples*:
+
+$$\min_{\theta}\; \sum_i \omega_i\,
+\big\lVert A_\theta\big(D(v_i)\big) - T(u_i) \big\rVert^2 ,$$
+
+where $A_\theta$ is the adjustment operator. These four parameters mix
+channels — which is precisely what OT's slicing rotations do and what
+separable curves cannot — so hue-rotation targets that stage 1 misses
+become reachable. The status bar reports the overall RMSE after this
+stage; with undo one keystroke away, trying both variants costs nothing.
+
+### 3.3 The approximation gap
 
 The stretch family is *separable*: three independent monotone curves. The
 optimal transport map is generally *not* — its slicing rotations mix

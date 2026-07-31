@@ -2228,6 +2228,13 @@ void MainWindow::transportColorsFromRef() {
                              "so nothing can posterize. Colour match is close, not exact\n"
                              "(cross-channel rotations are outside the stretch family).");
     form->addRow(QString(), asStretchBox);
+    auto* colourFitBox = new QCheckBox("Also fit colour adjustments (hue/temperature)");
+    colourFitBox->setToolTip("A second fitting stage over temperature/tint/hue/saturation —\n"
+                             "the cross-channel part per-channel curves cannot express.\n"
+                             "Try with and without: both are one Undo apart.");
+    colourFitBox->setEnabled(false);
+    connect(asStretchBox, &QCheckBox::toggled, colourFitBox, &QCheckBox::setEnabled);
+    form->addRow(QString(), colourFitBox);
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
@@ -2237,7 +2244,8 @@ void MainWindow::transportColorsFromRef() {
     s_lastStrength = strength->value();
     QString terr;
     if (!runColorTransport(keys[combo->currentIndex()], strength->value(), &terr,
-                           asStretchBox->isChecked()) &&
+                           asStretchBox->isChecked(),
+                           asStretchBox->isChecked() && colourFitBox->isChecked()) &&
         !terr.isEmpty())
         QMessageBox::warning(this, "Transport Colors", terr);
 }
@@ -2245,7 +2253,8 @@ void MainWindow::transportColorsFromRef() {
 // The transport proper, shared by the picker slot and ScriptRunner: reference
 // by list key, strength in percent. False (+ *errOut) on failure.
 bool MainWindow::runColorTransport(const QString& key, int strengthPct,
-                                   QString* errOut, bool asStretch) {
+                                   QString* errOut, bool asStretch,
+                                   bool fitColourAdj) {
     if (!m_image.isValid()) { if (errOut) *errOut = "no image displayed"; return false; }
     // Decode the reference (or fetch the in-memory synthetic).
     std::shared_ptr<ImageData> refImg;
@@ -2368,13 +2377,38 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         if (nch == 1) { st.chan[1] = st.chan[0]; st.chan[2] = st.chan[0]; }
         st.fn = StretchFn::Linear;
         st.adj = AdjustParams{};             // the fit absorbed the old display
+        // Stage 2 (optional): fit the cross-channel colour adjustments so the
+        // stretched display tracks OT's hue behaviour too.
+        QString colourNote;
+        if (fitColourAdj && nch == 3 && res.image.channels() == 3) {
+            std::vector<float> d[3], tv[3];
+            for (int c = 0; c < 3; ++c) {
+                const ChannelStretch& cs = st.chan[c];
+                const double denom = std::max(1e-6, cs.white - cs.black);
+                const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+                const float* rawp = srcPix->plane<float>(c);
+                const float* tgtp = res.image.plane<float>(c);
+                d[c].reserve(np / stride + 1);
+                tv[c].reserve(np / stride + 1);
+                for (std::size_t i = 0; i < np; i += stride) {
+                    d[c].push_back(float(mtf(windowCoord(rawp[i], st.lo[c], st.hi[c], cs), m)));
+                    tv[c].push_back(tgtp[i]);
+                }
+            }
+            AdjustParams fitted;
+            const double e2 = fitColorAdjust(d[0].data(), d[1].data(), d[2].data(),
+                                             tv[0].data(), tv[1].data(), tv[2].data(),
+                                             d[0].size(), 1, fitted);
+            st.adj = fitted;
+            colourNote = QStringLiteral(" · with colour fit: %1").arg(e2, 0, 'f', 4);
+        }
         const StretchModel::State prev = m_model.state();
         m_model.setState(st);
         m_undo->push(new StretchStateCmd(this, m_currentPath, prev, st,
                                          QStringLiteral("colour-match stretch")));
         statusBar()->showMessage(
-            QStringLiteral("Colour match fitted as stretch (non-destructive) — RMSE %1")
-                .arg(rms.join(QLatin1String(" / "))), 6000);
+            QStringLiteral("Colour match fitted as stretch (non-destructive) — RMSE %1%2")
+                .arg(rms.join(QLatin1String(" / ")), colourNote), 6000);
         return true;
     }
 

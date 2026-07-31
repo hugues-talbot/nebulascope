@@ -83,7 +83,8 @@ private slots:
     class CombineDialog* makeCombineDialog(QString* whyNot = nullptr);
     void adoptCombineResult(class CombineDialog& dlg);
     bool runColorTransport(const QString& refKey, int strengthPct,
-                           QString* errOut = nullptr, bool asStretch = false);
+                           QString* errOut = nullptr, bool asStretch = false,
+                           bool fitColourAdj = false);
     void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:

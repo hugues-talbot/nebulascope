@@ -193,6 +193,36 @@ NS_TEST(fit_channel_stretch_intensity_weighting) {
     NS_CHECK(brightErr(fitW) < 0.03);
 }
 
+NS_TEST(fit_color_adjust_recovers_cross_channel) {
+    // Targets built by a KNOWN colour adjustment of varied display triples:
+    // the stage-2 fitter must recover a functionally equivalent adjustment.
+    const std::size_t n = 12000;
+    std::vector<float> dR(n), dG(n), dB(n), tR(n), tG(n), tB(n);
+    AdjustParams truth;
+    truth.temperature = 0.30; truth.saturation = 0.35; truth.tint = -0.15;
+    for (std::size_t i = 0; i < n; ++i) {
+        const float u = float(i) / (n - 1);
+        dR[i] = u;
+        dG[i] = 0.2f + 0.6f * u;
+        dB[i] = 0.9f - 0.5f * u;
+        float r = dR[i], g = dG[i], b = dB[i];
+        applyColor(r, g, b, truth);
+        tR[i] = r; tG[i] = g; tB[i] = b;
+    }
+    AdjustParams fit;
+    const double rmse = fitColorAdjust(dR.data(), dG.data(), dB.data(),
+                                       tR.data(), tG.data(), tB.data(), n, 1, fit);
+    NS_CHECK(rmse < 0.01);
+    double worst = 0;
+    for (std::size_t i = 0; i < n; i += 53) {
+        float r = dR[i], g = dG[i], b = dB[i];
+        applyColor(r, g, b, fit);
+        worst = std::max({ worst, double(std::fabs(r - tR[i])),
+                           double(std::fabs(g - tG[i])), double(std::fabs(b - tB[i])) });
+    }
+    NS_CHECK(worst < 0.03);
+}
+
 NS_TEST(screen_blend_math) {
     // The star-recomposition op: 1-(1-a)(1-b). Identity with black stars,
     // saturation-safe, commutative.

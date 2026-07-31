@@ -1,4 +1,5 @@
 #include "core/Stretch.h"
+#include "core/Adjustments.h"
 #include <cmath>
 #include <algorithm>
 
@@ -110,6 +111,60 @@ double fitChannelStretch(const float* raw, const float* target, std::size_t n,
     }
     out.black = black; out.mid = mid; out.white = white;
     return std::sqrt(mse(black, mid, white));
+}
+
+double fitColorAdjust(const float* dR, const float* dG, const float* dB,
+                      const float* tR, const float* tG, const float* tB,
+                      std::size_t n, std::size_t stride, AdjustParams& adj) {
+    struct Triple { float dr, dg, db, tr, tg, tb, w; };
+    std::vector<Triple> s;
+    s.reserve(n / std::max<std::size_t>(1, stride) + 1);
+    for (std::size_t i = 0; i < n; i += std::max<std::size_t>(1, stride)) {
+        const float vals[6] = { dR[i], dG[i], dB[i], tR[i], tG[i], tB[i] };
+        bool ok = true;
+        for (float v : vals) ok = ok && std::isfinite(v);
+        if (!ok) continue;
+        const float luma = 0.2126f * vals[3] + 0.7152f * vals[4] + 0.0722f * vals[5];
+        s.push_back({ vals[0], vals[1], vals[2], vals[3], vals[4], vals[5],
+                      0.05f + luma });
+    }
+    adj = AdjustParams{};
+    if (s.size() < 64) return 1.0;
+
+    auto mse = [&](const AdjustParams& a) {
+        double e = 0.0, wsum = 0.0;
+        for (const Triple& p : s) {
+            float r = p.dr, g = p.dg, b = p.db;
+            applyColor(r, g, b, a);
+            const double d = double(r - p.tr) * (r - p.tr)
+                           + double(g - p.tg) * (g - p.tg)
+                           + double(b - p.tb) * (b - p.tb);
+            e += p.w * d;
+            wsum += p.w;
+        }
+        return e / (3.0 * std::max(1e-12, wsum));
+    };
+    auto lineSearch = [&](double a, double b, auto eval) {
+        const double phi = 0.6180339887498949;
+        double x1 = b - phi * (b - a), x2 = a + phi * (b - a);
+        double f1 = eval(x1), f2 = eval(x2);
+        for (int it = 0; it < 32 && (b - a) > 1e-4; ++it) {
+            if (f1 < f2) { b = x2; x2 = x1; f2 = f1; x1 = b - phi * (b - a); f1 = eval(x1); }
+            else         { a = x1; x1 = x2; f1 = f2; x2 = a + phi * (b - a); f2 = eval(x2); }
+        }
+        return 0.5 * (a + b);
+    };
+
+    double* fields[4] = { &adj.temperature, &adj.tint, &adj.hue, &adj.saturation };
+    for (int sweep = 0; sweep < 3; ++sweep)
+        for (double* f : fields)
+            *f = lineSearch(-1.0, 1.0, [&](double v) {
+                const double keep = *f; *f = v;
+                const double e = mse(adj);
+                *f = keep;
+                return e;
+            });
+    return std::sqrt(mse(adj));
 }
 
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,

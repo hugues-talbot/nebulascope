@@ -336,7 +336,9 @@ Recolours the current image to match a reference's colour distribution
   baked. The result is a new display-ready list entry; undoable.
 
 **Apply as stretch fit** (checkbox in the dialog; scripts: `transport <row>
-[strength] stretch`; full theory in the *Colour Transport* chapter /
+[strength] stretch [colour]`; a second checkbox *Also fit colour
+adjustments* adds a cross-channel stage — temperature/tint/hue/saturation —
+for hue-rotation matches; full theory in the *Colour Transport* chapter /
 [docs/TRANSPORT.md](TRANSPORT.md)): instead of writing new pixels, NebulaScope fits each
 channel's Black/Mid/White so the *display* matches the transported colours —
 completely non-destructive, so nothing can posterize and noise is never
