@@ -160,6 +160,8 @@ mode remains one checkbox away.
 - Dialog: **Tools ▸ Transport Colors from Reference…**, tick *Apply as
   stretch fit*. Scripts: `transport <row> [strength%] stretch`.
 - Strength applies *before* the fit — the fit targets the blended result.
+- Both modes are **undoable**: the exact mode as a list-entry addition, the
+  stretch fit as a stretch-state change (⌘Z restores the previous stretch).
 - The fit absorbs the current display (including adjustments) into fresh
   Linear black/mid/white values and resets the adjustment sliders, so
   what you see immediately after is the fitted match itself.

@@ -1639,6 +1639,32 @@ void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
 // ---- debayer ----------------------------------------------------------------
 
 namespace {
+// A wholesale stretch-state change (e.g. the colour-transport stretch fit):
+// applied by the caller first (first-redo skip), guarded on the image still
+// being current — the RotateAngleCmd idiom.
+class StretchStateCmd : public QUndoCommand {
+public:
+    StretchStateCmd(MainWindow* w, QString path,
+                    StretchModel::State prev, StretchModel::State next,
+                    const QString& text)
+        : m_w(w), m_path(std::move(path)),
+          m_prev(std::move(prev)), m_next(std::move(next)) { setText(text); }
+    void undo() override {
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->applyStretchState(m_prev);
+    }
+    void redo() override {
+        if (m_first) { m_first = false; return; }
+        if (m_w->currentPath() != m_path) { setObsolete(true); return; }
+        m_w->applyStretchState(m_next);
+    }
+private:
+    MainWindow* m_w;
+    QString m_path;
+    StretchModel::State m_prev, m_next;
+    bool m_first = true;
+};
+
 // Debayer change (per-image mode and/or global algorithm): applied by the
 // caller first, so redo skips its first invocation (RotateAngleCmd idiom).
 class DebayerCmd : public QUndoCommand {
@@ -1674,6 +1700,12 @@ private:
     bool m_first = true;
 };
 } // namespace
+
+void MainWindow::applyStretchState(const StretchModel::State& st) {
+    // setState emits changed(): the display re-renders and the per-image
+    // stretch memory re-snapshots — nothing else to do.
+    m_model.setState(st);
+}
 
 void MainWindow::applyDebayerChange(const QString& path, int mode, int method) {
     m_debayerByPath[path] = mode;
@@ -2336,7 +2368,10 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         if (nch == 1) { st.chan[1] = st.chan[0]; st.chan[2] = st.chan[0]; }
         st.fn = StretchFn::Linear;
         st.adj = AdjustParams{};             // the fit absorbed the old display
+        const StretchModel::State prev = m_model.state();
         m_model.setState(st);
+        m_undo->push(new StretchStateCmd(this, m_currentPath, prev, st,
+                                         QStringLiteral("colour-match stretch")));
         statusBar()->showMessage(
             QStringLiteral("Colour match fitted as stretch (non-destructive) — RMSE %1")
                 .arg(rms.join(QLatin1String(" / "))), 6000);

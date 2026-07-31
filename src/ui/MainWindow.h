@@ -119,6 +119,7 @@ public:
     // Debayer changes: apply without pushing / apply + push one undo entry.
     // kKeep leaves that half unchanged (mode is per-image, method global).
     static constexpr int kKeepDebayer = INT_MIN;
+    void applyStretchState(const StretchModel::State& st);   // undo plumbing
     void applyDebayerChange(const QString& path, int mode, int method);
     void requestDebayerChange(int newMode, int newMethod);
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
