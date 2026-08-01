@@ -102,4 +102,10 @@ waitloaded
 assert size 64 48
 assert rows 5
 
+# The list holds each image once: re-opening a listed file selects the
+# existing row instead of appending a duplicate.
+open smoke_crop.fits
+waitloaded
+assert rows 5
+
 quit

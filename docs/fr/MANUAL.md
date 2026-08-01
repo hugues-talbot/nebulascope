@@ -33,10 +33,15 @@ Pour ouvrir :
   entrée dépliable, une ligne par HDU image ; cliquez sur le HDU voulu.
 
 Une image nouvellement ouverte s'affiche immédiatement — dans la première
-cellule de vue *vide* si la vue est divisée, sinon dans la vue active. À la
-première visualisation elle reçoit une simple **rampe linéaire min→max**
-(prévisible, sans conjecture) ; appuyez sur **Auto STF** pour un étirement
-renforcé (§3).
+cellule de vue *vide* si la vue est divisée, sinon dans la vue active.
+L'ouverture de *plusieurs* images remplit les cellules vides **dans l'ordre
+donné** (ligne de commande, sélection du Finder, boîte de dialogue), une
+image par cellule, jusqu'à épuisement des cellules. La liste ne contient
+chaque image qu'**une seule fois** : rouvrir une image déjà listée
+sélectionne sa ligne existante au lieu d'ajouter un doublon (la barre d'état
+le signale). À la première visualisation une image reçoit une simple
+**rampe linéaire min→max** (prévisible, sans conjecture) ; appuyez sur
+**Auto STF** pour un étirement renforcé (§3).
 
 **Les images couleur one-shot (OSC) sont dématriçées automatiquement.** Une
 image mono dont l'en-tête porte un motif de Bayer (`BAYERPAT`, en honorant

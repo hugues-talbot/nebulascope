@@ -27,9 +27,13 @@ Ways to open:
   per image HDU; click the HDU you want.
 
 A newly opened image displays immediately — in the first *empty* view cell if
-the view is split, otherwise in the active view. On first view it gets a plain
-**min→max linear ramp** (predictable, no guessing); press **Auto STF** for a
-boosted stretch (§3).
+the view is split, otherwise in the active view. Opening *several* images
+fills the empty cells **in the order given** (command line, Finder selection,
+dialog), one image per cell, until the cells run out. The list holds each
+image **once**: re-opening a listed image selects its existing row instead of
+adding a duplicate (the status bar notes it). On first view an image gets a
+plain **min→max linear ramp** (predictable, no guessing); press **Auto STF**
+for a boosted stretch (§3).
 
 **One-shot-colour (OSC) frames are debayered automatically.** A mono frame
 whose header carries a Bayer pattern (`BAYERPAT`, honouring

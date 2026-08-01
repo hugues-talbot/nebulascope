@@ -1,4 +1,5 @@
 #include "ui/MainWindow.h"
+#include <QSet>
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
 #include "ui/RotateDialog.h"
@@ -1407,9 +1408,28 @@ static QString annotationSidecar(const QString& key) {
 // Append entries to the list without decoding. Selecting one (here or via the
 // keyboard) is what triggers the actual load in showRow().
 void MainWindow::addPaths(const QStringList& paths) {
-    QListWidgetItem* firstAdded = nullptr;
+    // The list holds each image ONCE. Re-opening a listed image selects its
+    // existing row instead of appending a duplicate (status bar notes it).
+    QSet<QString> listed;
+    for (int r = 0; r < m_fileList->count(); ++r)
+        listed << m_fileList->item(r)->data(Qt::UserRole).toString();
+
+    QList<QListWidgetItem*> added;
+    QListWidgetItem* firstExisting = nullptr;
+    int nDup = 0;
     for (const QString& p : paths) {
         if (p.isEmpty()) continue;
+        if (listed.contains(p)) {
+            ++nDup;
+            if (!firstExisting)
+                for (int r = 0; r < m_fileList->count(); ++r)
+                    if (m_fileList->item(r)->data(Qt::UserRole).toString() == p) {
+                        firstExisting = m_fileList->item(r);
+                        break;
+                    }
+            continue;
+        }
+        listed << p;
         int hduReq = -1;
         const QString base = splitHduKey(p, hduReq);   // re-imported lists may carry ||hdu=
         auto* it = new QListWidgetItem(
@@ -1422,7 +1442,7 @@ void MainWindow::addPaths(const QStringList& paths) {
         // then act on the tags from the list's context menu.
         it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
         it->setCheckState(Qt::Checked);
-        if (!firstAdded) firstAdded = it;
+        added << it;
 
         // Multi-extension FITS: probed ASYNCHRONOUSLY (scheduleHduProbe) so a
         // large batch appears instantly; child HDU rows fill in behind.
@@ -1433,19 +1453,47 @@ void MainWindow::addPaths(const QStringList& paths) {
         }
     }
     scheduleHduProbe();
-    // Show the first newly added file: in the first empty view if one exists
-    // (multi-view workflow), else the active view. Selecting the row fires
-    // currentRowChanged -> showRow -> displayPath into the active cell.
-    if (firstAdded) {
-        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
-        if (m_fileList->currentItem() == firstAdded) {
-            // Row already current (e.g. sole entry re-opened): the row-change
-            // signal won't fire, so display explicitly into the new cell.
-            displayPath(firstAdded->data(Qt::UserRole).toString());
-        } else {
-            m_fileList->setCurrentItem(firstAdded);
+    // Newly added images fill the EMPTY visible cells in raster order, in the
+    // order they were given (command line, Finder selection, dialog): first
+    // image -> first empty view (else the active view, as before), second
+    // image -> next empty view, and so on. The first image's cell and row are
+    // left active/selected. Selecting a row fires currentRowChanged ->
+    // showRow -> displayPath into the active cell.
+    if (!added.isEmpty()) {
+        ViewCell* firstCell = nullptr;
+        for (QListWidgetItem* it : added) {
+            ViewCell* empty = m_grid->firstEmptyVisible();
+            if (!empty && !firstCell) {
+                firstCell = m_grid->activeCell();       // no empty cell: use active
+            } else if (empty) {
+                m_grid->activate(empty);
+                if (!firstCell) firstCell = empty;
+            } else {
+                break;                                  // views exhausted
+            }
+            if (m_fileList->currentItem() == it) {
+                // Row already current (e.g. sole entry re-opened): the
+                // row-change signal won't fire, so display explicitly.
+                displayPath(it->data(Qt::UserRole).toString());
+            } else {
+                m_fileList->setCurrentItem(it);
+            }
         }
+        if (firstCell && m_grid->activeCell() != firstCell) {
+            m_grid->activate(firstCell);                // re-shows from the cell's cache
+            m_fileList->setCurrentItem(added.first());
+        }
+    } else if (firstExisting) {
+        // Everything was already listed: honour the open by SHOWING it.
+        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+        if (m_fileList->currentItem() == firstExisting)
+            displayPath(firstExisting->data(Qt::UserRole).toString());
+        else
+            m_fileList->setCurrentItem(firstExisting);
     }
+    if (nDup > 0)
+        statusBar()->showMessage(tr("%n image(s) already in the list — not added again",
+                                    nullptr, nDup), 4000);
     syncFileWatcher();
 }
 
