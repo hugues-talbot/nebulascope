@@ -771,7 +771,18 @@
     "href": "RELEASES.html#v0.5-2026-07-19",
     "title": "Appendix D — Release notes",
     "section": "v0.5 — 2026-07-19",
-    "text": "v0.5 — 2026-07-19\nSmooth display pipeline: dithered, interpolated rendering\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "v0.5 — 2026-07-19\nSmooth display pipeline: dithered, interpolated rendering",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+    ]
+  },
+  {
+    "objectID": "RELEASES.html#v0.0-2026-06-26",
+    "href": "RELEASES.html#v0.0-2026-06-26",
+    "title": "Appendix D — Release notes",
+    "section": "v0.0 — 2026-06-26",
+    "text": "v0.0 — 2026-06-26\nv0.0: project inception — FITS/XISF inspector skeleton with histogram stretch\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
     "crumbs": [
       "Appendices",
       "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
