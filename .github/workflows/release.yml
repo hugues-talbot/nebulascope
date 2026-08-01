@@ -119,3 +119,10 @@ jobs:
             artifacts/*.zip
             artifacts/*.deb
             artifacts/*.pdf
+
+      # softprops keeps the OLD body when the release already exists (tag
+      # re-pushed after amending its notes) — force the body to match the tag.
+      - name: Sync release body to the tag notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ github.ref_name }}" --notes-file release_body.md
