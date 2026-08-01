@@ -358,7 +358,9 @@ data purity.
 
 - One cell is **active** (blue border) — the histogram, info panel, tools,
   and rotation act on it. Click any cell to activate; then click a list
-  entry to load it there. Each cell keeps its own decoded image, so
+  entry to load it there — or simply **drag a list entry onto any cell**:
+  the cell activates and shows that image (the row stays in the list;
+  dragging *within* the list still reorders). Each cell keeps its own decoded image, so
   comparisons don't re-decode (unlike blinking large files).
 - **Automatic linking** — cells with images of identical dimensions share
   zoom/pan. The **⇄** button on each cell opts out.

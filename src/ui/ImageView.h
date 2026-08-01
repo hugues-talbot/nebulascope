@@ -67,8 +67,12 @@ signals:
     void annotationPressed(const QPointF& scenePos, bool isHandle);
     void annotationDragged();      // live item drag in progress (each move tick)
     void annotationDoubleClicked(const QPointF& scenePos);   // open the edit dialog
+    void listKeyDropped(const QString& key);  // image-list row dropped onto this view
 
 protected:
+    void dragEnterEvent(QDragEnterEvent*) override;
+    void dragMoveEvent(QDragMoveEvent*) override;
+    void dropEvent(QDropEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void mouseDoubleClickEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;

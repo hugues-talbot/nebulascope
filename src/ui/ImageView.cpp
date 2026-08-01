@@ -4,6 +4,8 @@
 #include <QRubberBand>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QMimeData>
+#include <QDragEnterEvent>
 #include <QScrollBar>
 #include <cmath>
 
@@ -15,6 +17,7 @@ ImageView::ImageView(QWidget* parent) : QGraphicsView(parent) {
     setBackgroundBrush(QColor("#05070a"));
     setFrameShape(QFrame::NoFrame);
     setMouseTracking(true);
+    setAcceptDrops(true);          // image-list rows can be dropped onto a cell
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::NoDrag);
@@ -93,6 +96,38 @@ void ImageView::setDrawTool(DrawTool t) {
     m_drawing = false;
     if (t == DrawTool::None) unsetCursor();
     else setCursor(Qt::CrossCursor);
+}
+
+// ---- image-list drag & drop -------------------------------------------------
+// The list's drags carry the row's key in this custom format. Accept as a
+// COPY: if the drop resolved as a move, the list (in drag-drop mode) would
+// delete the dragged row. Anything else (e.g. Finder file drags) is ignored
+// so it propagates to MainWindow's window-level file-drop handling.
+static const char* kListKeyMime = "application/x-nebulascope-listkey";
+
+void ImageView::dragEnterEvent(QDragEnterEvent* e) {
+    if (e->mimeData()->hasFormat(kListKeyMime)) {
+        e->setDropAction(Qt::CopyAction);
+        e->accept();
+    } else {
+        e->ignore();
+    }
+}
+
+void ImageView::dragMoveEvent(QDragMoveEvent* e) {
+    if (e->mimeData()->hasFormat(kListKeyMime)) {
+        e->setDropAction(Qt::CopyAction);
+        e->accept();
+    } else {
+        e->ignore();
+    }
+}
+
+void ImageView::dropEvent(QDropEvent* e) {
+    if (!e->mimeData()->hasFormat(kListKeyMime)) { e->ignore(); return; }
+    e->setDropAction(Qt::CopyAction);
+    e->accept();
+    emit listKeyDropped(QString::fromUtf8(e->mimeData()->data(kListKeyMime)));
 }
 
 void ImageView::mousePressEvent(QMouseEvent* e) {

@@ -417,7 +417,10 @@ colonnes (max 5×5).
 
 - Une cellule est **active** (bordure bleue) — l'histogramme, le panneau
   Infos, les outils et la rotation agissent sur elle. Cliquez une cellule
-  pour l'activer ; puis cliquez une entrée de liste pour l'y charger.
+  pour l'activer ; puis cliquez une entrée de liste pour l'y charger — ou
+  **glissez-déposez simplement une entrée de la liste sur une cellule** :
+  la cellule s'active et affiche cette image (la ligne reste dans la
+  liste ; glisser *au sein* de la liste réordonne toujours).
   Chaque cellule garde sa propre image décodée : les comparaisons ne
   redécodent pas (contrairement au blink de gros fichiers).
 - **Liaison automatique** — les cellules dont les images ont des dimensions

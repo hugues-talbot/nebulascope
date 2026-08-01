@@ -96,6 +96,23 @@ MainWindow::MainWindow() {
     resize(1480, 940);
 }
 
+namespace {
+// QListWidget whose drags also carry the dragged row's key, so a row can be
+// dropped onto a specific view cell (ImageView accepts this format as a copy).
+class ImageListWidget : public QListWidget {
+public:
+    using QListWidget::QListWidget;
+protected:
+    QMimeData* mimeData(const QList<QListWidgetItem*>& items) const override {
+        QMimeData* md = QListWidget::mimeData(items);
+        if (md && !items.isEmpty())
+            md->setData(QStringLiteral("application/x-nebulascope-listkey"),
+                        items.first()->data(Qt::UserRole).toString().toUtf8());
+        return md;
+    }
+};
+} // namespace
+
 static bool looksLikeImage(const QString& path) {
     static const QStringList exts = {
         "fits","fit","fts","fz","xisf","jpg","jpeg","png","tif","tiff","txt" };
@@ -152,9 +169,14 @@ void MainWindow::buildUi() {
     bar->addWidget(expBtn);
     lv->addLayout(bar);
 
-    m_fileList = new QListWidget(listHost);
+    m_fileList = new ImageListWidget(listHost);
     m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_fileList->setDragDropMode(QAbstractItemView::InternalMove);   // drag to reorder
+    // DragDrop (not InternalMove) so rows can ALSO be dragged onto a view
+    // cell: InternalMove deletes the source row when an external target
+    // accepts the drop. Internal reorders still default to a move, and the
+    // model rejects foreign mime types, so no external junk can drop in.
+    m_fileList->setDragDropMode(QAbstractItemView::DragDrop);
+    m_fileList->setDefaultDropAction(Qt::MoveAction);               // drag to reorder
     lv->addWidget(m_fileList, 1);
     m_leftDock->setWidget(listHost);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
@@ -774,6 +796,20 @@ void MainWindow::connectViewSignals(ImageView* v) {
         if (v == m_view) onPixelHovered(x, y, r, g, b, valid);
     });
     connect(v, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
+    // A list row dropped on this view: activate its cell, then show the row
+    // there (same path as click-to-activate + click-the-row).
+    connect(v, &ImageView::listKeyDropped, this, [this, v](const QString& key) {
+        for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+            if (c->view() == v) { m_grid->activate(c); break; }
+        for (int r = 0; r < m_fileList->count(); ++r) {
+            QListWidgetItem* it = m_fileList->item(r);
+            if (it->data(Qt::UserRole).toString() == key) {
+                if (m_fileList->currentItem() == it) displayPath(key);
+                else m_fileList->setCurrentItem(it);
+                break;
+            }
+        }
+    });
     connect(v, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
     connect(v, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(v, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
