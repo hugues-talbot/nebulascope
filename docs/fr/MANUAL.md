@@ -507,10 +507,11 @@ symbolique vers votre PATH — voir docs/BUILDING-macos.md.)
   et retour. L'opacité des panneaux est une préférence — 100 % (opaque) est
   le plus rapide.
 - **Tab** — mode image seule (tous les panneaux masqués ; Échap sort). Le
-  **plein écran** a son propre raccourci ; **⌥F** agrandit/restaure la
-  fenêtre sans passer par le bouton vert. **H** masque les barres de
-  défilement de toutes les vues pour un canevas épuré (les panoramiques
-  fonctionnent toujours).
+  **plein écran** a son propre raccourci ; **⌥F** est le bouton vert au
+  clavier : plein écran natif aller-retour sous macOS (barre de menus
+  masquée, Espace dédié ; sous Linux/Windows, agrandit/restaure). **H**
+  masque les barres de défilement de toutes les vues pour un canevas
+  épuré (les panoramiques fonctionnent toujours).
 - **Préférences…** (menu de l'application sur macOS) :
   - **Général** — langue de l'interface (système / English / Français) ;
     couleur, taille de texte et épaisseur de trait par défaut des

@@ -987,9 +987,18 @@ void MainWindow::buildMenusAndToolbar() {
     acts["fullscreen"] = view->addAction(tr("&Fullscreen"), QKeySequence::FullScreen, this, [this] {
         isFullScreen() ? showNormal() : showFullScreen();
     });
+#ifdef Q_OS_MACOS
+    // The green button enters NATIVE full screen (own Space, menu bar and
+    // title hidden) — ⌥F must match it exactly, not plain maximize.
+    acts["maximize"] = view->addAction(tr("Full Screen (Green Button)"), QKeySequence("Alt+F"),
+                                       this, [this] {
+        isFullScreen() ? showNormal() : showFullScreen();
+    });
+#else
     acts["maximize"] = view->addAction(tr("&Maximize"), QKeySequence("Alt+F"), this, [this] {
         isMaximized() ? showNormal() : showMaximized();
     });
+#endif
     acts["image_only"] = view->addAction(tr("&Image Only"), QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
     acts["clear_list"] = view->addAction(tr("Clear List && Close All"), QKeySequence("Alt+C"),
                                          this, &MainWindow::clearImageList);
@@ -1728,7 +1737,8 @@ void MainWindow::moveTaggedFiles(bool checked, const QString& destDir) {
     if (dir.isEmpty())
         dir = QFileDialog::getExistingDirectory(this,
             tr("Move %1 %2 frame(s) to…")
-                .arg(files.size()).arg(checked ? tr("checked") : tr("unchecked")));
+                .arg(files.size()).arg(checked ? tr("checked") : tr("unchecked")),
+            openDialogDir());
     if (dir.isEmpty()) return;
     QDir().mkpath(dir);                        // scripted destinations may be new
 
@@ -2240,7 +2250,7 @@ void MainWindow::clearImageList() {
 void MainWindow::exportList() {
     if (m_fileList->count() == 0) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, tr("Export image list"), "images.txt", tr("Text file (*.txt);;All files (*)"));
+        this, tr("Export image list"), openDialogDir() + QStringLiteral("/images.txt"), tr("Text file (*.txt);;All files (*)"));
     if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -2255,7 +2265,7 @@ void MainWindow::exportList() {
 
 void MainWindow::importList() {
     const QString path = QFileDialog::getOpenFileName(
-        this, tr("Import image list"), QString(), tr("Text file (*.txt);;All files (*)"));
+        this, tr("Import image list"), openDialogDir(), tr("Text file (*.txt);;All files (*)"));
     if (!path.isEmpty()) importListFile(path);
 }
 
@@ -2950,7 +2960,7 @@ static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
 void MainWindow::saveStretched() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, tr("Save stretched image"), QString(),
+        this, tr("Save stretched image"), openDialogDir(),
         tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
     if (path.isEmpty()) return;
     io::SaveOptions opts;
@@ -2969,7 +2979,7 @@ void MainWindow::saveStretched() {
 void MainWindow::saveFile() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, tr("Save image"), QString(), tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
+        this, tr("Save image"), openDialogDir(), tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
     if (path.isEmpty()) return;
     io::SaveOptions opts;
     if (QFileInfo(path).suffix().toLower() == "xisf" &&
@@ -3054,7 +3064,7 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
                                    const std::function<QImage()>& make16) {
     if (img.isNull()) return;
     const QString path = QFileDialog::getSaveFileName(
-        this, title, QString(), tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
+        this, title, openDialogDir(), tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
     if (path.isEmpty()) return;
     const QString ext = QFileInfo(path).suffix().toLower();
 
@@ -3539,7 +3549,7 @@ void MainWindow::keyPressEvent(QKeyEvent* e) {
 void MainWindow::importSexCatalog() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getOpenFileName(
-        this, tr("Import SExtractor catalog"), QString(),
+        this, tr("Import SExtractor catalog"), openDialogDir(),
         tr("SExtractor catalogs (*.cat *.txt);;All files (*)"));
     if (path.isEmpty()) return;
 
@@ -3718,7 +3728,7 @@ void MainWindow::saveAnnotationsAs() {
 
 void MainWindow::loadAnnotations() {
     const QString path = QFileDialog::getOpenFileName(
-        this, tr("Load annotations"), QString(), tr("Annotations (*_annotation.json *.json)"));
+        this, tr("Load annotations"), openDialogDir(), tr("Annotations (*_annotation.json *.json)"));
     if (path.isEmpty()) return;
     loadAnnotationsFile(path);
 }

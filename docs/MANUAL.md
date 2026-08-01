@@ -460,9 +460,10 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   translucently over the canvas. **O** switches to the classic docked
   layout and back. Panel opacity is a preference — 100% (opaque) is fastest.
 - **Tab** — image-only mode (all panels hidden; Esc exits). **Fullscreen**
-  on its own shortcut; **⌥F** maximises/restores the window without
-  reaching for the green button. **H** hides the scrollbars in every view
-  for a clean canvas (pans still work).
+  on its own shortcut; **⌥F** is the green button on a key: native full
+  screen in/out on macOS (menu bar hidden, own Space; on Linux/Windows it
+  maximises/restores). **H** hides the scrollbars in every view for a
+  clean canvas (pans still work).
 - **Preferences…** (application menu on macOS):
   - **General** — interface language (system default / English / Français —
     applied at the next launch; the `.nsc` script language and CLI output
