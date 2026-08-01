@@ -60,6 +60,11 @@ void ImageView::setDisplayImage(const QImage& img) {
     const QPixmap pm = QPixmap::fromImage(img);
     if (!m_item) {
         m_item = m_scene->addPixmap(pm);
+        // Bilinear sampling when scaled. Nearest-neighbour minification
+        // subsamples every Nth pixel, which can phase-lock with periodic
+        // fixed-pattern structure in the data and beat it into large moiré
+        // blocks at specific zoom-out levels.
+        m_item->setTransformationMode(Qt::SmoothTransformation);
         m_scene->setSceneRect(m_item->boundingRect());
         zoomToFit();
     } else {
