@@ -108,4 +108,11 @@ open smoke_crop.fits
 waitloaded
 assert rows 5
 
+# Clear List & Close All empties the list and every view; the app stays usable.
+action clear_list
+assert rows 0
+open smoke_crop.fits
+waitloaded
+assert rows 1
+
 quit

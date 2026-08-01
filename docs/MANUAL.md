@@ -187,7 +187,9 @@ cards or XISF properties) in a filterable, copyable table.
 - List management: **+** append, **−** / context menu remove, drag to
   reorder, export (**⤓**) and **File ▸ Import Image List…** re-load a saved
   list (one path per line, `#` comments, relative paths resolve against the
-  list file). `--list` does the same from the command line.
+  list file). `--list` does the same from the command line. **Clear List &
+  Close All** (**⌥C**, View menu or the list's context menu) empties the
+  list and every view in one stroke.
 - In-memory results (combine, transport) are marked in the list; **Save Data
   As…** turns the entry into the saved file (name, sidecars, and per-image
   state follow).
@@ -458,8 +460,9 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   translucently over the canvas. **O** switches to the classic docked
   layout and back. Panel opacity is a preference — 100% (opaque) is fastest.
 - **Tab** — image-only mode (all panels hidden; Esc exits). **Fullscreen**
-  on its own shortcut. **H** hides the scrollbars in every view for a clean
-  canvas (pans still work).
+  on its own shortcut; **⌥F** maximises/restores the window without
+  reaching for the green button. **H** hides the scrollbars in every view
+  for a clean canvas (pans still work).
 - **Preferences…** (application menu on macOS):
   - **General** — interface language (system default / English / Français —
     applied at the next launch; the `.nsc` script language and CLI output

@@ -51,6 +51,7 @@ public:
 
 private slots:
     void openFile();
+    void clearImageList();
     QString openDialogDir() const;
     void rememberOpenDialogDir(const QString& firstPath);
     void saveFile();

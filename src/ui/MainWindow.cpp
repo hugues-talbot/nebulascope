@@ -773,6 +773,8 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     menu.addSeparator();
     QAction* aRemove = menu.addAction(tr("Remove from List"));
     aRemove->setEnabled(nSel > 0);
+    QAction* aClear = menu.addAction(tr("Clear List && Close All"));
+    aClear->setEnabled(m_fileList->count() > 0);
 
     QAction* chosen = menu.exec(m_fileList->viewport()->mapToGlobal(pos));
     if (!chosen) return;
@@ -788,6 +790,7 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     else if (chosen == aRemUnch)  removeTaggedFromList(false);
     else if (chosen == aRemChk)   removeTaggedFromList(true);
     else if (chosen == aRemove) removeSelected();
+    else if (chosen == aClear) clearImageList();
 }
 
 // One-time wiring for every view the grid creates. Handlers act on the ACTIVE
@@ -984,7 +987,12 @@ void MainWindow::buildMenusAndToolbar() {
     acts["fullscreen"] = view->addAction(tr("&Fullscreen"), QKeySequence::FullScreen, this, [this] {
         isFullScreen() ? showNormal() : showFullScreen();
     });
+    acts["maximize"] = view->addAction(tr("&Maximize"), QKeySequence("Alt+F"), this, [this] {
+        isMaximized() ? showNormal() : showMaximized();
+    });
     acts["image_only"] = view->addAction(tr("&Image Only"), QKeySequence("Tab"), this, &MainWindow::toggleImageOnly);
+    acts["clear_list"] = view->addAction(tr("Clear List && Close All"), QKeySequence("Alt+C"),
+                                         this, &MainWindow::clearImageList);
     // Interop: refresh images that PixInsight/Siril/GraXpert overwrite on disk.
     m_autoReloadAct = view->addAction(tr("Auto-&Reload Changed Files"));
     m_autoReloadAct->setCheckable(true);
@@ -2217,6 +2225,16 @@ void MainWindow::removeSelected() {
     } else if (m_fileList->currentRow() < 0) {
         m_fileList->setCurrentRow(0);
     }
+}
+
+// Empty the list and every view. Reuses the removeSelected() machinery: it
+// already frees in-memory synthetics, drops HDU children, forgets stretch
+// memory, and empties all cells when the last row goes.
+void MainWindow::clearImageList() {
+    if (m_fileList->count() == 0) return;
+    m_fileList->selectAll();
+    removeSelected();
+    statusBar()->showMessage(tr("List cleared — all images closed"), 4000);
 }
 
 void MainWindow::exportList() {

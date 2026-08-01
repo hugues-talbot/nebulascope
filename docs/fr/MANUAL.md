@@ -219,7 +219,9 @@ et copiable.
   glisser pour réordonner, export (**⤓**) et **Fichier ▸ Importer une liste
   d'images…** recharge une liste sauvegardée (un chemin par ligne,
   commentaires `#`, chemins relatifs résolus par rapport au fichier de
-  liste). `--list` fait de même en ligne de commande.
+  liste). `--list` fait de même en ligne de commande. **Vider la liste et
+  tout fermer** (**⌥C**, menu Affichage ou menu contextuel de la liste)
+  vide la liste et toutes les vues d'un seul geste.
 - Les résultats en mémoire (combinaison, transport) sont marqués dans la
   liste ; **Enregistrer les données sous…** transforme l'entrée en fichier
   sauvegardé (nom, fichiers annexes et état par image suivent).
@@ -505,7 +507,8 @@ symbolique vers votre PATH — voir docs/BUILDING-macos.md.)
   et retour. L'opacité des panneaux est une préférence — 100 % (opaque) est
   le plus rapide.
 - **Tab** — mode image seule (tous les panneaux masqués ; Échap sort). Le
-  **plein écran** a son propre raccourci. **H** masque les barres de
+  **plein écran** a son propre raccourci ; **⌥F** agrandit/restaure la
+  fenêtre sans passer par le bouton vert. **H** masque les barres de
   défilement de toutes les vues pour un canevas épuré (les panoramiques
   fonctionnent toujours).
 - **Préférences…** (menu de l'application sur macOS) :
