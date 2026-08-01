@@ -148,6 +148,10 @@ void MainWindow::buildUi() {
     m_grid->setGrid(1, 1);
     connect(m_grid, &ViewGrid::linkMessage, this,
             [this](const QString& t) { statusBar()->showMessage(t, 5000); });
+    // New/re-placed cells are created after the overlay boxes and would stack
+    // above them — re-raise the panels whenever the grid changes.
+    connect(m_grid, &ViewGrid::gridChanged, this,
+            [this] { if (m_overlay) layoutOverlayPanels(); });
     m_view = m_grid->activeCell()->view();
     m_annotations = m_grid->activeCell()->layer();
     m_view->setSource(&m_image);
@@ -1456,36 +1460,40 @@ void MainWindow::addPaths(const QStringList& paths) {
     // Newly added images fill the EMPTY visible cells in raster order, in the
     // order they were given (command line, Finder selection, dialog): first
     // image -> first empty view (else the active view, as before), second
-    // image -> next empty view, and so on. The first image's cell and row are
-    // left active/selected. Selecting a row fires currentRowChanged ->
-    // showRow -> displayPath into the active cell.
+    // image -> next empty view, and so on. Same pattern as applySplitLayout:
+    // activate, decode via showRow, then render SYNCHRONOUSLY — occupied()
+    // only flips once a frame lands (so the async pipeline would keep
+    // reporting the same cell "empty"), and async frames are dropped as soon
+    // as the next cell activates.
     if (!added.isEmpty()) {
         ViewCell* firstCell = nullptr;
         for (QListWidgetItem* it : added) {
-            ViewCell* empty = m_grid->firstEmptyVisible();
-            if (!empty && !firstCell) {
-                firstCell = m_grid->activeCell();       // no empty cell: use active
-            } else if (empty) {
-                m_grid->activate(empty);
-                if (!firstCell) firstCell = empty;
-            } else {
-                break;                                  // views exhausted
+            // firstEmptyVisible() skips the active cell — but an EMPTY active
+            // cell is the most natural first target (fresh split: top-left).
+            ViewCell* target = !m_grid->activeCell()->occupied()
+                                   ? m_grid->activeCell()
+                                   : m_grid->firstEmptyVisible();
+            if (!target) {
+                if (firstCell) break;                   // views exhausted
+                target = m_grid->activeCell();          // no empty cell: use active
             }
-            if (m_fileList->currentItem() == it) {
-                // Row already current (e.g. sole entry re-opened): the
-                // row-change signal won't fire, so display explicitly.
-                displayPath(it->data(Qt::UserRole).toString());
-            } else {
-                m_fileList->setCurrentItem(it);
+            m_grid->activate(target);
+            if (!firstCell) firstCell = target;
+            showRow(m_fileList->row(it));
+            if (m_image.isValid()) {
+                m_view->setDisplayImage(DisplayRenderer::render(m_image, m_model));
+                m_view->zoomToFit();
             }
         }
-        if (firstCell && m_grid->activeCell() != firstCell) {
-            m_grid->activate(firstCell);                // re-shows from the cell's cache
+        if (firstCell) {
+            m_grid->activate(firstCell);                // first image's cell stays active
+            QSignalBlocker blk(m_fileList);             // highlight without re-decoding
             m_fileList->setCurrentItem(added.first());
         }
     } else if (firstExisting) {
         // Everything was already listed: honour the open by SHOWING it.
-        if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
+        if (m_grid->activeCell()->occupied())
+            if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
         if (m_fileList->currentItem() == firstExisting)
             displayPath(firstExisting->data(Qt::UserRole).toString());
         else

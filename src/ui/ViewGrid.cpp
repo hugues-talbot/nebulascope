@@ -121,6 +121,7 @@ void ViewGrid::setGrid(int rows, int cols) {
     // A shrink can hide the active cell — move activity to the top-left first.
     if (m_active >= need) activate(m_cells[0]);
     relayout();
+    emit gridChanged();
 }
 
 void ViewGrid::relayout() {

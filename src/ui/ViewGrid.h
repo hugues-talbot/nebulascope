@@ -102,6 +102,7 @@ signals:
     void aboutToActivate(ViewCell* current, ViewCell* next);
     void viewCreated(ImageView* v);       // hook up app-level signals once per view
     void linkMessage(const QString& text);  // calibration feedback for the status bar
+    void gridChanged();                   // rows/cols changed and cells re-placed
 
 public:
     // The active image's pixels were remapped by `forward` (old scene → new
