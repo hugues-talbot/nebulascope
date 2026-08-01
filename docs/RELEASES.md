@@ -125,3 +125,8 @@ This version now reads and displays sextractor catalogs as annotations.
 Smooth display pipeline: dithered, interpolated rendering
 
 
+## v0.0 — 2026-06-26
+
+v0.0: project inception — FITS/XISF inspector skeleton with histogram stretch
+
+
