@@ -60,17 +60,29 @@ void ImageView::setDisplayImage(const QImage& img) {
     const QPixmap pm = QPixmap::fromImage(img);
     if (!m_item) {
         m_item = m_scene->addPixmap(pm);
-        // Bilinear sampling when scaled. Nearest-neighbour minification
-        // subsamples every Nth pixel, which can phase-lock with periodic
-        // fixed-pattern structure in the data and beat it into large moiré
-        // blocks at specific zoom-out levels.
-        m_item->setTransformationMode(Qt::SmoothTransformation);
         m_scene->setSceneRect(m_item->boundingRect());
         zoomToFit();
     } else {
         m_item->setPixmap(pm);
         m_scene->setSceneRect(m_item->boundingRect());
     }
+}
+
+// Sampling mode follows the zoom DIRECTION, chosen at paint time so every
+// zoom path is covered. Minified: bilinear — nearest-neighbour would take
+// every Nth pixel, which phase-locks with periodic fixed-pattern structure
+// (CMOS banding) and beats it into large moiré blocks at specific zoom-out
+// levels. At 1:1 and magnified: nearest-neighbour — pixels stay crisp
+// squares instead of bilinear blur.
+void ImageView::paintEvent(QPaintEvent* e) {
+    if (m_item) {
+        const qreal s = std::sqrt(std::abs(transform().determinant()));
+        const Qt::TransformationMode want =
+            s < 0.999 ? Qt::SmoothTransformation : Qt::FastTransformation;
+        if (m_item->transformationMode() != want)
+            m_item->setTransformationMode(want);   // schedules one clean repaint
+    }
+    QGraphicsView::paintEvent(e);
 }
 
 void ImageView::zoomToFit() {

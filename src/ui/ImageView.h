@@ -70,6 +70,7 @@ signals:
     void listKeyDropped(const QString& key);  // image-list row dropped onto this view
 
 protected:
+    void paintEvent(QPaintEvent*) override;
     void dragEnterEvent(QDragEnterEvent*) override;
     void dragMoveEvent(QDragMoveEvent*) override;
     void dropEvent(QDropEvent*) override;
