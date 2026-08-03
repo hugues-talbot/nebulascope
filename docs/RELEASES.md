@@ -2,6 +2,36 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.92 — 2026-08-03
+
+v0.92 — list & session ergonomics, inline export options, display sampling
+
+Highlights:
+
+- **Large-list workflows** — drag a list row onto any view cell to show
+  it there; the list holds each image once (re-opening selects the
+  existing row); batch opens fill the empty cells in the order given;
+  **Clear List & Close All** (⌥C) sweeps the session in one stroke.
+  Together with Apply to All and blink culling, per-filter inspection of
+  a full night's acquisitions is now a tight loop.
+- **Inline save options** — pixel depth (PNG/TIFF), quality (JPEG, and
+  now WebP), and XISF compression are options INSIDE the save dialogs,
+  enabled by the selected format — no follow-up prompts.
+- **Display sampling** — bilinear when zoomed out (kills the moiré that
+  nearest-neighbour subsampling beats out of CMOS fixed-pattern noise),
+  crisp nearest-neighbour at 1:1 and beyond.
+- **Window & dialogs** — ⌥F is the green button on a key (native full
+  screen on macOS; maximize elsewhere); every file dialog starts in the
+  current image's directory.
+- **Fixes** — Zoom to Fit/1:1 acted on the wrong cell in split views
+  (stale receiver); overlay panels no longer hide behind newly created
+  cells after a split; Finder open events carry status-bar feedback and
+  Console logging; proper French plural forms for counts.
+- **Manual** — §12 gains a real-data showcase: NGC 7331 with SN 2025rbs,
+  a C11 beside a 180mm camera lens in linked views. Release notes now
+  live in the annotated tag, rendered identically on the release page,
+  in the manual appendix, and in both PDFs.
+
 ## v0.91 — 2026-08-01
 
 v0.91 — French localization, blink culling, crop tool, transport stretch fit
