@@ -688,6 +688,13 @@ div.csl-indent {
 <li><strong>Calibrated linking</strong> (different sizes) — align the two views manually (zoom/pan/rotate until features match), then tick <strong>⇄</strong> on the second image: the current correspondence becomes the calibration, and from then on the views navigate together, each at its own pixel scale. Calibrations survive rotations and flips of either image.</li>
 <li><code>--split RxC</code> sets the grid from the command line (§13).</li>
 </ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/split-supernova.png" class="img-fluid figure-img"></p>
+<figcaption>NGC 7331 with SN 2025rbs: C11 (left) beside a 180mm camera lens (right)</figcaption>
+</figure>
+</div>
+<p><em>What linked views are for: the same supernova captured by two instruments — a C11 and a 64mm-aperture telephoto lens — compared side by side, each at its own pixel scale. With calibrated linking (⇄) engaged, panning and zooming interrogate both optics at the same sky position.</em></p>
 </section>
 <section id="command-line" class="level2">
 <h2 class="anchored" data-anchor-id="command-line">13. Command line</h2>
@@ -736,9 +743,9 @@ div.csl-indent {
 <section id="export" class="level2">
 <h2 class="anchored" data-anchor-id="export">14. Export</h2>
 <ul>
-<li><strong>File ▸ Save Data As…</strong> — the <em>data</em> (Float32, current orientation): FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list entry to the file. <strong>XISF interop:</strong> float data are normalized to [0,1] (PixInsight’s convention; <code>NSSCALE</code>/<code>NSZERO</code> keywords record the original range). Saving <strong>FITS</strong> preserves metadata carefully: keyword values keep their natural types (numbers stay numeric, not quoted strings), and when a PixInsight-native XISF carries its metadata only as XISF <em>properties</em>, the standard keywords (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME, …) are synthesized from them — units converted where the conventions differ. Saving XISF asks for <strong>compression</strong> — Zstd (smallest; silently falls back to Zlib if your libXISF build lacks it), Zlib (widest compatibility), or Uncompressed; blocks are byte-shuffled for better ratios, and the choice is remembered for the session.</li>
+<li><strong>File ▸ Save Data As…</strong> — the <em>data</em> (Float32, current orientation): FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list entry to the file. <strong>XISF interop:</strong> float data are normalized to [0,1] (PixInsight’s convention; <code>NSSCALE</code>/<code>NSZERO</code> keywords record the original range). Saving <strong>FITS</strong> preserves metadata carefully: keyword values keep their natural types (numbers stay numeric, not quoted strings), and when a PixInsight-native XISF carries its metadata only as XISF <em>properties</em>, the standard keywords (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME, …) are synthesized from them — units converted where the conventions differ. The XISF <strong>compression</strong> choice — Zstd (smallest; silently falls back to Zlib if your libXISF build lacks it), Zlib (widest compatibility), or Uncompressed — sits <strong>inside the save dialog</strong> (enabled when the XISF format is selected); blocks are byte-shuffled for better ratios, and the choice is remembered for the session.</li>
 <li><strong>File ▸ Save Stretched As…</strong> — bakes the current display transfer (stretch + adjustments) into Float32 FITS/XISF/TIFF. Same XISF compression prompt.</li>
-<li><strong>File ▸ Export View As…</strong> (⌘E) — the <em>displayed</em> image (stretched, colormapped): PNG / JPEG / TIFF / WebP. JPEG asks for <strong>quality</strong>; PNG/TIFF ask for <strong>8- or 16-bit</strong> depth (16-bit is built from the float render — band-free gradients).</li>
+<li><strong>File ▸ Export View As…</strong> (⌘E) — the <em>displayed</em> image (stretched, colormapped): PNG / JPEG / TIFF / WebP. The format options live <strong>in the export dialog itself</strong> — no follow-up prompts: <strong>8- or 16-bit</strong> depth for PNG/TIFF (16-bit is built from the float render — band-free gradients), <strong>quality</strong> for JPEG/WebP; each enables with the matching format.</li>
 <li><strong>File ▸ Export Zoomed Region As…</strong> (⌘⇧E) — same, but only the visible region.</li>
 <li><strong>File ▸ Export / Import Image List…</strong> — session round-trip (§7).</li>
 <li>Annotations and adjustments export via their JSON sidecars (§9).</li>
