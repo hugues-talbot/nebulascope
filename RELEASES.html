@@ -377,7 +377,8 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#v0.91-2026-08-01" id="toc-v0.91-2026-08-01" class="nav-link active" data-scroll-target="#v0.91-2026-08-01">v0.91 — 2026-08-01</a></li>
+  <li><a href="#v0.92-2026-08-03" id="toc-v0.92-2026-08-03" class="nav-link active" data-scroll-target="#v0.92-2026-08-03">v0.92 — 2026-08-03</a></li>
+  <li><a href="#v0.91-2026-08-01" id="toc-v0.91-2026-08-01" class="nav-link" data-scroll-target="#v0.91-2026-08-01">v0.91 — 2026-08-01</a></li>
   <li><a href="#v0.90-2026-07-30" id="toc-v0.90-2026-07-30" class="nav-link" data-scroll-target="#v0.90-2026-07-30">v0.90 — 2026-07-30</a></li>
   <li><a href="#v0.89-2026-07-28" id="toc-v0.89-2026-07-28" class="nav-link" data-scroll-target="#v0.89-2026-07-28">v0.89 — 2026-07-28</a></li>
   <li><a href="#v0.88-2026-07-28" id="toc-v0.88-2026-07-28" class="nav-link" data-scroll-target="#v0.88-2026-07-28">v0.88 — 2026-07-28</a></li>
@@ -424,6 +425,19 @@ div.csl-indent {
 
 
 <p>Generated from the annotated <code>v*</code> tags (<code>docs/make-releases.sh</code>).</p>
+<section id="v0.92-2026-08-03" class="level2">
+<h2 class="anchored" data-anchor-id="v0.92-2026-08-03">v0.92 — 2026-08-03</h2>
+<p>v0.92 — list &amp; session ergonomics, inline export options, display sampling</p>
+<p>Highlights:</p>
+<ul>
+<li><strong>Large-list workflows</strong> — drag a list row onto any view cell to show it there; the list holds each image once (re-opening selects the existing row); batch opens fill the empty cells in the order given; <strong>Clear List &amp; Close All</strong> (⌥C) sweeps the session in one stroke. Together with Apply to All and blink culling, per-filter inspection of a full night’s acquisitions is now a tight loop.</li>
+<li><strong>Inline save options</strong> — pixel depth (PNG/TIFF), quality (JPEG, and now WebP), and XISF compression are options INSIDE the save dialogs, enabled by the selected format — no follow-up prompts.</li>
+<li><strong>Display sampling</strong> — bilinear when zoomed out (kills the moiré that nearest-neighbour subsampling beats out of CMOS fixed-pattern noise), crisp nearest-neighbour at 1:1 and beyond.</li>
+<li><strong>Window &amp; dialogs</strong> — ⌥F is the green button on a key (native full screen on macOS; maximize elsewhere); every file dialog starts in the current image’s directory.</li>
+<li><strong>Fixes</strong> — Zoom to Fit/1:1 acted on the wrong cell in split views (stale receiver); overlay panels no longer hide behind newly created cells after a split; Finder open events carry status-bar feedback and Console logging; proper French plural forms for counts.</li>
+<li><strong>Manual</strong> — §12 gains a real-data showcase: NGC 7331 with SN 2025rbs, a C11 beside a 180mm camera lens in linked views. Release notes now live in the annotated tag, rendered identically on the release page, in the manual appendix, and in both PDFs.</li>
+</ul>
+</section>
 <section id="v0.91-2026-08-01" class="level2">
 <h2 class="anchored" data-anchor-id="v0.91-2026-08-01">v0.91 — 2026-08-01</h2>
 <p>v0.91 — French localization, blink culling, crop tool, transport stretch fit</p>
