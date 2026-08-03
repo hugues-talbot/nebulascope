@@ -12,6 +12,7 @@ Drop PNGs here with these exact names and they appear in ../MANUAL.md:
   combine-channels.png   Combine dialog, SHO preset, live preview
   transport.png          Colour transport before/after in a split view
   split-views.png        2x2 grid, active-cell border visible
+  split-supernova.png    1x2 split: NGC 7331 + SN 2025rbs, C11 vs 180mm lens
 
 Keep captures at 2x (Retina) and crop to the relevant region; ~1600px wide
 renders well on GitHub.

@@ -33,6 +33,8 @@ class QWidget;
 
 namespace astro {
 
+namespace io { struct SaveOptions; }
+
 class ImageView;
 class HistogramPanel;
 class ViewGrid;
@@ -110,6 +112,10 @@ private:
     void applyUserShortcuts(const QHash<QString, QAction*>& acts,
                             const QHash<QString, QShortcut*>& keys);
     void addPaths(const QStringList& paths);   // append list items, no decode
+    // Save dialogs with inline format options (depth/quality/XISF compression).
+    QString exportImageDialogPath(const QString& title, bool offer16,
+                                  bool* want16, int* quality);
+    QString dataSaveDialogPath(const QString& title, io::SaveOptions& opts);
     void displayPath(const QString& path);     // decode one file into the view
     QString addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list; returns its key
 public:

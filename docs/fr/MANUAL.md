@@ -441,6 +441,14 @@ colonnes (max 5×5).
   et miroirs de chaque image.
 - `--split RxC` règle la grille depuis la ligne de commande (§13).
 
+![NGC 7331 et SN 2025rbs : C11 (gauche) et téléobjectif de 180 mm (droite)](../screenshots/split-supernova.png)
+
+*Ce pourquoi les vues liées existent : la même supernova saisie par deux
+instruments — un C11 et un téléobjectif de 64 mm d'ouverture — comparées
+côte à côte, chacune à sa propre échelle de pixels. Avec la liaison
+calibrée (⇄) engagée, panoramique et zoom interrogent les deux optiques à
+la même position du ciel.*
+
 ## 13. Ligne de commande
 
 L'interface en ligne de commande et le langage de script restent en anglais
@@ -480,18 +488,21 @@ symbolique vers votre PATH — voir docs/BUILDING-macos.md.)
   ses métadonnées qu'en *propriétés* XISF, les mots-clés standard
   (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME, …) sont
   synthétisés à partir d'elles — unités converties là où les conventions
-  diffèrent. L'enregistrement XISF demande la **compression** — Zstd (la
-  plus compacte ; retombe silencieusement sur Zlib si votre libXISF ne la
-  gère pas), Zlib (compatibilité maximale), ou Non compressé ; les blocs
-  sont mélangés par octets (*byte-shuffling*) pour de meilleurs taux, et le
-  choix est mémorisé pour la session.
+  diffèrent. Le choix de **compression** XISF — Zstd (la plus compacte ;
+  retombe silencieusement sur Zlib si votre libXISF ne la gère pas), Zlib
+  (compatibilité maximale), ou Non compressé — se fait **dans la boîte
+  d'enregistrement elle-même** (activé quand le format XISF est
+  sélectionné) ; les blocs sont mélangés par octets (*byte-shuffling*)
+  pour de meilleurs taux, et le choix est mémorisé pour la session.
 - **Fichier ▸ Enregistrer l'image étirée sous…** — grave le transfert
   d'affichage courant (étirement + ajustements) en FITS/XISF/TIFF Float32.
   Même choix de compression XISF.
 - **Fichier ▸ Exporter la vue sous…** (⌘E) — l'image *affichée* (étirée,
-  avec palette) : PNG / JPEG / TIFF / WebP. JPEG demande la **qualité** ;
-  PNG/TIFF demandent la profondeur **8 ou 16 bits** (le 16 bits est
-  construit depuis le rendu flottant — dégradés sans bandes).
+  avec palette) : PNG / JPEG / TIFF / WebP. Les options de format sont
+  **dans la boîte d'export elle-même** — aucune fenêtre supplémentaire :
+  profondeur **8 ou 16 bits** pour PNG/TIFF (le 16 bits est construit
+  depuis le rendu flottant — dégradés sans bandes), **qualité** pour
+  JPEG/WebP ; chacune s'active avec le format correspondant.
 - **Fichier ▸ Exporter la région zoomée sous…** (⌘⇧E) — idem, mais
   seulement la région visible.
 - **Fichier ▸ Exporter / Importer une liste d'images…** — aller-retour de

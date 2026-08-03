@@ -377,6 +377,13 @@ data purity.
   survive rotations and flips of either image.
 - `--split RxC` sets the grid from the command line (§13).
 
+![NGC 7331 with SN 2025rbs: C11 (left) beside a 180mm camera lens (right)](screenshots/split-supernova.png)
+
+*What linked views are for: the same supernova captured by two instruments —
+a C11 and a 64mm-aperture telephoto lens — compared side by side, each at
+its own pixel scale. With calibrated linking (⇄) engaged, panning and
+zooming interrogate both optics at the same sky position.*
+
 ## 13. Command line
 
 ```
@@ -438,17 +445,19 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
   PixInsight-native XISF carries its metadata only as XISF *properties*, the
   standard keywords (DATE-OBS, EXPTIME, FOCALLEN, XPIXSZ, RA/DEC, INSTRUME,
   …) are synthesized from them — units converted where the conventions
-  differ. Saving XISF asks for **compression** — Zstd (smallest; silently
-  falls back to Zlib if your libXISF build lacks it), Zlib (widest
-  compatibility), or Uncompressed; blocks are byte-shuffled for better
-  ratios, and the choice is remembered for the session.
+  differ. The XISF **compression** choice — Zstd (smallest; silently falls back
+  to Zlib if your libXISF build lacks it), Zlib (widest compatibility), or
+  Uncompressed — sits **inside the save dialog** (enabled when the XISF
+  format is selected); blocks are byte-shuffled for better ratios, and the
+  choice is remembered for the session.
 - **File ▸ Save Stretched As…** — bakes the current display transfer
   (stretch + adjustments) into Float32 FITS/XISF/TIFF. Same XISF
   compression prompt.
 - **File ▸ Export View As…** (⌘E) — the *displayed* image (stretched,
-  colormapped): PNG / JPEG / TIFF / WebP. JPEG asks for **quality**;
-  PNG/TIFF ask for **8- or 16-bit** depth (16-bit is built from the float
-  render — band-free gradients).
+  colormapped): PNG / JPEG / TIFF / WebP. The format options live **in the
+  export dialog itself** — no follow-up prompts: **8- or 16-bit** depth for
+  PNG/TIFF (16-bit is built from the float render — band-free gradients),
+  **quality** for JPEG/WebP; each enables with the matching format.
 - **File ▸ Export Zoomed Region As…** (⌘⇧E) — same, but only the visible
   region.
 - **File ▸ Export / Import Image List…** — session round-trip (§7).

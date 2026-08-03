@@ -2934,24 +2934,111 @@ void MainWindow::displayPath(const QString& path) {
         .arg(debayerNote), 4000);
 }
 
-// XISF only: ask which data-block compression to write (remembered for the
-// session, like JPEG quality / export bit depth). False = user cancelled.
-static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
-    static int lastChoice = 0;                         // 0 = Zstd
-    const QStringList choices{ QCoreApplication::translate("astro::MainWindowHelpers", "Zstd (smallest)"),
-                               QCoreApplication::translate("astro::MainWindowHelpers", "Zlib (widest compatibility)"),
-                               QCoreApplication::translate("astro::MainWindowHelpers", "Uncompressed") };
-    bool ok = false;
-    const QString c = QInputDialog::getItem(parent,
-        QCoreApplication::translate("astro::MainWindowHelpers", "XISF compression"),
-        QCoreApplication::translate("astro::MainWindowHelpers", "Data-block compression:"),
-        choices, lastChoice, false, &ok);
-    if (!ok) return false;
-    lastChoice = choices.indexOf(c);
+// ---- save dialogs with INLINE format options --------------------------------
+// The format options (pixel depth for PNG/TIFF, quality for JPEG/WebP, XISF
+// data-block compression) live IN the save dialog, enabled by the selected
+// filter — no follow-up modal after picking a filename. Needs the Qt
+// (non-native) dialog: the native one cannot host extra widgets. Values are
+// remembered for the session, as the old follow-up dialogs were.
+namespace {
+int s_expDepth   = 0;      // 0 = 8-bit, 1 = 16-bit
+int s_expQuality = 90;     // JPEG/WebP quality
+int s_xisfComp   = 0;      // 0 = Zstd, 1 = Zlib, 2 = uncompressed
+
+QString filterSuffix(const QString& filter) {          // "PNG (*.png)" -> "png"
+    const int a = filter.indexOf(QLatin1String("(*."));
+    if (a < 0) return {};
+    const int b = filter.indexOf(QLatin1Char(')'), a);
+    return filter.mid(a + 3, b - a - 3).section(QLatin1Char(' '), 0, 0);
+}
+
+// Append `row` (a container of option widgets) under the dialog's grid.
+void addOptionRow(QFileDialog& dlg, QWidget* row) {
+    if (auto* grid = qobject_cast<QGridLayout*>(dlg.layout()))
+        grid->addWidget(row, grid->rowCount(), 0, 1, grid->columnCount());
+}
+} // namespace
+
+QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
+                                          bool* want16, int* quality) {
+    QFileDialog dlg(this, title, openDialogDir(),
+        tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
+    dlg.setAcceptMode(QFileDialog::AcceptSave);
+    dlg.setOption(QFileDialog::DontUseNativeDialog, true);
+
+    auto* row = new QWidget(&dlg);
+    auto* h = new QHBoxLayout(row);
+    h->setContentsMargins(0, 0, 0, 0);
+    auto* depthLabel = new QLabel(tr("Pixel depth:"), row);
+    auto* depthCombo = new QComboBox(row);
+    depthCombo->addItems({ tr("8-bit per channel"), tr("16-bit per channel") });
+    depthCombo->setCurrentIndex(s_expDepth);
+    auto* qualLabel = new QLabel(tr("Quality (1–100):"), row);
+    auto* qualSpin = new QSpinBox(row);
+    qualSpin->setRange(1, 100);
+    qualSpin->setValue(s_expQuality);
+    h->addWidget(depthLabel); h->addWidget(depthCombo);
+    h->addSpacing(18);
+    h->addWidget(qualLabel);  h->addWidget(qualSpin);
+    h->addStretch();
+    addOptionRow(dlg, row);
+
+    auto sync = [&dlg, offer16, depthLabel, depthCombo, qualLabel, qualSpin](const QString& f) {
+        const QString ext = filterSuffix(f);
+        const bool hasQual  = ext == QLatin1String("jpg") || ext == QLatin1String("webp");
+        const bool hasDepth = offer16 &&
+            (ext == QLatin1String("png") || ext == QLatin1String("tiff"));
+        depthLabel->setEnabled(hasDepth); depthCombo->setEnabled(hasDepth);
+        qualLabel->setEnabled(hasQual);   qualSpin->setEnabled(hasQual);
+        dlg.setDefaultSuffix(ext);
+    };
+    QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
+    sync(dlg.selectedNameFilter());
+
+    if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
+    s_expDepth = depthCombo->currentIndex();
+    s_expQuality = qualSpin->value();
+    *want16 = depthCombo->isEnabled() && s_expDepth == 1;
+    *quality = qualSpin->isEnabled() ? s_expQuality : -1;
+    return dlg.selectedFiles().first();
+}
+
+QString MainWindow::dataSaveDialogPath(const QString& title, io::SaveOptions& opts) {
+    QFileDialog dlg(this, title, openDialogDir(),
+        tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
+    dlg.setAcceptMode(QFileDialog::AcceptSave);
+    dlg.setOption(QFileDialog::DontUseNativeDialog, true);
+
+    auto tl = [](const char* s) {
+        return QCoreApplication::translate("astro::MainWindowHelpers", s);
+    };
+    auto* row = new QWidget(&dlg);
+    auto* h = new QHBoxLayout(row);
+    h->setContentsMargins(0, 0, 0, 0);
+    auto* compLabel = new QLabel(tl("Data-block compression:"), row);
+    auto* compCombo = new QComboBox(row);
+    compCombo->addItems({ tl("Zstd (smallest)"), tl("Zlib (widest compatibility)"),
+                          tl("Uncompressed") });
+    compCombo->setCurrentIndex(s_xisfComp);
+    h->addWidget(compLabel); h->addWidget(compCombo);
+    h->addStretch();
+    addOptionRow(dlg, row);
+
+    auto sync = [&dlg, compLabel, compCombo](const QString& f) {
+        const QString ext = filterSuffix(f);
+        const bool isXisf = ext == QLatin1String("xisf");
+        compLabel->setEnabled(isXisf); compCombo->setEnabled(isXisf);
+        dlg.setDefaultSuffix(ext);
+    };
+    QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
+    sync(dlg.selectedNameFilter());
+
+    if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
+    s_xisfComp = compCombo->currentIndex();
     using C = io::SaveOptions::Compression;
-    opts.xisfCompression = lastChoice == 0 ? C::Zstd
-                         : lastChoice == 1 ? C::Zlib : C::None;
-    return true;
+    opts.xisfCompression = s_xisfComp == 0 ? C::Zstd
+                         : s_xisfComp == 1 ? C::Zlib : C::None;
+    return dlg.selectedFiles().first();
 }
 
 // Save the CURRENT VIEW's non-linear edit as data: the stretch (window +
@@ -2959,13 +3046,9 @@ static bool askXisfCompression(QWidget* parent, io::SaveOptions& opts) {
 // precision — unlike Export View As…, which quantises to 8-bit for pictures.
 void MainWindow::saveStretched() {
     if (!m_image.isValid()) return;
-    const QString path = QFileDialog::getSaveFileName(
-        this, tr("Save stretched image"), openDialogDir(),
-        tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
-    if (path.isEmpty()) return;
     io::SaveOptions opts;
-    if (QFileInfo(path).suffix().toLower() == "xisf" &&
-        !askXisfCompression(this, opts)) return;
+    const QString path = dataSaveDialogPath(tr("Save stretched image"), opts);
+    if (path.isEmpty()) return;
     ImageData baked = DisplayRenderer::renderFloat(m_image, m_model);
     if (!baked.isValid()) { QMessageBox::warning(this, tr("Save failed"), tr("Could not bake the stretch.")); return; }
     ImageHeader hdr = m_header;
@@ -2978,12 +3061,9 @@ void MainWindow::saveStretched() {
 
 void MainWindow::saveFile() {
     if (!m_image.isValid()) return;
-    const QString path = QFileDialog::getSaveFileName(
-        this, tr("Save image"), openDialogDir(), tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
-    if (path.isEmpty()) return;
     io::SaveOptions opts;
-    if (QFileInfo(path).suffix().toLower() == "xisf" &&
-        !askXisfCompression(this, opts)) return;
+    const QString path = dataSaveDialogPath(tr("Save image"), opts);
+    if (path.isEmpty()) return;
     io::SaveResult sr = io::saveImage(path, m_image, m_header, opts);
     if (!sr.ok) { QMessageBox::warning(this, tr("Save failed"), sr.error); return; }
     statusBar()->showMessage(tr("Saved %1").arg(QFileInfo(path).fileName()), 3000);
@@ -3063,32 +3143,15 @@ void MainWindow::exportRegion() {
 void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
                                    const std::function<QImage()>& make16) {
     if (img.isNull()) return;
-    const QString path = QFileDialog::getSaveFileName(
-        this, title, openDialogDir(), tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
-    if (path.isEmpty()) return;
-    const QString ext = QFileInfo(path).suffix().toLower();
-
+    bool want16 = false;
     int quality = -1;                                  // -1 = format default
+    const QString path = exportImageDialogPath(title, bool(make16), &want16, &quality);
+    if (path.isEmpty()) return;
+
     QImage toSave = img;
-    if (ext == "jpg" || ext == "jpeg") {
-        static int lastQuality = 90;                   // remembered for the session
-        bool ok = false;
-        const int q = QInputDialog::getInt(this, tr("JPEG quality"),
-            tr("Quality (1\u2013100):"), lastQuality, 1, 100, 1, &ok);
-        if (!ok) return;
-        lastQuality = quality = q;
-    } else if ((ext == "png" || ext == "tiff" || ext == "tif") && make16) {
-        static int lastDepth = 0;                      // 0 = 8-bit
-        bool ok = false;
-        const QStringList depths{ tr("8-bit per channel"), tr("16-bit per channel") };
-        const QString depth = QInputDialog::getItem(this, tr("Bit depth"),
-            tr("Pixel depth:"), depths, lastDepth, false, &ok);
-        if (!ok) return;
-        lastDepth = depth.startsWith("16") ? 1 : 0;
-        if (lastDepth == 1) {
-            toSave = make16();
-            if (toSave.isNull()) { QMessageBox::warning(this, tr("Export failed"), tr("16-bit render failed.")); return; }
-        }
+    if (want16) {
+        toSave = make16();
+        if (toSave.isNull()) { QMessageBox::warning(this, tr("Export failed"), tr("16-bit render failed.")); return; }
     }
 
     if (!toSave.save(path, nullptr, quality)) {
