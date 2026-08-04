@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 #include <QSet>
+#include <QFileSystemModel>
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
 #include "ui/RotateDialog.h"
@@ -2957,6 +2958,34 @@ void addOptionRow(QFileDialog& dlg, QWidget* row) {
     if (auto* grid = qobject_cast<QGridLayout*>(dlg.layout()))
         grid->addWidget(row, grid->rowCount(), 0, 1, grid->columnCount());
 }
+
+// Native-dialog behaviour the Qt dialog lacks: clicking ANY existing image
+// adopts its name (the extension then follows the chosen format). The Qt
+// dialog greys out files that don't match the active filter — so keep the
+// filter combo as the FORMAT selector, but re-widen the underlying model to
+// every adoptable image type each time the filter changes.
+const QStringList kAdoptableImages = {
+    QStringLiteral("*.fits"), QStringLiteral("*.fit"),  QStringLiteral("*.fts"),
+    QStringLiteral("*.fz"),   QStringLiteral("*.xisf"), QStringLiteral("*.png"),
+    QStringLiteral("*.jpg"),  QStringLiteral("*.jpeg"), QStringLiteral("*.tiff"),
+    QStringLiteral("*.tif"),  QStringLiteral("*.webp") };
+
+void keepAllImagesClickable(QFileDialog& dlg) {
+    if (auto* model = dlg.findChild<QFileSystemModel*>())
+        model->setNameFilters(kAdoptableImages);
+}
+
+// The typed/clicked name keeps its extension when this dialog can WRITE that
+// format; any other extension is swapped for the selected filter's (clicking
+// "M81.xisf" in the PNG export prefills "M81" and saves "M81.png").
+QString normalizeSuffix(const QString& path, const QStringList& writable,
+                        const QString& fallback) {
+    const QFileInfo fi(path);
+    if (writable.contains(fi.suffix().toLower())) return path;
+    const QString base = fi.suffix().isEmpty()
+        ? fi.filePath() : fi.filePath().left(fi.filePath().size() - fi.suffix().size() - 1);
+    return base + QLatin1Char('.') + fallback;
+}
 } // namespace
 
 QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
@@ -2991,21 +3020,31 @@ QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
         depthLabel->setEnabled(hasDepth); depthCombo->setEnabled(hasDepth);
         qualLabel->setEnabled(hasQual);   qualSpin->setEnabled(hasQual);
         dlg.setDefaultSuffix(ext);
+        keepAllImagesClickable(dlg);
     };
     QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
     sync(dlg.selectedNameFilter());
 
     if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
+    static const QStringList kWritable{ "png", "jpg", "jpeg", "tiff", "tif", "webp" };
+    const QString path = normalizeSuffix(dlg.selectedFiles().first(),
+                                         kWritable, dlg.defaultSuffix());
+    // Options follow the FINAL suffix (a clicked .jpg under the PNG filter is
+    // honoured as JPEG), the enable-state above being only a UI hint.
+    const QString ext = QFileInfo(path).suffix().toLower();
     s_expDepth = depthCombo->currentIndex();
     s_expQuality = qualSpin->value();
-    *want16 = depthCombo->isEnabled() && s_expDepth == 1;
-    *quality = qualSpin->isEnabled() ? s_expQuality : -1;
-    return dlg.selectedFiles().first();
+    *want16 = offer16 && s_expDepth == 1 &&
+              (ext == QLatin1String("png") || ext == QLatin1String("tiff") ||
+               ext == QLatin1String("tif"));
+    *quality = (ext == QLatin1String("jpg") || ext == QLatin1String("jpeg") ||
+                ext == QLatin1String("webp")) ? s_expQuality : -1;
+    return path;
 }
 
 QString MainWindow::dataSaveDialogPath(const QString& title, io::SaveOptions& opts) {
     QFileDialog dlg(this, title, openDialogDir(),
-        tr("FITS (*.fits);;XISF (*.xisf);;TIFF 16-bit (*.tiff)"));
+        tr("FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16-bit (*.tiff *.tif)"));
     dlg.setAcceptMode(QFileDialog::AcceptSave);
     dlg.setOption(QFileDialog::DontUseNativeDialog, true);
 
@@ -3029,16 +3068,20 @@ QString MainWindow::dataSaveDialogPath(const QString& title, io::SaveOptions& op
         const bool isXisf = ext == QLatin1String("xisf");
         compLabel->setEnabled(isXisf); compCombo->setEnabled(isXisf);
         dlg.setDefaultSuffix(ext);
+        keepAllImagesClickable(dlg);
     };
     QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
     sync(dlg.selectedNameFilter());
 
     if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
+    static const QStringList kWritable{ "fits", "fit", "fts", "xisf", "tiff", "tif" };
+    const QString path = normalizeSuffix(dlg.selectedFiles().first(),
+                                         kWritable, dlg.defaultSuffix());
     s_xisfComp = compCombo->currentIndex();
     using C = io::SaveOptions::Compression;
     opts.xisfCompression = s_xisfComp == 0 ? C::Zstd
                          : s_xisfComp == 1 ? C::Zlib : C::None;
-    return dlg.selectedFiles().first();
+    return path;
 }
 
 // Save the CURRENT VIEW's non-linear edit as data: the stretch (window +

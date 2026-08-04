@@ -437,6 +437,12 @@ see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
 
 ## 14. Export
 
+In every save dialog, **click any existing image name to adopt it** — FITS,
+XISF or picture files alike; the extension then follows the format you
+selected, so clicking `M81.xisf` in a PNG export prefills `M81.png`
+(clicking a name whose format the dialog can write keeps it verbatim, to
+overwrite or re-save it).
+
 - **File ▸ Save Data As…** — the *data* (Float32, current orientation):
   FITS, XISF, or 16-bit TIFF. Saving an in-memory result renames its list
   entry to the file. **XISF interop:** float data are normalized to [0,1]
