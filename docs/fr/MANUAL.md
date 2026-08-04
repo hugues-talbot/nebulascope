@@ -222,9 +222,11 @@ et copiable.
   liste). `--list` fait de même en ligne de commande. **Vider la liste et
   tout fermer** (**⌥C**, menu Affichage ou menu contextuel de la liste)
   vide la liste et toutes les vues d'un seul geste.
-- Les résultats en mémoire (combinaison, transport) sont marqués dans la
-  liste ; **Enregistrer les données sous…** transforme l'entrée en fichier
-  sauvegardé (nom, fichiers annexes et état par image suivent).
+- Les résultats en mémoire (combinaison, transport, recadrage) sont marqués
+  dans la liste ; **Enregistrer les données sous…** — ou **Enregistrer
+  l'image étirée sous…** — transforme l'entrée en fichier sauvegardé (nom,
+  fichiers annexes et état par image suivent, et le rechargement
+  automatique se met à surveiller le fichier).
 - **Tri par blink (culling)** — chaque ligne de la liste porte une **coche
   de conservation** (cochée par défaut). Parcourez une session en blink avec
   **Espace**/**↓** et appuyez sur **B** pour rejeter la mauvaise image sous

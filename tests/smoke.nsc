@@ -97,16 +97,20 @@ waitloaded
 assert size 64 48
 assert rows 4
 save smoke_crop.fits
+# Saving an in-memory result rebrands its list row to the saved file —
+# so re-opening the file finds the EXISTING row (no new entry).
+assert name smoke_crop.fits
 open smoke_crop.fits
 waitloaded
 assert size 64 48
-assert rows 5
+assert rows 4
 
 # The list holds each image once: re-opening a listed file selects the
 # existing row instead of appending a duplicate.
 open smoke_crop.fits
 waitloaded
-assert rows 5
+assert rows 4
+assert name smoke_crop.fits
 
 # Clear List & Close All empties the list and every view; the app stays usable.
 action clear_list

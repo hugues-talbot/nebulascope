@@ -116,6 +116,7 @@ private:
     QString exportImageDialogPath(const QString& title, bool offer16,
                                   bool* want16, int* quality);
     QString dataSaveDialogPath(const QString& title, io::SaveOptions& opts);
+    void rebrandSyntheticAfterSave(const QString& savedPath);
     void displayPath(const QString& path);     // decode one file into the view
     QString addSyntheticImage(const QString& name, ImageData&& img);  // in-memory result → list; returns its key
 public:

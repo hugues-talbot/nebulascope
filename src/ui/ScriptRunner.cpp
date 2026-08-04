@@ -1,4 +1,5 @@
 #include "ui/ScriptRunner.h"
+#include <QFileInfo>
 #include "ui/MainWindow.h"
 #include "ui/ViewGrid.h"
 #include "ui/ImageView.h"
@@ -69,8 +70,9 @@ const CommandRef kCommands[] = {
     "as PNG/JPEG/TIFF."}},
   {"save",       {"save <path>",
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
-    "default compression (Zlib, byte-shuffled)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+    "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
+    "entry takes the saved name (as in the GUI)."}},
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -199,7 +201,9 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
 
     if (cmd == QLatin1String("open")) {
         if (!needArgs(1)) return false;
-        m_w->openPaths({ t.mid(1).join(QLatin1Char(' ')) });   // paths may contain spaces
+        // Absolutized so the list key matches GUI opens and post-save rebrands
+        // (duplicate detection compares keys verbatim).
+        m_w->openPaths({ QFileInfo(t.mid(1).join(QLatin1Char(' '))).absoluteFilePath() });
         return true;
     }
     if (cmd == QLatin1String("show")) {
@@ -289,6 +293,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         io::SaveResult sr = io::saveImage(t[1], m_w->m_image, m_w->m_header);
         if (!sr.ok) { err = sr.error; return false; }
+        m_w->rebrandSyntheticAfterSave(t[1]);   // same semantics as the GUI saves
         return true;
     }
     if (cmd == QLatin1String("cmap")) {
@@ -569,6 +574,19 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
         const int n = m_w->m_fileList->count();
         if (n != t[2].toInt()) {
             err = QStringLiteral("list has %1 row(s)").arg(n);
+            return false;
+        }
+        return true;
+    }
+    if (what == QLatin1String("name")) {
+        // assert name <text> — the current list row's visible text (e.g. the
+        // saved filename after a synthetic entry was written to disk).
+        if (t.size() < 3) { err = "assert name text"; return false; }
+        const QString expect = QStringList(t.mid(2)).join(QLatin1Char(' '));
+        QListWidgetItem* cur = m_w->m_fileList->currentItem();
+        const QString got = cur ? cur->text() : QString();
+        if (got != expect) {
+            err = QStringLiteral("current row is \"%1\"").arg(got);
             return false;
         }
         return true;

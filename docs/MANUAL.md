@@ -190,9 +190,10 @@ cards or XISF properties) in a filterable, copyable table.
   list file). `--list` does the same from the command line. **Clear List &
   Close All** (**⌥C**, View menu or the list's context menu) empties the
   list and every view in one stroke.
-- In-memory results (combine, transport) are marked in the list; **Save Data
-  As…** turns the entry into the saved file (name, sidecars, and per-image
-  state follow).
+- In-memory results (combine, transport, crop) are marked in the list;
+  **Save Data As…** — or **Save Stretched As…** — turns the entry into the
+  saved file (name, sidecars, and per-image state follow, and auto-reload
+  starts watching it).
 - **Blink culling** — every list row carries a **keep-check** (checked by
   default). Blink through a session with **Space**/**↓** and hit **B** to
   reject the bad frame under your eyes — debayering and live STF editing

@@ -3055,8 +3055,11 @@ void MainWindow::saveStretched() {
     hdr.cards.push_back({ QStringLiteral("HISTORY"),
                           QStringLiteral("NebulaScope: baked display stretch"), QString() });
     io::SaveResult sr = io::saveImage(path, baked, hdr, opts);
-    if (!sr.ok) QMessageBox::warning(this, tr("Save failed"), sr.error);
-    else statusBar()->showMessage(tr("Saved stretched %1").arg(QFileInfo(path).fileName()), 3000);
+    if (!sr.ok) { QMessageBox::warning(this, tr("Save failed"), sr.error); return; }
+    statusBar()->showMessage(tr("Saved stretched %1").arg(QFileInfo(path).fileName()), 3000);
+    // For an in-memory result (combine/crop) this file is its only disk
+    // identity — the list entry takes the saved name, as with Save Data As.
+    rebrandSyntheticAfterSave(path);
 }
 
 void MainWindow::saveFile() {
@@ -3067,29 +3070,35 @@ void MainWindow::saveFile() {
     io::SaveResult sr = io::saveImage(path, m_image, m_header, opts);
     if (!sr.ok) { QMessageBox::warning(this, tr("Save failed"), sr.error); return; }
     statusBar()->showMessage(tr("Saved %1").arg(QFileInfo(path).fileName()), 3000);
+    rebrandSyntheticAfterSave(path);
+}
 
-    // A synthetic (in-memory) image that was just written to disk becomes that
-    // file: rebrand its list row and migrate per-image state to the new key, so
-    // the entry's identifier is the saved name from here on.
-    if (m_currentPath.startsWith(QLatin1String("mem://"))) {
-        const QString oldKey = m_currentPath;
-        for (int i = 0; i < m_fileList->count(); ++i) {
-            QListWidgetItem* it = m_fileList->item(i);
-            if (it->data(Qt::UserRole).toString() != oldKey) continue;
-            it->setData(Qt::UserRole, path);
-            it->setText(QFileInfo(path).fileName());
-            it->setToolTip(path);
-            break;
-        }
-        if (m_stfByPath.contains(oldKey))      m_stfByPath.insert(path, m_stfByPath.take(oldKey));
-        if (m_annByPath.contains(oldKey))      m_annByPath.insert(path, m_annByPath.take(oldKey));
-        if (m_annDirty.remove(oldKey))         m_annDirty.insert(path);
-        if (m_xformByPath.contains(oldKey))    m_xformByPath.insert(path, m_xformByPath.take(oldKey));
-        if (m_diskSizeByPath.contains(oldKey)) m_diskSizeByPath.insert(path, m_diskSizeByPath.take(oldKey));
-        m_synthetic.remove(oldKey);            // future loads come from the file
-        m_currentPath = path;
-        rememberRecent(QStringLiteral("recentImages"), path, Preferences::get().recentImagesMax);
+// A synthetic (in-memory) image that was just written to disk becomes that
+// file: rebrand its list row and migrate per-image state to the new key, so
+// the entry's identifier is the saved name from here on. Shared by Save Data
+// As, Save Stretched As, and the script `save` command; no-op for images
+// that already live on disk.
+void MainWindow::rebrandSyntheticAfterSave(const QString& savedPath) {
+    if (!m_currentPath.startsWith(QLatin1String("mem://"))) return;
+    const QString path = QFileInfo(savedPath).absoluteFilePath();  // keys are absolute
+    const QString oldKey = m_currentPath;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        QListWidgetItem* it = m_fileList->item(i);
+        if (it->data(Qt::UserRole).toString() != oldKey) continue;
+        it->setData(Qt::UserRole, path);
+        it->setText(QFileInfo(path).fileName());
+        it->setToolTip(path);
+        break;
     }
+    if (m_stfByPath.contains(oldKey))      m_stfByPath.insert(path, m_stfByPath.take(oldKey));
+    if (m_annByPath.contains(oldKey))      m_annByPath.insert(path, m_annByPath.take(oldKey));
+    if (m_annDirty.remove(oldKey))         m_annDirty.insert(path);
+    if (m_xformByPath.contains(oldKey))    m_xformByPath.insert(path, m_xformByPath.take(oldKey));
+    if (m_diskSizeByPath.contains(oldKey)) m_diskSizeByPath.insert(path, m_diskSizeByPath.take(oldKey));
+    m_synthetic.remove(oldKey);            // future loads come from the file
+    m_currentPath = path;
+    syncFileWatcher();                     // auto-reload watches the new file
+    rememberRecent(QStringLiteral("recentImages"), path, Preferences::get().recentImagesMax);
 }
 
 // Float [0,1] render -> 16-bit-per-channel QImage (for 16-bit PNG/TIFF export).
