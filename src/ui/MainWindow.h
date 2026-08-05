@@ -45,6 +45,7 @@ class InfoPanel;
 class MainWindow : public QMainWindow {
     Q_OBJECT
     friend class ScriptRunner;   // --run scripts drive the window directly
+    friend struct StretchSquelch; // RAII: marks programmatic stretch changes
 public:
     MainWindow();
 
@@ -55,6 +56,10 @@ public:
 private slots:
     void openFile();
     void clearImageList();
+    void reloadOriginal();
+    void flushStretchUndo();
+    void pushStretchUndo();
+    void resyncStretchUndoBase();
     QString openDialogDir() const;
     void rememberOpenDialogDir(const QString& firstPath);
     void saveFile();
@@ -326,6 +331,15 @@ protected:
     bool        m_renderPending = false;  // a newer state arrived mid-render
     QColorTransform m_iccToSrgb;          // embedded-ICC → sRGB (see updateIccTransform)
     bool        m_hasIcc = false;         // m_iccToSrgb is meaningful
+    // Stretch undo history: user gestures coalesce (timer) into one
+    // StretchStateCmd each, so ⌘Z walks stretch edits back to the as-loaded
+    // state. m_squelchStretch marks programmatic changes (image switches,
+    // undo/redo itself), which must not record.
+    StretchModel::State m_undoBase;        // state at the last recorded boundary
+    StretchModel::State m_undoPendingNext; // state at the latest user change
+    QString     m_undoBasePath;
+    QTimer*     m_stretchUndoTimer = nullptr;
+    int         m_squelchStretch = 0;
     const void* m_renderSrc = nullptr;    // identity of the pixels being rendered
     QSize       m_renderSize;
     QComboBox*      m_cmapCombo = nullptr;

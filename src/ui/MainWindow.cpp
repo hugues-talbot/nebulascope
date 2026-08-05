@@ -232,6 +232,19 @@ void MainWindow::buildUi() {
         if (!m_currentPath.isEmpty()) m_stfByPath.insert(m_currentPath, m_model.state());
     });
 
+    // Stretch undo history: coalesce a gesture's stream of changed() signals
+    // into ONE undo command once the controls go quiet.
+    m_stretchUndoTimer = new QTimer(this);
+    m_stretchUndoTimer->setSingleShot(true);
+    m_stretchUndoTimer->setInterval(700);
+    connect(m_stretchUndoTimer, &QTimer::timeout, this, &MainWindow::pushStretchUndo);
+    connect(&m_model, &StretchModel::changed, this, [this] {
+        if (m_squelchStretch || m_currentPath.isEmpty()) return;
+        if (m_undoBasePath != m_currentPath) { resyncStretchUndoBase(); return; }
+        m_undoPendingNext = m_model.state();
+        m_stretchUndoTimer->start();
+    });
+
     // Interop: reload images that external tools overwrite on disk. Debounced —
     // suites write in bursts (or write-then-rename, which drops the watch).
     m_fileWatcher = new QFileSystemWatcher(this);
@@ -854,8 +867,34 @@ void MainWindow::connectViewSignals(ImageView* v) {
 // Move the current-image state into the deactivating cell and adopt the newly
 // activated cell's. All per-path machinery (stretch memory, annotations,
 // orientation history, undo) is keyed by m_currentPath, so it follows along.
+// RAII marker for PROGRAMMATIC stretch changes (image switches, undo/redo,
+// transport fits): flushes any pending user gesture first, suppresses
+// recording inside the scope, and resyncs the undo baseline on exit.
+struct StretchSquelch {
+    MainWindow* w;
+    explicit StretchSquelch(MainWindow* win) : w(win) {
+        w->flushStretchUndo();
+        ++w->m_squelchStretch;
+    }
+    ~StretchSquelch() {
+        if (--w->m_squelchStretch == 0) w->resyncStretchUndoBase();
+    }
+};
+
+void MainWindow::flushStretchUndo() {
+    if (!m_stretchUndoTimer || !m_stretchUndoTimer->isActive()) return;
+    m_stretchUndoTimer->stop();
+    pushStretchUndo();
+}
+
+void MainWindow::resyncStretchUndoBase() {
+    m_undoBase = m_model.state();
+    m_undoBasePath = m_currentPath;
+}
+
 void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
     if (!newC || oldC == newC) return;
+    StretchSquelch sq(this);               // cell adoption is not a stretch edit
     if (oldC) {
         oldC->image = std::move(m_image);
         m_image = ImageData();
@@ -1010,6 +1049,8 @@ void MainWindow::buildMenusAndToolbar() {
     acts["clear_list"] = view->addAction(tr("Clear List && Close All"), QKeySequence("Alt+C"),
                                          this, &MainWindow::clearImageList);
     // Interop: refresh images that PixInsight/Siril/GraXpert overwrite on disk.
+    acts["reload_original"] = view->addAction(tr("Reload Origi&nal"), QKeySequence("Ctrl+Shift+R"),
+                                              this, &MainWindow::reloadOriginal);
     m_autoReloadAct = view->addAction(tr("Auto-&Reload Changed Files"));
     m_autoReloadAct->setCheckable(true);
     m_autoReloadAct->setChecked(true);
@@ -1859,9 +1900,17 @@ private:
 };
 } // namespace
 
+// The push half lives here, after StretchStateCmd's definition.
+void MainWindow::pushStretchUndo() {
+    if (m_undoBasePath.isEmpty()) return;
+    m_undo->push(new StretchStateCmd(this, m_undoBasePath, m_undoBase,
+                                     m_undoPendingNext, tr("stretch edit")));
+    m_undoBase = m_undoPendingNext;
+}
+
 void MainWindow::applyStretchState(const StretchModel::State& st) {
-    // setState emits changed(): the display re-renders and the per-image
-    // stretch memory re-snapshots — nothing else to do.
+    // Undo/redo path: must not re-record itself as a fresh edit.
+    StretchSquelch sq(this);
     m_model.setState(st);
 }
 
@@ -2251,6 +2300,26 @@ void MainWindow::removeSelected() {
 // Empty the list and every view. Reuses the removeSelected() machinery: it
 // already frees in-memory synthetics, drops HDU children, forgets stretch
 // memory, and empties all cells when the last row goes.
+// View ▸ Reload Original: back to "as if NebulaScope had just been started
+// and this image opened" — fresh decode from disk, per-image stretch memory
+// forgotten, so the first-view rules re-run (saved display function if the
+// file carries one, else the plain ramp). Undoable as a single stretch step.
+void MainWindow::reloadOriginal() {
+    if (m_currentPath.isEmpty()) return;
+    if (m_currentPath.startsWith(QLatin1String("mem://"))) {
+        statusBar()->showMessage(tr("In-memory image — nothing on disk to reload"), 4000);
+        return;
+    }
+    const QString path = m_currentPath;
+    const StretchModel::State prev = m_model.state();
+    flushStretchUndo();
+    m_stfByPath.remove(path);            // forget display memory
+    displayPath(path);                   // fresh decode + first-view stretch rules
+    m_undo->push(new StretchStateCmd(this, path, prev, m_model.state(),
+                                     tr("reload original")));
+    statusBar()->showMessage(tr("Reloaded from disk — display as freshly opened"), 5000);
+}
+
 void MainWindow::clearImageList() {
     if (m_fileList->count() == 0) return;
     m_fileList->selectAll();
@@ -2572,7 +2641,10 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
             colourNote = tr(" · with colour fit: %1").arg(e2, 0, 'f', 4);
         }
         const StretchModel::State prev = m_model.state();
-        m_model.setState(st);
+        {
+            StretchSquelch sq(this);       // pushes its own command below
+            m_model.setState(st);
+        }
         m_undo->push(new StretchStateCmd(this, m_currentPath, prev, st,
                                          tr("colour-match stretch")));
         statusBar()->showMessage(
@@ -2779,6 +2851,7 @@ void MainWindow::resizeEvent(QResizeEvent* e) {
 }
 
 void MainWindow::displayPath(const QString& path) {
+    StretchSquelch sq(this);               // loading applies state, doesn't edit it
     ImageData loaded; ImageHeader hdr;
     auto syn = m_synthetic.constFind(path);
     if (syn != m_synthetic.constEnd() && syn.value()) {

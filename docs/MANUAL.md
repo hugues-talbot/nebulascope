@@ -99,6 +99,14 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
 - **Auto STF (linked)** (**Shift+U**) — one shared stretch from pooled statistics;
   preserves colour balance (use for colour-calibrated data).
 - **Reset** (**R**) — back to the plain linear window (also clears adjustments).
+- **Reload Original** (**⌘⇧R**, View menu) — fresh decode from disk with the
+  first-view rules re-run (saved display function if the file carries one,
+  else the plain ramp), forgetting this image's stretch memory: the image is
+  exactly as if NebulaScope had just been started and it opened.
+- **Every stretch and adjustment gesture is undoable** (**⌘Z**): edits
+  coalesce into one history step per gesture, so the history walks back to
+  the as-loaded state — through Auto STFs, pastes, transport fits, and
+  Reload Original itself.
 - **Apply to All** (**Shift+A**) — share the current stretch (+ adjustments) with **every
   image in the list**: each one applies it as it loads. Made for
   same-acquisition-session batches — set up one frame, share, then blink

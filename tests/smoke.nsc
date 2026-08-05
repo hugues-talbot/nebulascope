@@ -112,6 +112,16 @@ waitloaded
 assert rows 4
 assert name smoke_crop.fits
 
+# Stretch history: gestures coalesce onto the undo stack; Reload Original
+# re-runs the first-view rules and is itself one undoable step.
+autostf
+sleep 900
+action undo
+action redo
+action reload_original
+sleep 200
+action undo
+
 # Clear List & Close All empties the list and every view; the app stays usable.
 action clear_list
 assert rows 0

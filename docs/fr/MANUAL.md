@@ -121,6 +121,16 @@ Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
   des données étalonnées en couleur).
 - **Réinitialiser** (**R**) — retour à la fenêtre linéaire simple (efface
   aussi les ajustements).
+- **Recharger l'original** (**⌘⇧R**, menu Affichage) — redécodage depuis le
+  disque avec les règles de première visualisation (fonction d'affichage
+  enregistrée si le fichier en porte une, sinon rampe simple), en oubliant
+  la mémoire d'étirement de l'image : exactement comme si NebulaScope
+  venait d'être lancé et l'image ouverte.
+- **Chaque geste d'étirement ou d'ajustement est annulable** (**⌘Z**) : les
+  modifications se regroupent en une étape d'historique par geste, et
+  l'historique remonte jusqu'à l'état de chargement — à travers les Auto
+  STF, les collages, les ajustements de transport et Recharger l'original
+  lui-même.
 - **Appliquer à tout** (**Maj+A**) — partage l'étirement courant (+
   ajustements) avec **chaque image de la liste** : chacune l'applique à son
   chargement. Conçu pour les lots d'une même session d'acquisition — réglez
