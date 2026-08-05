@@ -50,3 +50,4 @@ ui_*.h
 /docs/.quarto/
 /docs/index_files/
 /smoke_cull_out/
+PROBE_OUT/
