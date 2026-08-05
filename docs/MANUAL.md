@@ -492,7 +492,10 @@ overwrite or re-save it).
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert).
 - **About** — version and copyright come from `src/app/AppInfo.h`
-  (user-maintained).
+  (user-maintained), followed by the exact **build id** (`git describe`,
+  e.g. `v0.92-3-ga6a8118`, `-dirty` when built from uncommitted changes) —
+  so a test binary always says which commit it is. Also on the command
+  line: `--version`.
 
 ## 16. Troubleshooting
 

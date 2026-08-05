@@ -51,6 +51,7 @@ endif()
 
 add_executable(nebulascope
     app/main.cpp
+    app/BuildInfo.cpp
     app/app.qrc
     ui/ImageView.cpp
     ui/HistogramView.cpp
@@ -92,6 +93,18 @@ target_link_libraries(nebulascope PRIVATE
     Qt6::Widgets
     Qt6::Concurrent
 )
+
+# Build provenance: regenerate GitVersion.h on every build (write-if-changed,
+# so only BuildInfo.cpp ever recompiles, and only when the commit changes).
+add_custom_target(nsgitversion
+    COMMAND ${CMAKE_COMMAND}
+        -DOUT=${CMAKE_BINARY_DIR}/generated/GitVersion.h
+        -DSRC_DIR=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_SOURCE_DIR}/cmake/GitVersion.cmake
+    BYPRODUCTS ${CMAKE_BINARY_DIR}/generated/GitVersion.h
+    COMMENT "Refreshing git build id")
+add_dependencies(nebulascope nsgitversion)
+target_include_directories(nebulascope PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 # ---- translations -----------------------------------------------------------
 # .ts sources live in src/i18n/ (versioned; refresh with the update_translations

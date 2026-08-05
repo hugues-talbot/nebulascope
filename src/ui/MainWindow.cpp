@@ -11,6 +11,7 @@
 #include "io/ImageReader.h"
 #include "io/FitsReader.h"
 #include "app/AppInfo.h"
+#include "app/BuildInfo.h"
 #include "io/ImageWriter.h"
 #include "core/Debayer.h"
 #include "core/ImageStats.h"
@@ -632,7 +633,10 @@ void MainWindow::showAbout() {
         "<p style='color:#7e8b98;font-size:11px'>%2<br>Built with Qt, CFITSIO/CCfits and libXISF.</p>"
         "%3")
         .arg(QString::fromUtf8(appinfo::kVersion),
-             QString::fromUtf8(appinfo::kCopyright),
+             // Copyright + exact build provenance (git describe), so a test
+             // binary can always say which commit it is. Language-neutral.
+             QString::fromUtf8(appinfo::kCopyright) + QStringLiteral(" — ")
+                 + QString::fromUtf8(appbuild::gitDescribe()),
              QString::fromUtf8(appinfo::kAboutExtraHtml)));
     box.setStandardButtons(QMessageBox::Ok);
     box.exec();

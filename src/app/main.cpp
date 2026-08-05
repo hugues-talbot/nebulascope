@@ -1,5 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/ScriptRunner.h"
+#include "app/AppInfo.h"
+#include "app/BuildInfo.h"
 #include "core/Preferences.h"
 #include <QApplication>
 #include <QLibraryInfo>
@@ -107,6 +109,7 @@ static void printUsage() {
         "      --run list        List all script commands with one-line summaries.\n"
         "  -h, --help [command]  Show this help — or detailed help for one script\n"
         "                        command, e.g. nebulascope --help transport.\n"
+        "  -V, --version         Print version and exact build id (git describe).\n"
         "\n"
         "Supported formats: .fits .fit .fts .fz .xisf .jpg .jpeg .png .tif .tiff .webp\n"
         "\n"
@@ -166,6 +169,11 @@ int main(int argc, char** argv) {
     // Handle --help/-h before constructing the GUI so it works headless too.
     for (int i = 1; i < argc; ++i) {
         const QString a = QString::fromLocal8Bit(argv[i]);
+        if (a == "--version" || a == "-V") {
+            // Official version + exact build provenance (git describe).
+            std::printf("NebulaScope %s (%s)\n", appinfo::kVersion, appbuild::gitDescribe());
+            return 0;
+        }
         if (a == "--help" || a == "-h") {
             // "--help <command>" documents one script command in detail.
             if (i + 1 < argc) {

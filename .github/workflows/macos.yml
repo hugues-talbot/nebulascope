@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history+tags: git describe stamps the build id
 
       - name: Homebrew dependencies
         run: brew install cfitsio ccfits ninja zstd

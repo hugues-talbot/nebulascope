@@ -545,7 +545,11 @@ ou le réenregistrer).
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis).
 - **À propos** — la version et le copyright viennent de
-  `src/app/AppInfo.h` (maintenu à la main).
+  `src/app/AppInfo.h` (maintenu à la main), suivis de l'**identifiant de
+  compilation** exact (`git describe`, p. ex. `v0.92-3-ga6a8118`,
+  `-dirty` si compilé avec des changements non commités) — un binaire de
+  test dit ainsi toujours de quel commit il provient. Aussi en ligne de
+  commande : `--version`.
 
 ## 16. Dépannage
 
