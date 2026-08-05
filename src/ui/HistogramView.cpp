@@ -154,7 +154,7 @@ void HistogramView::paintEvent(QPaintEvent*) {
     // The curve must show the FULL data→display mapping: post-stretch tone
     // adjustments are part of it (colour ops are cross-channel — not drawable
     // per channel; they show in the image and colorbar).
-    if (!m_model->adjust().toneIdentity())
+    if (m_model->fn() == StretchFn::GHS && !m_model->adjust().toneIdentity())
         for (float& v : lut) v = applyTone(v, m_model->adjust());
     const double wDenom = std::max(1e-6, cw.white - cw.black);
     double va, vb; viewRange(va, vb);
@@ -162,9 +162,23 @@ void HistogramView::paintEvent(QPaintEvent*) {
     for (int i = 0; i < N; ++i) {
         const double frac = double(i) / (N - 1);
         const double u = va + frac * (vb - va);            // value coord under this x
-        double t = (u - cw.black) / wDenom;                // windowed coord (LUT is t-indexed)
+        double t = (u - cw.black) / wDenom;                // windowed coord
         t = t < 0 ? 0 : (t > 1 ? 1 : t);
-        const float yv = lut[std::min(N - 1, std::max(0, int(t * (N - 1) + 0.5)))];
+        // Exact evaluation, not nearest-LUT: an imported display function can
+        // put the white point far beyond the data range, leaving the plotted
+        // span only a handful of LUT samples — the curve drew as a staircase.
+        float yv;
+        if (m_model->fn() == StretchFn::GHS) {             // GHS: interpolate the LUT
+            const double f = t * (N - 1);
+            const int i0 = int(f);
+            const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+            const float fr = float(f - i0);
+            yv = lut[i0] * (1.0f - fr) + lut[i1] * fr;
+        } else {
+            yv = float(transferAt(t, m_model->fn(), cw, m_model->ghs()));
+        }
+        if (m_model->fn() != StretchFn::GHS && !m_model->adjust().toneIdentity())
+            yv = applyTone(yv, m_model->adjust());
         const double x = r.left() + frac * r.width();
         const double y = r.bottom() - yv * (r.height() - 4);
         if (i == 0) curve.moveTo(x, y); else curve.lineTo(x, y);

@@ -3301,9 +3301,10 @@ void MainWindow::updateIccTransform() {
 }
 
 QImage MainWindow::renderDisplayImage(const ImageData& img, const StretchModel& m) const {
-    QImage out = DisplayRenderer::render(img, m);
-    if (m_hasIcc) out.applyColorTransform(m_iccToSrgb);
-    return out;
+    // The transform runs INSIDE the renderer (16-bit, before the 8-bit
+    // dither) — converting after quantisation would re-band the gradients
+    // the dither exists to protect.
+    return DisplayRenderer::render(img, m, m_hasIcc ? &m_iccToSrgb : nullptr);
 }
 
 void MainWindow::updateDisplay() {
@@ -3326,9 +3327,7 @@ void MainWindow::updateDisplay() {
     m_renderWatcher->setFuture(QtConcurrent::run([img, st, hasIcc, icc]() -> QImage {
         StretchModel local;                      // plain value copy for the worker
         local.setState(st);
-        QImage out = DisplayRenderer::render(img, local);
-        if (hasIcc) out.applyColorTransform(icc);
-        return out;
+        return DisplayRenderer::render(img, local, hasIcc ? &icc : nullptr);
     }));
 }
 

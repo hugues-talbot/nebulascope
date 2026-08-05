@@ -1,4 +1,6 @@
 #include "render/DisplayRenderer.h"
+#include <QColorTransform>
+#include <QRgba64>
 #include "core/Stretch.h"
 #include "core/Colormap.h"
 #include "core/Adjustments.h"
@@ -49,21 +51,35 @@ static void parallelRows(int h, Fn&& fn) {
     for (auto& t : pool) t.join();
 }
 
-QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) {
+QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model,
+                               const QColorTransform* xform) {
+    if (xform) (void)xform->map(QRgba64::fromRgba64(0, 0, 0, 65535));  // build LUTs before the parallel rows
     const int w = img.width(), h = img.height();
     if (w <= 0 || h <= 0) return QImage();
     const int ch = img.channels();
-    const int N = 4096;
 
-    // Per-channel transfer LUTs. GHS is a shared master curve.
+    // Per-channel transfer LUTs. Resolution adapts to the OCCUPIED part of
+    // the window: an imported display function can put the white point far
+    // beyond the data maximum, so a fixed 4096 samples would leave only a
+    // few dozen covering the data — the highly curved MTF toe would render
+    // as chords. Scale N so the used span always has ~4096 samples.
+    int Nc[3];
+    for (int c = 0; c < 3; ++c) {
+        const ChannelStretch cs = model.channel(c);
+        const double denomW = std::max(1e-6, cs.white - cs.black);
+        double tmax = (1.0 - cs.black) / denomW;           // windowed t of the data max
+        tmax = std::min(1.0, std::max(1e-4, tmax));
+        Nc[c] = int(std::min(double(1 << 19), std::ceil(4096.0 / tmax)));
+    }
     std::vector<float> lut[3];
     if (model.fn() == StretchFn::GHS) {
-        lut[0] = buildLut(StretchFn::GHS, model.channel(0), model.ghs(), N);
+        const int Ng = std::max({ Nc[0], Nc[1], Nc[2] });
+        lut[0] = buildLut(StretchFn::GHS, model.channel(0), model.ghs(), Ng);
         lut[1] = lut[0];
         lut[2] = lut[0];
     } else {
         for (int c = 0; c < 3; ++c)
-            lut[c] = buildLut(model.fn(), model.channel(c), model.ghs(), N);
+            lut[c] = buildLut(model.fn(), model.channel(c), model.ghs(), Nc[c]);
     }
     // Post-stretch tone adjustments compose into the transfer LUTs — free per
     // pixel. Colour adjustments are cross-channel and handled per pixel below.
@@ -100,9 +116,10 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
         // Interpolate the LUT: nearest-entry lookup quantises t to N steps, which
         // in the steep toe of Log/Asinh (slope ~10) is nearly a full output LSB
         // per step — visible as fine contours in smooth regions.
-        const double f = t * (N - 1);
+        const int n = int(lut[ci].size());
+        const double f = t * (n - 1);
         const int i0 = int(f);
-        const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+        const int i1 = i0 < n - 1 ? i0 + 1 : i0;
         const float fr = float(f - i0);
         return lut[ci][i0] * (1.0f - fr) + lut[ci][i1] * fr;
     };
@@ -111,6 +128,24 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     auto to8 = [&](float y, std::size_t i, int c) -> uchar {
         const int o = int(y * 255.0f + 0.5f + triDither(i, c) * kDither);
         return uchar(o < 0 ? 0 : (o > 255 ? 255 : o));
+    };
+    // Colour-managed variant: quantise to 16 bits (steps far below the dither
+    // amplitude), convert through the profile transform, THEN dither to 8.
+    auto writePx = [&](uchar* px, float r, float g, float b, std::size_t i) {
+        if (!xform) {
+            px[0] = to8(r, i, 0); px[1] = to8(g, i, 1); px[2] = to8(b, i, 2);
+            return;
+        }
+        auto q16 = [](float v) -> quint16 {
+            const int o = int(v * 65535.0f + 0.5f);
+            return quint16(o < 0 ? 0 : (o > 65535 ? 65535 : o));
+        };
+        const QRgba64 t = xform->map(QRgba64::fromRgba64(q16(r), q16(g), q16(b), 65535));
+        auto d8 = [&](quint16 v, int c) -> uchar {
+            const int o = int(float(v) * (1.0f / 257.0f) + 0.5f + triDither(i, c) * kDither);
+            return uchar(o < 0 ? 0 : (o > 255 ? 255 : o));
+        };
+        px[0] = d8(t.red(), 0); px[1] = d8(t.green(), 1); px[2] = d8(t.blue(), 2);
     };
 
     QImage out(w, h, QImage::Format_RGB888);
@@ -124,7 +159,17 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
     // then look up false colour.
     if (ch == 1 && colormapActive(model.colormap(), model.cmapMods())) {
         const int M = 4096;                              // colormap resolution (smooth gradient)
-        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
+        std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
+        if (xform) {                       // convert the TABLE once, not per pixel
+            for (int e = 0; e < M; ++e) {
+                const QRgba64 t = xform->map(QRgba64::fromRgba64(
+                    quint16(cmap[e*3+0] * 257), quint16(cmap[e*3+1] * 257),
+                    quint16(cmap[e*3+2] * 257), 65535));
+                cmap[e*3+0] = std::uint8_t((t.red()   + 128) / 257);
+                cmap[e*3+1] = std::uint8_t((t.green() + 128) / 257);
+                cmap[e*3+2] = std::uint8_t((t.blue()  + 128) / 257);
+            }
+        }
         const auto& l = lut[0];
         parallelRows(h, [&](int y0, int y1) {
             for (int y = y0; y < y1; ++y) {
@@ -142,9 +187,10 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
                         // dither scaled to an OUTPUT-level equivalent: the cmap has
                         // M entries but only ~256 distinct 8-bit colours, so ±kDither
                         // entries alone (1/16 of a colour step) blends nothing.
-                        const double f = t * (N - 1);
+                        const int n = int(l.size());
+                        const double f = t * (n - 1);
                         const int i0 = int(f);
-                        const int i1 = i0 < N - 1 ? i0 + 1 : i0;
+                        const int i1 = i0 < n - 1 ? i0 + 1 : i0;
                         const float fr = float(f - i0);
                         const float yv = l[i0] * (1.0f - fr) + l[i1] * fr;
                         const float ceff = yv * (M - 1) + triDither(off + x, 0) * kDither * (float(M) / 256.0f);
@@ -172,9 +218,7 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
                     float g = mapNorm(1, p1[i], i);
                     float b = mapNorm(2, p2[i], i);
                     applyColor(r, g, b, adj);
-                    row[x * 3 + 0] = to8(r, i, 0);
-                    row[x * 3 + 1] = to8(g, i, 1);
-                    row[x * 3 + 2] = to8(b, i, 2);
+                    writePx(row + x * 3, r, g, b, i);
                 }
             }
         });
@@ -187,9 +231,9 @@ QImage DisplayRenderer::render(const ImageData& img, const StretchModel& model) 
             const std::size_t off = std::size_t(y) * w;
             for (int x = 0; x < w; ++x) {
                 const std::size_t i = off + x;
-                row[x * 3 + 0] = to8(mapNorm(0, p0[i], i), i, 0);
-                row[x * 3 + 1] = to8(mapNorm(1, p1[i], i), i, 1);
-                row[x * 3 + 2] = to8(mapNorm(2, p2[i], i), i, 2);
+                writePx(row + x * 3,
+                        mapNorm(0, p0[i], i), mapNorm(1, p1[i], i),
+                        mapNorm(2, p2[i], i), i);
             }
         }
     });
@@ -246,7 +290,7 @@ ImageData DisplayRenderer::renderFloat(const ImageData& img, const StretchModel&
 
     if (falseColor) {
         const int M = 4096;
-        const std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
+        std::vector<std::uint8_t> cmap = buildColormapLut(model.colormap(), model.cmapMods(), M);
         const float* p = img.plane<float>(0);
         float* o0 = out.plane<float>(0);
         float* o1 = out.plane<float>(1);
