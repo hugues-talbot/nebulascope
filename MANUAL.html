@@ -762,7 +762,7 @@ div.csl-indent {
 <li><strong>General</strong> — interface language (system default / English / Français — applied at the next launch; the <code>.nsc</code> script language and CLI output stay English, as a locale-independent API); default annotation colour, text size, line thickness; RA/Dec grid density; sidecar auto-load; overlay panel opacity; recent files list sizes.</li>
 <li><strong>Shortcuts</strong> — every action’s binding, editable; stored in <code>shortcuts.ini</code> (empty value disables; stale clashes revert).</li>
 </ul></li>
-<li><strong>About</strong> — version and copyright come from <code>src/app/AppInfo.h</code> (user-maintained).</li>
+<li><strong>About</strong> — version and copyright come from <code>src/app/AppInfo.h</code> (user-maintained), followed by the exact <strong>build id</strong> (<code>git describe</code>, e.g.&nbsp;<code>v0.92-3-ga6a8118</code>, <code>-dirty</code> when built from uncommitted changes) — so a test binary always says which commit it is. Also on the command line: <code>--version</code>.</li>
 </ul>
 </section>
 <section id="troubleshooting" class="level2">
