@@ -22,9 +22,22 @@ struct HeaderCard {
     QString comment;
 };
 
+// XISF DisplayFunction: the screen stretch (STF) the producing application —
+// typically PixInsight — had active when the file was saved. Components are
+// midtones / shadows / highlights per channel (RGB/K order, 4th = CIE L,
+// unused here), in ABSOLUTE sample values. Purely display metadata: the
+// pixels stay linear.
+struct DisplayFunction {
+    bool   valid = false;
+    double m[4] = { 0.5, 0.5, 0.5, 0.5 };
+    double s[4] = { 0, 0, 0, 0 };
+    double h[4] = { 1, 1, 1, 1 };
+};
+
 struct ImageHeader {
     std::vector<HeaderCard> cards;
     QVariantMap             properties;
+    DisplayFunction         displayFn;   // saved STF (XISF only; .valid gates)
 
     // Orientation info for the Info panel (populated by the readers).
     QString     container;    // "FITS" / "XISF"

@@ -9,6 +9,7 @@
 #include <QTemporaryDir>
 #include <QString>
 #include <cmath>
+#include "io/XisfReader.h"
 #include <cstring>
 
 using namespace astro;
@@ -269,3 +270,19 @@ NS_TEST(tiff_roundtrip_16bit) {
 }
 
 int main() { return nstest::runAll(); }
+
+// XISF DisplayFunction parsing (PixInsight's saved STF). Attribute strings
+// verbatim from a real SPCC-processed PI file.
+NS_TEST(xisf_display_function_parse) {
+    using astro::io::parseDisplayFunction;
+    auto df = parseDisplayFunction(
+        "0.00131768430583179:0.0004599035601131618:0.0006609923439100385:0.5",
+        "0.00012832076754421:0.0003995629376731813:0.0003326047153677791:0",
+        "1:1:1:1");
+    NS_CHECK(df.valid);
+    NS_CHECK(std::abs(df.m[0] - 0.00131768430583179) < 1e-15);
+    NS_CHECK(std::abs(df.s[1] - 0.0003995629376731813) < 1e-15);
+    NS_CHECK(df.h[2] == 1.0 && df.m[3] == 0.5);
+    NS_CHECK(!parseDisplayFunction("0.5", "0:0:0", "1:1:1").valid);   // too few components
+    NS_CHECK(!parseDisplayFunction("a:b:c", "0:0:0", "1:1:1").valid); // non-numeric
+}

@@ -33,7 +33,11 @@ dialog), one image per cell, until the cells run out. The list holds each
 image **once**: re-opening a listed image selects its existing row instead of
 adding a duplicate (the status bar notes it). On first view an image gets a
 plain **min→max linear ramp** (predictable, no guessing); press **Auto STF**
-for a boosted stretch (§3).
+for a boosted stretch (§3). Exception: an XISF that carries the producing
+application's **saved screen stretch** (the `DisplayFunction` element —
+PixInsight writes its STF there) opens with that stretch applied, so a
+PI-processed image looks the way it did on PI's screen; the status bar notes
+it, and **Reset** returns to the plain ramp.
 
 **One-shot-colour (OSC) frames are debayered automatically.** A mono frame
 whose header carries a Bayer pattern (`BAYERPAT`, honouring
@@ -505,6 +509,11 @@ name reassembles exactly, for overwriting or re-saving.
   handles aren't collapsed.
 - *Adjustment sliders seem inert* — colour sliders (Temp…Vibrance) are
   disabled for mono images; tone sliders work everywhere.
+- *A colour-calibrated (SPCC/PCC) image looks uncalibrated* — per-channel
+  **Auto STF** (U) equalises the channels, cancelling the calibration's
+  balance on screen. Use **Auto STF (linked)** (Shift+U), which preserves
+  it — or save from PI with its STF active: the saved display function is
+  applied on open.
 - *NebulaScope XISF looks like noise in PixInsight* — fixed in v0.84+
   (floats normalized to [0,1]); re-save the file. Compressed blocks
   (v0.86+) are PI-verified and not the culprit.

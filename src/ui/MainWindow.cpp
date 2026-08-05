@@ -2905,6 +2905,28 @@ void MainWindow::displayPath(const QString& path) {
         // Adjustments never leak across images: reset to identity, or to what
         // this image's sidecar carries.
         m_model.setAdjust(sidecarAdjValid ? sidecarAdj : AdjustParams{});
+        if (m_header.displayFn.valid && m_image.isValid()) {
+            // The file carries the producing app's screen stretch (XISF
+            // DisplayFunction — PixInsight's STF): open looking exactly as it
+            // did there. Absolute shadows/highlights are windowed into this
+            // image's model range; PI's midtones parameter IS the MTF pivot
+            // ratio, so mid = b + m·(w − b). The white point may exceed the
+            // data maximum (PI clips at 1.0) — the render algebra extrapolates
+            // the window exactly, no clamp needed.
+            const DisplayFunction& df = m_header.displayFn;
+            for (int c = 0; c < m_image.channels() && c < 3; ++c) {
+                const double lo = m_model.lo(c), hi = m_model.hi(c);
+                if (!(hi > lo)) continue;
+                const int k = (m_image.channels() >= 3) ? c : 0;   // mono: K component
+                ChannelStretch cs;
+                cs.black = std::max(0.0, (df.s[k] - lo) / (hi - lo));
+                cs.white = std::max(cs.black + 1e-6, (df.h[k] - lo) / (hi - lo));
+                cs.mid   = cs.black + df.m[k] * (cs.white - cs.black);
+                m_model.setChannel(c, cs);
+            }
+            statusBar()->showMessage(
+                tr("PixInsight display function applied — Reset (R) for the plain ramp"), 6000);
+        }
     }
 
     m_view->setSource(&m_image);

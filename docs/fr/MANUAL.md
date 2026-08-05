@@ -41,7 +41,12 @@ chaque image qu'**une seule fois** : rouvrir une image déjà listée
 sélectionne sa ligne existante au lieu d'ajouter un doublon (la barre d'état
 le signale). À la première visualisation une image reçoit une simple
 **rampe linéaire min→max** (prévisible, sans conjecture) ; appuyez sur
-**Auto STF** pour un étirement renforcé (§3).
+**Auto STF** pour un étirement renforcé (§3). Exception : un XISF portant
+l'**étirement d'écran enregistré** par l'application productrice
+(l'élément `DisplayFunction` — PixInsight y écrit sa STF) s'ouvre avec cet
+étirement appliqué : une image traitée dans PI apparaît comme sur l'écran
+de PI ; la barre d'état le signale, et **Réinitialiser** revient à la
+rampe simple.
 
 **Les images couleur one-shot (OSC) sont dématriçées automatiquement.** Une
 image mono dont l'en-tête porte un motif de Bayer (`BAYERPAT`, en honorant
@@ -560,6 +565,11 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
 - *Curseurs d'ajustement inertes* — les curseurs couleur
   (Température…Vibrance) sont désactivés pour les images mono ; les
   curseurs de tonalité fonctionnent partout.
+- *Une image étalonnée en couleur (SPCC/PCC) paraît non étalonnée* —
+  l'**Auto STF** par canal (U) égalise les canaux et annule à l'écran la
+  balance de l'étalonnage. Utilisez **Auto STF (lié)** (Maj+U), qui la
+  préserve — ou enregistrez depuis PI avec sa STF active : la fonction
+  d'affichage enregistrée est appliquée à l'ouverture.
 - *Un XISF de NebulaScope ressemble à du bruit dans PixInsight* — corrigé
   en v0.84+ (flottants normalisés dans [0,1]) ; réenregistrez le fichier.
   Les blocs compressés (v0.86+) sont vérifiés sous PI et hors de cause.

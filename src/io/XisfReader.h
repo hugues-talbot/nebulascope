@@ -15,4 +15,9 @@ public:
     QStringList extensions() const override { return { "xisf" }; }
 };
 
+// Parse the m/s/h attributes of an XISF <DisplayFunction> element (each a
+// colon-separated list of 3-4 reals, RGB/K order). Returns a .valid result
+// only when all three parse with at least 3 components. Exposed for tests.
+DisplayFunction parseDisplayFunction(const QString& m, const QString& s, const QString& h);
+
 } // namespace astro::io

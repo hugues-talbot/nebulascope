@@ -48,7 +48,24 @@ static QString xisfTypeString(LibXISF::Image::SampleFormat f) {
 // PCL:AstrometricSolution:* uses. The monolithic XISF header is plain XML at a
 // fixed offset, so scan it ourselves: scalars from the value attribute,
 // F64Vector/F64Matrix decoded from inline base64 or attached blocks.
-static void scanXmlProperties(const QString& path, QVariantMap& props) {
+DisplayFunction parseDisplayFunction(const QString& m, const QString& s, const QString& h) {
+    DisplayFunction df;
+    auto fill = [](const QString& attr, double out[4]) -> bool {
+        const QStringList parts = attr.split(QLatin1Char(':'));
+        if (parts.size() < 3) return false;
+        for (int i = 0; i < parts.size() && i < 4; ++i) {
+            bool ok = false;
+            out[i] = parts[i].toDouble(&ok);
+            if (!ok) return false;
+        }
+        return true;
+    };
+    df.valid = fill(m, df.m) && fill(s, df.s) && fill(h, df.h);
+    return df;
+}
+
+static void scanXmlProperties(const QString& path, QVariantMap& props,
+                              DisplayFunction* displayFn) {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) return;
     if (f.read(8) != QByteArray("XISF0100", 8)) return;
@@ -61,6 +78,16 @@ static void scanXmlProperties(const QString& path, QVariantMap& props) {
     QXmlStreamReader x(xml);
     while (!x.atEnd()) {
         if (x.readNext() != QXmlStreamReader::StartElement) continue;
+        if (displayFn && x.name() == QLatin1String("DisplayFunction")) {
+            // The producing app's screen stretch (PixInsight's STF) — read so
+            // the image can open looking exactly as it did there.
+            const QXmlStreamAttributes a = x.attributes();
+            *displayFn = parseDisplayFunction(
+                a.value(QLatin1String("m")).toString(),
+                a.value(QLatin1String("s")).toString(),
+                a.value(QLatin1String("h")).toString());
+            continue;
+        }
         if (x.name() != QLatin1String("Property")) continue;
         const QXmlStreamAttributes attrs = x.attributes();
         const QString id   = attrs.value(QLatin1String("id")).toString();
@@ -159,7 +186,7 @@ LoadResult XisfReader::load(const QString& path, const LoadOptions& opts) const 
         // PixInsight attaches the astrometric solution as vector/matrix typed
         // properties, which this libXISF build does not surface — recover them
         // (and any other missed properties) straight from the XML header.
-        scanXmlProperties(path, r.header.properties);
+        scanXmlProperties(path, r.header.properties, &r.header.displayFn);
 
         // Promote integer images to Float32 (XISF integers normalize to [0,1]).
         if (opts.promoteToFloat && img.format() != SampleFormat::Float32)
