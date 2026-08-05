@@ -2,6 +2,7 @@
 #include "ui/ScriptRunner.h"
 #include "app/AppInfo.h"
 #include "app/BuildInfo.h"
+#include "app/MacWindowColor.h"
 #include "core/Preferences.h"
 #include <QApplication>
 #include <QLibraryInfo>
@@ -223,6 +224,7 @@ int main(int argc, char** argv) {
 
     astro::MainWindow w;
     w.show();
+    astro::tagWindowAsSRgb(w.windowHandle());    // wide-gamut panels: OS converts sRGB
     app.setWindow(&w);                           // replays any Finder open-file events
 
     // Command line:  nebulascope *.fits        (files; shell usually globs)

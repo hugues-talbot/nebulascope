@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 #include <QSet>
+#include <QColorSpace>
 #include <QFileSystemModel>
 #include "ui/ImageView.h"
 #include "ui/HistogramPanel.h"
@@ -871,6 +872,7 @@ void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
     m_image = std::move(newC->image);
     newC->image = ImageData();
     m_header = newC->header;
+    updateIccTransform();
     m_currentPath = newC->path;
     m_wcs = newC->wcs;
     m_curStats = newC->stats;
@@ -1506,7 +1508,7 @@ void MainWindow::addPaths(const QStringList& paths) {
             if (!firstCell) firstCell = target;
             showRow(m_fileList->row(it));
             if (m_image.isValid()) {
-                m_view->setDisplayImage(DisplayRenderer::render(m_image, m_model));
+                m_view->setDisplayImage(renderDisplayImage(m_image, m_model));
                 m_view->zoomToFit();
             }
         }
@@ -2233,6 +2235,7 @@ void MainWindow::removeSelected() {
         m_currentPath.clear();
         m_image = ImageData();
         m_header = ImageHeader();
+        updateIccTransform();
         m_wcs = Wcs();
         m_annotations->rebuild(0, 0, m_wcs, {});
         m_grid->clearAll();
@@ -2288,7 +2291,7 @@ void MainWindow::applySplitLayout(int rows, int cols) {
         // soon as the next cell activates (identity check) — the cell would
         // keep its pixels but never get a pixmap. Fit: the grid is new.
         if (m_image.isValid()) {
-            m_view->setDisplayImage(DisplayRenderer::render(m_image, m_model));
+            m_view->setDisplayImage(renderDisplayImage(m_image, m_model));
             m_view->zoomToFit();
         }
     }
@@ -2805,6 +2808,7 @@ void MainWindow::displayPath(const QString& path) {
     }
     m_image = std::move(loaded);
     m_header = std::move(hdr);
+    updateIccTransform();
     syncDebayerMenu();
 
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
@@ -3233,7 +3237,12 @@ void MainWindow::exportView() {
     if (!m_image.isValid()) return;
     // The exact 8-bit RGB image currently on screen — stretch, colormap and all.
     saveRenderedImage(DisplayRenderer::render(m_image, m_model), tr("Export view (full frame)"),
-        [this] { return floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model)); });
+        [this] {
+            QImage f16 = floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model));
+            if (m_hasIcc) f16.applyColorTransform(m_iccToSrgb);
+            if (m_hasIcc) f16.applyColorTransform(m_iccToSrgb);
+            return f16;
+        });
 }
 
 void MainWindow::exportRegion() {
@@ -3276,6 +3285,27 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
         .arg(toSave.format() == QImage::Format_RGBX64 ? tr(" \u00b7 16-bit") : QString()), 3000);
 }
 
+// Colour management: when the current image embeds an ICC profile (XISF from
+// PixInsight), render through profile→sRGB so colours match the producing
+// application's colour-managed screen. LUT-based profiles QColorSpace cannot
+// represent fall back silently to direct RGB.
+void MainWindow::updateIccTransform() {
+    m_hasIcc = false;
+    m_iccToSrgb = QColorTransform();
+    if (m_header.iccProfile.isEmpty()) return;
+    const QColorSpace cs = QColorSpace::fromIccProfile(m_header.iccProfile);
+    if (!cs.isValid()) return;
+    if (cs == QColorSpace::SRgb) return;             // identity — skip the cost
+    m_iccToSrgb = cs.transformationToColorSpace(QColorSpace::SRgb);
+    m_hasIcc = true;
+}
+
+QImage MainWindow::renderDisplayImage(const ImageData& img, const StretchModel& m) const {
+    QImage out = DisplayRenderer::render(img, m);
+    if (m_hasIcc) out.applyColorTransform(m_iccToSrgb);
+    return out;
+}
+
 void MainWindow::updateDisplay() {
     if (!m_image.isValid()) return;
     // Coalescing async render: the GUI thread never blocks on a frame. If a
@@ -3291,10 +3321,14 @@ void MainWindow::updateDisplay() {
     m_renderSize = QSize(m_image.width(), m_image.height());
     const ImageData img = m_image;
     const StretchModel::State st = m_model.state();
-    m_renderWatcher->setFuture(QtConcurrent::run([img, st]() -> QImage {
+    const bool hasIcc = m_hasIcc;                // colour-manage in the worker,
+    const QColorTransform icc = m_iccToSrgb;     // off the GUI thread
+    m_renderWatcher->setFuture(QtConcurrent::run([img, st, hasIcc, icc]() -> QImage {
         StretchModel local;                      // plain value copy for the worker
         local.setState(st);
-        return DisplayRenderer::render(img, local);
+        QImage out = DisplayRenderer::render(img, local);
+        if (hasIcc) out.applyColorTransform(icc);
+        return out;
     }));
 }
 

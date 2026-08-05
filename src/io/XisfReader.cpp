@@ -166,6 +166,13 @@ LoadResult XisfReader::load(const QString& path, const LoadOptions& opts) const 
         const std::size_t n = std::min<std::size_t>(img.byteSize(), im.imageDataSize());
         std::memcpy(img.bytes().data(), im.imageData(), n);
 
+        // Embedded ICC profile (libXISF decompresses it): carried to the
+        // display layer, which renders through it so colours match the
+        // colour-managed look of the producing application (PixInsight).
+        const LibXISF::ByteArray& icc = im.iccProfile();
+        if (icc.size() > 0)
+            r.header.iccProfile = QByteArray(icc.data(), qsizetype(icc.size()));
+
         // FITS keywords are embedded in XISF — surface them via the same header.
         // Unquote/trim values (PI writes them as FITS-card strings) so numeric
         // parsing (e.g. the WCS solution) sees clean numbers.

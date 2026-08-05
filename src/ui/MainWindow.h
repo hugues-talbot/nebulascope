@@ -6,6 +6,7 @@
 // to the renderer so any histogram edit updates the display live.
 //
 #include <QMainWindow>
+#include <QColorTransform>
 #include <QFutureWatcher>
 #include <QImage>
 #include <QHash>
@@ -112,6 +113,10 @@ private:
     void applyUserShortcuts(const QHash<QString, QAction*>& acts,
                             const QHash<QString, QShortcut*>& keys);
     void addPaths(const QStringList& paths);   // append list items, no decode
+    // ICC colour management: rebuild m_iccToSrgb from m_header's embedded
+    // profile; renderDisplayImage() = stretch render + that transform.
+    void updateIccTransform();
+    QImage renderDisplayImage(const ImageData& img, const StretchModel& m) const;
     // Save dialogs with inline format options (depth/quality/XISF compression).
     QString exportImageDialogPath(const QString& title, bool offer16,
                                   bool* want16, int* quality);
@@ -319,6 +324,8 @@ protected:
     // intermediate states are coalesced (only the latest is rendered).
     QFutureWatcher<QImage>* m_renderWatcher = nullptr;
     bool        m_renderPending = false;  // a newer state arrived mid-render
+    QColorTransform m_iccToSrgb;          // embedded-ICC → sRGB (see updateIccTransform)
+    bool        m_hasIcc = false;         // m_iccToSrgb is meaningful
     const void* m_renderSrc = nullptr;    // identity of the pixels being rendered
     QSize       m_renderSize;
     QComboBox*      m_cmapCombo = nullptr;

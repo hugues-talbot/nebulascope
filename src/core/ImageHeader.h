@@ -9,6 +9,7 @@
 //  * `properties` : richer, typed XISF properties (camera, exposure, history,
 //                   colour-management, ...). Empty for plain FITS.
 //
+#include <QByteArray>
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
@@ -38,6 +39,7 @@ struct ImageHeader {
     std::vector<HeaderCard> cards;
     QVariantMap             properties;
     DisplayFunction         displayFn;   // saved STF (XISF only; .valid gates)
+    QByteArray              iccProfile;  // embedded ICC profile bytes (may be empty)
 
     // Orientation info for the Info panel (populated by the readers).
     QString     container;    // "FITS" / "XISF"
