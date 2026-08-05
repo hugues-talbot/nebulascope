@@ -2734,9 +2734,19 @@ bool MainWindow::eventFilter(QObject* o, QEvent* e) {
             if (m_ovDrag == 1) { m_ovLeftW = std::max(160, me->globalPosition().toPoint().x() - centralWidget()->mapToGlobal(QPoint(14,0)).x()); layoutOverlayPanels(); return true; }
             if (m_ovDrag == 2) { m_ovHistW = std::max(240, centralWidget()->mapToGlobal(QPoint(centralWidget()->width()-14,0)).x() - me->globalPosition().toPoint().x()); layoutOverlayPanels(); return true; }
             if (m_ovDrag == 3) { const int fullH = centralWidget()->height() - 28; m_ovSplit = qBound(0.15, double(me->globalPosition().toPoint().y() - centralWidget()->mapToGlobal(QPoint(0,14)).y()) / std::max(1, fullH), 0.85); layoutOverlayPanels(); return true; }
-            box->setCursor(onS ? Qt::SplitVCursor : (onW ? Qt::SizeHorCursor : Qt::ArrowCursor));
+            // unsetCursor (not ArrowCursor) off the grips: children inherit the
+            // container's cursor, so an explicit set would shadow theirs.
+            if (onS)      box->setCursor(Qt::SplitVCursor);
+            else if (onW) box->setCursor(Qt::SizeHorCursor);
+            else          box->unsetCursor();
             break;
         }
+        case QEvent::Leave:
+            // Fires when the pointer moves INTO a child widget (list, info,
+            // histogram) as well as off the panel — without this the resize
+            // cursor set at the edge sticks over the whole panel.
+            if (!m_ovDrag) box->unsetCursor();
+            break;
         case QEvent::MouseButtonPress:
             if (me->button() == Qt::LeftButton) {
                 const QPoint p = me->position().toPoint();
