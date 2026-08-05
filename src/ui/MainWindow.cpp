@@ -632,11 +632,11 @@ void MainWindow::showAbout() {
         " and blink comparison.</p>"
         "<p style='color:#7e8b98;font-size:11px'>%2<br>Built with Qt, CFITSIO/CCfits and libXISF.</p>"
         "%3")
-        .arg(QString::fromUtf8(appinfo::kVersion),
-             // Copyright + exact build provenance (git describe), so a test
-             // binary can always say which commit it is. Language-neutral.
-             QString::fromUtf8(appinfo::kCopyright) + QStringLiteral(" — ")
+        // Version headline carries the exact build id (git describe) right
+        // beside the official version, where a tester's eye actually goes.
+        .arg(QString::fromUtf8(appinfo::kVersion) + QStringLiteral("  ·  ")
                  + QString::fromUtf8(appbuild::gitDescribe()),
+             QString::fromUtf8(appinfo::kCopyright),
              QString::fromUtf8(appinfo::kAboutExtraHtml)));
     box.setStandardButtons(QMessageBox::Ok);
     box.exec();
@@ -2664,6 +2664,12 @@ QWidget* MainWindow::makeOverlayBox(QWidget* content) {
     auto* l = new QVBoxLayout(box);
     l->setContentsMargins(7, 7, 7, 7);
     l->addWidget(content);
+    // The box's cursor is the edge-grip affordance. The content must NEVER
+    // inherit it: Qt does not deliver Leave to the box when the pointer moves
+    // onto a child (field-verified), so an inherited grip cursor would stick
+    // over the whole panel. Pin an explicit arrow; widgets with their own
+    // cursors (line edits etc.) still override it.
+    content->setCursor(Qt::ArrowCursor);
     box->setMouseTracking(true);
     box->installEventFilter(this);      // edge-drag resizing
     box->hide();
@@ -2992,6 +2998,19 @@ void keepAllImagesClickable(QFileDialog& dlg) {
         model->setNameFilters(kAdoptableImages);
 }
 
+// Clicking a file adopts its BASE NAME only — the extension belongs to the
+// selected format ("some_nebula.xisf" clicked in a PNG export prefills
+// "some_nebula", saved as "some_nebula.png"; with matching format the
+// original name reassembles exactly, for overwriting).
+void adoptBasenameOnClick(QFileDialog& dlg) {
+    QObject::connect(&dlg, &QFileDialog::currentChanged, &dlg,
+                     [&dlg](const QString& p) {
+        const QFileInfo fi(p);
+        if (!p.isEmpty() && !fi.isDir() && !fi.completeBaseName().isEmpty())
+            dlg.selectFile(fi.completeBaseName());
+    });
+}
+
 // The typed/clicked name keeps its extension when this dialog can WRITE that
 // format; any other extension is swapped for the selected filter's (clicking
 // "M81.xisf" in the PNG export prefills "M81" and saves "M81.png").
@@ -3041,6 +3060,7 @@ QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
     };
     QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
     sync(dlg.selectedNameFilter());
+    adoptBasenameOnClick(dlg);
 
     if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
     static const QStringList kWritable{ "png", "jpg", "jpeg", "tiff", "tif", "webp" };
@@ -3089,6 +3109,7 @@ QString MainWindow::dataSaveDialogPath(const QString& title, io::SaveOptions& op
     };
     QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg, sync);
     sync(dlg.selectedNameFilter());
+    adoptBasenameOnClick(dlg);
 
     if (dlg.exec() != QDialog::Accepted || dlg.selectedFiles().isEmpty()) return {};
     static const QStringList kWritable{ "fits", "fit", "fts", "xisf", "tiff", "tif" };

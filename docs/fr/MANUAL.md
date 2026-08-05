@@ -483,11 +483,11 @@ symbolique vers votre PATH — voir docs/BUILDING-macos.md.)
 ## 14. Export
 
 Dans chaque boîte d'enregistrement, **cliquez sur n'importe quel nom
-d'image existant pour l'adopter** — fichiers FITS, XISF ou images
-ordinaires ; l'extension suit alors le format sélectionné : cliquer
-`M81.xisf` dans un export PNG préremplit `M81.png` (cliquer un nom dont le
-format est inscriptible par la boîte le conserve tel quel, pour l'écraser
-ou le réenregistrer).
+d'image existant pour adopter son nom de base** — fichiers FITS, XISF ou
+images ordinaires ; l'extension vient toujours du format sélectionné.
+Cliquer `M81.xisf` dans un export PNG préremplit `M81`, enregistré
+`M81.png` ; avec le format correspondant sélectionné, le nom d'origine se
+reconstitue à l'identique, pour écraser ou réenregistrer.
 
 - **Fichier ▸ Enregistrer les données sous…** — les *données* (Float32,
   orientation courante) : FITS, XISF, ou TIFF 16 bits. Enregistrer un
