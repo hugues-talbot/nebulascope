@@ -64,7 +64,7 @@
     "href": "MANUAL.html#palettes-de-couleurs-images-mono",
     "title": "NebulaScope — Manuel de l’utilisateur",
     "section": "5. Palettes de couleurs (images mono)",
-    "text": "5. Palettes de couleurs (images mono)\nGris, Chaleur, Viridis, Magma, Inferno, Cividis — choisies dans la barre d’outils — plus deux modificateurs composables qui fonctionnent avec toutes les palettes :\n\ninv() — inversion complète.\nsplit(t) — sous le seuil t la palette est inversée, au-dessus elle est normale ; excellent pour percevoir les structures ténues du fond. Seuil réglable.\n\nLes images RVB ignorent la palette (le sélecteur est désactivé).\n\n\n\nPalette split sur un champ de galaxie, barre de couleurs visible",
+    "text": "5. Palettes de couleurs (images mono)\nGris, Chaleur, Viridis, Magma, Inferno, Cividis — plus les palettes classiques de SAOImage DS9 (a, b, bb, he, cool, rainbow, standard, et les palettes à paliers i8, aips0 et sls), reproduites depuis les points de contrôle de référence de DS9 : le rendu est identique à DS9. Toutes se choisissent dans la barre d’outils ; scripts : cmap &lt;nom&gt;. Deux modificateurs composables fonctionnent avec toutes les palettes :\n\ninv() — inversion complète.\nsplit(t) — sous le seuil t la palette est inversée, au-dessus elle est normale ; excellent pour percevoir les structures ténues du fond. Seuil réglable.\n\nLes images RVB ignorent la palette (le sélecteur est désactivé).\n\n\n\nPalette split sur un champ de galaxie, barre de couleurs visible",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>NebulaScope — Manuel de l'utilisateur</span>"
     ]
