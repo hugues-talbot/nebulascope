@@ -1290,8 +1290,11 @@ void MainWindow::buildMenusAndToolbar() {
     for (int i = 0; i < kColormapCount; ++i)
         m_cmapCombo->addItem(colormapName(static_cast<Colormap>(i)));
     tb->addWidget(m_cmapCombo);
-    connect(m_cmapCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int i) {
-        m_model.setColormap(static_cast<Colormap>(i));
+    // currentIndexChanged (not activated): the script `cmap` command drives
+    // this combo programmatically, which `activated` never reports. The
+    // model-sync path sets the index under a QSignalBlocker, so no loop.
+    connect(m_cmapCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int i) {
+        if (i >= 0) m_model.setColormap(static_cast<Colormap>(i));
     });
 
     // Modifiers that compose with any base map.

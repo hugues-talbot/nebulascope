@@ -94,8 +94,9 @@ const CommandRef kCommands[] = {
     "Grab the whole main window (or, with 'dialog', the dialog opened by the\n"
     "dialog command) to PNG after the async render pipeline drains.\n"
     "Works headless (QT_QPA_PLATFORM=offscreen)."}},
-  {"cmap",       {"cmap gray|heat|viridis|magma|inferno|cividis",
-    "False-colour base map (mono images only)."}},
+  {"cmap",       {"cmap gray|heat|viridis|magma|inferno|cividis|a|b|bb|he|cool|rainbow|standard|i8|aips0|sls",
+    "False-colour base map (mono images only). The second group are\n"
+    "SAOImage DS9's classic palettes (identical control points)."}},
   {"cmapmod",    {"cmapmod invert|split on|off [t]",
     "Colormap modifiers; split folds the map at threshold t (0..1)."}},
   {"panels",     {"panels on|off", "Show/hide all overlay panels (Image Only)."}},
@@ -301,11 +302,14 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         // model, legend and rendering all update through the normal path.
         if (!needArgs(1)) return false;
         if (!m_w->m_cmapCombo) { err = "no colormap control"; return false; }
-        static const char* names[] = { "gray", "heat", "viridis", "magma", "inferno", "cividis" };
+        static const char* names[] = { "gray", "heat", "viridis", "magma", "inferno", "cividis",
+                                       "a", "b", "bb", "he", "cool", "rainbow",
+                                       "standard", "i8", "aips0", "sls" };
         const QString want = t[1].toLower();
         for (int i = 0; i < int(sizeof(names) / sizeof(*names)); ++i)
             if (want == QLatin1String(names[i])) { m_w->m_cmapCombo->setCurrentIndex(i); return true; }
-        err = "unknown colormap (gray|heat|viridis|magma|inferno|cividis)";
+        err = "unknown colormap (gray|heat|viridis|magma|inferno|cividis|"
+              "a|b|bb|he|cool|rainbow|standard|i8|aips0|sls)";
         return false;
     }
     if (cmd == QLatin1String("cmapmod")) {

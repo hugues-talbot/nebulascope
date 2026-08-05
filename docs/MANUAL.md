@@ -146,8 +146,11 @@ Linear/Log/Asinh/GHS:
 
 ## 5. Colormaps (mono images)
 
-Gray, Heat, Viridis, Magma, Inferno, Cividis — selected in the toolbar —
-plus two composable **modifiers** that work with *every* map:
+Gray, Heat, Viridis, Magma, Inferno, Cividis — plus **SAOImage DS9's
+classic palettes** (a, b, bb, he, cool, rainbow, standard, and the stepped
+i8, aips0 and sls), reproduced from DS9's reference control points so
+renditions match DS9 exactly. All selected in the toolbar; scripts:
+`cmap <name>`. Two composable **modifiers** work with *every* map:
 
 - **inv()** — full inversion.
 - **split(t)** — below threshold *t* the map runs inverted, above it normal;

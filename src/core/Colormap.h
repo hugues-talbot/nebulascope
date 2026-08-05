@@ -15,9 +15,15 @@
 
 namespace astro {
 
-enum class Colormap { Gray, Heat, Viridis, Magma, Inferno, Cividis };
+// Gray..Cividis: NebulaScope's own maps. Ds9*: SAOImage DS9's classic
+// palettes, reproduced from DS9's reference control points so renditions
+// match DS9 exactly (a/b/bb/he/cool/rainbow/standard are piecewise-linear;
+// i8/aips0/sls are stepped colour tables, as in DS9).
+enum class Colormap { Gray, Heat, Viridis, Magma, Inferno, Cividis,
+                      Ds9A, Ds9B, Ds9BB, Ds9HE, Ds9Cool, Ds9Rainbow,
+                      Ds9Standard, Ds9I8, Ds9AIPS0, Ds9SLS };
 
-constexpr int kColormapCount = 6;
+constexpr int kColormapCount = 16;
 
 const char* colormapName(Colormap c);
 

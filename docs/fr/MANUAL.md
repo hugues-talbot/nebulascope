@@ -172,9 +172,12 @@ n'est pas touché). Les douze curseurs s'appliquent aux valeurs d'affichage
 
 ## 5. Palettes de couleurs (images mono)
 
-Gris, Chaleur, Viridis, Magma, Inferno, Cividis — choisies dans la barre
-d'outils — plus deux **modificateurs** composables qui fonctionnent avec
-*toutes* les palettes :
+Gris, Chaleur, Viridis, Magma, Inferno, Cividis — plus les **palettes
+classiques de SAOImage DS9** (a, b, bb, he, cool, rainbow, standard, et
+les palettes à paliers i8, aips0 et sls), reproduites depuis les points de
+contrôle de référence de DS9 : le rendu est identique à DS9. Toutes se
+choisissent dans la barre d'outils ; scripts : `cmap <nom>`. Deux
+**modificateurs** composables fonctionnent avec *toutes* les palettes :
 
 - **inv()** — inversion complète.
 - **split(t)** — sous le seuil *t* la palette est inversée, au-dessus elle
