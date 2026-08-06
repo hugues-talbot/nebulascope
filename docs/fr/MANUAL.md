@@ -46,7 +46,11 @@ l'**étirement d'écran enregistré** par l'application productrice
 (l'élément `DisplayFunction` — PixInsight y écrit sa STF) s'ouvre avec cet
 étirement appliqué : une image traitée dans PI apparaît comme sur l'écran
 de PI ; la barre d'état le signale, et **Réinitialiser** revient à la
-rampe simple.
+rampe simple. Un point blanc au-delà du maximum des données (la convention
+de PI le place sur le conteneur normalisé [0,1]) est **recalé sur la plage
+des données** en forme close — courbe identique sur les données, à un
+facteur de luminosité uniforme près — afin que les poignées de
+l'histogramme et les champs de valeur restent pleinement utilisables.
 
 **Les images couleur one-shot (OSC) sont dématriçées automatiquement.** Une
 image mono dont l'en-tête porte un motif de Bayer (`BAYERPAT`, en honorant

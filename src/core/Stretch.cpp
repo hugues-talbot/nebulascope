@@ -167,6 +167,45 @@ double fitColorAdjust(const float* dR, const float* dG, const float* dB,
     return std::sqrt(mse(adj));
 }
 
+static inline double mtfInverse(double y, double m) {
+    return m * y / (y * (2.0 * m - 1.0) - m + 1.0);
+}
+
+double farWhiteEndpoint(const ChannelStretch& cs) {
+    const double denom = std::max(1e-9, cs.white - cs.black);
+    const double mPi = std::min(0.999, std::max(1e-6, (cs.mid - cs.black) / denom));
+    const double k = (1.0 - cs.black) / denom;      // original-window coord of the data max
+    if (k >= 1.0 || k <= 0.0) return 1.0;
+    return mtf(k, mPi);
+}
+
+ChannelStretch rebaseFarWhiteTo(const ChannelStretch& cs, double S) {
+    const double denom = std::max(1e-9, cs.white - cs.black);
+    const double mPi = std::min(0.999, std::max(1e-6, (cs.mid - cs.black) / denom));
+    const double k = (1.0 - cs.black) / denom;
+    if (k >= 1.0 || k <= 0.0 || !(S > 0.0)) return cs;
+    // New white: where the ORIGINAL curve reaches the common output level S
+    // (for the brightest channel S is its own data-max display, putting its
+    // white exactly at the data max; dimmer channels land proportionally
+    // further, preserving the inter-channel balance). New pivot: where it
+    // reaches S/2. Both closed-form MTF inverses; the rescaled restriction
+    // is EXACTLY an MTF again (a Mobius through (0,0) and (1,1)).
+    const double xS = mtfInverse(std::min(S, 0.9999), mPi);
+    const double xH = mtfInverse(0.5 * std::min(S, 0.9999), mPi);
+    if (!(xS > 0.0)) return cs;
+    ChannelStretch out;
+    out.black = cs.black;
+    out.white = cs.black + xS * denom;
+    out.mid   = cs.black + xH * denom;
+    return out;
+}
+
+ChannelStretch rebaseFarWhite(const ChannelStretch& cs, double* outScale) {
+    const double f1 = farWhiteEndpoint(cs);
+    if (outScale) *outScale = f1;
+    return rebaseFarWhiteTo(cs, f1);
+}
+
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N) {
     // The LUT is indexed by the windowed coordinate t in [0,1] (the caller maps

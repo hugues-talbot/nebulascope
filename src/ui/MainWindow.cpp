@@ -2991,18 +2991,44 @@ void MainWindow::displayPath(const QString& path) {
             // data maximum (PI clips at 1.0) — the render algebra extrapolates
             // the window exactly, no clamp needed.
             const DisplayFunction& df = m_header.displayFn;
-            for (int c = 0; c < m_image.channels() && c < 3; ++c) {
+            bool refitted = false;
+            // Pass 1 — per-channel stretches in each channel's normalized
+            // window, plus each ORIGINAL curve's display value at its data
+            // maximum. PI's STF lives on the [0,1] container, so its white
+            // point (usually 1.0) can sit FAR beyond the data — verbatim
+            // import parks the W handle ~1/tmax plot-widths off-screen and
+            // degrades every histogram control.
+            const int nch = std::min(m_image.channels(), 3);
+            ChannelStretch pcs[3];
+            bool allFar = true;
+            double S = 0.0;
+            for (int c = 0; c < nch; ++c) {
                 const double lo = m_model.lo(c), hi = m_model.hi(c);
-                if (!(hi > lo)) continue;
+                if (!(hi > lo)) { allFar = false; continue; }
                 const int k = (m_image.channels() >= 3) ? c : 0;   // mono: K component
                 ChannelStretch cs;
                 cs.black = std::max(0.0, (df.s[k] - lo) / (hi - lo));
                 cs.white = std::max(cs.black + 1e-6, (df.h[k] - lo) / (hi - lo));
                 cs.mid   = cs.black + df.m[k] * (cs.white - cs.black);
+                pcs[c] = cs;
+                allFar = allFar && cs.white > 1.001;
+                S = std::max(S, farWhiteEndpoint(cs));
+            }
+            // Pass 2 — rebase against ONE common output level (the brightest
+            // channel's endpoint): its white lands exactly at its data max,
+            // the others proportionally, so the calibrated inter-channel
+            // balance survives untouched. Exact in closed form.
+            for (int c = 0; c < nch; ++c) {
+                ChannelStretch cs = pcs[c];
+                if (allFar && S > 0.0) {
+                    cs = rebaseFarWhiteTo(cs, S);
+                    refitted = true;
+                }
                 m_model.setChannel(c, cs);
             }
-            statusBar()->showMessage(
-                tr("PixInsight display function applied — Reset (R) for the plain ramp"), 6000);
+            statusBar()->showMessage(refitted
+                ? tr("PixInsight display function applied (rebased to the data range) — Reset (R) for the plain ramp")
+                : tr("PixInsight display function applied — Reset (R) for the plain ramp"), 6000);
         }
     }
 

@@ -37,7 +37,11 @@ for a boosted stretch (§3). Exception: an XISF that carries the producing
 application's **saved screen stretch** (the `DisplayFunction` element —
 PixInsight writes its STF there) opens with that stretch applied, so a
 PI-processed image looks the way it did on PI's screen; the status bar notes
-it, and **Reset** returns to the plain ramp.
+it, and **Reset** returns to the plain ramp. A white point beyond the data
+maximum (PI's convention places it on the normalized [0,1] container) is
+**rebased onto the data range** in closed form — identical curve over the
+data, up to a uniform brightness scale — so the histogram handles and value
+boxes remain fully usable.
 
 **One-shot-colour (OSC) frames are debayered automatically.** A mono frame
 whose header carries a Bayer pattern (`BAYERPAT`, honouring

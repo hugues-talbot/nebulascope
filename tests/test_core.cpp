@@ -235,3 +235,59 @@ NS_TEST(screen_blend_math) {
 }
 
 int main() { return nstest::runAll(); }
+
+// DisplayFunction import regime: a PI STF whose white point sits ~80x beyond
+// the data maximum rebases onto the data range in closed form — the rebased
+// curve equals the original restricted to the data, rescaled by 1/f(1),
+// EXACTLY (the renormalized Mobius stays in the MTF family).
+NS_TEST(display_function_rebase_far_white) {
+    ChannelStretch pi;                              // normalized window coords
+    pi.black = 0.0289;
+    pi.white = 77.5;                                // raw 1.0 on 0.0129-max data
+    pi.mid   = pi.black + 0.00132 * (pi.white - pi.black);
+    const double mPi = (pi.mid - pi.black) / (pi.white - pi.black);
+    const double k = (1.0 - pi.black) / (pi.white - pi.black);
+    double f1 = 0.0;
+    const ChannelStretch rb = rebaseFarWhite(pi, &f1);
+    NS_CHECK(rb.white <= 1.0 + 1e-9);               // controls stay on the plot
+    NS_CHECK(rb.black == pi.black && rb.mid > rb.black && rb.mid < rb.white);
+    NS_CHECK(f1 > 0.5 && f1 < 1.0);                 // original topped out below 1
+    const double m2 = (rb.mid - rb.black) / (rb.white - rb.black);
+    double worst = 0.0;
+    for (int i = 0; i <= 2000; ++i) {
+        const double t = double(i) / 2000;          // data-range coordinate
+        const double target = mtf(k * t, mPi) / f1; // renormalized original
+        const double ours = mtf(t, m2);
+        worst = std::max(worst, std::abs(ours - target));
+    }
+    NS_CHECK(worst < 1e-9);                         // exact, not approximate
+}
+
+// Common-scale rebase across channels: rescaling every channel by the SAME
+// S preserves inter-channel display ratios exactly (SPCC balance survives),
+// while each rebased curve stays exactly in the MTF family.
+NS_TEST(display_function_rebase_common_scale) {
+    ChannelStretch r, g;                            // per-channel normalized
+    r.black = 0.03; r.white = 77.5;  r.mid = r.black + 0.0013 * (r.white - r.black);
+    g.black = 0.10; g.white = 300.0; g.mid = g.black + 0.0009 * (g.white - g.black);
+    const double S = std::max(farWhiteEndpoint(r), farWhiteEndpoint(g));
+    const ChannelStretch r2 = rebaseFarWhiteTo(r, S);
+    const ChannelStretch g2 = rebaseFarWhiteTo(g, S);
+    const double mR = (r.mid - r.black) / (r.white - r.black);
+    const double mG = (g.mid - g.black) / (g.white - g.black);
+    const double mR2 = (r2.mid - r2.black) / (r2.white - r2.black);
+    const double mG2 = (g2.mid - g2.black) / (g2.white - g2.black);
+    double worst = 0.0;
+    for (int i = 1; i < 2000; ++i) {
+        const double t = double(i) / 2000;          // shared position inside each NEW window
+        const double xR = r2.black + t * (r2.white - r2.black);   // channel-normalized value
+        const double xG = g2.black + t * (g2.white - g2.black);
+        const double origR = mtf((xR - r.black) / (r.white - r.black), mR);
+        const double origG = mtf((xG - g.black) / (g.white - g.black), mG);
+        const double newR = mtf(t, mR2), newG = mtf(t, mG2);
+        worst = std::max(worst, std::abs(newR * S - origR));      // same S for both:
+        worst = std::max(worst, std::abs(newG * S - origG));      // ratios preserved
+    }
+    NS_CHECK(worst < 1e-6);
+    NS_CHECK(r2.white <= 1.0 + 1e-6);               // brightest channel: at its data max
+}

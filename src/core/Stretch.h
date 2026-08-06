@@ -67,6 +67,19 @@ double ghsSlope(double x, double D, double b, double SP);
 // black/white window itself is applied by the caller via windowCoord() so that
 // the full LUT resolution spans the window (no posterization when the window is
 // a small fraction of the data range).
+// Rebase a display function whose white point lies beyond the data maximum
+// (normalized window coordinate > 1, PixInsight's [0,1]-container convention)
+// onto the data range: returns a stretch with white = 1 whose curve is the
+// original restricted to the data and rescaled by 1/f(1) — EXACTLY in the MTF
+// family (a Mobius map through (0,0) and (1,1)), no approximation. The
+// uniform output scale f(1) is returned via outScale when non-null.
+ChannelStretch rebaseFarWhite(const ChannelStretch& cs, double* outScale = nullptr);
+// Multi-channel form: display value of the ORIGINAL stretch at the data
+// maximum, and rebase against a COMMON output level S (use max over the
+// channels' endpoints so the inter-channel balance is preserved exactly).
+double farWhiteEndpoint(const ChannelStretch& cs);
+ChannelStretch rebaseFarWhiteTo(const ChannelStretch& cs, double S);
+
 std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
                             const GHSParams& ghs, int N);
 
