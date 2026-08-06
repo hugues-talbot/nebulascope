@@ -377,7 +377,8 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#v0.92-2026-08-03" id="toc-v0.92-2026-08-03" class="nav-link active" data-scroll-target="#v0.92-2026-08-03">v0.92 — 2026-08-03</a></li>
+  <li><a href="#v0.93-2026-08-06" id="toc-v0.93-2026-08-06" class="nav-link active" data-scroll-target="#v0.93-2026-08-06">v0.93 — 2026-08-06</a></li>
+  <li><a href="#v0.92-2026-08-04" id="toc-v0.92-2026-08-04" class="nav-link" data-scroll-target="#v0.92-2026-08-04">v0.92 — 2026-08-04</a></li>
   <li><a href="#v0.91-2026-08-01" id="toc-v0.91-2026-08-01" class="nav-link" data-scroll-target="#v0.91-2026-08-01">v0.91 — 2026-08-01</a></li>
   <li><a href="#v0.90-2026-07-30" id="toc-v0.90-2026-07-30" class="nav-link" data-scroll-target="#v0.90-2026-07-30">v0.90 — 2026-07-30</a></li>
   <li><a href="#v0.89-2026-07-28" id="toc-v0.89-2026-07-28" class="nav-link" data-scroll-target="#v0.89-2026-07-28">v0.89 — 2026-07-28</a></li>
@@ -425,8 +426,21 @@ div.csl-indent {
 
 
 <p>Generated from the annotated <code>v*</code> tags (<code>docs/make-releases.sh</code>).</p>
-<section id="v0.92-2026-08-03" class="level2">
-<h2 class="anchored" data-anchor-id="v0.92-2026-08-03">v0.92 — 2026-08-03</h2>
+<section id="v0.93-2026-08-06" class="level2">
+<h2 class="anchored" data-anchor-id="v0.93-2026-08-06">v0.93 — 2026-08-06</h2>
+<p>v0.93 — PixInsight display interop, stretch history, DS9 palettes</p>
+<p>Highlights:</p>
+<ul>
+<li><strong>PixInsight display interop</strong> — a PI-saved XISF now opens LOOKING as PI showed it: the embedded display function (STF) applies on first view, embedded ICC profiles are honoured, and on macOS the window is colour-managed for wide-gamut (P3) panels. The transfer LUT adapts its resolution to the occupied window and the histogram’s curve overlay is evaluated exactly — imported stretches with far-out white points render smoothly.</li>
+<li><strong>Stretch undo history</strong> — every stretch/adjustment gesture is one undo step (drags coalesce): ⌘Z walks back to the as-loaded state, through Auto STFs, pastes, transport fits. <strong>Reload Original</strong> (⌘⇧R) re-decodes from disk and re-runs the first-view rules, itself undoable.</li>
+<li><strong>DS9 classic palettes</strong> — a, b, bb, he, cool, rainbow, standard, and the stepped i8, aips0, sls, reproduced from SAOImage DS9’s reference control points (renditions match DS9 exactly); compose with the invert/split modifiers. Requested by a user.</li>
+<li><strong>Save ergonomics</strong> — an in-memory result’s list entry takes the saved file’s name on every save path (Save Data As, Save Stretched As, script save); clicking any image in a save dialog adopts its base name, the extension following the chosen format.</li>
+<li><strong>Build provenance</strong> — the About headline and –version carry the exact git build id, so test binaries identify their commit.</li>
+</ul>
+<p>Fixes: the panel-resize cursor no longer sticks over overlay panel contents; the script cmap command actually applies the selected map.</p>
+</section>
+<section id="v0.92-2026-08-04" class="level2">
+<h2 class="anchored" data-anchor-id="v0.92-2026-08-04">v0.92 — 2026-08-04</h2>
 <p>v0.92 — list &amp; session ergonomics, inline export options, display sampling</p>
 <p>Highlights:</p>
 <ul>
