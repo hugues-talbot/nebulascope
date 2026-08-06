@@ -72,7 +72,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -580,6 +580,29 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
             err = QStringLiteral("list has %1 row(s)").arg(n);
             return false;
         }
+        return true;
+    }
+    if (what == QLatin1String("stretch")) {
+        // assert stretch <c> <black> <mid> <white> [tol] — the current
+        // image's channel-c stretch in RAW data units (as the value boxes
+        // show). Exercises the DisplayFunction import + Mobius rebase.
+        if (t.size() < 6) { err = "assert stretch c black mid white [tol]"; return false; }
+        const int c = t[2].toInt();
+        if (c < 0 || c > 2) { err = "channel is 0..2"; return false; }
+        const double tol = t.size() > 6 ? t[6].toDouble() : 1e-6;
+        const ChannelStretch cs = m_w->m_model.channel(c);
+        const double lo = m_w->m_model.lo(c), hi = m_w->m_model.hi(c);
+        const double got[3] = { lo + cs.black * (hi - lo),
+                                lo + cs.mid   * (hi - lo),
+                                lo + cs.white * (hi - lo) };
+        const double want[3] = { t[3].toDouble(), t[4].toDouble(), t[5].toDouble() };
+        for (int i = 0; i < 3; ++i)
+            if (std::abs(got[i] - want[i]) > tol) {
+                err = QStringLiteral("stretch ch%1 is %2 / %3 / %4").arg(c)
+                          .arg(got[0], 0, 'g', 9).arg(got[1], 0, 'g', 9)
+                          .arg(got[2], 0, 'g', 9);
+                return false;
+            }
         return true;
     }
     if (what == QLatin1String("name")) {

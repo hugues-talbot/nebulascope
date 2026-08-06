@@ -54,6 +54,15 @@ demand.
 - [x] Watch & auto-reload — images overwritten by external tools re-decode
       live in every view (View ▸ Auto-Reload Changed Files; shipped post-v0.89)
 - [ ] External-tools framework (GraXpert CLI as the first integration)
+- [ ] SPCC/DisplayFunction test hardening (2026-08-06): synthetic XISF
+      fixtures (linked/unlinked, far/in-range white, mono), `assert stretch`
+      script command, io-level DisplayFunction parse tests. PI's behaviour is
+      fiddly to reproduce — fixtures beat live PI sessions.
+- [ ] Siril SPCC interop (2026-08-06): same faithfulness work against Siril,
+      with the advantage that Siril's SPCC and autostretch are open source —
+      semantics verifiable at the source level (siril-cli available locally;
+      compare our Shift+U to Siril's linked autostretch, check what Siril
+      persists in FITS after SPCC).
 - [ ] Siril CLI round-trip (send current image to a Siril script, ingest result)
 - [ ] SAMP client (broadcast/receive images + coordinates with DS9/Aladin/Topcat)
 - [ ] Differentiator polish as usage reveals friction (star combine, transport,

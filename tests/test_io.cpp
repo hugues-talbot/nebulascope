@@ -286,3 +286,20 @@ NS_TEST(xisf_display_function_parse) {
     NS_CHECK(!parseDisplayFunction("0.5", "0:0:0", "1:1:1").valid);   // too few components
     NS_CHECK(!parseDisplayFunction("a:b:c", "0:0:0", "1:1:1").valid); // non-numeric
 }
+
+// Synthetic XISF fixtures (tests/testdata/make_df_fixtures.py) carry known
+// DisplayFunction elements — the parse must surface them verbatim.
+NS_TEST(xisf_display_function_parsed) {
+    io::LoadResult r = io::loadImage(QStringLiteral(NS_TESTDATA_DIR "/df_unlinked.xisf"), {});
+    NS_CHECK(r.ok);
+    NS_CHECK(r.header.displayFn.valid);
+    NS_CHECK(std::abs(r.header.displayFn.m[0] - 0.00132) < 1e-9);
+    NS_CHECK(std::abs(r.header.displayFn.m[1] - 0.00046) < 1e-9);
+    NS_CHECK(std::abs(r.header.displayFn.s[1] - 0.0004) < 1e-9);
+    NS_CHECK(std::abs(r.header.displayFn.h[2] - 1.0) < 1e-12);
+
+    io::LoadResult r2 = io::loadImage(QStringLiteral(NS_TESTDATA_DIR "/df_inrange.xisf"), {});
+    NS_CHECK(r2.ok);
+    NS_CHECK(r2.header.displayFn.valid);
+    NS_CHECK(std::abs(r2.header.displayFn.h[0] - 0.0116) < 1e-9);
+}

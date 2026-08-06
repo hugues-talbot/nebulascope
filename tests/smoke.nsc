@@ -129,4 +129,24 @@ open smoke_crop.fits
 waitloaded
 assert rows 1
 
+# DisplayFunction import matrix (synthetic fixtures; expected values from
+# tests/testdata/make_df_fixtures.py — same closed-form Mobius rebase).
+open tests/testdata/df_unlinked.xisf
+waitloaded
+assert rows 2
+assert stretch 0 0.000300000014 0.00139345469 0.0129000004 2e-7
+assert stretch 1 0.0004 0.000780958047 0.00482302913 2e-7
+assert stretch 2 0.000369999994 0.000916627138 0.00670534967 2e-7
+open tests/testdata/df_linked.xisf
+waitloaded
+assert stretch 0 0.000300000014 0.00151418714 0.0129000004 2e-7
+assert stretch 1 0.00039999999 0.00161406566 0.01299874 2e-7
+assert stretch 2 0.000369999994 0.0015841021 0.0129691182 2e-7
+open tests/testdata/df_inrange.xisf
+waitloaded
+assert stretch 0 0.0005 0.003275 0.0116 2e-7
+assert stretch 1 0.0006 0.0012 0.003 2e-7
+assert stretch 2 0.0005 0.000925 0.0022 2e-7
+assert rows 4
+
 quit
