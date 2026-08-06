@@ -323,14 +323,31 @@ void HistogramView::applyDrag(double v) {
         const double cur = (m_dragHandle == "b") ? m_model->channel(0).black
                          : (m_dragHandle == "m") ? m_model->channel(0).mid
                                                  : m_model->channel(0).white;
-        const double delta = v - cur;
+        double delta = v - cur;
+        // RIGID group: clamp the COMMON delta so the tightest channel just
+        // reaches its bound, and never clamp channels individually — a
+        // per-channel clamp would ratchet the channels' offsets apart on
+        // every bounce (non-reversible drags that visibly re-balance colour;
+        // an imported display function's tiny midtones made this bite on the
+        // very first leftward wiggle). Note the white bound: imported far
+        // whites may legitimately sit beyond the data maximum, so the group
+        // may keep (not grow) a white above 1.
+        for (int c = 0; c < n; ++c) {
+            const ChannelStretch cs = m_model->channel(c);
+            double lob, hib;
+            if (m_dragHandle == "b")      { lob = 0.0;            hib = cs.mid - eps; }
+            else if (m_dragHandle == "m") { lob = cs.black + eps; hib = cs.white - eps; }
+            else                          { lob = cs.mid + eps;   hib = std::max(1.0, cs.white); }
+            const double base = (m_dragHandle == "b") ? cs.black
+                              : (m_dragHandle == "m") ? cs.mid : cs.white;
+            delta = std::max(delta, lob - base);
+            delta = std::min(delta, hib - base);
+        }
         for (int c = 0; c < n; ++c) {
             ChannelStretch cs = m_model->channel(c);
-            const double base = (m_dragHandle == "b") ? cs.black : (m_dragHandle == "m") ? cs.mid : cs.white;
-            const double nv = base + delta;
-            if (m_dragHandle == "b") cs.black = std::min(cs.mid - eps, std::max(0.0, nv));
-            else if (m_dragHandle == "m") cs.mid = std::min(cs.white - eps, std::max(cs.black + eps, nv));
-            else cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
+            if (m_dragHandle == "b") cs.black += delta;
+            else if (m_dragHandle == "m") cs.mid += delta;
+            else cs.white += delta;
             m_model->setChannel(c, cs);
         }
     } else {
