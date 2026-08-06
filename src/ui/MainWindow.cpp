@@ -75,6 +75,9 @@
 #include <QKeySequence>
 #include <QSettings>
 #include <QDesktopServices>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QComboBox>
@@ -3411,6 +3414,43 @@ void MainWindow::saveRenderedImage(const QImage& img, const QString& title,
 // PixInsight), render through profile→sRGB so colours match the producing
 // application's colour-managed screen. LUT-based profiles QColorSpace cannot
 // represent fall back silently to direct RGB.
+// Drive a local Stellarium via its Remote Control plugin (F2 ▸ Plugins ▸
+// Remote Control ▸ "Server enabled", default port 8090): point the
+// planetarium at the J2000 direction of the clicked sky position, then match
+// the field of view. Unlike the Aladin/SIMBAD web lookups this answers
+// "where is this in TONIGHT'S sky from my site" — altitude, transit,
+// horizon. Fire-and-forget; unreachable server = one status-bar hint.
+void MainWindow::pointStellarium(double raDeg, double decDeg, double fovDeg) {
+    if (!m_net) m_net = new QNetworkAccessManager(this);
+    const double ra = raDeg * M_PI / 180.0, dec = decDeg * M_PI / 180.0;
+    const QString j2000 = QStringLiteral("[%1,%2,%3]")
+        .arg(std::cos(dec) * std::cos(ra), 0, 'f', 9)
+        .arg(std::cos(dec) * std::sin(ra), 0, 'f', 9)
+        .arg(std::sin(dec), 0, 'f', 9);
+    const QString base = QStringLiteral("http://127.0.0.1:8090/api/main/");
+    QNetworkRequest reqView{ QUrl(base + QStringLiteral("view")) };
+    reqView.setHeader(QNetworkRequest::ContentTypeHeader,
+                      QStringLiteral("application/x-www-form-urlencoded"));
+    reqView.setTransferTimeout(2000);
+    QNetworkReply* r = m_net->post(reqView, QByteArray("j2000=") + j2000.toLatin1());
+    connect(r, &QNetworkReply::finished, this, [this, r, fovDeg, base] {
+        r->deleteLater();
+        if (r->error() != QNetworkReply::NoError) {
+            statusBar()->showMessage(
+                tr("Stellarium not reachable — enable its Remote Control plugin (port 8090)"), 6000);
+            return;
+        }
+        QNetworkRequest reqFov{ QUrl(base + QStringLiteral("fov")) };
+        reqFov.setHeader(QNetworkRequest::ContentTypeHeader,
+                         QStringLiteral("application/x-www-form-urlencoded"));
+        reqFov.setTransferTimeout(2000);
+        QNetworkReply* r2 = m_net->post(reqFov,
+            QByteArray("fov=") + QByteArray::number(fovDeg, 'f', 2));
+        connect(r2, &QNetworkReply::finished, r2, &QNetworkReply::deleteLater);
+        statusBar()->showMessage(tr("Stellarium pointed at the target"), 4000);
+    });
+}
+
 void MainWindow::updateIccTransform() {
     m_hasIcc = false;
     m_iccToSrgb = QColorTransform();
@@ -4284,6 +4324,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     menu.addSeparator();
     QAction* aAladin = nullptr;
     QAction* aSimbad = nullptr;
+    QAction* aStellarium = nullptr;
     double alRa = 0, alDec = 0, alFovDeg = 0.25;
     if (m_wcs.valid() && onImage) {
         // Target the selected/hit annotation's centre, else the clicked pixel.
@@ -4302,6 +4343,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             aAladin = menu.addAction(tr("Look up in Aladin — %1").arg(where));
             aSimbad = menu.addAction(tr("Identify in SIMBAD — %1").arg(where));
             aSimbad->setData(radiusArcmin);
+            aStellarium = menu.addAction(tr("Point Stellarium Here — %1").arg(where));
         }
     }
 
@@ -4373,6 +4415,10 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         q.addQueryItem(QStringLiteral("survey"), QStringLiteral("P/DSS2/color"));
         url.setQuery(q);
         QDesktopServices::openUrl(url);
+    }
+    else if (aStellarium && chosen == aStellarium) {
+        // Sky-context framing: wider than Aladin's tight cutout.
+        pointStellarium(alRa, alDec, qBound(0.5, alFovDeg * 4.0, 60.0));
     }
     else if (aSimbad && chosen == aSimbad) {
         // SIMBAD coordinate (cone) query around the target.

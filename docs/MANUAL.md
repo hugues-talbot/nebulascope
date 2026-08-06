@@ -311,7 +311,11 @@ telescope-pointing keywords for approximate coordinates.
 - **Right-click menu**, grouped readout / annotations / lookup / zoom:
   copy RA/Dec, copy pixel value, annotate here, paste annotation,
   **Look up in Aladin** (opens Aladin Lite framed ~10× the clicked
-  annotation), **Identify in SIMBAD** (cone search scaled to the annotation).
+  annotation), **Identify in SIMBAD** (cone search scaled to the annotation),
+  and **Point Stellarium Here** — drives a running Stellarium (its *Remote
+  Control* plugin enabled, default port 8090) to the clicked sky position
+  and a matching field of view: where Aladin answers *what is this*,
+  Stellarium answers *where is it in tonight's sky from my site*.
 
 ## 11. Combining images
 

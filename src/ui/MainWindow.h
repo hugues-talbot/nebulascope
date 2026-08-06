@@ -24,6 +24,7 @@
 
 class QDockWidget;
 class QUndoStack;
+class QNetworkAccessManager;
 class QListWidget;
 class QLabel;
 class QComboBox;
@@ -121,6 +122,7 @@ private:
     // ICC colour management: rebuild m_iccToSrgb from m_header's embedded
     // profile; renderDisplayImage() = stretch render + that transform.
     void updateIccTransform();
+    void pointStellarium(double raDeg, double decDeg, double fovDeg);
     QImage renderDisplayImage(const ImageData& img, const StretchModel& m) const;
     // Save dialogs with inline format options (depth/quality/XISF compression).
     QString exportImageDialogPath(const QString& title, bool offer16,
@@ -329,6 +331,7 @@ protected:
     // intermediate states are coalesced (only the latest is rendered).
     QFutureWatcher<QImage>* m_renderWatcher = nullptr;
     bool        m_renderPending = false;  // a newer state arrived mid-render
+    QNetworkAccessManager* m_net = nullptr;   // Stellarium remote control
     QColorTransform m_iccToSrgb;          // embedded-ICC → sRGB (see updateIccTransform)
     bool        m_hasIcc = false;         // m_iccToSrgb is meaningful
     // Stretch undo history: user gestures coalesce (timer) into one

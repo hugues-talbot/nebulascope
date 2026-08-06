@@ -15,7 +15,7 @@ if(MSVC)
 endif()
 
 # ---- dependencies ----------------------------------------------------------
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Concurrent Network)
 # Translations (optional): lupdate/lrelease live in Qt's tools package. When
 # absent we still build — just English-only — so a bare Qt runtime suffices.
 find_package(Qt6 QUIET COMPONENTS LinguistTools)

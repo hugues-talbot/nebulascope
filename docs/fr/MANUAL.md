@@ -366,7 +366,11 @@ coordonnées approchées.
   copier AD/Déc, copier la valeur du pixel, annoter ici, coller
   l'annotation, **Consulter dans Aladin** (ouvre Aladin Lite cadré à ~10×
   l'annotation cliquée), **Identifier dans SIMBAD** (recherche par cône à
-  l'échelle de l'annotation).
+  l'échelle de l'annotation), et **Pointer Stellarium ici** — pilote un
+  Stellarium en cours d'exécution (son greffon *Remote Control* activé,
+  port 8090 par défaut) vers la position céleste cliquée avec un champ
+  correspondant : là où Aladin répond *qu'est-ce que c'est*, Stellarium
+  répond *où est-ce dans le ciel de ce soir depuis mon site*.
 
 ## 11. Combiner des images
 
