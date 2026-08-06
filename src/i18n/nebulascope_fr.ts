@@ -1226,7 +1226,7 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="1715" />
-        <location filename="../ui/MainWindow.cpp" line="4100" />
+        <location filename="../ui/MainWindow.cpp" line="4130" />
         <source>%1 — %2</source>
         <translation>%1 — %2</translation>
     </message>
@@ -1352,15 +1352,15 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2337" />
-        <location filename="../ui/MainWindow.cpp" line="3362" />
-        <location filename="../ui/MainWindow.cpp" line="3366" />
+        <location filename="../ui/MainWindow.cpp" line="3392" />
+        <location filename="../ui/MainWindow.cpp" line="3396" />
         <source>Export failed</source>
         <translation>Échec de l'export</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2337" />
-        <location filename="../ui/MainWindow.cpp" line="3367" />
-        <location filename="../ui/MainWindow.cpp" line="3974" />
+        <location filename="../ui/MainWindow.cpp" line="3397" />
+        <location filename="../ui/MainWindow.cpp" line="4004" />
         <source>Could not write %1</source>
         <translation>Impossible d'écrire %1</translation>
     </message>
@@ -1376,14 +1376,14 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2373" />
-        <location filename="../ui/MainWindow.cpp" line="3853" />
-        <location filename="../ui/MainWindow.cpp" line="3855" />
+        <location filename="../ui/MainWindow.cpp" line="3883" />
+        <location filename="../ui/MainWindow.cpp" line="3885" />
         <source>Import failed</source>
         <translation>Échec de l'import</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2373" />
-        <location filename="../ui/MainWindow.cpp" line="4034" />
+        <location filename="../ui/MainWindow.cpp" line="4064" />
         <source>Could not read %1</source>
         <translation>Impossible de lire %1</translation>
     </message>
@@ -1517,253 +1517,263 @@ Essayez avec et sans : les deux sont à une annulation près.</translation>
         <translation> — orientation enregistrée disponible (Image ▸ Appliquer l'orientation enregistrée)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3018" />
-        <source>PixInsight display function applied (rebased to the data range) — Reset (R) for the plain ramp</source>
-        <translation>Fonction d'affichage PixInsight appliquée (recalée sur la plage des données) — Réinitialiser (R) pour la rampe simple</translation>
-    </message>
-    <message>
-        <location filename="../ui/MainWindow.cpp" line="3019" />
-        <source>PixInsight display function applied — Reset (R) for the plain ramp</source>
-        <translation>Fonction d'affichage PixInsight appliquée — Réinitialiser (R) pour la rampe simple</translation>
-    </message>
-    <message>
-        <location filename="../ui/MainWindow.cpp" line="3060" />
+        <location filename="../ui/MainWindow.cpp" line="3090" />
         <source>NebulaScope — %1</source>
         <translation>NebulaScope — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3065" />
+        <location filename="../ui/MainWindow.cpp" line="3095" />
         <source>   · debayered %1</source>
         <translation>   · dématricé %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3068" />
+        <location filename="../ui/MainWindow.cpp" line="3098" />
         <source>%1   %2×%3   %4 ch   [%5/%6]%7</source>
         <translation>%1   %2×%3   %4 can.   [%5/%6]%7</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3197" />
+        <location filename="../ui/MainWindow.cpp" line="3227" />
         <source>FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16-bit (*.tiff *.tif)</source>
         <translation>FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16 bits (*.tiff *.tif)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3244" />
+        <location filename="../ui/MainWindow.cpp" line="3274" />
         <source>Save stretched image</source>
         <translation>Enregistrer l'image étirée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3247" />
-        <location filename="../ui/MainWindow.cpp" line="3252" />
-        <location filename="../ui/MainWindow.cpp" line="3265" />
-        <location filename="../ui/MainWindow.cpp" line="3974" />
+        <location filename="../ui/MainWindow.cpp" line="3277" />
+        <location filename="../ui/MainWindow.cpp" line="3282" />
+        <location filename="../ui/MainWindow.cpp" line="3295" />
+        <location filename="../ui/MainWindow.cpp" line="4004" />
         <source>Save failed</source>
         <translation>Échec de l'enregistrement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3247" />
+        <location filename="../ui/MainWindow.cpp" line="3277" />
         <source>Could not bake the stretch.</source>
         <translation>Impossible de graver l'étirement.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3253" />
+        <location filename="../ui/MainWindow.cpp" line="3283" />
         <source>Saved stretched %1</source>
         <translation>Image étirée enregistrée : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3262" />
+        <location filename="../ui/MainWindow.cpp" line="3292" />
         <source>Save image</source>
         <translation>Enregistrer l'image</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3266" />
+        <location filename="../ui/MainWindow.cpp" line="3296" />
         <source>Saved %1</source>
         <translation>Enregistré : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3326" />
+        <location filename="../ui/MainWindow.cpp" line="3356" />
         <source>Export view (full frame)</source>
         <translation>Exporter la vue (image entière)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3339" />
+        <location filename="../ui/MainWindow.cpp" line="3369" />
         <source>Export region</source>
         <translation>Exporter la région</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3339" />
+        <location filename="../ui/MainWindow.cpp" line="3369" />
         <source>Nothing is visible to export.</source>
         <translation>Rien de visible à exporter.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3344" />
+        <location filename="../ui/MainWindow.cpp" line="3374" />
         <source>Export zoomed region</source>
         <translation>Exporter la région zoomée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3143" />
+        <location filename="../ui/MainWindow.cpp" line="3173" />
         <source>PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)</source>
         <translation>PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3154" />
+        <location filename="../ui/MainWindow.cpp" line="3184" />
         <source>Quality (1–100):</source>
         <translation>Qualité (1–100) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3152" />
+        <location filename="../ui/MainWindow.cpp" line="3182" />
         <source>8-bit per channel</source>
         <translation>8 bits par canal</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3152" />
+        <location filename="../ui/MainWindow.cpp" line="3182" />
         <source>16-bit per channel</source>
         <translation>16 bits par canal</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3150" />
+        <location filename="../ui/MainWindow.cpp" line="3180" />
         <source>Pixel depth:</source>
         <translation>Profondeur des pixels :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3362" />
+        <location filename="../ui/MainWindow.cpp" line="3044" />
+        <source>PixInsight display function applied (rebased to the data range)</source>
+        <translation>Fonction d'affichage PixInsight appliquée (recalée sur la plage des données)</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="3045" />
+        <source>PixInsight display function applied</source>
+        <translation>Fonction d'affichage PixInsight appliquée</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="3047" />
+        <source> — unlinked STF: Shift+U preserves calibrated colour</source>
+        <translation> — STF non liée : Maj+U préserve la couleur étalonnée</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="3048" />
+        <source> — Reset (R) for the plain ramp</source>
+        <translation> — Réinitialiser (R) pour la rampe simple</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="3392" />
         <source>16-bit render failed.</source>
         <translation>Échec du rendu 16 bits.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3370" />
+        <location filename="../ui/MainWindow.cpp" line="3400" />
         <source>Exported %1 (%2×%3%4)</source>
         <translation>Exporté %1 (%2×%3%4)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3372" />
+        <location filename="../ui/MainWindow.cpp" line="3402" />
         <source> · 16-bit</source>
         <translation> · 16 bits</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3740" />
+        <location filename="../ui/MainWindow.cpp" line="3770" />
         <source>Click an annotation first to copy it</source>
         <translation>Cliquez d'abord une annotation pour la copier</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3747" />
+        <location filename="../ui/MainWindow.cpp" line="3777" />
         <source>Copied %1</source>
         <translation>%1 copiée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3748" />
-        <location filename="../ui/MainWindow.cpp" line="4210" />
-        <location filename="../ui/MainWindow.cpp" line="4223" />
+        <location filename="../ui/MainWindow.cpp" line="3778" />
+        <location filename="../ui/MainWindow.cpp" line="4240" />
+        <location filename="../ui/MainWindow.cpp" line="4253" />
         <source>annotation</source>
         <translation>annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3765" />
-        <location filename="../ui/MainWindow.cpp" line="4369" />
+        <location filename="../ui/MainWindow.cpp" line="3795" />
+        <location filename="../ui/MainWindow.cpp" line="4399" />
         <source>paste annotation</source>
         <translation>coller l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3780" />
-        <location filename="../ui/MainWindow.cpp" line="4330" />
+        <location filename="../ui/MainWindow.cpp" line="3810" />
+        <location filename="../ui/MainWindow.cpp" line="4360" />
         <source>delete annotation</source>
         <translation>supprimer l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3790" />
+        <location filename="../ui/MainWindow.cpp" line="3820" />
         <source>Edit annotation</source>
         <translation>Modifier l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3802" />
-        <location filename="../ui/MainWindow.cpp" line="4315" />
+        <location filename="../ui/MainWindow.cpp" line="3832" />
+        <location filename="../ui/MainWindow.cpp" line="4345" />
         <source>Annotation colour</source>
         <translation>Couleur de l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3806" />
-        <location filename="../ui/MainWindow.cpp" line="4162" />
-        <location filename="../ui/MainWindow.cpp" line="4304" />
+        <location filename="../ui/MainWindow.cpp" line="3836" />
+        <location filename="../ui/MainWindow.cpp" line="4192" />
+        <location filename="../ui/MainWindow.cpp" line="4334" />
         <source>Text:</source>
         <translation>Texte :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3809" />
+        <location filename="../ui/MainWindow.cpp" line="3839" />
         <source>Colour:</source>
         <translation>Couleur :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3827" />
+        <location filename="../ui/MainWindow.cpp" line="3857" />
         <source>edit annotation</source>
         <translation>modifier l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3847" />
-        <location filename="../ui/MainWindow.cpp" line="3862" />
+        <location filename="../ui/MainWindow.cpp" line="3877" />
+        <location filename="../ui/MainWindow.cpp" line="3892" />
         <source>Import SExtractor catalog</source>
         <translation>Importer un catalogue SExtractor</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3848" />
+        <location filename="../ui/MainWindow.cpp" line="3878" />
         <source>SExtractor catalogs (*.cat *.txt);;All files (*)</source>
         <translation>Catalogues SExtractor (*.cat *.txt);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3856" />
+        <location filename="../ui/MainWindow.cpp" line="3886" />
         <source>Catalog has no X_IMAGE/Y_IMAGE columns — add them to default.param.</source>
         <translation>Le catalogue n'a pas de colonnes X_IMAGE/Y_IMAGE — ajoutez-les à default.param.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3864" />
+        <location filename="../ui/MainWindow.cpp" line="3894" />
         <source>%1 source(s), %2</source>
         <translation>%1 source(s), %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3867" />
+        <location filename="../ui/MainWindow.cpp" line="3897" />
         <source>Ellipse scale × A/B_IMAGE:</source>
         <translation>Échelle des ellipses × A/B_IMAGE :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3873" />
+        <location filename="../ui/MainWindow.cpp" line="3903" />
         <source>Label with:</source>
         <translation>Étiqueter avec :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3875" />
+        <location filename="../ui/MainWindow.cpp" line="3905" />
         <source>None</source>
         <translation>Aucun</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3880" />
+        <location filename="../ui/MainWindow.cpp" line="3910" />
         <source>Skip flagged sources (FLAGS ≠ 0)</source>
         <translation>Ignorer les sources marquées (FLAGS ≠ 0)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3883" />
+        <location filename="../ui/MainWindow.cpp" line="3913" />
         <source>Colour stars gold (CLASS_STAR &gt; 0.9)</source>
         <translation>Colorer les étoiles en or (CLASS_STAR &gt; 0,9)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3925" />
+        <location filename="../ui/MainWindow.cpp" line="3955" />
         <source>import SExtractor catalog</source>
         <translation>importer un catalogue SExtractor</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3926" />
+        <location filename="../ui/MainWindow.cpp" line="3956" />
         <source>Imported %1 source(s)%2</source>
         <translation>%1 source(s) importée(s)%2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3927" />
+        <location filename="../ui/MainWindow.cpp" line="3957" />
         <source>, skipped %1 flagged</source>
         <translation>, %1 marquée(s) ignorée(s)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3933" />
+        <location filename="../ui/MainWindow.cpp" line="3963" />
         <source>Unsaved annotations</source>
         <translation>Annotations non enregistrées</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3934" />
+        <location filename="../ui/MainWindow.cpp" line="3964" />
         <source>Annotations on %1 image(s) have not been saved.
 Use Save Annotations… (right-click the image) to keep them.
 
@@ -1774,254 +1784,254 @@ Utilisez Enregistrer les annotations… (clic droit sur l'image) pour les conser
 Quitter quand même ?</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3994" />
+        <location filename="../ui/MainWindow.cpp" line="4024" />
         <source>Saved %1 annotation(s)%2 to %3</source>
         <translation>%1 annotation(s)%2 enregistrée(s) dans %3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3996" />
-        <location filename="../ui/MainWindow.cpp" line="4074" />
+        <location filename="../ui/MainWindow.cpp" line="4026" />
+        <location filename="../ui/MainWindow.cpp" line="4104" />
         <source> + adjustments</source>
         <translation> + ajustements</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4015" />
-        <location filename="../ui/MainWindow.cpp" line="4018" />
+        <location filename="../ui/MainWindow.cpp" line="4045" />
+        <location filename="../ui/MainWindow.cpp" line="4048" />
         <source>Save annotations as</source>
         <translation>Enregistrer les annotations sous</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4015" />
-        <location filename="../ui/MainWindow.cpp" line="4026" />
+        <location filename="../ui/MainWindow.cpp" line="4045" />
+        <location filename="../ui/MainWindow.cpp" line="4056" />
         <source>Annotations (*_annotation.json *.json)</source>
         <translation>Annotations (*_annotation.json *.json)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4019" />
+        <location filename="../ui/MainWindow.cpp" line="4049" />
         <source>That is the image's default sidecar — plain Save Annotations writes it directly.</source>
         <translation>C'est le fichier annexe par défaut de l'image — Enregistrer les annotations l'écrit directement.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4026" />
+        <location filename="../ui/MainWindow.cpp" line="4056" />
         <source>Load annotations</source>
         <translation>Charger des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4034" />
-        <location filename="../ui/MainWindow.cpp" line="4040" />
-        <location filename="../ui/MainWindow.cpp" line="4054" />
+        <location filename="../ui/MainWindow.cpp" line="4064" />
+        <location filename="../ui/MainWindow.cpp" line="4070" />
+        <location filename="../ui/MainWindow.cpp" line="4084" />
         <source>Load failed</source>
         <translation>Échec du chargement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4040" />
+        <location filename="../ui/MainWindow.cpp" line="4070" />
         <source>JSON error: %1</source>
         <translation>Erreur JSON : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4051" />
+        <location filename="../ui/MainWindow.cpp" line="4081" />
         <source>Loaded display adjustments (no annotations in file)</source>
         <translation>Ajustements d'affichage chargés (aucune annotation dans le fichier)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4054" />
+        <location filename="../ui/MainWindow.cpp" line="4084" />
         <source>No annotations in file</source>
         <translation>Aucune annotation dans le fichier</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4070" />
+        <location filename="../ui/MainWindow.cpp" line="4100" />
         <source>load annotations</source>
         <translation>charger des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4072" />
+        <location filename="../ui/MainWindow.cpp" line="4102" />
         <source>Loaded %1 annotation(s)%2</source>
         <translation>%1 annotation(s) chargée(s)%2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4107" />
+        <location filename="../ui/MainWindow.cpp" line="4137" />
         <source>Clear List</source>
         <translation>Vider la liste</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4125" />
+        <location filename="../ui/MainWindow.cpp" line="4155" />
         <source>Ellipse annotation</source>
         <translation>Annotation ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4126" />
-        <location filename="../ui/MainWindow.cpp" line="4144" />
+        <location filename="../ui/MainWindow.cpp" line="4156" />
+        <location filename="../ui/MainWindow.cpp" line="4174" />
         <source>Label (optional):</source>
         <translation>Étiquette (facultative) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4137" />
+        <location filename="../ui/MainWindow.cpp" line="4167" />
         <source>add ellipse</source>
         <translation>ajouter une ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4143" />
+        <location filename="../ui/MainWindow.cpp" line="4173" />
         <source>Line annotation</source>
         <translation>Annotation segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4155" />
+        <location filename="../ui/MainWindow.cpp" line="4185" />
         <source>add line</source>
         <translation>ajouter un segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4161" />
+        <location filename="../ui/MainWindow.cpp" line="4191" />
         <source>Text annotation</source>
         <translation>Annotation texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4174" />
+        <location filename="../ui/MainWindow.cpp" line="4204" />
         <source>add text</source>
         <translation>ajouter un texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4184" />
+        <location filename="../ui/MainWindow.cpp" line="4214" />
         <source>Copy RA/Dec — %1 %2</source>
         <translation>Copier AD/Déc — %1 %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4185" />
+        <location filename="../ui/MainWindow.cpp" line="4215" />
         <source>Copy RA/Dec (no astrometric solution)</source>
         <translation>Copier AD/Déc (pas de solution astrométrique)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4200" />
+        <location filename="../ui/MainWindow.cpp" line="4230" />
         <source>Copy Pixel Value</source>
         <translation>Copier la valeur du pixel</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4211" />
-        <location filename="../ui/MainWindow.cpp" line="4224" />
+        <location filename="../ui/MainWindow.cpp" line="4241" />
+        <location filename="../ui/MainWindow.cpp" line="4254" />
         <source>“%1”</source>
         <translation>« %1 »</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4212" />
+        <location filename="../ui/MainWindow.cpp" line="4242" />
         <source>Edit Text of %1…</source>
         <translation>Modifier le texte de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4213" />
+        <location filename="../ui/MainWindow.cpp" line="4243" />
         <source>Change Colour of %1…</source>
         <translation>Changer la couleur de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4214" />
+        <location filename="../ui/MainWindow.cpp" line="4244" />
         <source>Delete %1</source>
         <translation>Supprimer %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4225" />
+        <location filename="../ui/MainWindow.cpp" line="4255" />
         <source>Copy %1</source>
         <translation>Copier %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4227" />
+        <location filename="../ui/MainWindow.cpp" line="4257" />
         <source>Annotate Here…</source>
         <translation>Annoter ici…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4229" />
+        <location filename="../ui/MainWindow.cpp" line="4259" />
         <source>Paste Annotation Here</source>
         <translation>Coller l'annotation ici</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4237" />
+        <location filename="../ui/MainWindow.cpp" line="4267" />
         <source>Clear Annotations</source>
         <translation>Effacer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4239" />
+        <location filename="../ui/MainWindow.cpp" line="4269" />
         <source>Save Annotations</source>
         <translation>Enregistrer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4241" />
+        <location filename="../ui/MainWindow.cpp" line="4271" />
         <source>Save Annotations As…</source>
         <translation>Enregistrer les annotations sous…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4243" />
+        <location filename="../ui/MainWindow.cpp" line="4273" />
         <source>Load Annotations…</source>
         <translation>Charger des annotations…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4244" />
+        <location filename="../ui/MainWindow.cpp" line="4274" />
         <source>Invert Annotation Contrast</source>
         <translation>Inverser le contraste des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4267" />
+        <location filename="../ui/MainWindow.cpp" line="4297" />
         <source>Look up in Aladin — %1</source>
         <translation>Consulter dans Aladin — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4268" />
+        <location filename="../ui/MainWindow.cpp" line="4298" />
         <source>Identify in SIMBAD — %1</source>
         <translation>Identifier dans SIMBAD — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4274" />
+        <location filename="../ui/MainWindow.cpp" line="4304" />
         <source>Zoom to Fit</source>
         <translation>Ajuster à la vue</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4275" />
+        <location filename="../ui/MainWindow.cpp" line="4305" />
         <source>Zoom 1:1</source>
         <translation>Zoom 1:1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4283" />
+        <location filename="../ui/MainWindow.cpp" line="4313" />
         <source>Annotate</source>
         <translation>Annoter</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4284" />
+        <location filename="../ui/MainWindow.cpp" line="4314" />
         <source>Label for %1 %2:</source>
         <translation>Étiquette pour %1 %2 :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4285" />
+        <location filename="../ui/MainWindow.cpp" line="4315" />
         <source>Label for pixel (%1, %2):</source>
         <translation>Étiquette pour le pixel (%1, %2) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4297" />
+        <location filename="../ui/MainWindow.cpp" line="4327" />
         <source>add annotation</source>
         <translation>ajouter une annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4303" />
+        <location filename="../ui/MainWindow.cpp" line="4333" />
         <source>Edit annotation text</source>
         <translation>Modifier le texte de l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4310" />
+        <location filename="../ui/MainWindow.cpp" line="4340" />
         <source>edit annotation text</source>
         <translation>modifier le texte de l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4321" />
+        <location filename="../ui/MainWindow.cpp" line="4351" />
         <source>change annotation colour</source>
         <translation>changer la couleur de l'annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4376" />
+        <location filename="../ui/MainWindow.cpp" line="4406" />
         <source>clear annotations</source>
         <translation>effacer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4394" />
+        <location filename="../ui/MainWindow.cpp" line="4424" />
         <source>(%1, %2)   R %3  G %4  B %5</source>
         <translation>(%1, %2)   R %3  V %4  B %5</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4397" />
+        <location filename="../ui/MainWindow.cpp" line="4427" />
         <source>(%1, %2)   %3</source>
         <translation>(%1, %2)   %3</translation>
     </message>

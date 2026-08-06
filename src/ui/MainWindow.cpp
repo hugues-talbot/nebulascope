@@ -3026,9 +3026,32 @@ void MainWindow::displayPath(const QString& path) {
                 }
                 m_model.setChannel(c, cs);
             }
-            statusBar()->showMessage(refitted
-                ? tr("PixInsight display function applied (rebased to the data range) — Reset (R) for the plain ramp")
-                : tr("PixInsight display function applied — Reset (R) for the plain ramp"), 6000);
+            // An UNLINKED saved STF (per-channel midtones differing widely)
+            // equalizes the channels on screen — it visually cancels a
+            // calibrated (e.g. SPCC) colour balance. Field-validated remedy:
+            // the linked auto-stretch. Say so.
+            bool unlinked = false;
+            if (nch >= 3) {
+                double mn = 1e9, mx = 0.0;
+                for (int c = 0; c < nch; ++c) {
+                    const double m = std::max(1e-9, df.m[c]);
+                    mn = std::min(mn, m);
+                    mx = std::max(mx, m);
+                }
+                unlinked = mx / mn > 1.25;
+            }
+            QString msg = refitted
+                ? tr("PixInsight display function applied (rebased to the data range)")
+                : tr("PixInsight display function applied");
+            msg += unlinked
+                ? tr(" — unlinked STF: Shift+U preserves calibrated colour")
+                : tr(" — Reset (R) for the plain ramp");
+            // Deferred: later messages in this same call stack (the image
+            // info line, openPaths' count) would instantly overwrite it.
+            const int dur = unlinked ? 8000 : 6000;
+            QTimer::singleShot(0, this, [this, msg, dur] {
+                statusBar()->showMessage(msg, dur);
+            });
         }
     }
 

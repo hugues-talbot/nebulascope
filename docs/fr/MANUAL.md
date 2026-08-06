@@ -52,7 +52,11 @@ des données** en forme close — courbe identique sur les données, à un
 facteur de luminosité uniforme près — afin que les poignées de
 l'histogramme et les champs de valeur restent pleinement utilisables
 (dérivation dans l'annexe du chapitre *Transport de couleurs* : la famille
-MTF est fermée par restriction-renormalisation).
+MTF est fermée par restriction-renormalisation). Si la STF enregistrée est
+**non liée** (fortement par canal — elle égalise les canaux et annule
+visuellement une balance étalonnée comme celle de SPCC), la barre d'état
+le signale et suggère **Maj+U**, l'étirement automatique lié qui préserve
+l'étalonnage.
 
 **Les images couleur one-shot (OSC) sont dématriçées automatiquement.** Une
 image mono dont l'en-tête porte un motif de Bayer (`BAYERPAT`, en honorant

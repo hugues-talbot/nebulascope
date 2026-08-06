@@ -43,6 +43,10 @@ maximum (PI's convention places it on the normalized [0,1] container) is
 data, up to a uniform brightness scale — so the histogram handles and value
 boxes remain fully usable (derivation in the *Colour Transport* chapter's
 appendix: the MTF family is closed under restriction-and-renormalisation).
+If the saved STF is **unlinked** (strongly per-channel — it equalizes the
+channels, visually cancelling a calibrated colour balance such as SPCC's),
+the status bar says so and suggests **Shift+U**, the linked auto-stretch
+that preserves the calibration.
 
 **One-shot-colour (OSC) frames are debayered automatically.** A mono frame
 whose header carries a Bayer pattern (`BAYERPAT`, honouring
