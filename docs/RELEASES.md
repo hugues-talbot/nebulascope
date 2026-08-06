@@ -2,7 +2,39 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
-## v0.92 — 2026-08-03
+## v0.93 — 2026-08-06
+
+v0.93 — PixInsight display interop, stretch history, DS9 palettes
+
+Highlights:
+
+- **PixInsight display interop** — a PI-saved XISF now opens LOOKING as
+  PI showed it: the embedded display function (STF) applies on first
+  view, embedded ICC profiles are honoured, and on macOS the window is
+  colour-managed for wide-gamut (P3) panels. The transfer LUT adapts
+  its resolution to the occupied window and the histogram's curve
+  overlay is evaluated exactly — imported stretches with far-out white
+  points render smoothly.
+- **Stretch undo history** — every stretch/adjustment gesture is one
+  undo step (drags coalesce): ⌘Z walks back to the as-loaded state,
+  through Auto STFs, pastes, transport fits. **Reload Original**
+  (⌘⇧R) re-decodes from disk and re-runs the first-view rules, itself
+  undoable.
+- **DS9 classic palettes** — a, b, bb, he, cool, rainbow, standard, and
+  the stepped i8, aips0, sls, reproduced from SAOImage DS9's reference
+  control points (renditions match DS9 exactly); compose with the
+  invert/split modifiers. Requested by a user.
+- **Save ergonomics** — an in-memory result's list entry takes the
+  saved file's name on every save path (Save Data As, Save Stretched
+  As, script save); clicking any image in a save dialog adopts its
+  base name, the extension following the chosen format.
+- **Build provenance** — the About headline and --version carry the
+  exact git build id, so test binaries identify their commit.
+
+Fixes: the panel-resize cursor no longer sticks over overlay panel
+contents; the script cmap command actually applies the selected map.
+
+## v0.92 — 2026-08-04
 
 v0.92 — list & session ergonomics, inline export options, display sampling
 
