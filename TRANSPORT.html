@@ -423,6 +423,7 @@ window.Quarto = {
   <li><a href="#the-approximation-gap" id="toc-the-approximation-gap" class="nav-link" data-scroll-target="#the-approximation-gap">3.3 The approximation gap</a></li>
   </ul></li>
   <li><a href="#practice" id="toc-practice" class="nav-link" data-scroll-target="#practice">4. Practice</a></li>
+  <li><a href="#appendix-imported-display-functions-and-the-möbius-rebase" id="toc-appendix-imported-display-functions-and-the-möbius-rebase" class="nav-link" data-scroll-target="#appendix-imported-display-functions-and-the-möbius-rebase">5. Appendix: imported display functions and the Möbius rebase</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -538,6 +539,24 @@ window.Quarto = {
 <li>The fit absorbs the current display (including adjustments) into fresh Linear black/mid/white values and resets the adjustment sliders, so what you see immediately after is the fitted match itself.</li>
 <li>Judging RMSE: values are in display units on <span class="math inline">\([0,1]\)</span>; experience suggests a fit below <span class="math inline">\(\sim 0.02\)</span> is visually convincing, while larger residuals usually indicate the reference demanded a hue rotation.</li>
 </ul>
+</section>
+<section id="appendix-imported-display-functions-and-the-möbius-rebase" class="level2">
+<h2 class="anchored" data-anchor-id="appendix-imported-display-functions-and-the-möbius-rebase">5. Appendix: imported display functions and the Möbius rebase</h2>
+<p>When an XISF carries the producing application’s saved screen stretch (the <code>DisplayFunction</code> element — PixInsight’s STF), NebulaScope applies it on first view. One structural mismatch must be resolved: PI defines its STF on the normalized <span class="math inline">\([0,1]\)</span> <em>container</em>, so its white point (typically <span class="math inline">\(h = 1\)</span>) can sit at a windowed coordinate <span class="math inline">\(1/k\)</span> — often <span class="math inline">\(80\)</span>–<span class="math inline">\(300\times\)</span> — beyond the actual data maximum, whereas every NebulaScope control (plot, handles, value boxes, colorbar) is parameterised on the data range. Imported verbatim, the white handle would sit <span class="math inline">\(1/k\)</span> plot-widths off-screen.</p>
+<p><strong>The key structural fact.</strong> The midtone transfer function</p>
+<p><span class="math display">\[\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m}\]</span></p>
+<p>is a <em>Möbius transformation</em> fixing <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>; conversely, the MTF family is exactly the set of monotone Möbius maps with those two fixed points — two constraints on a three-parameter group leave one degree of freedom, the pivot <span class="math inline">\(m\)</span> (where the output is <span class="math inline">\(\tfrac12\)</span>).</p>
+<p><strong>Restriction and renormalisation.</strong> Let <span class="math inline">\(D(t) = \mathrm{MTF}(t; m)\)</span> be the imported curve on its own window, and let <span class="math inline">\(k \in (0,1)\)</span> be the window coordinate of the data maximum. Restrict to the data and rescale so the data maximum displays as level <span class="math inline">\(S\)</span>:</p>
+<p><span class="math display">\[g(t') \;=\; \frac{D(k\,t')}{D(k)}, \qquad t' \in [0,1].\]</span></p>
+<p>Scaling the argument (<span class="math inline">\(t = k\,t'\)</span>) is Möbius; dividing by the constant <span class="math inline">\(D(k)\)</span> is Möbius; compositions of Möbius maps are Möbius — and by construction <span class="math inline">\(g(0)=0\)</span>, <span class="math inline">\(g(1)=1\)</span>. Hence <span class="math inline">\(g\)</span> <em>is again an MTF</em>: the family is closed under restriction-and-renormalisation, which is why a closed form exists at all. Its pivot is recovered with the closed-form inverse</p>
+<p><span class="math display">\[\mathrm{MTF}^{-1}(y; m) \;=\; \frac{m\,y}{(2m-1)\,y - m + 1},
+\qquad m' \;=\; \frac{\mathrm{MTF}^{-1}\!\big(\tfrac{D(k)}{2};\, m\big)}{k}.\]</span></p>
+<p>No fitting, no sampling, no approximation: the rebased curve equals the original over every value that exists in the data.</p>
+<p><strong>Colour: one common level.</strong> Rescaling each channel by its <em>own</em> endpoint <span class="math inline">\(D_c(k_c)\)</span> would silently re-white-balance the image — undoing precisely the calibration (e.g.&nbsp;SPCC) the file records. NebulaScope therefore uses a single common level</p>
+<p><span class="math display">\[S \;=\; \max_c D_c(k_c),\]</span></p>
+<p>placing channel <span class="math inline">\(c\)</span>’s new white at <span class="math inline">\(\mathrm{MTF}^{-1}(S;\, m_c)\)</span>: the brightest channel’s white lands exactly on its data maximum (all handles on-plot) and every displayed value divides by the <em>same</em> <span class="math inline">\(S\)</span>,</p>
+<p><span class="math display">\[D'_c(v) \;=\; \frac{D_c(v)}{S}\quad \text{for all data } v,\]</span></p>
+<p>so the inter-channel ratios — hue and calibrated colour balance — are preserved <em>exactly</em>. The only deviation from the producing application’s screen is a uniform brightness factor <span class="math inline">\(1/S\)</span> (typically under <span class="math inline">\(10\%\)</span>), monotone and channel-symmetric.</p>
 <p><em>Background reading: Pitié, Kokaram &amp; Dahyot 2007 (the iterative distribution transfer this implements); Rabin et al.&nbsp;2012 for the sliced Wasserstein viewpoint — full citations in the References.</em></p>
 
 

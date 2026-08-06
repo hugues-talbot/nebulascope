@@ -382,6 +382,7 @@ window.Quarto = {
   <li><a href="#lécart-dapproximation" id="toc-lécart-dapproximation" class="nav-link" data-scroll-target="#lécart-dapproximation">3.3 L’écart d’approximation</a></li>
   </ul></li>
   <li><a href="#en-pratique" id="toc-en-pratique" class="nav-link" data-scroll-target="#en-pratique">4. En pratique</a></li>
+  <li><a href="#annexe-fonctions-daffichage-importées-et-recalage-de-möbius" id="toc-annexe-fonctions-daffichage-importées-et-recalage-de-möbius" class="nav-link" data-scroll-target="#annexe-fonctions-daffichage-importées-et-recalage-de-möbius">5. Annexe : fonctions d’affichage importées et recalage de Möbius</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Faire part d'un problème</a></li></ul></div></nav>
     </div>
@@ -497,6 +498,24 @@ window.Quarto = {
 <li>L’ajustement absorbe l’affichage courant (ajustements compris) dans de nouvelles valeurs Linéaire noir/médian/blanc et remet les curseurs d’ajustement à zéro : ce que vous voyez juste après est la correspondance ajustée elle-même.</li>
 <li>Juger l’erreur RMS : les valeurs sont en unités d’affichage sur <span class="math inline">\([0,1]\)</span> ; l’expérience suggère qu’un ajustement sous <span class="math inline">\(\sim 0{,}02\)</span> est visuellement convaincant, tandis que des résidus plus grands indiquent en général que la référence exigeait une rotation de teinte.</li>
 </ul>
+</section>
+<section id="annexe-fonctions-daffichage-importées-et-recalage-de-möbius" class="level2">
+<h2 class="anchored" data-anchor-id="annexe-fonctions-daffichage-importées-et-recalage-de-möbius">5. Annexe : fonctions d’affichage importées et recalage de Möbius</h2>
+<p>Quand un XISF porte l’étirement d’écran enregistré par l’application productrice (l’élément <code>DisplayFunction</code> — la STF de PixInsight), NebulaScope l’applique à la première visualisation. Un désaccord structurel doit être résolu : PI définit sa STF sur le <em>conteneur</em> normalisé <span class="math inline">\([0,1]\)</span>, si bien que son point blanc (typiquement <span class="math inline">\(h = 1\)</span>) peut se trouver à une coordonnée fenêtrée <span class="math inline">\(1/k\)</span> — souvent <span class="math inline">\(80\)</span> à <span class="math inline">\(300\times\)</span> — au-delà du maximum réel des données, alors que chaque contrôle de NebulaScope (tracé, poignées, champs de valeur, barre de couleurs) est paramétré sur la plage des données. Importée telle quelle, la poignée blanche se retrouverait à <span class="math inline">\(1/k\)</span> largeurs de tracé hors écran.</p>
+<p><strong>Le fait structurel clé.</strong> La fonction de transfert des tons moyens</p>
+<p><span class="math display">\[\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m}\]</span></p>
+<p>est une <em>transformation de Möbius</em> fixant <span class="math inline">\(0\)</span> et <span class="math inline">\(1\)</span> ; réciproquement, la famille MTF est exactement l’ensemble des applications de Möbius monotones à ces deux points fixes — deux contraintes sur un groupe à trois paramètres laissent un degré de liberté, le pivot <span class="math inline">\(m\)</span> (où la sortie vaut <span class="math inline">\(\tfrac12\)</span>).</p>
+<p><strong>Restriction et renormalisation.</strong> Soit <span class="math inline">\(D(t) = \mathrm{MTF}(t; m)\)</span> la courbe importée sur sa propre fenêtre, et <span class="math inline">\(k \in (0,1)\)</span> la coordonnée fenêtrée du maximum des données. Restreignons aux données et rééchelonnons pour que le maximum des données s’affiche au niveau <span class="math inline">\(S\)</span> :</p>
+<p><span class="math display">\[g(t') \;=\; \frac{D(k\,t')}{D(k)}, \qquad t' \in [0,1].\]</span></p>
+<p>Mettre l’argument à l’échelle (<span class="math inline">\(t = k\,t'\)</span>) est de Möbius ; diviser par la constante <span class="math inline">\(D(k)\)</span> est de Möbius ; la composée d’applications de Möbius est de Möbius — et par construction <span class="math inline">\(g(0)=0\)</span>, <span class="math inline">\(g(1)=1\)</span>. Donc <span class="math inline">\(g\)</span> <em>est encore une MTF</em> : la famille est fermée par restriction-renormalisation, raison pour laquelle une forme close existe. Son pivot se retrouve par l’inverse en forme close</p>
+<p><span class="math display">\[\mathrm{MTF}^{-1}(y; m) \;=\; \frac{m\,y}{(2m-1)\,y - m + 1},
+\qquad m' \;=\; \frac{\mathrm{MTF}^{-1}\!\big(\tfrac{D(k)}{2};\, m\big)}{k}.\]</span></p>
+<p>Aucun ajustement, aucun échantillonnage, aucune approximation : la courbe recalée égale l’originale sur toute valeur présente dans les données.</p>
+<p><strong>Couleur : un niveau commun.</strong> Rééchelonner chaque canal par son <em>propre</em> point terminal <span class="math inline">\(D_c(k_c)\)</span> referait silencieusement la balance des blancs — défaisant précisément l’étalonnage (p.&nbsp;ex. SPCC) que le fichier enregistre. NebulaScope utilise donc un unique niveau commun</p>
+<p><span class="math display">\[S \;=\; \max_c D_c(k_c),\]</span></p>
+<p>qui place le nouveau blanc du canal <span class="math inline">\(c\)</span> en <span class="math inline">\(\mathrm{MTF}^{-1}(S;\, m_c)\)</span> : le blanc du canal le plus brillant tombe exactement sur son maximum de données (toutes les poignées sur le tracé) et chaque valeur affichée est divisée par le <em>même</em> <span class="math inline">\(S\)</span>,</p>
+<p><span class="math display">\[D'_c(v) \;=\; \frac{D_c(v)}{S}\quad \text{pour toute donnée } v,\]</span></p>
+<p>de sorte que les rapports entre canaux — teinte et balance étalonnée — sont préservés <em>exactement</em>. Le seul écart avec l’écran de l’application productrice est un facteur de luminosité uniforme <span class="math inline">\(1/S\)</span> (typiquement moins de <span class="math inline">\(10\,\%\)</span>), monotone et symétrique entre canaux.</p>
 <p><em>Lectures : Pitié, Kokaram &amp; Dahyot 2007 (le transfert de distribution itératif implémenté ici) ; Rabin et al.&nbsp;2012 pour le point de vue Wasserstein par tranches — références complètes en bibliographie.</em></p>
 
 
