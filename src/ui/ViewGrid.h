@@ -42,7 +42,8 @@ public:
     void clearContent();                  // drop image/path/stretch; show placeholder
     bool linkEnabled() const;
     void setActive(bool on);
-    void refreshChrome();                 // placeholder / link-button visibility
+    void refreshChrome();
+    void setChromeHidden(bool hidden);    // clean canvas: no border, no link button                 // placeholder / link-button visibility
 
     // Stash of MainWindow's current-image state while this cell is inactive.
     // (Moved in/out on activation swaps; see MainWindow::onCellSwap.)
@@ -76,6 +77,8 @@ private:
     QLabel* m_placeholder = nullptr;
     QToolButton* m_linkBtn = nullptr;
     bool m_active = false;
+    bool m_chromeHidden = false;
+    void applyBorder();
 };
 
 class ViewGrid : public QWidget {

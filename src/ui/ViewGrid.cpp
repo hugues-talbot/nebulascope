@@ -61,14 +61,29 @@ void ViewCell::clearContent() {
 
 void ViewCell::setActive(bool on) {
     m_active = on;
-    setStyleSheet(QStringLiteral("astro--ViewCell{border:%1;}")
-                      .arg(on ? QStringLiteral("2px solid #2a557e")
-                              : QStringLiteral("1px solid #18222d")));
+    applyBorder();
+}
+
+// Border style honours the clean-canvas mode: transparent (same widths, so
+// nothing shifts) instead of drawn, for chrome-free previews (wallpaper look).
+void ViewCell::applyBorder() {
+    const QString style = m_chromeHidden
+        ? (m_active ? QStringLiteral("2px solid transparent")
+                    : QStringLiteral("1px solid transparent"))
+        : (m_active ? QStringLiteral("2px solid #2a557e")
+                    : QStringLiteral("1px solid #18222d"));
+    setStyleSheet(QStringLiteral("astro--ViewCell{border:%1;}").arg(style));
+}
+
+void ViewCell::setChromeHidden(bool hidden) {
+    m_chromeHidden = hidden;
+    applyBorder();
+    refreshChrome();
 }
 
 void ViewCell::refreshChrome() {
     m_placeholder->setVisible(!occupied());
-    m_linkBtn->setVisible(occupied());
+    m_linkBtn->setVisible(occupied() && !m_chromeHidden);
 }
 
 bool ViewCell::eventFilter(QObject* obj, QEvent* ev) {
@@ -148,6 +163,9 @@ void ViewGrid::relayout() {
 }
 
 void ViewGrid::setScrollBarsVisible(bool on) {
+    // The H toggle is "clean canvas": scrollbars AND cell chrome (active
+    // border, link buttons) go together — wallpaper-preview mode.
+    for (ViewCell* c : m_cells) c->setChromeHidden(!on);
     m_scrollbars = on;
     const Qt::ScrollBarPolicy pol = on ? Qt::ScrollBarAsNeeded : Qt::ScrollBarAlwaysOff;
     for (ViewCell* c : m_cells) {

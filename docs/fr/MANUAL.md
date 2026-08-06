@@ -558,8 +558,10 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
   **plein écran** a son propre raccourci ; **⌥F** est le bouton vert au
   clavier : plein écran natif aller-retour sous macOS (barre de menus
   masquée, Espace dédié ; sous Linux/Windows, agrandit/restaure). **H**
-  masque les barres de défilement de toutes les vues pour un canevas
-  épuré (les panoramiques fonctionnent toujours).
+  masque les barres de défilement **et tout l'habillage des vues** —
+  bordure de cellule active et boutons de liaison — pour un canevas
+  entièrement épuré (les panoramiques fonctionnent toujours), p. ex.
+  pour prévisualiser un fond d'écran en plein écran.
 - **Préférences…** (menu de l'application sur macOS) :
   - **Général** — langue de l'interface (système / English / Français) ;
     couleur, taille de texte et épaisseur de trait par défaut des
