@@ -211,6 +211,68 @@ exact reste à une case à cocher.
   convaincant, tandis que des résidus plus grands indiquent en général que
   la référence exigeait une rotation de teinte.
 
+## 5. Annexe : fonctions d'affichage importées et recalage de Möbius
+
+Quand un XISF porte l'étirement d'écran enregistré par l'application
+productrice (l'élément `DisplayFunction` — la STF de PixInsight),
+NebulaScope l'applique à la première visualisation. Un désaccord
+structurel doit être résolu : PI définit sa STF sur le *conteneur*
+normalisé $[0,1]$, si bien que son point blanc (typiquement $h = 1$) peut
+se trouver à une coordonnée fenêtrée $1/k$ — souvent $80$ à $300\times$ —
+au-delà du maximum réel des données, alors que chaque contrôle de
+NebulaScope (tracé, poignées, champs de valeur, barre de couleurs) est
+paramétré sur la plage des données. Importée telle quelle, la poignée
+blanche se retrouverait à $1/k$ largeurs de tracé hors écran.
+
+**Le fait structurel clé.** La fonction de transfert des tons moyens
+
+$$\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m}$$
+
+est une *transformation de Möbius* fixant $0$ et $1$ ; réciproquement, la
+famille MTF est exactement l'ensemble des applications de Möbius monotones
+à ces deux points fixes — deux contraintes sur un groupe à trois
+paramètres laissent un degré de liberté, le pivot $m$ (où la sortie vaut
+$\tfrac12$).
+
+**Restriction et renormalisation.** Soit $D(t) = \mathrm{MTF}(t; m)$ la
+courbe importée sur sa propre fenêtre, et $k \in (0,1)$ la coordonnée
+fenêtrée du maximum des données. Restreignons aux données et rééchelonnons
+pour que le maximum des données s'affiche au niveau $S$ :
+
+$$g(t') \;=\; \frac{D(k\,t')}{D(k)}, \qquad t' \in [0,1].$$
+
+Mettre l'argument à l'échelle ($t = k\,t'$) est de Möbius ; diviser par la
+constante $D(k)$ est de Möbius ; la composée d'applications de Möbius est
+de Möbius — et par construction $g(0)=0$, $g(1)=1$. Donc $g$ *est encore
+une MTF* : la famille est fermée par restriction-renormalisation, raison
+pour laquelle une forme close existe. Son pivot se retrouve par l'inverse
+en forme close
+
+$$\mathrm{MTF}^{-1}(y; m) \;=\; \frac{m\,y}{(2m-1)\,y - m + 1},
+\qquad m' \;=\; \frac{\mathrm{MTF}^{-1}\!\big(\tfrac{D(k)}{2};\, m\big)}{k}.$$
+
+Aucun ajustement, aucun échantillonnage, aucune approximation : la courbe
+recalée égale l'originale sur toute valeur présente dans les données.
+
+**Couleur : un niveau commun.** Rééchelonner chaque canal par son *propre*
+point terminal $D_c(k_c)$ referait silencieusement la balance des blancs —
+défaisant précisément l'étalonnage (p. ex. SPCC) que le fichier
+enregistre. NebulaScope utilise donc un unique niveau commun
+
+$$S \;=\; \max_c D_c(k_c),$$
+
+qui place le nouveau blanc du canal $c$ en $\mathrm{MTF}^{-1}(S;\, m_c)$ :
+le blanc du canal le plus brillant tombe exactement sur son maximum de
+données (toutes les poignées sur le tracé) et chaque valeur affichée est
+divisée par le *même* $S$,
+
+$$D'_c(v) \;=\; \frac{D_c(v)}{S}\quad \text{pour toute donnée } v,$$
+
+de sorte que les rapports entre canaux — teinte et balance étalonnée —
+sont préservés *exactement*. Le seul écart avec l'écran de l'application
+productrice est un facteur de luminosité uniforme $1/S$ (typiquement moins
+de $10\,\%$), monotone et symétrique entre canaux.
+
 *Lectures : Pitié, Kokaram & Dahyot 2007 (le transfert de distribution
 itératif implémenté ici) ; Rabin et al. 2012 pour le point de vue
 Wasserstein par tranches — références complètes en bibliographie.*

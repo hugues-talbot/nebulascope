@@ -185,6 +185,63 @@ mode remains one checkbox away.
   a fit below $\sim 0.02$ is visually convincing, while larger residuals
   usually indicate the reference demanded a hue rotation.
 
+## 5. Appendix: imported display functions and the Möbius rebase
+
+When an XISF carries the producing application's saved screen stretch (the
+`DisplayFunction` element — PixInsight's STF), NebulaScope applies it on
+first view. One structural mismatch must be resolved: PI defines its STF on
+the normalized $[0,1]$ *container*, so its white point (typically $h = 1$)
+can sit at a windowed coordinate $1/k$ — often $80$–$300\times$ — beyond
+the actual data maximum, whereas every NebulaScope control (plot, handles,
+value boxes, colorbar) is parameterised on the data range. Imported
+verbatim, the white handle would sit $1/k$ plot-widths off-screen.
+
+**The key structural fact.** The midtone transfer function
+
+$$\mathrm{MTF}(x; m) \;=\; \frac{(m-1)\,x}{(2m-1)\,x - m}$$
+
+is a *Möbius transformation* fixing $0$ and $1$; conversely, the MTF family
+is exactly the set of monotone Möbius maps with those two fixed points —
+two constraints on a three-parameter group leave one degree of freedom, the
+pivot $m$ (where the output is $\tfrac12$).
+
+**Restriction and renormalisation.** Let $D(t) = \mathrm{MTF}(t; m)$ be the
+imported curve on its own window, and let $k \in (0,1)$ be the window
+coordinate of the data maximum. Restrict to the data and rescale so the
+data maximum displays as level $S$:
+
+$$g(t') \;=\; \frac{D(k\,t')}{D(k)}, \qquad t' \in [0,1].$$
+
+Scaling the argument ($t = k\,t'$) is Möbius; dividing by the constant
+$D(k)$ is Möbius; compositions of Möbius maps are Möbius — and by
+construction $g(0)=0$, $g(1)=1$. Hence $g$ *is again an MTF*: the family
+is closed under restriction-and-renormalisation, which is why a closed
+form exists at all. Its pivot is recovered with the closed-form inverse
+
+$$\mathrm{MTF}^{-1}(y; m) \;=\; \frac{m\,y}{(2m-1)\,y - m + 1},
+\qquad m' \;=\; \frac{\mathrm{MTF}^{-1}\!\big(\tfrac{D(k)}{2};\, m\big)}{k}.$$
+
+No fitting, no sampling, no approximation: the rebased curve equals the
+original over every value that exists in the data.
+
+**Colour: one common level.** Rescaling each channel by its *own* endpoint
+$D_c(k_c)$ would silently re-white-balance the image — undoing precisely
+the calibration (e.g. SPCC) the file records. NebulaScope therefore uses a
+single common level
+
+$$S \;=\; \max_c D_c(k_c),$$
+
+placing channel $c$'s new white at $\mathrm{MTF}^{-1}(S;\, m_c)$: the
+brightest channel's white lands exactly on its data maximum (all handles
+on-plot) and every displayed value divides by the *same* $S$,
+
+$$D'_c(v) \;=\; \frac{D_c(v)}{S}\quad \text{for all data } v,$$
+
+so the inter-channel ratios — hue and calibrated colour balance — are
+preserved *exactly*. The only deviation from the producing application's
+screen is a uniform brightness factor $1/S$ (typically under $10\%$),
+monotone and channel-symmetric.
+
 *Background reading: Pitié, Kokaram & Dahyot 2007 (the iterative
 distribution transfer this implements); Rabin et al. 2012 for the sliced
 Wasserstein viewpoint — full citations in the References.*

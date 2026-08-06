@@ -41,7 +41,8 @@ it, and **Reset** returns to the plain ramp. A white point beyond the data
 maximum (PI's convention places it on the normalized [0,1] container) is
 **rebased onto the data range** in closed form — identical curve over the
 data, up to a uniform brightness scale — so the histogram handles and value
-boxes remain fully usable.
+boxes remain fully usable (derivation in the *Colour Transport* chapter's
+appendix: the MTF family is closed under restriction-and-renormalisation).
 
 **One-shot-colour (OSC) frames are debayered automatically.** A mono frame
 whose header carries a Bayer pattern (`BAYERPAT`, honouring
