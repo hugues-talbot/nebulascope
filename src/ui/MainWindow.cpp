@@ -2099,6 +2099,10 @@ QString MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
     it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
+    // Synthetic results are list rows like any other: they carry the culling
+    // keep-check too (checked by default, like freshly opened files).
+    it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
+    it->setCheckState(Qt::Checked);
     m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect); // triggers showRow -> displayPath
     m_undo->push(new SyntheticImageCmd(this, key, name, m_synthetic.value(key)));
     return key;
@@ -2123,6 +2127,8 @@ void MainWindow::restoreSyntheticEntry(const QString& key, const QString& name,
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
     it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
+    it->setFlags(it->flags() | Qt::ItemIsUserCheckable);
+    it->setCheckState(Qt::Checked);
     m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect);
 }
 
