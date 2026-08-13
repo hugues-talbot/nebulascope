@@ -96,6 +96,20 @@ that one the *what*.)
   edit the display.
 - **256→4096-level LUTs** killed visible banding; dithered 8-bit output
   handles the rest.
+- **Batch row removal runs signal-blocked, one display fix-up at the end.**
+  Removing list rows one by one has a hidden cascade: whenever the row
+  being deleted is the *current* one, Qt promotes its neighbour to current,
+  and an unblocked `currentRowChanged` then synchronously decodes, stretches
+  and renders that image — which is itself deleted next, promoting another.
+  One full decode per closed row. The trap arms exactly when the current row
+  sits at the top of the removal order, which is where a blink session
+  leaves it (Space wraps to the top after the last image), so "close all"
+  after culling hit it every time. Measured on 300 × 4 MB FITS blinked
+  through then closed: +4.4 s with the cascade, +0.3 s with removals
+  signal-blocked and a single explicit re-display at the end — and the cost
+  scales with image size (tens of seconds for a session of full-size subs).
+  Rule of thumb: any loop that mutates list rows must hold a
+  `QSignalBlocker` and reconcile the display once, after the loop.
 
 ## Build / release
 
