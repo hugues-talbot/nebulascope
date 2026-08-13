@@ -211,7 +211,9 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!needArgs(1)) return false;
         const int row = t[1].toInt() - 1;
         if (row < 0 || row >= m_w->m_fileList->count()) { err = "row out of range"; return false; }
-        m_w->m_fileList->setCurrentRow(row);
+        // ClearAndSelect: a click-like activation. The single-arg overload
+        // only ADDS to an ExtendedSelection, silently growing the selection.
+        m_w->m_fileList->setCurrentRow(row, QItemSelectionModel::ClearAndSelect);
         return true;
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
@@ -364,15 +366,21 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         return true;
     }
     if (cmd == QLatin1String("tag")) {
-        // tag on|off|toggle — the current row's keep-check.
+        // tag on|off|toggle — strictly the CURRENT row's keep-check. The
+        // guard keeps the UI's checkbox→selection fan-out (and B's group
+        // toggle) out of the script API: scripts stay single-row.
         if (!needArgs(1)) return false;
         QListWidgetItem* it = m_w->m_fileList->currentItem();
         if (!it) { err = "no current image"; return false; }
         const QString w = t[1].toLower();
+        m_w->m_tagPropagating = true;
         if      (w == QLatin1String("on"))     it->setCheckState(Qt::Checked);
         else if (w == QLatin1String("off"))    it->setCheckState(Qt::Unchecked);
-        else if (w == QLatin1String("toggle")) m_w->toggleCurrentTag();
-        else { err = "tag on|off|toggle"; return false; }
+        else if (w == QLatin1String("toggle"))
+            it->setCheckState(it->checkState() == Qt::Checked ? Qt::Unchecked
+                                                              : Qt::Checked);
+        else { m_w->m_tagPropagating = false; err = "tag on|off|toggle"; return false; }
+        m_w->m_tagPropagating = false;
         return true;
     }
     if (cmd == QLatin1String("tagsort")) {

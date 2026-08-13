@@ -244,8 +244,9 @@ private:
     QHash<QString, ImageHeader> m_syntheticHeaders;   // header per mem:// entry
 
     // Blink culling (checked = keep):
-    void toggleCurrentTag();                    // B — flip the shown frame's check
+    void toggleCurrentTag();                    // B — group-toggle the selection's checks
     void setSelectedTags(bool checked);         // check/uncheck the list selection
+    bool m_tagPropagating = false;              // guards checkbox→selection fan-out
     void sortListByTag();                       // checked rows first, order stable
     void removeTaggedFromList(bool checked);    // drop all (un)checked rows
     void moveTaggedFiles(bool checked,          // move (un)checked files + sidecars;

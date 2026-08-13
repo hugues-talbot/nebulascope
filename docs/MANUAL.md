@@ -206,9 +206,13 @@ cards or XISF properties) in a filterable, copyable table.
 
 - **Space** / **Shift+Space** — next / previous image, looping. Zoom and pan are preserved across same-size images, so you can
   blink a small region.
-- **Shift+L** (or **F2**) toggles the image list; **C** closes the current image (closing the
-  last image empties all views).
-- List management: **+** append, **−** / context menu remove, drag to
+- **Shift+L** (or **F2**) toggles the image list; **C** closes the
+  highlighted images (just the current one when nothing else is selected;
+  closing the last image empties all views). Closing an image frees
+  everything the app holds for it — decoded pixels, per-view copies,
+  stretch memory — so a long culling session doesn't accumulate RAM.
+- List management: **+** append, **−** / context-menu **Close & Remove
+  from List** (same close-and-free as **C**), drag to
   reorder, export (**⤓**) and **File ▸ Import Image List…** re-load a saved
   list (one path per line, `#` comments, relative paths resolve against the
   list file). `--list` does the same from the command line. **Clear List &
@@ -222,7 +226,12 @@ cards or XISF properties) in a filterable, copyable table.
   default). Blink through a session with **Space**/**↓** and hit **B** to
   reject the bad frame under your eyes — debayering and live STF editing
   stay available the whole time, which is exactly what makes this blink
-  different. Then act on the tags from the list's right-click menu:
+  different. **B** and the checkboxes are selection-aware: highlight
+  several rows and **B** group-toggles them (checks them all; only when
+  every one is already checked does it uncheck), and clicking a checkbox
+  inside a multi-row selection retags the whole selection — a click on an
+  unselected row stays single-row. Then act on the tags from the list's
+  right-click menu:
   **Check/Uncheck Selected**, **Sort: Checked First**, **Move
   Checked/Unchecked To…** (files move with their annotation sidecars, and
   the list follows them to the new location), and **Remove

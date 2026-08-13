@@ -172,7 +172,7 @@ void MainWindow::buildUi() {
     auto* bar = new QHBoxLayout();
     bar->setSpacing(4);
     auto* addBtn = new QToolButton(); addBtn->setText("+");  addBtn->setToolTip(tr("Append files\u2026"));
-    auto* remBtn = new QToolButton(); remBtn->setText("\u2212"); remBtn->setToolTip(tr("Remove selected (Del)"));
+    auto* remBtn = new QToolButton(); remBtn->setText("\u2212"); remBtn->setToolTip(tr("Close & remove selected (Del)"));
     auto* expBtn = new QToolButton(); expBtn->setText("\u2913"); expBtn->setToolTip(tr("Export list\u2026"));
     bar->addWidget(addBtn);
     bar->addWidget(remBtn);
@@ -192,6 +192,30 @@ void MainWindow::buildUi() {
     m_leftDock->setWidget(listHost);
     addDockWidget(Qt::LeftDockWidgetArea, m_leftDock);
     connect(m_fileList, &QListWidget::currentRowChanged, this, &MainWindow::showRow);
+    // A checkbox toggled on a row that belongs to a multi-row selection
+    // applies the new state to every highlighted row. A click outside the
+    // selection stays single-row, so a stray click can't retag a whole batch.
+    // The model signal (not itemChanged) carries the role, which keeps text
+    // edits (dedupe renames, save rebranding) from being mistaken for tags.
+    connect(m_fileList->model(), &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex& tl, const QModelIndex& br,
+                   const QList<int>& roles) {
+        if (m_tagPropagating || tl != br) return;
+        if (!roles.contains(Qt::CheckStateRole)) return;
+        QListWidgetItem* it = m_fileList->item(tl.row());
+        if (!it || !it->isSelected()) return;
+        const auto sel = m_fileList->selectedItems();
+        if (sel.size() < 2) return;
+        m_tagPropagating = true;
+        const Qt::CheckState st = it->checkState();
+        for (QListWidgetItem* o : sel)
+            if (o != it && (o->flags() & Qt::ItemIsUserCheckable))
+                o->setCheckState(st);
+        m_tagPropagating = false;
+        statusBar()->showMessage(
+            st == Qt::Checked ? tr("%n image(s) checked (keep)", nullptr, int(sel.size()))
+                              : tr("%n image(s) unchecked", nullptr, int(sel.size())), 2000);
+    });
     m_fileList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_fileList, &QListWidget::customContextMenuRequested, this, &MainWindow::onListContextMenu);
     connect(addBtn, &QToolButton::clicked, this, &MainWindow::appendToList);
@@ -793,7 +817,7 @@ void MainWindow::onListContextMenu(const QPoint& pos) {
     QAction* aRemUnch  = menu.addAction(tr("Remove Unchecked from List"));
     QAction* aRemChk   = menu.addAction(tr("Remove Checked from List"));
     menu.addSeparator();
-    QAction* aRemove = menu.addAction(tr("Remove from List"));
+    QAction* aRemove = menu.addAction(tr("Close && Remove from List"));
     aRemove->setEnabled(nSel > 0);
     QAction* aClear = menu.addAction(tr("Clear List && Close All"));
     aClear->setEnabled(m_fileList->count() > 0);
@@ -835,7 +859,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
             QListWidgetItem* it = m_fileList->item(r);
             if (it->data(Qt::UserRole).toString() == key) {
                 if (m_fileList->currentItem() == it) displayPath(key);
-                else m_fileList->setCurrentItem(it);
+                else m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect);
                 break;
             }
         }
@@ -929,7 +953,7 @@ void MainWindow::onCellSwap(ViewCell* oldC, ViewCell* newC) {
         QSignalBlocker blk(m_fileList);
         for (int i = 0; i < m_fileList->count(); ++i)
             if (m_fileList->item(i)->data(Qt::UserRole).toString() == m_currentPath)
-                m_fileList->setCurrentRow(i);
+                m_fileList->setCurrentRow(i, QItemSelectionModel::ClearAndSelect);
     }
     if (m_image.isValid()) {
         m_model.setChannelCount(m_image.channels());
@@ -1001,13 +1025,15 @@ void MainWindow::buildMenusAndToolbar() {
     acts["toggle_image_list"] = aLeft;
     acts["toggle_info_panel"] = aInfo;
     acts["toggle_histogram"]  = aRight;
-    acts["close_image"] = view->addAction(tr("&Close Current Image"), QKeySequence("C"), this, [this] {
-        // Remove the displayed image from the list, reusing removeSelected()'s
-        // cleanup (stretch memory, annotations, HDU children, next-row pick).
-        QListWidgetItem* it = m_fileList->currentItem();
-        if (!it) return;
-        m_fileList->clearSelection();
-        it->setSelected(true);
+    acts["close_image"] = view->addAction(tr("&Close Selected Images"), QKeySequence("C"), this, [this] {
+        // Close every highlighted row (fallback: the current one), reusing
+        // removeSelected()'s cleanup (decoded data, stretch memory,
+        // annotations, HDU children, next-row pick).
+        if (m_fileList->selectedItems().isEmpty()) {
+            QListWidgetItem* it = m_fileList->currentItem();
+            if (!it) return;
+            it->setSelected(true);
+        }
         removeSelected();
     });
     view->addSeparator();
@@ -1559,7 +1585,7 @@ void MainWindow::addPaths(const QStringList& paths) {
         if (firstCell) {
             m_grid->activate(firstCell);                // first image's cell stays active
             QSignalBlocker blk(m_fileList);             // highlight without re-decoding
-            m_fileList->setCurrentItem(added.first());
+            m_fileList->setCurrentItem(added.first(), QItemSelectionModel::ClearAndSelect);
         }
     } else if (firstExisting) {
         // Everything was already listed: honour the open by SHOWING it.
@@ -1568,7 +1594,7 @@ void MainWindow::addPaths(const QStringList& paths) {
         if (m_fileList->currentItem() == firstExisting)
             displayPath(firstExisting->data(Qt::UserRole).toString());
         else
-            m_fileList->setCurrentItem(firstExisting);
+            m_fileList->setCurrentItem(firstExisting, QItemSelectionModel::ClearAndSelect);
     }
     if (nDup > 0)
         statusBar()->showMessage(tr("%n image(s) already in the list — not added again",
@@ -1711,19 +1737,41 @@ void MainWindow::cropCurrentToRect(QRect r) {
 // parent file, so file operations dedup by base path and skip mem:// entries.
 
 void MainWindow::toggleCurrentTag() {
-    QListWidgetItem* it = m_fileList->currentItem();
-    if (!it || !(it->flags() & Qt::ItemIsUserCheckable)) return;
-    const bool nowChecked = it->checkState() != Qt::Checked;
-    it->setCheckState(nowChecked ? Qt::Checked : Qt::Unchecked);
-    statusBar()->showMessage(tr("%1 — %2")
-        .arg(it->text().trimmed(), nowChecked ? tr("checked (keep)")
-                                              : tr("unchecked")), 2000);
+    // Group toggle over the highlighted rows (falling back to the current
+    // one): if any is unchecked, check them all; only when every row is
+    // already checked does B uncheck.
+    QList<QListWidgetItem*> rows;
+    for (QListWidgetItem* it : m_fileList->selectedItems())
+        if (it->flags() & Qt::ItemIsUserCheckable) rows.append(it);
+    if (rows.isEmpty()) {
+        QListWidgetItem* cur = m_fileList->currentItem();
+        if (cur && (cur->flags() & Qt::ItemIsUserCheckable)) rows.append(cur);
+    }
+    if (rows.isEmpty()) return;
+    bool anyUnchecked = false;
+    for (QListWidgetItem* it : rows)
+        anyUnchecked = anyUnchecked || it->checkState() != Qt::Checked;
+    const bool nowChecked = anyUnchecked;
+    m_tagPropagating = true;
+    for (QListWidgetItem* it : rows)
+        it->setCheckState(nowChecked ? Qt::Checked : Qt::Unchecked);
+    m_tagPropagating = false;
+    if (rows.size() == 1)
+        statusBar()->showMessage(tr("%1 — %2")
+            .arg(rows.first()->text().trimmed(),
+                 nowChecked ? tr("checked (keep)") : tr("unchecked")), 2000);
+    else
+        statusBar()->showMessage(
+            nowChecked ? tr("%n image(s) checked (keep)", nullptr, int(rows.size()))
+                       : tr("%n image(s) unchecked", nullptr, int(rows.size())), 2000);
 }
 
 void MainWindow::setSelectedTags(bool checked) {
+    m_tagPropagating = true;
     for (QListWidgetItem* it : m_fileList->selectedItems())
         if (it->flags() & Qt::ItemIsUserCheckable)
             it->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+    m_tagPropagating = false;
 }
 
 void MainWindow::sortListByTag() {
@@ -1741,7 +1789,7 @@ void MainWindow::sortListByTag() {
     for (QListWidgetItem* it : uncheckedRows) m_fileList->addItem(it);
     for (int i = 0; i < m_fileList->count(); ++i)
         if (m_fileList->item(i)->data(Qt::UserRole).toString() == curKey) {
-            m_fileList->setCurrentRow(i);
+            m_fileList->setCurrentRow(i, QItemSelectionModel::ClearAndSelect);
             break;
         }
 }
@@ -2051,7 +2099,7 @@ QString MainWindow::addSyntheticImage(const QString& name, ImageData&& img) {
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
     it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
-    m_fileList->setCurrentItem(it);               // triggers showRow -> displayPath
+    m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect); // triggers showRow -> displayPath
     m_undo->push(new SyntheticImageCmd(this, key, name, m_synthetic.value(key)));
     return key;
 }
@@ -2073,7 +2121,7 @@ void MainWindow::restoreSyntheticEntry(const QString& key, const QString& name,
     auto* it = new QListWidgetItem(name, m_fileList);
     it->setData(Qt::UserRole, key);
     it->setToolTip(name + tr("  (in-memory combine — use Save Data As… to keep)"));
-    m_fileList->setCurrentItem(it);
+    m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect);
 }
 
 // Rotate-by-angle dialog, configured for the current image: display
@@ -2273,14 +2321,38 @@ void MainWindow::removeSelected() {
                 doomed.append(other);
         }
     }
-    // Forget any per-image stretch memory for removed paths, then delete rows.
+    // Close = free everything the app holds for the path: per-image side
+    // tables, in-memory synthetics, and any decoded copy still stashed in a
+    // non-active view cell (its pixmap included). Unsaved annotation edits
+    // are discarded with the image (counted for the status message so the
+    // quit-time warning never blames a phantom row).
+    QSet<QString> removedKeys;
+    int lostAnn = 0;
+    // Block currentRowChanged while rows go: Qt re-picks a current row after
+    // each takeItem, and each pick would otherwise decode an image. One
+    // display fix-up at the end replaces up to N intermediate decodes.
+    QSignalBlocker rowBlk(m_fileList);
     for (QListWidgetItem* it : doomed) {
         const QString p = it->data(Qt::UserRole).toString();
+        removedKeys.insert(p);
         m_stfByPath.remove(p);
         m_synthetic.remove(p);                           // free any in-memory combine
         m_syntheticHeaders.remove(p);
+        m_annByPath.remove(p);
+        if (m_annDirty.remove(p)) ++lostAnn;
+        m_xformByPath.remove(p);
+        m_sidecarOrientByPath.remove(p);
+        m_diskSizeByPath.remove(p);
+        m_debayerByPath.remove(p);
+        for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+            if (c != m_grid->activeCell() && c->path == p) c->clearContent();
         delete m_fileList->takeItem(m_fileList->row(it));
     }
+    if (lostAnn > 0)
+        statusBar()->showMessage(
+            tr("%n closed image(s) had unsaved annotations (discarded)",
+               nullptr, lostAnn), 5000);
+    rowBlk.unblock();
     syncFileWatcher();
     if (m_fileList->count() == 0) {
         // Last image closed: empty every view cell and the live state.
@@ -2296,7 +2368,12 @@ void MainWindow::removeSelected() {
         m_pixelLabel->setText("\u2014");
         setWindowTitle(tr("NebulaScope \u2014 Inspector"));
     } else if (m_fileList->currentRow() < 0) {
-        m_fileList->setCurrentRow(0);
+        m_fileList->setCurrentRow(0, QItemSelectionModel::ClearAndSelect);
+    } else if (removedKeys.contains(m_currentPath)) {
+        // The displayed image was among the closed ones but another row kept
+        // current status (no row-change signal fired): show it explicitly so
+        // the active view doesn't keep presenting freed data.
+        displayPath(m_fileList->currentItem()->data(Qt::UserRole).toString());
     }
 }
 
@@ -2403,14 +2480,14 @@ void MainWindow::nextImage() {
     const int n = m_fileList->count();
     if (n == 0) return;
     const int row = m_fileList->currentRow();
-    m_fileList->setCurrentRow((row + 1) % n);            // wrap to top after last
+    m_fileList->setCurrentRow((row + 1) % n, QItemSelectionModel::ClearAndSelect); // wrap to top after last
 }
 
 void MainWindow::prevImage() {
     const int n = m_fileList->count();
     if (n == 0) return;
     const int row = m_fileList->currentRow();
-    m_fileList->setCurrentRow((row - 1 + n) % n);        // wrap to bottom before first
+    m_fileList->setCurrentRow((row - 1 + n) % n, QItemSelectionModel::ClearAndSelect); // wrap to bottom before first
 }
 
 // Discard the stored rotate/flip history for the current image: annotations

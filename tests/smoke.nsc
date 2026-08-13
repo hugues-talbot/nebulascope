@@ -149,4 +149,10 @@ assert stretch 1 0.0006 0.0012 0.003 2e-7
 assert stretch 2 0.0005 0.000925 0.0022 2e-7
 assert rows 4
 
+# C (close_image) closes the highlighted rows — here just the current one —
+# and frees their memory through the shared removeSelected() path.
+action close_image
+assert rows 3
+assert name df_linked.xisf
+
 quit

@@ -241,9 +241,14 @@ et copiable.
 - **Espace** / **Maj+Espace** — image suivante / précédente, en boucle. Le
   zoom et le panoramique sont conservés entre images de même taille : on
   peut donc faire clignoter une petite région.
-- **Maj+L** (ou **F2**) bascule la liste d'images ; **C** ferme l'image
-  courante (fermer la dernière vide toutes les vues).
-- Gestion de la liste : **+** ajoute, **−** / menu contextuel retire,
+- **Maj+L** (ou **F2**) bascule la liste d'images ; **C** ferme les images
+  surlignées (seulement la courante si rien d'autre n'est sélectionné ;
+  fermer la dernière vide toutes les vues). Fermer une image libère tout ce
+  que l'application détient pour elle — pixels décodés, copies par vue,
+  mémoire d'étirement — une longue session de tri n'accumule donc pas de
+  RAM.
+- Gestion de la liste : **+** ajoute, **−** / menu contextuel **Fermer et
+  retirer de la liste** (même fermeture-libération que **C**),
   glisser pour réordonner, export (**⤓**) et **Fichier ▸ Importer une liste
   d'images…** recharge une liste sauvegardée (un chemin par ligne,
   commentaires `#`, chemins relatifs résolus par rapport au fichier de
@@ -259,7 +264,12 @@ et copiable.
   de conservation** (cochée par défaut). Parcourez une session en blink avec
   **Espace**/**↓** et appuyez sur **B** pour rejeter la mauvaise image sous
   vos yeux — le dématriçage et l'édition STF en direct restent disponibles
-  en permanence, ce qui distingue précisément ce blink des autres. Agissez
+  en permanence, ce qui distingue précisément ce blink des autres. **B** et
+  les coches tiennent compte de la sélection : surlignez plusieurs lignes
+  et **B** les bascule en groupe (toutes cochées ; il ne décoche que
+  lorsque toutes le sont déjà), et cliquer une coche dans une sélection
+  multiple re-coche toute la sélection — un clic sur une ligne non
+  sélectionnée reste individuel. Agissez
   ensuite sur les coches depuis le menu clic droit de la liste :
   **Cocher/Décocher la sélection**, **Trier : cochées d'abord**, **Déplacer
   les cochées/décochées vers…** (les fichiers partent avec leurs annexes
