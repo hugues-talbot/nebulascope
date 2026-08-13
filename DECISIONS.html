@@ -68,9 +68,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-1186ef8162c3c73f68abd6432a9e86e2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-febdc0bd1cf710de19db6afa0751cb89.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-343830dee7e81009abd9657442190b55.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -461,6 +461,7 @@ div.csl-indent {
 <li><strong>Overlay panels are opaque by default</strong>: any translucency defeats Qt’s repaint clipping and slows zoom/pan. Opacity is a preference (50–100%).</li>
 <li><strong>Adjust sliders: click first, then wheel</strong> — hover-wheel must not silently edit the display.</li>
 <li><strong>256→4096-level LUTs</strong> killed visible banding; dithered 8-bit output handles the rest.</li>
+<li><strong>Batch row removal runs signal-blocked, one display fix-up at the end.</strong> Removing list rows one by one has a hidden cascade: whenever the row being deleted is the <em>current</em> one, Qt promotes its neighbour to current, and an unblocked <code>currentRowChanged</code> then synchronously decodes, stretches and renders that image — which is itself deleted next, promoting another. One full decode per closed row. The trap arms exactly when the current row sits at the top of the removal order, which is where a blink session leaves it (Space wraps to the top after the last image), so “close all” after culling hit it every time. Measured on 300 × 4 MB FITS blinked through then closed: +4.4 s with the cascade, +0.3 s with removals signal-blocked and a single explicit re-display at the end — and the cost scales with image size (tens of seconds for a session of full-size subs). Rule of thumb: any loop that mutates list rows must hold a <code>QSignalBlocker</code> and reconcile the display once, after the loop.</li>
 </ul>
 </section>
 <section id="build-release" class="level2">
