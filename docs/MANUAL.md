@@ -210,7 +210,11 @@ cards or XISF properties) in a filterable, copyable table.
   highlighted images (just the current one when nothing else is selected;
   closing the last image empties all views). Closing an image frees
   everything the app holds for it — decoded pixels, per-view copies,
-  stretch memory — so a long culling session doesn't accumulate RAM.
+  stretch memory — so a long culling session doesn't accumulate RAM. If
+  any image being closed has unsaved annotation edits, one prompt covers
+  the whole batch: **Save Annotations** writes every affected image's
+  default sidecar (overwriting), **Ignore and Close** discards the edits,
+  **Cancel** aborts the close so you can deal with images one by one.
 - List management: **+** append, **−** / context-menu **Close & Remove
   from List** (same close-and-free as **C**), drag to
   reorder, export (**⤓**) and **File ▸ Import Image List…** re-load a saved

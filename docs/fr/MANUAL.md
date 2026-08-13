@@ -246,7 +246,12 @@ et copiable.
   fermer la dernière vide toutes les vues). Fermer une image libère tout ce
   que l'application détient pour elle — pixels décodés, copies par vue,
   mémoire d'étirement — une longue session de tri n'accumule donc pas de
-  RAM.
+  RAM. Si une image en cours de fermeture a des annotations non
+  enregistrées, une seule invite couvre tout le lot : **Enregistrer les
+  annotations** écrit le fichier annexe par défaut de chaque image
+  concernée (en l'écrasant), **Ignorer et fermer** abandonne les
+  modifications, **Annuler** interrompt la fermeture pour traiter les
+  images une à une.
 - Gestion de la liste : **+** ajoute, **−** / menu contextuel **Fermer et
   retirer de la liste** (même fermeture-libération que **C**),
   glisser pour réordonner, export (**⤓**) et **Fichier ▸ Importer une liste

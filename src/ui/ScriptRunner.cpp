@@ -147,7 +147,11 @@ bool ScriptRunner::printCommandHelp(const QString& cmd) {
 }
 
 ScriptRunner::ScriptRunner(MainWindow* w, const QString& scriptPath, QObject* parent)
-    : QObject(parent), m_w(w), m_path(scriptPath) {}
+    : QObject(parent), m_w(w), m_path(scriptPath) {
+    // Scripts must never block on confirmation modals (only on the dialogs
+    // they open themselves via `dialog`/`dlgclick`).
+    m_w->m_scriptDriving = true;
+}
 
 bool ScriptRunner::load() {
     QFile f(m_path);

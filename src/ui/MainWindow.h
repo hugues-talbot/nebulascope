@@ -79,7 +79,8 @@ private slots:
     void nextImage();           // Space
     void prevImage();           // Backspace
     void appendToList();        // + : pick files, append
-    void removeSelected();      // − / Del : drop selected entries
+    void removeSelected();      // − / Del : close + drop selected entries
+    void removeSelectedRows(bool promptForAnnotations);  // the guts; prompt=false for undo/scripts
     void exportList();          // write the list of paths to a text file
     void importList();          // read a list of paths from a text file
     void showAbout();
@@ -247,6 +248,7 @@ private:
     void toggleCurrentTag();                    // B — group-toggle the selection's checks
     void setSelectedTags(bool checked);         // check/uncheck the list selection
     bool m_tagPropagating = false;              // guards checkbox→selection fan-out
+    bool m_scriptDriving = false;               // --run active: never block on modals
     void sortListByTag();                       // checked rows first, order stable
     void removeTaggedFromList(bool checked);    // drop all (un)checked rows
     void moveTaggedFiles(bool checked,          // move (un)checked files + sidecars;
@@ -285,7 +287,8 @@ private:
                             std::vector<Annotation> before);
     void saveAnnotations();               // silent save to the image's sidecar
     void saveAnnotationsAs();             // dialog for an explicit file name
-    bool writeAnnotationsFile(const QString& path);   // shared writer
+    bool writeAnnotationsFile(const QString& path);   // shared writer (current image)
+    bool writeAnnotationsFileFor(const QString& key, const QString& path);  // any listed image
     void loadAnnotations();               // dialog, then loadAnnotationsFile
     void loadAnnotationsFile(const QString& path);   // read annotations from a JSON file
     // Recent-files history (persisted via QSettings): last 10 images, 5 JSONs.

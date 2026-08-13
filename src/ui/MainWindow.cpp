@@ -2110,7 +2110,9 @@ void MainWindow::removeSyntheticEntry(const QString& key) {
         if (it->data(Qt::UserRole).toString() != key) continue;
         m_fileList->clearSelection();
         it->setSelected(true);
-        removeSelected();          // full cleanup: stretch memory, synthetic map, empty state
+        // No prompt: this runs from the undo stack; a modal mid-undo would
+        // block the command machinery (and mem:// rows have no sidecar).
+        removeSelectedRows(false); // full cleanup: stretch memory, synthetic map, empty state
         return;
     }
 }
@@ -2304,6 +2306,12 @@ void MainWindow::appendToList() {
 }
 
 void MainWindow::removeSelected() {
+    // Interactive close prompts once per batch when unsaved annotation edits
+    // would be lost; scripted runs never block on a modal.
+    removeSelectedRows(!m_scriptDriving);
+}
+
+void MainWindow::removeSelectedRows(bool promptForAnnotations) {
     const auto sel = m_fileList->selectedItems();
     if (sel.isEmpty()) return;
     // Removing a file row also removes its indented HDU child rows (their keys
@@ -2321,11 +2329,52 @@ void MainWindow::removeSelected() {
                 doomed.append(other);
         }
     }
+    // One modal for the whole batch when unsaved annotation edits would go
+    // down with the closed images: save them all to their default sidecars
+    // (overwriting), discard them, or cancel the close entirely and sort it
+    // out image by image. Only rows with something to lose count — an
+    // annotation set, or an orientation history the sidecar hasn't seen.
+    if (promptForAnnotations) {
+        QStringList dirtyKeys;
+        for (QListWidgetItem* it : doomed) {
+            const QString p = it->data(Qt::UserRole).toString();
+            if (m_annDirty.contains(p)
+                && (!m_annByPath.value(p).empty() || !m_xformByPath.value(p).isEmpty()))
+                dirtyKeys << p;
+        }
+        if (!dirtyKeys.isEmpty()) {
+            QMessageBox box(QMessageBox::Warning, tr("Unsaved annotations"),
+                tr("%n image(s) being closed have unsaved annotations.",
+                   nullptr, int(dirtyKeys.size())),
+                QMessageBox::NoButton, this);
+            QPushButton* save = box.addButton(tr("Save Annotations"),
+                                              QMessageBox::AcceptRole);
+            QPushButton* ignore = box.addButton(tr("Ignore and Close"),
+                                                QMessageBox::DestructiveRole);
+            box.addButton(QMessageBox::Cancel);
+            box.setDefaultButton(save);
+            box.exec();
+            if (box.clickedButton() == save) {
+                int unsavable = 0;
+                for (const QString& k : dirtyKeys) {
+                    const QString sc = annotationSidecar(k);
+                    if (sc.isEmpty() || !writeAnnotationsFileFor(k, sc))
+                        ++unsavable;             // mem:// or write failure
+                }
+                if (unsavable > 0)
+                    statusBar()->showMessage(
+                        tr("%n image(s) had no sidecar to save to (in-memory or write failure)",
+                           nullptr, unsavable), 5000);
+            } else if (box.clickedButton() != ignore) {
+                return;                          // Cancel: nothing closes
+            }
+        }
+    }
     // Close = free everything the app holds for the path: per-image side
     // tables, in-memory synthetics, and any decoded copy still stashed in a
-    // non-active view cell (its pixmap included). Unsaved annotation edits
-    // are discarded with the image (counted for the status message so the
-    // quit-time warning never blames a phantom row).
+    // non-active view cell (its pixmap included). Remaining unsaved
+    // annotation edits are discarded with the image (counted for the status
+    // message so the quit-time warning never blames a phantom row).
     QSet<QString> removedKeys;
     int lostAnn = 0;
     // Block currentRowChanged while rows go: Qt re-picks a current row after
@@ -4119,32 +4168,40 @@ static AdjustParams adjustFromJson(const QJsonObject& o) {
     return a;
 }
 
-bool MainWindow::writeAnnotationsFile(const QString& path) {
-    const auto& anns = m_annByPath.value(m_currentPath);
+bool MainWindow::writeAnnotationsFileFor(const QString& key, const QString& path) {
+    const auto& anns = m_annByPath.value(key);
     QFile f(path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, tr("Save failed"), tr("Could not write %1").arg(path));
-        return false;
-    }
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
     QJsonDocument doc = AnnotationLayer::toJson(anns);
     QJsonObject root = doc.object();
     // Record the image orientation these annotations refer to, so a fresh
     // session can rotate/flip the reloaded image back into agreement.
-    const QStringList ops = m_xformByPath.value(m_currentPath);
+    const QStringList ops = m_xformByPath.value(key);
     if (!ops.isEmpty()) {
         QJsonArray arr;
         for (const QString& o : ops) arr.append(o);
         root["orientation"] = arr;
     }
     // Display adjustments are per-image state too — carried in the sidecar and
-    // restored on the next session's first visit.
-    if (!m_model.adjust().identity())
-        root["adjustments"] = adjustToJson(m_model.adjust());
+    // restored on the next session's first visit. The current image's live in
+    // the model; any other listed image's in its remembered stretch state.
+    const AdjustParams adj = (key == m_currentPath) ? m_model.adjust()
+                                                    : m_stfByPath.value(key).adj;
+    if (!adj.identity())
+        root["adjustments"] = adjustToJson(adj);
     doc.setObject(root);
     f.write(doc.toJson(QJsonDocument::Indented));
-    m_annDirty.remove(m_currentPath);
+    m_annDirty.remove(key);
+    return true;
+}
+
+bool MainWindow::writeAnnotationsFile(const QString& path) {
+    if (!writeAnnotationsFileFor(m_currentPath, path)) {
+        QMessageBox::warning(this, tr("Save failed"), tr("Could not write %1").arg(path));
+        return false;
+    }
     statusBar()->showMessage(tr("Saved %1 annotation(s)%2 to %3")
-                                 .arg(anns.size())
+                                 .arg(m_annByPath.value(m_currentPath).size())
                                  .arg(m_model.adjust().identity() ? QString() : tr(" + adjustments"))
                                  .arg(QFileInfo(path).fileName()), 3000);
     return true;
