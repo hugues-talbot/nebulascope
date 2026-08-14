@@ -145,6 +145,8 @@ public:
     static constexpr int kKeepDebayer = INT_MIN;
     void applyStretchState(const StretchModel::State& st);   // undo plumbing
     void applyDebayerChange(const QString& path, int mode, int method);
+    void applyDebayerToAll();                 // copy the shown image's mode to every row
+    QSet<QString> m_cfaHinted;                // mosaic sniff shown (once per path)
     void requestDebayerChange(int newMode, int newMethod);
     void doTransform(Xform x);                 // apply rotate/flip without pushing undo
     void doRotateArbitrary(double angleDeg);   // resampling rotation, no undo push

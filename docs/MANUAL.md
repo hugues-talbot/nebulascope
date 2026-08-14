@@ -62,6 +62,20 @@ Debayering happens at load — the status bar notes the decision
 (e.g. *debayered RGGB, RCD*), the Info panel records it, and auto-reload
 (§7) and per-image stretch memory compose with it naturally.
 
+**Mosaics with no metadata at all** — planetary/solar capture tools
+(FireCapture, SharpCap, …) can dump the raw sensor mosaic into plain
+grayscale PNG or TIFF, where no header will ever announce a Bayer pattern.
+NebulaScope sniffs the pixels: a mosaic betrays itself statistically
+(immediate neighbours differ far more than same-colour neighbours two
+pixels apart, and the two green sites agree on one diagonal of the 2×2
+cell). When a metadata-less mono image looks like an undecoded mosaic, the
+status bar says so and names the two candidate patterns that fit the
+detected green diagonal — red versus blue can't be told apart without
+knowing the scene, so pick the one that looks right (the wrong twin shows
+a blue Sun). Since one capture stream comes from one sensor, **Image ▸
+Debayer ▸ Apply Choice to All in List** then stamps your forced pattern
+onto every listed frame in one action (scripts: `debayer bggr rcd all`).
+
 ![Raw Bayer mosaic beside its RCD demosaic, 1×2 split](screenshots/debayer.png)
 
 ![Image list with a multi-HDU FITS entry expanded](screenshots/image-list-hdu.png)
@@ -456,8 +470,9 @@ nebulascope [options] [files...]
                          action <name> (trigger a menu action by its
                          shortcut-registry name, e.g. toggle_grid; avoid
                          modal dialogs — they block the script),
-                         debayer auto|off|<pattern> [method] (OSC demosaic
-                         mode for the displayed frame),
+                         debayer auto|off|<pattern> [method] [all] (OSC
+                         demosaic mode for the displayed frame; `all`
+                         stamps it onto every list row),
                          tag on|off|toggle, tagsort, tagremove, tagmove
                          (blink-culling: keep-checks and acting on them),
                          transport <row> [strength%] (colour transport onto

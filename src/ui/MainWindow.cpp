@@ -1227,6 +1227,11 @@ void MainWindow::buildMenusAndToolbar() {
         acts[kMeth[i].key] = a;
     }
     m_debayerMethodActs[qBound(0, Preferences::get().debayerMethod, 2)]->setChecked(true);
+    deb->addSeparator();
+    // One capture stream = one sensor: force the pattern once, stamp it on
+    // every listed frame (same idiom as the histogram's Apply to All).
+    acts["debayer_apply_all"] = deb->addAction(tr("Apply Choice to All &in List"),
+                                               this, &MainWindow::applyDebayerToAll);
     image->addSeparator();
     acts["reset_orientation"] = image->addAction(tr("Reset &Orientation"), this, &MainWindow::resetOrientation);
     image->addSeparator();
@@ -1973,6 +1978,48 @@ void MainWindow::applyDebayerChange(const QString& path, int mode, int method) {
     }
     syncDebayerMenu();
     if (path == m_currentPath) displayPath(m_currentPath);
+}
+
+// Image ▸ Debayer ▸ Apply Choice to All in List: stamp the shown image's
+// mode onto every listed frame (one capture stream = one sensor pattern).
+// Not undoable — like the histogram's Apply to All, it's a bulk utility; the
+// per-image radio (or another apply-all) reverses it.
+void MainWindow::applyDebayerToAll() {
+    if (m_currentPath.isEmpty()) return;
+    const int mode = m_debayerByPath.value(m_currentPath, 0);
+    int n = 0;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        const QString key = m_fileList->item(i)->data(Qt::UserRole).toString();
+        if (key.isEmpty() || key == m_currentPath) continue;
+        if (mode == 0) m_debayerByPath.remove(key);            // back to auto
+        else           m_debayerByPath[key] = mode;
+        ++n;
+    }
+    // Non-active cells showing a listed mono frame re-decode through the new
+    // mode (same idiom as the auto-reload refresh).
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        if (c == m_grid->activeCell() || c->path.isEmpty()) continue;
+        int hduReq = -1;
+        const QString base = splitHduKey(c->path, hduReq);
+        if (base.startsWith(QLatin1String("mem://"))) continue;
+        io::LoadOptions lopts;
+        lopts.fitsHdu = hduReq;
+        io::LoadResult res = io::loadImage(base, lopts);
+        if (!res.ok) continue;
+        c->image = applyDebayer(std::move(res.image), res.header, c->path);
+        c->header = std::move(res.header);
+        c->stats = computeStats(c->image);
+        c->view()->setSource(&c->image);
+        StretchModel cellModel;
+        cellModel.setChannelCount(c->image.channels());
+        if (c->hasStretch) cellModel.setState(c->stretch);
+        c->view()->setDisplayImage(DisplayRenderer::render(c->image, cellModel));
+    }
+    const QString what = (mode == 0)  ? tr("auto")
+                       : (mode == -1) ? tr("off")
+                       : QLatin1String(bayerPatternName(static_cast<BayerPattern>(mode)));
+    statusBar()->showMessage(tr("Debayer “%1” applied to %n other list image(s)",
+                                nullptr, n).arg(what), 4000);
 }
 
 void MainWindow::requestDebayerChange(int newMode, int newMethod) {
@@ -3018,6 +3065,27 @@ void MainWindow::displayPath(const QString& path) {
     m_header = std::move(hdr);
     updateIccTransform();
     syncDebayerMenu();
+
+    // Metadata-less mosaic sniff: planetary/solar tools dump raw CFA frames
+    // into plain grayscale PNG/TIFF, so no header will ever say BAYERPAT.
+    // If the pixels carry the 2×2 signature, say so once per image — naming
+    // the two patterns that fit the detected green diagonal (R vs B needs a
+    // colour prior only the user has: the wrong twin shows a blue Sun).
+    if (m_image.channels() == 1 && m_debayerByPath.value(path, 0) == 0 &&
+        bayerPatternFromHeader(m_header) == BayerPattern::None &&
+        !m_cfaHinted.contains(path)) {
+        m_cfaHinted.insert(path);
+        const CfaSniff sniff = sniffCfaMosaic(m_image);
+        if (sniff.likely) {
+            const QString msg = tr("Looks like an undecoded colour mosaic — try "
+                                   "Image ▸ Debayer ▸ %1 or %2")
+                .arg(QLatin1String(bayerPatternName(sniff.candidateA)),
+                     QLatin1String(bayerPatternName(sniff.candidateB)));
+            QTimer::singleShot(0, this, [this, msg] {
+                statusBar()->showMessage(msg, 10000);
+            });
+        }
+    }
 
     // Astrometric solution (FITS WCS keywords; PixInsight embeds the same
     // keywords in XISF). Enables the RA/Dec hover readout when present.

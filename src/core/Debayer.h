@@ -42,4 +42,23 @@ BayerPattern bayerPatternFromHeader(const ImageHeader& h);
 // or the pattern is None.
 ImageData debayer(const ImageData& cfa, BayerPattern p, DebayerMethod m);
 
+// Statistical mosaic sniff for 1-channel images with NO CFA metadata:
+// planetary/solar capture tools (FireCapture, SharpCap, …) can dump the raw
+// sensor mosaic into plain grayscale PNG/TIFF, which no header will ever
+// reveal. A mosaic betrays itself twice over:
+//   * immediate neighbours differ far more than same-parity neighbours two
+//     pixels apart (cross-colour vs same-colour differences), and
+//   * the two green sites — which sit on one diagonal of the 2×2 cell and
+//     see the SAME filter — agree in their bright-pixel means, while the
+//     R/B diagonal disagrees.
+// The first test decides `likely`; the second narrows the pattern to the
+// two candidates that share the detected green diagonal (R vs B cannot be
+// told apart without a colour prior — that choice stays with the user).
+struct CfaSniff {
+    bool likely = false;
+    BayerPattern candidateA = BayerPattern::None;   // e.g. RGGB
+    BayerPattern candidateB = BayerPattern::None;   // its R/B mirror, BGGR
+};
+CfaSniff sniffCfaMosaic(const ImageData& img);
+
 } // namespace astro

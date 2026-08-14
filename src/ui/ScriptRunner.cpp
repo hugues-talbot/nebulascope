@@ -103,10 +103,12 @@ const CommandRef kCommands[] = {
   {"action",     {"action <name>",
     "Trigger any menu action by its shortcut-registry name (e.g. toggle_grid).\n"
     "Avoid actions that open modal dialogs - they block the script."}},
-  {"debayer",    {"debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel]",
+  {"debayer",    {"debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel] [all]",
     "Demosaic mode for the displayed OSC frame: auto detects BAYERPAT from\n"
     "the header, a pattern name forces it, off shows the raw mosaic. The\n"
-    "optional second argument sets the global algorithm (persisted)."}},
+    "optional second argument sets the global algorithm (persisted); a\n"
+    "trailing `all` stamps the mode onto every list row (for metadata-less\n"
+    "capture streams, e.g. raw-mosaic PNG dumps)."}},
   {"transport",  {"transport <row> [strength%] [stretch [colour]]",
     "Colour-transport the displayed image toward list row <row> (1-based) as\n"
     "reference (sliced optimal transport, as-displayed data); the result\n"
@@ -417,11 +419,17 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         return true;
     }
     if (cmd == QLatin1String("debayer")) {
-        // debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel]
+        // debayer auto|off|rggb|bggr|grbg|gbrg [rcd|bilinear|superpixel] [all]
         if (!needArgs(1)) return false;
         if (m_w->m_currentPath.isEmpty()) { err = "no image shown"; return false; }
+        int argc = t.size();
+        bool applyAll = false;
+        if (argc > 2 && t[argc - 1].toLower() == QLatin1String("all")) {
+            applyAll = true;
+            --argc;
+        }
         int method = MainWindow::kKeepDebayer;
-        if (t.size() > 2) {
+        if (argc > 2) {
             const QString meth = t[2].toLower();
             method = meth == QLatin1String("superpixel") ? 0
                    : meth == QLatin1String("bilinear")   ? 1
@@ -438,6 +446,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
             mode = int(p);
         }
         m_w->requestDebayerChange(mode, method);           // undoable
+        if (applyAll) m_w->applyDebayerToAll();
         return true;
     }
     if (cmd == QLatin1String("transport")) {

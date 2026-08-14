@@ -5,7 +5,9 @@
 #include "core/Debayer.h"
 #include "core/ImageHeader.h"
 #include "io/ImageReader.h"
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 using namespace astro;
 
@@ -128,6 +130,53 @@ NS_TEST(debayer_real_asiair_fixture) {
     }
     NS_CHECK(mean[1] / mean[0] > 0.2 && mean[1] / mean[0] < 5.0);
     NS_CHECK(mean[1] / mean[2] > 0.2 && mean[1] / mean[2] < 5.0);
+}
+
+NS_TEST(cfa_sniff_detects_mosaic_and_green_diagonal) {
+    // Colourful smooth scene → mosaic: likely, with the right candidate pair.
+    const int W = 64, H = 64;
+    ImageData rgb(W, H, 3, SampleFormat::Float32, ColorSpace::RGB);
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            const std::size_t o = std::size_t(y) * W + x;
+            rgb.plane<float>(0)[o] = 0.70f + 0.20f * float(x) / W;
+            rgb.plane<float>(1)[o] = 0.45f;
+            rgb.plane<float>(2)[o] = 0.20f + 0.10f * float(y) / H;
+        }
+    CfaSniff s = sniffCfaMosaic(mosaic(rgb, BayerPattern::RGGB));
+    NS_CHECK(s.likely);
+    NS_CHECK(s.candidateA == BayerPattern::RGGB && s.candidateB == BayerPattern::BGGR);
+    s = sniffCfaMosaic(mosaic(rgb, BayerPattern::BGGR));       // same diagonal
+    NS_CHECK(s.likely && s.candidateA == BayerPattern::RGGB);
+    s = sniffCfaMosaic(mosaic(rgb, BayerPattern::GRBG));       // main diagonal
+    NS_CHECK(s.likely);
+    NS_CHECK(s.candidateA == BayerPattern::GRBG && s.candidateB == BayerPattern::GBRG);
+}
+
+NS_TEST(cfa_sniff_rejects_real_mono) {
+    const int W = 64, H = 64;
+    // Smooth ramp: 2-pixel steps dominate 1-pixel steps — not a mosaic.
+    ImageData ramp(W, H, 1, SampleFormat::Float32, ColorSpace::Gray);
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x)
+            ramp.plane<float>(0)[std::size_t(y) * W + x] =
+                float(x + y) / (W + H);
+    NS_CHECK(!sniffCfaMosaic(ramp).likely);
+    // White noise (deterministic LCG): 1- and 2-pixel steps are equal in
+    // distribution — well under the 1.6× mosaic threshold.
+    ImageData noise(W, H, 1, SampleFormat::Float32, ColorSpace::Gray);
+    std::uint32_t st = 12345u;
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            st = st * 1664525u + 1013904223u;
+            noise.plane<float>(0)[std::size_t(y) * W + x] =
+                float(st >> 8) / float(1u << 24);
+        }
+    NS_CHECK(!sniffCfaMosaic(noise).likely);
+    // Flat mono field: nothing varies at all — not a mosaic either.
+    ImageData flat(W, H, 1, SampleFormat::Float32, ColorSpace::Gray);
+    std::fill_n(flat.plane<float>(0), std::size_t(W) * H, 0.5f);
+    NS_CHECK(!sniffCfaMosaic(flat).likely);
 }
 
 int main() { return nstest::runAll(); }

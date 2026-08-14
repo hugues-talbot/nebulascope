@@ -74,6 +74,22 @@ dématriçage a lieu au chargement — la barre d'état note la décision (p. ex
 automatique (§7) comme la mémoire d'étirement par image s'y composent
 naturellement.
 
+**Mosaïques sans aucune métadonnée** — les outils de capture planétaire et
+solaire (FireCapture, SharpCap, …) peuvent déverser la mosaïque brute du
+capteur dans un simple PNG ou TIFF en niveaux de gris, où aucun en-tête
+n'annoncera jamais de motif de Bayer. NebulaScope renifle les pixels : une
+mosaïque se trahit statistiquement (les voisins immédiats diffèrent bien
+plus que les voisins de même couleur à deux pixels, et les deux sites verts
+s'accordent sur une diagonale de la cellule 2×2). Quand une image mono sans
+métadonnées ressemble à une mosaïque non décodée, la barre d'état le
+signale et nomme les deux motifs candidats compatibles avec la diagonale
+verte détectée — rouge et bleu ne se distinguent pas sans connaître la
+scène : choisissez celui qui rend bien (le mauvais jumeau donne un Soleil
+bleu). Comme un flux de capture provient d'un seul capteur, **Image ▸
+Dématriçage ▸ Appliquer le choix à toute la liste** applique ensuite votre
+motif forcé à toutes les images listées en une action (scripts :
+`debayer bggr rcd all`).
+
 ![Mosaïque de Bayer brute à côté de son dématriçage RCD, division 1×2](../screenshots/debayer.png)
 
 ![Liste d'images avec une entrée FITS multi-HDU dépliée](../screenshots/image-list-hdu.png)

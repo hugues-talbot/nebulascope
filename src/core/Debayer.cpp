@@ -3,6 +3,7 @@
 #include <QString>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 namespace astro {
@@ -215,6 +216,77 @@ ImageData debayer(const ImageData& cfa, BayerPattern p, DebayerMethod m) {
         case DebayerMethod::RCD:        return rcd(cfa, pm);
     }
     return ImageData();
+}
+
+CfaSniff sniffCfaMosaic(const ImageData& img) {
+    CfaSniff s;
+    if (!img.isValid() || img.channels() != 1 ||
+        img.format() != SampleFormat::Float32) return s;
+    const int w = img.width(), h = img.height();
+    if (w < 16 || h < 16) return s;
+    const float* p = img.plane<float>(0);
+
+    // Cross-colour vs same-colour neighbour differences. On a mosaic the
+    // 1-pixel step jumps between filters (large), the 2-pixel step stays on
+    // one filter (small ≈ scene gradient); on a real mono image the 2-pixel
+    // step is the LARGER of the two. Row-subsample big frames: statistics,
+    // not coverage.
+    const int ystep = std::max(1, h / 512);
+    double d1h = 0, d2h = 0, d1v = 0, d2v = 0;
+    std::int64_t n = 0;
+    for (int y = 1; y + 2 < h; y += ystep) {
+        const float* r0 = p + std::size_t(y) * w;
+        const float* r1 = r0 + w;
+        const float* r2 = r1 + w;
+        for (int x = 0; x + 2 < w; ++x) {
+            d1h += std::abs(double(r0[x]) - r0[x + 1]);
+            d2h += std::abs(double(r0[x]) - r0[x + 2]);
+            d1v += std::abs(double(r0[x]) - r1[x]);
+            d2v += std::abs(double(r0[x]) - r2[x]);
+            ++n;
+        }
+    }
+    if (n == 0) return s;
+    // 1.6: white noise gives ratio 1, smooth scenes < 1; a mosaic with any
+    // colour separation lands well above (the eclipse frame scores ≈ 3).
+    // Strict > keeps a perfectly flat colour scene (d2 = 0, d1 > 0) likely
+    // while rejecting a perfectly flat mono one (d1 = d2 = 0).
+    if (!(d1h > 1.6 * d2h) || !(d1v > 1.6 * d2v)) return s;
+
+    // Which diagonal holds the greens? Same-filter sites agree in their
+    // bright-pixel means; the R/B pair differs by the scene's colour.
+    double m00 = 0, m01 = 0, m10 = 0, m11 = 0, mean = 0;
+    std::int64_t c00 = 0, c01 = 0, c10 = 0, c11 = 0;
+    for (int y = 0; y < h; y += ystep) {
+        const float* r = p + std::size_t(y) * w;
+        for (int x = 0; x < w; ++x) mean += r[x];
+    }
+    mean /= double(std::max<std::int64_t>(1, (std::int64_t(h / ystep) + 1) * w));
+    for (int y = 0; y + 1 < h; y += 2 * ystep) {
+        const float* r0 = p + std::size_t(y) * w;
+        const float* r1 = r0 + w;
+        for (int x = 0; x + 1 < w; x += 2) {
+            // Use only above-mean 2×2 cells: background noise dilutes the
+            // per-filter separation.
+            if (r0[x] < mean && r0[x+1] < mean && r1[x] < mean && r1[x+1] < mean)
+                continue;
+            m00 += r0[x];     ++c00;
+            m01 += r0[x + 1]; ++c01;
+            m10 += r1[x];     ++c10;
+            m11 += r1[x + 1]; ++c11;
+        }
+    }
+    if (!c00 || !c01 || !c10 || !c11) return s;
+    m00 /= double(c00); m01 /= double(c01); m10 /= double(c10); m11 /= double(c11);
+    s.likely = true;
+    if (std::abs(m01 - m10) <= std::abs(m00 - m11)) {
+        s.candidateA = BayerPattern::RGGB;   // greens on the anti-diagonal
+        s.candidateB = BayerPattern::BGGR;
+    } else {
+        s.candidateA = BayerPattern::GRBG;   // greens on the main diagonal
+        s.candidateB = BayerPattern::GBRG;
+    }
+    return s;
 }
 
 } // namespace astro
