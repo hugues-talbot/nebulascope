@@ -96,6 +96,16 @@ that one the *what*.)
   edit the display.
 - **256→4096-level LUTs** killed visible banding; dithered 8-bit output
   handles the rest.
+- **Save dialogs: native on macOS via NSSavePanel accessory views.** Qt can
+  host inline option rows only in its own non-native dialog — which is why
+  the rich save dialogs were Qt-drawn at first. The platform's intended
+  design for save-with-options is the accessory view (cf. Preview's export
+  panel): MacSavePanel.mm reproduces the three behaviours that forced
+  non-native (inline format-reactive options, every image type clickable,
+  base-name-only adoption) with native controls, and enforces the
+  chosen-format suffix in the delegate at OK time (no "name.xisf.png").
+  Other platforms keep the Qt dialog: Windows' IFileDialogCustomize is not
+  exposed by Qt.
 - **Batch row removal runs signal-blocked, one display fix-up at the end.**
   Removing list rows one by one has a hidden cascade: whenever the row
   being deleted is the *current* one, Qt promotes its neighbour to current,

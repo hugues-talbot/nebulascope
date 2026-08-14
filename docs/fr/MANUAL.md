@@ -591,6 +591,13 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
   session (§7).
 - Annotations et ajustements s'exportent via leurs fichiers annexes JSON
   (§9).
+- **Sous macOS, les deux boîtes d'enregistrement riches sont natives**
+  (`NSSavePanel`) : format, profondeur/compression et qualité occupent une
+  rangée d'accessoires native sous le navigateur de fichiers — favoris de
+  la barre latérale, emplacements iCloud et comportements des dossiers
+  compris. Cliquer une image listée adopte toujours son nom de base, et
+  l'extension enregistrée suit toujours le format choisi. Les autres
+  plateformes conservent la boîte Qt équivalente.
 
 ## 15. Disposition, préférences et personnalisation
 

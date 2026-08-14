@@ -534,6 +534,12 @@ name reassembles exactly, for overwriting or re-saving.
   region.
 - **File ▸ Export / Import Image List…** — session round-trip (§7).
 - Annotations and adjustments export via their JSON sidecars (§9).
+- **On macOS the two rich save dialogs are native** (`NSSavePanel`): the
+  format, depth/compression and quality controls sit in a native accessory
+  row under the file browser — sidebar favourites, iCloud locations and
+  folder behaviours included. Clicking any listed image still adopts its
+  base name, and the saved extension always follows the chosen format.
+  Other platforms keep the equivalent Qt dialog.
 
 ## 15. Layout, preferences & customization
 

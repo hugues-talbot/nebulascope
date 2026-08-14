@@ -70,9 +70,10 @@ add_executable(nebulascope
 )
 
 if(APPLE)
-    # Window colour-space tagging (sRGB contents on wide-gamut panels).
+    # Window colour-space tagging (sRGB contents on wide-gamut panels) and
+    # the native save panel with accessory-view options.
     enable_language(OBJCXX)
-    target_sources(nebulascope PRIVATE app/MacWindowColor.mm)
+    target_sources(nebulascope PRIVATE app/MacWindowColor.mm app/MacSavePanel.mm)
     target_link_libraries(nebulascope PRIVATE "-framework AppKit")
     # Build NebulaScope.app with a proper Info.plist (+ dock icon if present).
     if(EXISTS ${APP_ICON_MACOS})

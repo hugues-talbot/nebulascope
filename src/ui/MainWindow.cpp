@@ -13,6 +13,9 @@
 #include "io/FitsReader.h"
 #include "app/AppInfo.h"
 #include "app/BuildInfo.h"
+#ifdef Q_OS_MACOS
+#include "app/MacSavePanel.h"
+#endif
 #include "io/ImageWriter.h"
 #include "core/Debayer.h"
 #include "core/ImageStats.h"
@@ -3377,6 +3380,47 @@ QString normalizeSuffix(const QString& path, const QStringList& writable,
 
 QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
                                           bool* want16, int* quality) {
+#ifdef Q_OS_MACOS
+    // Native NSSavePanel with the same options as an accessory view; the Qt
+    // dialog below stays as the non-cocoa (and offscreen) fallback.
+    if (mac::savePanelAvailable()) {
+        mac::SavePanelSpec spec;
+        spec.title       = title;
+        spec.directory   = openDialogDir();
+        spec.formatLabel = tr("Format:");
+        spec.formats = {
+            { QStringLiteral("PNG"),  { QStringLiteral("png") },  offer16, false },
+            { QStringLiteral("JPEG"), { QStringLiteral("jpg"),
+                                        QStringLiteral("jpeg") }, false,   true  },
+            { QStringLiteral("TIFF"), { QStringLiteral("tiff"),
+                                        QStringLiteral("tif") },  offer16, false },
+            { QStringLiteral("WebP"), { QStringLiteral("webp") }, false,   true  },
+        };
+        spec.formatIndex = 0;
+        spec.popupLabel  = tr("Pixel depth:");
+        spec.popupItems  = { tr("8-bit per channel"), tr("16-bit per channel") };
+        spec.popupIndex  = s_expDepth;
+        spec.sliderLabel = tr("Quality (1–100):");
+        spec.sliderValue = s_expQuality;
+        for (const QString& g : kAdoptableImages)
+            spec.clickableSuffixes << g.mid(2);              // "*.fits" -> "fits"
+        const mac::SavePanelResult r = mac::runSavePanel(spec);
+        if (!r.accepted || r.path.isEmpty()) return {};
+        static const QStringList kW{ "png", "jpg", "jpeg", "tiff", "tif", "webp" };
+        const QString path = normalizeSuffix(r.path, kW,
+            spec.formats[qBound(0, r.formatIndex, int(spec.formats.size()) - 1)]
+                .suffixes.first());
+        const QString ext = QFileInfo(path).suffix().toLower();
+        s_expDepth   = r.popupIndex;
+        s_expQuality = r.sliderValue;
+        *want16 = offer16 && s_expDepth == 1 &&
+                  (ext == QLatin1String("png") || ext == QLatin1String("tiff") ||
+                   ext == QLatin1String("tif"));
+        *quality = (ext == QLatin1String("jpg") || ext == QLatin1String("jpeg") ||
+                    ext == QLatin1String("webp")) ? s_expQuality : -1;
+        return path;
+    }
+#endif
     QFileDialog dlg(this, title, openDialogDir(),
         tr("PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)"));
     dlg.setAcceptMode(QFileDialog::AcceptSave);
@@ -3431,6 +3475,42 @@ QString MainWindow::exportImageDialogPath(const QString& title, bool offer16,
 }
 
 QString MainWindow::dataSaveDialogPath(const QString& title, io::SaveOptions& opts) {
+    auto tlh = [](const char* s) {
+        return QCoreApplication::translate("astro::MainWindowHelpers", s);
+    };
+#ifdef Q_OS_MACOS
+    if (mac::savePanelAvailable()) {
+        mac::SavePanelSpec spec;
+        spec.title       = title;
+        spec.directory   = openDialogDir();
+        spec.formatLabel = tr("Format:");
+        spec.formats = {
+            { QStringLiteral("FITS"), { QStringLiteral("fits"), QStringLiteral("fit"),
+                                        QStringLiteral("fts") },  false, false },
+            { QStringLiteral("XISF"), { QStringLiteral("xisf") }, true,  false },
+            { tr("TIFF 16-bit"),      { QStringLiteral("tiff"),
+                                        QStringLiteral("tif") },  false, false },
+        };
+        spec.formatIndex = 0;
+        spec.popupLabel  = tlh("Data-block compression:");
+        spec.popupItems  = { tlh("Zstd (smallest)"), tlh("Zlib (widest compatibility)"),
+                             tlh("Uncompressed") };
+        spec.popupIndex  = s_xisfComp;
+        for (const QString& g : kAdoptableImages)
+            spec.clickableSuffixes << g.mid(2);
+        const mac::SavePanelResult r = mac::runSavePanel(spec);
+        if (!r.accepted || r.path.isEmpty()) return {};
+        static const QStringList kW{ "fits", "fit", "fts", "xisf", "tiff", "tif" };
+        const QString path = normalizeSuffix(r.path, kW,
+            spec.formats[qBound(0, r.formatIndex, int(spec.formats.size()) - 1)]
+                .suffixes.first());
+        s_xisfComp = r.popupIndex;
+        using C = io::SaveOptions::Compression;
+        opts.xisfCompression = s_xisfComp == 0 ? C::Zstd
+                             : s_xisfComp == 1 ? C::Zlib : C::None;
+        return path;
+    }
+#endif
     QFileDialog dlg(this, title, openDialogDir(),
         tr("FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16-bit (*.tiff *.tif)"));
     dlg.setAcceptMode(QFileDialog::AcceptSave);
