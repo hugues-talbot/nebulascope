@@ -2,6 +2,48 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.94 — 2026-08-14
+
+v0.94 — selection-aware culling, instant batch close, metadata-less CFA, Stellarium
+
+Highlights:
+
+- **Selection-aware image list** — the culling keep-checks understand
+  multi-selection: **B** group-toggles the highlighted rows (checks all;
+  unchecks only when all are already checked), clicking a checkbox inside
+  a multi-row selection retags the whole selection, and **C** closes every
+  highlighted image. The context-menu entry is now **Close & Remove from
+  List**, and it means it: decoded pixels, per-view copies, and all
+  per-image state are freed on close. In-app results (Combine, transport,
+  crop) carry the keep-check too.
+- **Instant batch close** — closing hundreds of blinked frames used to
+  freeze the app for tens of seconds: each removed row triggered a full
+  decode of its neighbour. Row removals now run signal-blocked with a
+  single display fix-up, so clearing a 400-sub session is instantaneous.
+- **Annotation-safe closing** — when closed images carry unsaved
+  annotation edits, one prompt covers the whole batch: **Save
+  Annotations** writes every affected image's default sidecar, **Ignore
+  and Close** discards, **Cancel** aborts untouched.
+- **Metadata-less CFA (mosaic sniffer)** — planetary/solar capture tools
+  can dump raw Bayer mosaics into plain grayscale PNG/TIFF with no
+  pattern keyword anywhere. NebulaScope now detects the mosaic
+  statistically on open and names the two candidate patterns in the
+  status bar; **Image ▸ Debayer ▸ Apply Choice to All in List** (script:
+  `debayer bggr rcd all`) stamps a forced pattern onto a whole capture
+  stream. Born from — and illustrated in the manual by — the total solar
+  eclipse of August 12, 2026.
+- **Point Stellarium Here** — the sky context menu can point a running
+  Stellarium (Remote Control plugin) at the clicked J2000 coordinates,
+  field of view matched: where Aladin/SIMBAD answer "what is this",
+  Stellarium answers "where is it in tonight's sky".
+- **Clean canvas** — **H** now also hides the active-cell border and link
+  buttons; with fullscreen (⌥F) the display is pure image, e.g. to
+  preview a wallpaper.
+
+Also: HISTORY.md, a development chronicle of how this program came to be;
+design notes on the removal cascade in DECISIONS; French translations for
+everything above.
+
 ## v0.93 — 2026-08-06
 
 v0.93 — PixInsight display interop, stretch history, DS9 palettes
@@ -9,7 +51,10 @@ v0.93 — PixInsight display interop, stretch history, DS9 palettes
 Highlights:
 
 - **PixInsight display interop** — a PI-saved XISF now opens LOOKING as
-  PI showed it: the embedded display function (STF) applies on first
+  PI showed it, with far-out STF white points rebased onto the data
+  range in closed form (histogram controls stay fully usable, SPCC
+  channel balance preserved exactly; derivation in the book's new
+  Mobius-rebase appendix): the embedded display function (STF) applies on first
   view, embedded ICC profiles are honoured, and on macOS the window is
   colour-managed for wide-gamut (P3) panels. The transfer LUT adapts
   its resolution to the occupied window and the histogram's curve
@@ -31,8 +76,16 @@ Highlights:
 - **Build provenance** — the About headline and --version carry the
   exact git build id, so test binaries identify their commit.
 
-Fixes: the panel-resize cursor no longer sticks over overlay panel
-contents; the script cmap command actually applies the selected map.
+An imported UNLINKED display function (the channel-equalizing STF that
+visually cancels an SPCC calibration) is flagged in the status bar with
+the remedy: Shift+U preserves calibrated colour. The import pipeline is
+regression-tested end to end via synthetic XISF fixtures and the new
+`assert stretch` script assertion.
+
+Fixes: linked histogram drags are rigid (per-channel clamps no longer
+ratchet the channels' offsets apart on repeated drags); the
+panel-resize cursor no longer sticks over overlay panel contents; the
+script cmap command actually applies the selected map.
 
 ## v0.92 — 2026-08-04
 
