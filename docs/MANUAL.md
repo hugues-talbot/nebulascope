@@ -76,6 +76,15 @@ a blue Sun). Since one capture stream comes from one sensor, **Image ▸
 Debayer ▸ Apply Choice to All in List** then stamps your forced pattern
 onto every listed frame in one action (scripts: `debayer bggr rcd all`).
 
+![Totality, August 12 2026: prominences at the lunar limb and a swift crossing the corona](screenshots/eclipse-totality.png)
+
+*The capture session this feature was built for: the total solar eclipse of
+August 12 2026, observed from Spain. The partial phases arrived as
+metadata-less grayscale PNGs — raw BGGR mosaics that the sniffer flagged on
+open — while totality itself was captured as FITS with `BAYERPAT`, decoding
+automatically. Pink prominences ring the lunar limb; above one of them, a
+swift crosses the inner corona.*
+
 ![Raw Bayer mosaic beside its RCD demosaic, 1×2 split](screenshots/debayer.png)
 
 ![Image list with a multi-HDU FITS entry expanded](screenshots/image-list-hdu.png)

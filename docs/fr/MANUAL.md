@@ -90,6 +90,16 @@ Dématriçage ▸ Appliquer le choix à toute la liste** applique ensuite votre
 motif forcé à toutes les images listées en une action (scripts :
 `debayer bggr rcd all`).
 
+![Totalité, 12 août 2026 : protubérances au limbe lunaire et un martinet traversant la couronne](../screenshots/eclipse-totality.png)
+
+*La session de capture pour laquelle cette fonction est née : l'éclipse
+totale de Soleil du 12 août 2026, observée depuis l'Espagne. Les phases
+partielles sont arrivées en PNG niveaux de gris sans métadonnées — des
+mosaïques BGGR brutes que le renifleur a signalées à l'ouverture — tandis
+que la totalité, capturée en FITS avec `BAYERPAT`, s'est décodée
+automatiquement. Des protubérances roses bordent le limbe lunaire ;
+au-dessus de l'une d'elles, un martinet traverse la couronne interne.*
+
 ![Mosaïque de Bayer brute à côté de son dématriçage RCD, division 1×2](../screenshots/debayer.png)
 
 ![Liste d'images avec une entrée FITS multi-HDU dépliée](../screenshots/image-list-hdu.png)
