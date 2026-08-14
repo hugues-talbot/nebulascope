@@ -400,6 +400,13 @@ div.csl-indent {
 <p><strong>Mosaïques sans aucune métadonnée</strong> — les outils de capture planétaire et solaire (FireCapture, SharpCap, …) peuvent déverser la mosaïque brute du capteur dans un simple PNG ou TIFF en niveaux de gris, où aucun en-tête n’annoncera jamais de motif de Bayer. NebulaScope renifle les pixels : une mosaïque se trahit statistiquement (les voisins immédiats diffèrent bien plus que les voisins de même couleur à deux pixels, et les deux sites verts s’accordent sur une diagonale de la cellule 2×2). Quand une image mono sans métadonnées ressemble à une mosaïque non décodée, la barre d’état le signale et nomme les deux motifs candidats compatibles avec la diagonale verte détectée — rouge et bleu ne se distinguent pas sans connaître la scène : choisissez celui qui rend bien (le mauvais jumeau donne un Soleil bleu). Comme un flux de capture provient d’un seul capteur, <strong>Image ▸ Dématriçage ▸ Appliquer le choix à toute la liste</strong> applique ensuite votre motif forcé à toutes les images listées en une action (scripts : <code>debayer bggr rcd all</code>).</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
+<p><img src="../screenshots/eclipse-totality.png" class="img-fluid figure-img"></p>
+<figcaption>Totalité, 12 août 2026 : protubérances au limbe lunaire et un martinet traversant la couronne</figcaption>
+</figure>
+</div>
+<p><em>La session de capture pour laquelle cette fonction est née : l’éclipse totale de Soleil du 12 août 2026, observée depuis l’Espagne. Les phases partielles sont arrivées en PNG niveaux de gris sans métadonnées — des mosaïques BGGR brutes que le renifleur a signalées à l’ouverture — tandis que la totalité, capturée en FITS avec <code>BAYERPAT</code>, s’est décodée automatiquement. Des protubérances roses bordent le limbe lunaire ; au-dessus de l’une d’elles, un martinet traverse la couronne interne.</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
 <p><img src="../screenshots/debayer.png" class="img-fluid figure-img"></p>
 <figcaption>Mosaïque de Bayer brute à côté de son dématriçage RCD, division 1×2</figcaption>
 </figure>

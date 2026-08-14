@@ -441,6 +441,13 @@ div.csl-indent {
 <p><strong>Mosaics with no metadata at all</strong> — planetary/solar capture tools (FireCapture, SharpCap, …) can dump the raw sensor mosaic into plain grayscale PNG or TIFF, where no header will ever announce a Bayer pattern. NebulaScope sniffs the pixels: a mosaic betrays itself statistically (immediate neighbours differ far more than same-colour neighbours two pixels apart, and the two green sites agree on one diagonal of the 2×2 cell). When a metadata-less mono image looks like an undecoded mosaic, the status bar says so and names the two candidate patterns that fit the detected green diagonal — red versus blue can’t be told apart without knowing the scene, so pick the one that looks right (the wrong twin shows a blue Sun). Since one capture stream comes from one sensor, <strong>Image ▸ Debayer ▸ Apply Choice to All in List</strong> then stamps your forced pattern onto every listed frame in one action (scripts: <code>debayer bggr rcd all</code>).</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
+<p><img src="screenshots/eclipse-totality.png" class="img-fluid figure-img"></p>
+<figcaption>Totality, August 12 2026: prominences at the lunar limb and a swift crossing the corona</figcaption>
+</figure>
+</div>
+<p><em>The capture session this feature was built for: the total solar eclipse of August 12 2026, observed from Spain. The partial phases arrived as metadata-less grayscale PNGs — raw BGGR mosaics that the sniffer flagged on open — while totality itself was captured as FITS with <code>BAYERPAT</code>, decoding automatically. Pink prominences ring the lunar limb; above one of them, a swift crosses the inner corona.</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
 <p><img src="screenshots/debayer.png" class="img-fluid figure-img"></p>
 <figcaption>Raw Bayer mosaic beside its RCD demosaic, 1×2 split</figcaption>
 </figure>
