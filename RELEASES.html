@@ -377,7 +377,8 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#v0.93-2026-08-06" id="toc-v0.93-2026-08-06" class="nav-link active" data-scroll-target="#v0.93-2026-08-06">v0.93 — 2026-08-06</a></li>
+  <li><a href="#v0.94-2026-08-14" id="toc-v0.94-2026-08-14" class="nav-link active" data-scroll-target="#v0.94-2026-08-14">v0.94 — 2026-08-14</a></li>
+  <li><a href="#v0.93-2026-08-06" id="toc-v0.93-2026-08-06" class="nav-link" data-scroll-target="#v0.93-2026-08-06">v0.93 — 2026-08-06</a></li>
   <li><a href="#v0.92-2026-08-04" id="toc-v0.92-2026-08-04" class="nav-link" data-scroll-target="#v0.92-2026-08-04">v0.92 — 2026-08-04</a></li>
   <li><a href="#v0.91-2026-08-01" id="toc-v0.91-2026-08-01" class="nav-link" data-scroll-target="#v0.91-2026-08-01">v0.91 — 2026-08-01</a></li>
   <li><a href="#v0.90-2026-07-30" id="toc-v0.90-2026-07-30" class="nav-link" data-scroll-target="#v0.90-2026-07-30">v0.90 — 2026-07-30</a></li>
@@ -426,18 +427,33 @@ div.csl-indent {
 
 
 <p>Generated from the annotated <code>v*</code> tags (<code>docs/make-releases.sh</code>).</p>
+<section id="v0.94-2026-08-14" class="level2">
+<h2 class="anchored" data-anchor-id="v0.94-2026-08-14">v0.94 — 2026-08-14</h2>
+<p>v0.94 — selection-aware culling, instant batch close, metadata-less CFA, Stellarium</p>
+<p>Highlights:</p>
+<ul>
+<li><strong>Selection-aware image list</strong> — the culling keep-checks understand multi-selection: <strong>B</strong> group-toggles the highlighted rows (checks all; unchecks only when all are already checked), clicking a checkbox inside a multi-row selection retags the whole selection, and <strong>C</strong> closes every highlighted image. The context-menu entry is now <strong>Close &amp; Remove from List</strong>, and it means it: decoded pixels, per-view copies, and all per-image state are freed on close. In-app results (Combine, transport, crop) carry the keep-check too.</li>
+<li><strong>Instant batch close</strong> — closing hundreds of blinked frames used to freeze the app for tens of seconds: each removed row triggered a full decode of its neighbour. Row removals now run signal-blocked with a single display fix-up, so clearing a 400-sub session is instantaneous.</li>
+<li><strong>Annotation-safe closing</strong> — when closed images carry unsaved annotation edits, one prompt covers the whole batch: <strong>Save Annotations</strong> writes every affected image’s default sidecar, <strong>Ignore and Close</strong> discards, <strong>Cancel</strong> aborts untouched.</li>
+<li><strong>Metadata-less CFA (mosaic sniffer)</strong> — planetary/solar capture tools can dump raw Bayer mosaics into plain grayscale PNG/TIFF with no pattern keyword anywhere. NebulaScope now detects the mosaic statistically on open and names the two candidate patterns in the status bar; <strong>Image ▸ Debayer ▸ Apply Choice to All in List</strong> (script: <code>debayer bggr rcd all</code>) stamps a forced pattern onto a whole capture stream. Born from — and illustrated in the manual by — the total solar eclipse of August 12, 2026.</li>
+<li><strong>Point Stellarium Here</strong> — the sky context menu can point a running Stellarium (Remote Control plugin) at the clicked J2000 coordinates, field of view matched: where Aladin/SIMBAD answer “what is this”, Stellarium answers “where is it in tonight’s sky”.</li>
+<li><strong>Clean canvas</strong> — <strong>H</strong> now also hides the active-cell border and link buttons; with fullscreen (⌥F) the display is pure image, e.g.&nbsp;to preview a wallpaper.</li>
+</ul>
+<p>Also: HISTORY.md, a development chronicle of how this program came to be; design notes on the removal cascade in DECISIONS; French translations for everything above.</p>
+</section>
 <section id="v0.93-2026-08-06" class="level2">
 <h2 class="anchored" data-anchor-id="v0.93-2026-08-06">v0.93 — 2026-08-06</h2>
 <p>v0.93 — PixInsight display interop, stretch history, DS9 palettes</p>
 <p>Highlights:</p>
 <ul>
-<li><strong>PixInsight display interop</strong> — a PI-saved XISF now opens LOOKING as PI showed it: the embedded display function (STF) applies on first view, embedded ICC profiles are honoured, and on macOS the window is colour-managed for wide-gamut (P3) panels. The transfer LUT adapts its resolution to the occupied window and the histogram’s curve overlay is evaluated exactly — imported stretches with far-out white points render smoothly.</li>
+<li><strong>PixInsight display interop</strong> — a PI-saved XISF now opens LOOKING as PI showed it, with far-out STF white points rebased onto the data range in closed form (histogram controls stay fully usable, SPCC channel balance preserved exactly; derivation in the book’s new Mobius-rebase appendix): the embedded display function (STF) applies on first view, embedded ICC profiles are honoured, and on macOS the window is colour-managed for wide-gamut (P3) panels. The transfer LUT adapts its resolution to the occupied window and the histogram’s curve overlay is evaluated exactly — imported stretches with far-out white points render smoothly.</li>
 <li><strong>Stretch undo history</strong> — every stretch/adjustment gesture is one undo step (drags coalesce): ⌘Z walks back to the as-loaded state, through Auto STFs, pastes, transport fits. <strong>Reload Original</strong> (⌘⇧R) re-decodes from disk and re-runs the first-view rules, itself undoable.</li>
 <li><strong>DS9 classic palettes</strong> — a, b, bb, he, cool, rainbow, standard, and the stepped i8, aips0, sls, reproduced from SAOImage DS9’s reference control points (renditions match DS9 exactly); compose with the invert/split modifiers. Requested by a user.</li>
 <li><strong>Save ergonomics</strong> — an in-memory result’s list entry takes the saved file’s name on every save path (Save Data As, Save Stretched As, script save); clicking any image in a save dialog adopts its base name, the extension following the chosen format.</li>
 <li><strong>Build provenance</strong> — the About headline and –version carry the exact git build id, so test binaries identify their commit.</li>
 </ul>
-<p>Fixes: the panel-resize cursor no longer sticks over overlay panel contents; the script cmap command actually applies the selected map.</p>
+<p>An imported UNLINKED display function (the channel-equalizing STF that visually cancels an SPCC calibration) is flagged in the status bar with the remedy: Shift+U preserves calibrated colour. The import pipeline is regression-tested end to end via synthetic XISF fixtures and the new <code>assert stretch</code> script assertion.</p>
+<p>Fixes: linked histogram drags are rigid (per-channel clamps no longer ratchet the channels’ offsets apart on repeated drags); the panel-resize cursor no longer sticks over overlay panel contents; the script cmap command actually applies the selected map.</p>
 </section>
 <section id="v0.92-2026-08-04" class="level2">
 <h2 class="anchored" data-anchor-id="v0.92-2026-08-04">v0.92 — 2026-08-04</h2>
