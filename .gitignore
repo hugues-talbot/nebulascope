@@ -50,4 +50,5 @@ ui_*.h
 /docs/.quarto/
 /docs/index_files/
 /smoke_cull_out/
+/smoke_crop_annotation.json
 PROBE_OUT/

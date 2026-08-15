@@ -185,8 +185,9 @@ Linear/Log/Asinh/GHS:
 - **Click a slider, then use the mouse wheel** for fine steps (hover alone
   never edits).
 - Adjustments are **per image** — reset on first visit, remembered per image
-  in-session, and **persisted in the annotation sidecar** (§9); a sidecar
-  with adjustments restores them on the next session's first view.
+  in-session, and **persisted in the annotation sidecar** (§9) together
+  with the whole display state; a sidecar restores the exact look on the
+  next session's first view.
 
 ## 5. Colormaps (mono images)
 
@@ -316,17 +317,24 @@ A pure **vector overlay** — never rasterized into the data.
 - **Edit** — click to select (grab handles: axis/endpoint resize, drag body
   to move), **double-click** to edit text & colour, **Delete** to remove,
   **⌘⇧C / ⌘⇧V** copy / paste-at-cursor, full **undo/redo**.
-- **Save Annotations** is available whenever there is sidecar-worthy state —
-  shapes, a rotation/flip history, or non-identity adjustments — so an
-  orientation alone can be persisted and restored next session.
+- **Save Annotations & Display** (File menu, or the image's right-click
+  menu) is always available: besides shapes and the rotation/flip history,
+  the sidecar snapshots the **entire display state** — transfer function,
+  per-channel black/mid/white windowing, GHS parameters, colormap, and
+  adjustments — so "keep this look" is one save. This is how a
+  **non-destructive transport fit** (§11) is made permanent: the fit
+  lives in the windowing *and* the adjustments, and both come back on
+  the next open, taking precedence over the auto-stretch rules.
 - **Show/hide** — key **A** (grid overlay is separate). Loading or importing
   annotations always makes them visible.
 - **Invert contrast** — right-click menu, for bright fields.
 - **Persistence** — JSON sidecars (`<image>_annotation.json`), auto-loaded on
   open (Preferences toggle). *Save* overwrites silently; *Save As…* asks.
-  Sidecars also carry the image **orientation** and the display
-  **adjustments** (§4); saving works with adjustments alone (no shapes
-  needed). Unsaved annotations warn on quit.
+  Sidecars also carry the image **orientation** and the full **display
+  state** (`display` key: stretch, windowing, GHS, colormap, adjustments —
+  §4); saving works with no shapes at all. Unsaved annotations warn on
+  quit. (Sidecars from before v0.95 carried adjustments only; re-save once
+  to capture the stretch as well.)
 - **SExtractor import** — Tools ▸ Import SExtractor Catalog… reads ASCII
   catalogs (needs `X_IMAGE`/`Y_IMAGE`; uses `A/B/THETA_IMAGE` ellipses when
   present), with ellipse scale factor, `FLAGS` filtering, `CLASS_STAR`

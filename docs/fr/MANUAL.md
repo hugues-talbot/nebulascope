@@ -218,8 +218,9 @@ n'est pas touché). Les douze curseurs s'appliquent aux valeurs d'affichage
   survol seul ne modifie jamais rien).
 - Les ajustements sont **par image** — réinitialisés à la première visite,
   mémorisés par image dans la session, et **persistés dans le fichier annexe
-  d'annotations** (§9) ; un fichier annexe portant des ajustements les
-  restaure à la première visualisation de la session suivante.
+  d'annotations** (§9) avec l'état d'affichage complet ; un fichier annexe
+  restaure l'apparence exacte à la première visualisation de la session
+  suivante.
 
 ## 5. Palettes de couleurs (images mono)
 
@@ -370,20 +371,27 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
   d'axe/extrémité, glisser le corps pour déplacer), **double-clic** pour
   éditer texte et couleur, **Suppr** pour retirer, **⌘⇧C / ⌘⇧V** copier /
   coller-au-curseur, **annuler/rétablir** complet.
-- **Enregistrer les annotations** est disponible dès qu'il existe un état
-  digne d'un fichier annexe — des formes, un historique de
-  rotation/miroir, ou des ajustements non neutres — une simple orientation
-  peut donc être persistée et restaurée à la session suivante.
+- **Enregistrer les annotations et l'affichage** (menu Fichier, ou menu
+  contextuel de l'image) est toujours disponible : outre les formes et
+  l'historique de rotation/miroir, le fichier annexe capture l'**état
+  d'affichage entier** — fonction de transfert, fenêtrage noir/milieu/blanc
+  par canal, paramètres GHS, palette et ajustements — « garder cette
+  apparence » tient donc en un enregistrement. C'est ainsi qu'un **transport
+  de couleurs non destructif** (§11) devient permanent : l'ajustement vit
+  dans le fenêtrage *et* dans les ajustements, et les deux reviennent à
+  l'ouverture suivante, en priorité sur les règles d'étirement automatique.
 - **Afficher/masquer** — touche **A** (la grille est séparée). Charger ou
   importer des annotations les rend toujours visibles.
 - **Inverser le contraste** — menu clic droit, pour les champs brillants.
 - **Persistance** — fichiers annexes JSON (`<image>_annotation.json`),
   chargés automatiquement à l'ouverture (réglable dans les Préférences).
   *Enregistrer* écrase sans demander ; *Enregistrer sous…* demande. Les
-  annexes portent aussi l'**orientation** de l'image et les **ajustements**
-  d'affichage (§4) ; l'enregistrement fonctionne avec des ajustements seuls
-  (aucune forme requise). Les annotations non sauvegardées avertissent à la
-  fermeture.
+  annexes portent aussi l'**orientation** de l'image et l'**état
+  d'affichage** complet (clé `display` : étirement, fenêtrage, GHS,
+  palette, ajustements — §4) ; l'enregistrement fonctionne sans aucune
+  forme. Les annotations non sauvegardées avertissent à la fermeture. (Les
+  annexes antérieures à la v0.95 ne portaient que les ajustements ;
+  ré-enregistrez une fois pour capturer aussi l'étirement.)
 - **Import SExtractor** — Outils ▸ Importer un catalogue SExtractor… lit
   les catalogues ASCII (requiert `X_IMAGE`/`Y_IMAGE` ; utilise les ellipses
   `A/B/THETA_IMAGE` si présentes), avec facteur d'échelle des ellipses,

@@ -5,6 +5,7 @@
 #include "core/Transform.h"
 #include "core/ImageStats.h"
 #include "core/ImageData.h"
+#include "render/StretchModel.h"
 #include <algorithm>
 #include <cmath>
 
@@ -232,6 +233,54 @@ NS_TEST(screen_blend_math) {
     NS_CHECK(screen(0.9, 0.9) <= 1.0);
     NS_CHECK_NEAR(screen(0.4, 0.6), screen(0.6, 0.4), 1e-12);
     NS_CHECK(screen(0.4, 0.6) >= 0.6);                   // never darkens
+}
+
+// The sidecar "display" block must reproduce the FULL appearance — the case
+// that motivated it was a non-destructive transport fit (per-channel window
+// + colour adjustments) that came back as adjustments-over-a-fresh-auto-STF.
+NS_TEST(display_state_json_round_trip) {
+    StretchModel::State s;
+    s.valid = true;
+    s.fn = StretchFn::GHS;
+    s.count = 3;
+    for (int c = 0; c < 3; ++c) {
+        s.chan[c].black = 0.01 * (c + 1);
+        s.chan[c].mid   = 0.20 + 0.05 * c;
+        s.chan[c].white = 0.90 - 0.03 * c;
+        s.lo[c] = 0.001 * c;
+        s.hi[c] = 0.5 + 0.1 * c;
+    }
+    s.ghs = GHSParams{ 2.5, 3.0, 0.22, 0.05, 0.95 };
+    s.cmap = Colormap::Ds9Cool;
+    s.cmapInvert = true;
+    s.cmapSplit = true;
+    s.split = 0.33;
+    s.adj.hue = -0.9999591436509916;          // the field-report values
+    s.adj.saturation = 0.11033604567339211;
+    s.adj.temperature = -0.07384259927655563;
+    s.adj.tint = -0.027828011089251314;
+    s.adj.gamma = 1.2;
+
+    const StretchModel::State r =
+        StretchModel::stateFromJson(StretchModel::stateToJson(s));
+    NS_CHECK(r.valid);
+    NS_CHECK(r.fn == StretchFn::GHS);
+    NS_CHECK(r.count == 3);
+    for (int c = 0; c < 3; ++c) {
+        NS_CHECK(r.chan[c].black == s.chan[c].black);
+        NS_CHECK(r.chan[c].mid   == s.chan[c].mid);
+        NS_CHECK(r.chan[c].white == s.chan[c].white);
+        NS_CHECK(r.lo[c] == s.lo[c] && r.hi[c] == s.hi[c]);
+    }
+    NS_CHECK(r.ghs.D == 2.5 && r.ghs.b == 3.0 && r.ghs.SP == 0.22 &&
+             r.ghs.LP == 0.05 && r.ghs.HP == 0.95);
+    NS_CHECK(r.cmap == Colormap::Ds9Cool && r.cmapInvert && r.cmapSplit);
+    NS_CHECK(r.split == 0.33);
+    NS_CHECK(r.adj.hue == s.adj.hue && r.adj.saturation == s.adj.saturation);
+    NS_CHECK(r.adj.temperature == s.adj.temperature && r.adj.tint == s.adj.tint);
+    NS_CHECK(r.adj.gamma == 1.2);
+    // Garbage / legacy sidecars (no "display") never yield a valid state.
+    NS_CHECK(!StretchModel::stateFromJson(QJsonObject()).valid);
 }
 
 int main() { return nstest::runAll(); }

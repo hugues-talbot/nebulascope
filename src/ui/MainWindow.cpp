@@ -998,6 +998,14 @@ void MainWindow::buildMenusAndToolbar() {
     acts["export_view"] = file->addAction(tr("&Export View As…"), QKeySequence("Ctrl+E"), this, &MainWindow::exportView);
     acts["export_region"] = file->addAction(tr("Export &Zoomed Region As…"), QKeySequence("Ctrl+Shift+E"), this, &MainWindow::exportRegion);
     file->addSeparator();
+    // Sidecar save/load reachable from the menu too (they were context-menu
+    // only): the sidecar carries the display state, so "keep this look" is a
+    // File operation as much as an annotation one.
+    acts["save_annotations"] = file->addAction(tr("Save &Annotations && Display"),
+                                               this, &MainWindow::saveAnnotations);
+    acts["save_annotations_as"] = file->addAction(tr("Save Annotations && Display As…"),
+                                                  this, &MainWindow::saveAnnotationsAs);
+    file->addSeparator();
     acts["export_list"] = file->addAction(tr("Export Image &List…"), this, &MainWindow::exportList);
     acts["import_list"] = file->addAction(tr("&Import Image List…"), this, &MainWindow::importList);
     file->addSeparator();
@@ -3130,6 +3138,17 @@ void MainWindow::displayPath(const QString& path) {
                     sidecarAdj = adjustFromJson(doc.object()["adjustments"].toObject());
                     sidecarAdjValid = true;
                 }
+                // A saved display state seeds the per-image STF memory: the
+                // remembered-stretch branch below then applies it exactly as
+                // if this session had set it, winning over auto-STF and any
+                // embedded display function — the sidecar is the user's
+                // explicit save, so it has the last word.
+                if (doc.object().contains(QLatin1String("display"))) {
+                    const StretchModel::State st = StretchModel::stateFromJson(
+                        doc.object()["display"].toObject());
+                    if (st.valid && !m_stfByPath.contains(path))
+                        m_stfByPath.insert(path, st);
+                }
                 std::vector<Annotation> anns = AnnotationLayer::fromJson(doc);
                 if (!anns.empty()) {
                     // The sidecar records the orientation the annotations were
@@ -4343,6 +4362,14 @@ bool MainWindow::writeAnnotationsFileFor(const QString& key, const QString& path
                                                     : m_stfByPath.value(key).adj;
     if (!adj.identity())
         root["adjustments"] = adjustToJson(adj);
+    // The FULL appearance — transfer function, per-channel windowing, GHS,
+    // colormap, adjustments — so the sidecar reproduces what the screen
+    // shows (a non-destructive transport fit included), not just the
+    // adjustment layer on top of a fresh auto-stretch.
+    const StretchModel::State display =
+        (key == m_currentPath) ? m_model.state() : m_stfByPath.value(key);
+    if (display.valid)
+        root["display"] = StretchModel::stateToJson(display);
     doc.setObject(root);
     f.write(doc.toJson(QJsonDocument::Indented));
     m_annDirty.remove(key);
@@ -4364,7 +4391,9 @@ bool MainWindow::writeAnnotationsFile(const QString& path) {
 // Silent save: overwrite the image's sidecar ("<image>_annotation.json") — the
 // file displayPath() auto-loads. Falls back to the dialog for in-memory images.
 void MainWindow::saveAnnotations() {
-    if (m_annByPath.value(m_currentPath).empty() && m_model.adjust().identity()) return;
+    // The sidecar carries the full display state too, so it is worth writing
+    // even with no annotations drawn (e.g. to keep a transport fit).
+    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
     const QString sc = annotationSidecar(m_currentPath);
     if (sc.isEmpty()) { saveAnnotationsAs(); return; }
     writeAnnotationsFile(sc);

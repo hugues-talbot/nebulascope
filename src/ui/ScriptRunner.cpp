@@ -72,7 +72,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -601,6 +601,42 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
             err = QStringLiteral("list has %1 row(s)").arg(n);
             return false;
         }
+        return true;
+    }
+    if (what == QLatin1String("adjust")) {
+        // assert adjust <name> <value> [tol] — one display adjustment (same
+        // names as the `adjust` command). Exercises the sidecar display
+        // round-trip and per-image adjustment isolation.
+        if (t.size() < 4) { err = "assert adjust name value [tol]"; return false; }
+        const AdjustParams a = m_w->m_model.adjust();
+        const QString k = t[2].toLower();
+        double got = 0;
+        if      (k == "brightness")  got = a.brightness;
+        else if (k == "contrast")    got = a.contrast;
+        else if (k == "gamma")       got = a.gamma;
+        else if (k == "shadows")     got = a.shadows;
+        else if (k == "highlights")  got = a.highlights;
+        else if (k == "blackpoint")  got = a.blackpoint;
+        else if (k == "whitepoint")  got = a.whitepoint;
+        else if (k == "temperature") got = a.temperature;
+        else if (k == "tint")        got = a.tint;
+        else if (k == "hue")         got = a.hue;
+        else if (k == "saturation")  got = a.saturation;
+        else if (k == "vibrance")    got = a.vibrance;
+        else { err = "unknown adjustment"; return false; }
+        const double tol = t.size() > 4 ? t[4].toDouble() : 1e-6;
+        if (std::abs(got - t[3].toDouble()) > tol) {
+            err = QStringLiteral("adjust %1 is %2").arg(k).arg(got, 0, 'g', 9);
+            return false;
+        }
+        return true;
+    }
+    if (what == QLatin1String("fn")) {
+        // assert fn linear|log|asinh|ghs — the current transfer function.
+        if (t.size() < 3) { err = "assert fn linear|log|asinh|ghs"; return false; }
+        static const char* names[] = { "linear", "log", "asinh", "ghs" };
+        const QString got = QLatin1String(names[int(m_w->m_model.fn())]);
+        if (got != t[2].toLower()) { err = QStringLiteral("fn is %1").arg(got); return false; }
         return true;
     }
     if (what == QLatin1String("stretch")) {

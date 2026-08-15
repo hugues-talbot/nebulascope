@@ -122,12 +122,28 @@ action reload_original
 sleep 200
 action undo
 
-# Clear List & Close All empties the list and every view; the app stays usable.
+# Sidecar display round-trip: Save Annotations & Display snapshots the FULL
+# appearance (transfer fn, windowing, adjustments — the shape a
+# non-destructive transport fit produces), and a fresh open (Clear List
+# forgets STF memory; the sidecar is re-read) restores it exactly, winning
+# over the first-view auto rules.
+fn ghs
+adjust hue -0.99995914
+adjust saturation 0.11033605
+adjust temperature -0.0738426
+adjust gamma 1.3
+sleep 800
+action save_annotations
 action clear_list
 assert rows 0
 open smoke_crop.fits
 waitloaded
 assert rows 1
+assert fn ghs
+assert adjust hue -0.99995914 1e-6
+assert adjust saturation 0.11033605 1e-6
+assert adjust temperature -0.0738426 1e-6
+assert adjust gamma 1.3 1e-6
 
 # DisplayFunction import matrix (synthetic fixtures; expected values from
 # tests/testdata/make_df_fixtures.py — same closed-form Mobius rebase).

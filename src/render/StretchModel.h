@@ -8,6 +8,7 @@
 #include "core/ImageStats.h"
 #include "core/Colormap.h"
 #include "core/Adjustments.h"
+#include <QJsonObject>
 #include <QObject>
 #include <vector>
 
@@ -79,6 +80,14 @@ public:
         double         split = 0.25;
         AdjustParams   adj;                   // post-stretch display adjustments
     };
+    // Sidecar (de)serialization of the full display appearance — transfer
+    // function, per-channel windowing, GHS, colormap, adjustments — carried
+    // in "<image>_annotation.json" under the "display" key, so Save
+    // Annotations snapshots what the screen shows (e.g. a non-destructive
+    // transport fit) and a fresh session reproduces it. Enum values are
+    // written as NAMES, so files survive enum reordering.
+    static QJsonObject stateToJson(const State& s);
+    static State stateFromJson(const QJsonObject& o);  // .valid=false if unusable
     State state() const {
         State s;
         s.valid = true; s.fn = m_fn; s.count = m_count; s.ghs = m_ghs; s.cmap = m_cmap; s.split = m_split;
