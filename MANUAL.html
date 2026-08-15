@@ -610,7 +610,7 @@ div.csl-indent {
 <li><strong>Save Annotations &amp; Display</strong> (File menu, or the image’s right-click menu) is always available: besides shapes and the rotation/flip history, the sidecar snapshots the <strong>entire display state</strong> — transfer function, per-channel black/mid/white windowing, GHS parameters, colormap, and adjustments — so “keep this look” is one save. This is how a <strong>non-destructive transport fit</strong> (§11) is made permanent: the fit lives in the windowing <em>and</em> the adjustments, and both come back on the next open, taking precedence over the auto-stretch rules.</li>
 <li><strong>Show/hide</strong> — key <strong>A</strong> (grid overlay is separate). Loading or importing annotations always makes them visible.</li>
 <li><strong>Invert contrast</strong> — right-click menu, for bright fields.</li>
-<li><strong>Persistence</strong> — JSON sidecars (<code>&lt;image&gt;_annotation.json</code>), auto-loaded on open (Preferences toggle). <em>Save</em> overwrites silently; <em>Save As…</em> asks. Sidecars also carry the image <strong>orientation</strong> and the full <strong>display state</strong> (<code>display</code> key: stretch, windowing, GHS, colormap, adjustments — §4); saving works with no shapes at all. Unsaved annotations warn on quit. (Sidecars from before v0.95 carried adjustments only; re-save once to capture the stretch as well.)</li>
+<li><strong>Persistence</strong> — JSON sidecars (<code>&lt;image&gt;_annotation.json</code>), auto-loaded on open (Preferences toggle). <em>Save</em> overwrites silently; <em>Save As…</em> asks. Sidecars also carry the image <strong>orientation</strong> and the full <strong>display state</strong> (<code>display</code> key: stretch, windowing, GHS, colormap, adjustments — §4); saving works with no shapes at all. Unsaved annotations warn on quit. (Sidecars from before v0.95 carried adjustments only; re-save once to capture the stretch as well.) The <code>display</code> block is an <strong>open, documented format</strong>: every field maps to an equation, and a standalone reference renderer (<code>tools/render_sidecar.py</code>) reproduces NebulaScope’s rendering from it — see the Colour Transport chapter, §6.</li>
 <li><strong>SExtractor import</strong> — Tools ▸ Import SExtractor Catalog… reads ASCII catalogs (needs <code>X_IMAGE</code>/<code>Y_IMAGE</code>; uses <code>A/B/THETA_IMAGE</code> ellipses when present), with ellipse scale factor, <code>FLAGS</code> filtering, <code>CLASS_STAR</code> colouring, and <code>NUMBER</code>/<code>MAG_AUTO</code> labels. Detections map correctly onto rotated views.</li>
 </ul>
 </section>
@@ -738,6 +738,10 @@ div.csl-indent {
                          debayer auto|off|&lt;pattern&gt; [method] [all] (OSC
                          demosaic mode for the displayed frame; `all`
                          stamps it onto every list row),
+                         saveann [path] (write the annotation sidecar with
+                         the full display block), bake &lt;path&gt; (the display
+                         transfer baked as Float32 FITS — the conformance
+                         reference for tools/render_sidecar.py),
                          tag on|off|toggle, tagsort, tagremove, tagmove
                          (blink-culling: keep-checks and acting on them),
                          transport &lt;row&gt; [strength%] (colour transport onto

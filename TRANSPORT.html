@@ -26,6 +26,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 /* CSS for citations */
 div.csl-bib-body { }
 div.csl-entry {
@@ -424,6 +459,13 @@ window.Quarto = {
   </ul></li>
   <li><a href="#practice" id="toc-practice" class="nav-link" data-scroll-target="#practice">4. Practice</a></li>
   <li><a href="#appendix-imported-display-functions-and-the-möbius-rebase" id="toc-appendix-imported-display-functions-and-the-möbius-rebase" class="nav-link" data-scroll-target="#appendix-imported-display-functions-and-the-möbius-rebase">5. Appendix: imported display functions and the Möbius rebase</a></li>
+  <li><a href="#appendix-the-display-block-an-open-reproducible-appearance-format" id="toc-appendix-the-display-block-an-open-reproducible-appearance-format" class="nav-link" data-scroll-target="#appendix-the-display-block-an-open-reproducible-appearance-format">6. Appendix: the display block — an open, reproducible appearance format</a>
+  <ul class="collapse">
+  <li><a href="#the-block" id="toc-the-block" class="nav-link" data-scroll-target="#the-block">6.1 The block</a></li>
+  <li><a href="#the-pipeline-per-channel-c-and-raw-pixel-value-v" id="toc-the-pipeline-per-channel-c-and-raw-pixel-value-v" class="nav-link" data-scroll-target="#the-pipeline-per-channel-c-and-raw-pixel-value-v">6.2 The pipeline, per channel <span class="math inline">\(c\)</span> and raw pixel value <span class="math inline">\(v\)</span></a></li>
+  <li><a href="#reading-a-transport-fit" id="toc-reading-a-transport-fit" class="nav-link" data-scroll-target="#reading-a-transport-fit">6.3 Reading a transport fit</a></li>
+  <li><a href="#scope-and-non-goals-of-the-reference-implementation" id="toc-scope-and-non-goals-of-the-reference-implementation" class="nav-link" data-scroll-target="#scope-and-non-goals-of-the-reference-implementation">6.4 Scope and non-goals of the reference implementation</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -558,6 +600,59 @@ window.Quarto = {
 <p><span class="math display">\[D'_c(v) \;=\; \frac{D_c(v)}{S}\quad \text{for all data } v,\]</span></p>
 <p>so the inter-channel ratios — hue and calibrated colour balance — are preserved <em>exactly</em>. The only deviation from the producing application’s screen is a uniform brightness factor <span class="math inline">\(1/S\)</span> (typically under <span class="math inline">\(10\%\)</span>), monotone and channel-symmetric.</p>
 <p><em>Background reading: Pitié, Kokaram &amp; Dahyot 2007 (the iterative distribution transfer this implements); Rabin et al.&nbsp;2012 for the sliced Wasserstein viewpoint — full citations in the References.</em></p>
+</section>
+<section id="appendix-the-display-block-an-open-reproducible-appearance-format" class="level2">
+<h2 class="anchored" data-anchor-id="appendix-the-display-block-an-open-reproducible-appearance-format">6. Appendix: the display block — an open, reproducible appearance format</h2>
+<p>Every stretch fit ends as numbers, and NebulaScope writes those numbers down. <strong>Save Annotations &amp; Display</strong> stores the complete display state in the image’s sidecar (<code>&lt;image&gt;_annotation.json</code>) under a <code>display</code> key. The block is plain JSON with a stated schema, every field maps to a closed-form equation in this book, and a standalone reference implementation (<code>tools/render_sidecar.py</code>, NumPy only, no NebulaScope code) reproduces NebulaScope’s rendering from it — verified in CI to a few float32 ULPs at every pixel (<code>tests/conformance/</code>). This is what makes a stretch <em>explainable</em> (read the block, know exactly what was done) and <em>reproducible in other software</em> (implement six short equations).</p>
+<section id="the-block" class="level3">
+<h3 class="anchored" data-anchor-id="the-block">6.1 The block</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="st">"display"</span><span class="er">:</span> <span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"schema"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"fn"</span><span class="fu">:</span> <span class="st">"ghs"</span><span class="fu">,</span>                       <span class="er">//</span> <span class="er">linear</span> <span class="er">|</span> <span class="er">log</span> <span class="er">|</span> <span class="er">asinh</span> <span class="er">|</span> <span class="er">ghs</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"count"</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span>                        <span class="er">//</span> <span class="er">channels</span> <span class="er">the</span> <span class="er">state</span> <span class="er">was</span> <span class="er">made</span> <span class="er">for</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"channels"</span><span class="fu">:</span> <span class="ot">[</span>                      <span class="er">//</span> <span class="er">R</span><span class="ot">,</span> <span class="er">G</span><span class="ot">,</span> <span class="er">B</span> <span class="er">(index</span> <span class="dv">0</span> <span class="er">used</span> <span class="er">for</span> <span class="er">mono)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span> <span class="dt">"lo"</span><span class="fu">:</span> <span class="fl">0.0012</span><span class="fu">,</span> <span class="dt">"hi"</span><span class="fu">:</span> <span class="fl">0.9840</span><span class="fu">,</span>    <span class="er">//</span> <span class="er">data</span> <span class="er">window</span> <span class="er">(raw</span> <span class="er">units)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"black"</span><span class="fu">:</span> <span class="fl">0.031</span><span class="fu">,</span> <span class="dt">"mid"</span><span class="fu">:</span> <span class="fl">0.118</span><span class="fu">,</span> <span class="dt">"white"</span><span class="fu">:</span> <span class="fl">1.0</span> <span class="fu">}</span><span class="ot">,</span>   <span class="er">//</span> <span class="er">normalized</span> <span class="er">in</span> <span class="ot">[</span><span class="er">lo</span><span class="ot">,</span><span class="er">hi</span><span class="ot">]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span> <span class="er">...</span> <span class="fu">}</span><span class="ot">,</span> <span class="fu">{</span> <span class="er">...</span> <span class="fu">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"ghs"</span><span class="fu">:</span>    <span class="fu">{</span> <span class="dt">"D"</span><span class="fu">:</span> <span class="fl">1.6</span><span class="fu">,</span> <span class="dt">"b"</span><span class="fu">:</span> <span class="fl">6.0</span><span class="fu">,</span> <span class="dt">"SP"</span><span class="fu">:</span> <span class="fl">0.18</span><span class="fu">,</span> <span class="dt">"LP"</span><span class="fu">:</span> <span class="fl">0.0</span><span class="fu">,</span> <span class="dt">"HP"</span><span class="fu">:</span> <span class="fl">1.0</span> <span class="fu">},</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"cmap"</span><span class="fu">:</span> <span class="st">"gray"</span><span class="fu">,</span> <span class="dt">"cmapInvert"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"cmapSplit"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"split"</span><span class="fu">:</span> <span class="fl">0.25</span><span class="fu">,</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"adjust"</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">"blackpoint"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"whitepoint"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span> <span class="dt">"shadows"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>              <span class="dt">"highlights"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"brightness"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"contrast"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"gamma"</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>              <span class="dt">"temperature"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"tint"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"hue"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>              <span class="dt">"saturation"</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">"vibrance"</span><span class="fu">:</span> <span class="dv">0</span> <span class="fu">}</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>schema</code> is the version of <em>this</em> block (independent of the sidecar’s own <code>version</code>); a reader must refuse a schema newer than it knows. Enumerations are stored as names, never integers.</p>
+</section>
+<section id="the-pipeline-per-channel-c-and-raw-pixel-value-v" class="level3">
+<h3 class="anchored" data-anchor-id="the-pipeline-per-channel-c-and-raw-pixel-value-v">6.2 The pipeline, per channel <span class="math inline">\(c\)</span> and raw pixel value <span class="math inline">\(v\)</span></h3>
+<p><strong>Window.</strong> The channel’s black/mid/white handles live in <em>normalized window coordinates</em> on <span class="math inline">\([\mathrm{lo}_c, \mathrm{hi}_c]\)</span> — that is what makes a state portable across images with different data ranges:</p>
+<p><span class="math display">\[t \;=\; \operatorname{clamp}_{[0,1]}\!\left(
+  \frac{\dfrac{v-\mathrm{lo}_c}{\mathrm{hi}_c-\mathrm{lo}_c} - \mathrm{black}_c}
+       {\mathrm{white}_c-\mathrm{black}_c}\right).\]</span></p>
+<p><strong>Transfer</strong> <span class="math inline">\(T(t)\)</span>, one of:</p>
+<ul>
+<li><code>linear</code>, <code>log</code>, <code>asinh</code> — a base shape followed by the midtones transfer function (§5) with pivot <span class="math inline">\(m_c = (\mathrm{mid}_c-\mathrm{black}_c)/(\mathrm{white}_c-\mathrm{black}_c)\)</span>, clamped to <span class="math inline">\([0.001, 0.999]\)</span>: <span class="math display">\[T(t) = \mathrm{MTF}\big(s(t);\, m_c\big),\qquad
+  s(t) = \begin{cases} t &amp; \text{linear}\\
+    \ln(1+500t)/\ln 501 &amp; \text{log}\\
+    \operatorname{asinh}(50t)/\operatorname{asinh}50 &amp; \text{asinh}\end{cases}\]</span></li>
+<li><code>ghs</code> — one <em>master</em> curve shared by all channels: the normalized cumulative integral of the local-stretch slope <span class="math display">\[\sigma(x) = D_e\,\big(1 + b\,D_e\,|x-\mathrm{SP}|\big)^{-(1+1/b)}
+  \quad (b&gt;0;\ \text{logarithmic } D_e/(1+|b|D_e|x-\mathrm{SP}|) \text{ for } b&lt;0,\
+  \text{exponential } D_e e^{-D_e|x-\mathrm{SP}|} \text{ for } b=0),\]</span> with <span class="math inline">\(D_e = e^{D}-1\)</span> and <span class="math inline">\(x\)</span> clamped to <span class="math inline">\([\mathrm{LP},\mathrm{HP}]\)</span> before evaluating <span class="math inline">\(\sigma\)</span> (linear protection zones); <span class="math inline">\(T(t) = \int_0^t \sigma \,/\, \int_0^1 \sigma\)</span>. NebulaScope evaluates this on a 4096-point trapezoid grid, and interpolates linearly between grid points; a conforming implementation does the same, which is what gives ULP-level agreement rather than mere visual agreement.</li>
+</ul>
+<p><strong>Tone adjustments</strong> (monotone, per channel, composed into <span class="math inline">\(T\)</span>), in this order: black/white-point re-window, then <span class="math inline">\(y \mathrel{+}= \mathrm{shadows}\cdot 2y(1-y)^2\)</span>, <span class="math inline">\(y \mathrel{+}= \mathrm{highlights}\cdot 2y^2(1-y)\)</span>, <span class="math inline">\(y \mathrel{+}= \mathrm{brightness}/2\)</span>, <span class="math inline">\(y = \tfrac12 + (y-\tfrac12)\tan\!\big((\mathrm{contrast}+1)\tfrac{\pi}{4}\big)\)</span>, clamp, then <span class="math inline">\(y^{1/\gamma}\)</span>.</p>
+<p><strong>Colour adjustments</strong> (cross-channel, RGB only), in this order: white-balance gains <span class="math inline">\(R\,(1+0.30\,\mathrm{temp}+0.15\,\mathrm{tint}),\;
+G\,(1-0.30\,\mathrm{tint}),\;
+B\,(1-0.30\,\mathrm{temp}+0.15\,\mathrm{tint})\)</span>; the standard luminance-preserving hue-rotation matrix (the SVG/CSS <code>hue-rotate</code> coefficients) by <code>hue</code> degrees; then saturation about Rec.,709 luma <span class="math inline">\(Y\)</span>: <span class="math inline">\(C = Y + (C-Y)\,f\)</span> with <span class="math inline">\(f = (1+\mathrm{saturation})\,(1+\mathrm{vibrance}\,(1-s))\)</span>, <span class="math inline">\(s\)</span> the pixel’s HSV saturation. Clamp to <span class="math inline">\([0,1]\)</span>.</p>
+<p><strong>Output.</strong> The result is the Float32 [0,1] rendition (what <em>Save Stretched As…</em> bakes). The 8-bit screen image is this rounded to 255 levels — NebulaScope adds a ±1 LSB triangular dither on screen, which is a display cosmetic and deliberately <em>not</em> part of the format.</p>
+</section>
+<section id="reading-a-transport-fit" class="level3">
+<h3 class="anchored" data-anchor-id="reading-a-transport-fit">6.3 Reading a transport fit</h3>
+<p>A non-destructive transport fit (§3) is nothing but a display block: the per-channel <code>black/mid/white</code> it solved for, plus, when colour fitting was on, the <code>adjust</code> vector. Two fits diff as JSON, and the diff localizes where the effort went — windowing versus hue versus saturation — which is information about how the two images differ, not just a recipe.</p>
+</section>
+<section id="scope-and-non-goals-of-the-reference-implementation" class="level3">
+<h3 class="anchored" data-anchor-id="scope-and-non-goals-of-the-reference-implementation">6.4 Scope and non-goals of the reference implementation</h3>
+<p><code>render_sidecar.py</code> covers the four transfer functions, per-channel windowing, all tone and colour adjustments, mono and RGB. False-colour maps (<code>cmap</code> other than <code>gray</code>, or the invert/split modifiers) are 8-bit tables defined by control points in <code>src/core/Colormap.cpp</code>, which remains authoritative for them; a mono image with an active map renders through the same stretch and is then indexed into that table.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
@@ -583,6 +678,7 @@ Pitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. <span>“Automated 
 Rabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. <span>“Wasserstein Barycenter and Its Application to Texture Mixing.”</span> <em>Scale Space and Variational Methods in Computer Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
 </div>
 </div>
+</section>
 </section>
 
 </main> <!-- /main -->
