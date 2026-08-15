@@ -334,7 +334,10 @@ A pure **vector overlay** — never rasterized into the data.
   state** (`display` key: stretch, windowing, GHS, colormap, adjustments —
   §4); saving works with no shapes at all. Unsaved annotations warn on
   quit. (Sidecars from before v0.95 carried adjustments only; re-save once
-  to capture the stretch as well.)
+  to capture the stretch as well.) The `display` block is an **open,
+  documented format**: every field maps to an equation, and a standalone
+  reference renderer (`tools/render_sidecar.py`) reproduces NebulaScope's
+  rendering from it — see the Colour Transport chapter, §6.
 - **SExtractor import** — Tools ▸ Import SExtractor Catalog… reads ASCII
   catalogs (needs `X_IMAGE`/`Y_IMAGE`; uses `A/B/THETA_IMAGE` ellipses when
   present), with ellipse scale factor, `FLAGS` filtering, `CLASS_STAR`
@@ -490,6 +493,10 @@ nebulascope [options] [files...]
                          debayer auto|off|<pattern> [method] [all] (OSC
                          demosaic mode for the displayed frame; `all`
                          stamps it onto every list row),
+                         saveann [path] (write the annotation sidecar with
+                         the full display block), bake <path> (the display
+                         transfer baked as Float32 FITS — the conformance
+                         reference for tools/render_sidecar.py),
                          tag on|off|toggle, tagsort, tagremove, tagmove
                          (blink-culling: keep-checks and acting on them),
                          transport <row> [strength%] (colour transport onto

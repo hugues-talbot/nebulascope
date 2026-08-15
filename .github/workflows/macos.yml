@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0        # full history+tags: git describe stamps the build id
 
       - name: Homebrew dependencies
-        run: brew install cfitsio ccfits ninja zstd
+        run: brew install cfitsio ccfits ninja zstd numpy
 
       - name: Install Qt 6
         uses: jurplel/install-qt-action@v4

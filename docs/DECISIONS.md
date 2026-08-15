@@ -96,6 +96,16 @@ that one the *what*.)
   edit the display.
 - **256→4096-level LUTs** killed visible banding; dithered 8-bit output
   handles the rest.
+- **The display block is a specified, reference-implemented format.**
+  The sidecar's `display` key is not private state: it has a schema
+  version, names instead of enum integers, a written spec (TRANSPORT §6)
+  mapping every field to an equation, and a standalone NumPy renderer
+  (tools/render_sidecar.py) that CI checks against DisplayRenderer::
+  renderFloat to a few float32 ULPs per pixel (tests/conformance). The
+  point is scientific: a stretch becomes explainable and reproducible in
+  other software, and a transport fit becomes a diffable object. Rule:
+  any change to the transfer/adjustment math updates spec, reference,
+  and schema version together — the conformance test is the tripwire.
 - **Save dialogs: native on macOS via NSSavePanel accessory views.** Qt can
   host inline option rows only in its own non-native dialog — which is why
   the rich save dialogs were Qt-drawn at first. The platform's intended

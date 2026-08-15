@@ -29,7 +29,8 @@ jobs:
             build-essential cmake ninja-build pkg-config \
             qt6-base-dev qt6-image-formats-plugins qt6-tools-dev qt6-l10n-tools \
             qt6-translations-l10n libcfitsio-dev libccfits-dev \
-            zlib1g-dev liblz4-dev libzstd-dev libpugixml-dev
+            zlib1g-dev liblz4-dev libzstd-dev libpugixml-dev \
+            python3-numpy
 
       # ---- libXISF from source, cached --------------------------------------
       - name: Cache libXISF

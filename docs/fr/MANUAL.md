@@ -391,7 +391,11 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
   palette, ajustements — §4) ; l'enregistrement fonctionne sans aucune
   forme. Les annotations non sauvegardées avertissent à la fermeture. (Les
   annexes antérieures à la v0.95 ne portaient que les ajustements ;
-  ré-enregistrez une fois pour capturer aussi l'étirement.)
+  ré-enregistrez une fois pour capturer aussi l'étirement.) Le bloc
+  `display` est un **format ouvert et documenté** : chaque champ correspond
+  à une équation, et un moteur de rendu de référence autonome
+  (`tools/render_sidecar.py`) reproduit le rendu de NebulaScope à partir de
+  lui — voir le chapitre Transport de couleurs, §6.
 - **Import SExtractor** — Outils ▸ Importer un catalogue SExtractor… lit
   les catalogues ASCII (requiert `X_IMAGE`/`Y_IMAGE` ; utilise les ellipses
   `A/B/THETA_IMAGE` si présentes), avec facteur d'échelle des ellipses,

@@ -68,6 +68,13 @@ const CommandRef kCommands[] = {
   {"export",     {"export <path>",
     "Write the displayed rendition (stretch, adjustments, colormap baked)\n"
     "as PNG/JPEG/TIFF."}},
+  {"saveann",    {"saveann [path]",
+    "Write the annotation sidecar (shapes, orientation, full display block)\n"
+    "to <path>, or to the image's default \"<image>_annotation.json\"."}},
+  {"bake",       {"bake <path>",
+    "Write the display transfer baked at full precision (Float32 FITS, no\n"
+    "dither/8-bit) — the reference artifact for the sidecar conformance\n"
+    "test against tools/render_sidecar.py."}},
   {"save",       {"save <path>",
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
@@ -295,6 +302,34 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         const QImage img = DisplayRenderer::render(m_w->m_image, m_w->m_model);
         if (!img.save(t[1])) { err = "could not write " + t[1]; return false; }
+        return true;
+    }
+    if (cmd == QLatin1String("saveann")) {
+        // saveann [path] — write the annotation sidecar (shapes, orientation,
+        // and the full display block) to <path>, or to the image's default
+        // sidecar when omitted. Same writer as Save Annotations (& Display).
+        if (m_w->m_currentPath.isEmpty() || !m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        QString path = t.size() > 1 ? t[1] : QString();
+        if (path.isEmpty()) {
+            m_w->saveAnnotations();
+            return true;
+        }
+        if (!m_w->writeAnnotationsFileFor(m_w->m_currentPath, path)) {
+            err = "could not write " + path; return false;
+        }
+        return true;
+    }
+    if (cmd == QLatin1String("bake")) {
+        // bake <path> — the display transfer baked at full precision (the
+        // renderFloat path: windowing + LUT interpolation + adjustments, no
+        // dither, no 8-bit) as Float32 FITS. This is the reference artifact
+        // tools/render_sidecar.py is checked against (tests/conformance).
+        if (!needArgs(1)) return false;
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        ImageData baked = DisplayRenderer::renderFloat(m_w->m_image, m_w->m_model);
+        ImageHeader h;
+        io::SaveResult sr = io::saveImage(t[1], baked, h);
+        if (!sr.ok) { err = sr.error; return false; }
         return true;
     }
     if (cmd == QLatin1String("save")) {

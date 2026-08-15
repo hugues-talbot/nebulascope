@@ -245,3 +245,114 @@ monotone and channel-symmetric.
 *Background reading: Pitié, Kokaram & Dahyot 2007 (the iterative
 distribution transfer this implements); Rabin et al. 2012 for the sliced
 Wasserstein viewpoint — full citations in the References.*
+
+## 6. Appendix: the display block — an open, reproducible appearance format
+
+Every stretch fit ends as numbers, and NebulaScope writes those numbers
+down. **Save Annotations & Display** stores the complete display state in
+the image's sidecar (`<image>_annotation.json`) under a `display` key. The
+block is plain JSON with a stated schema, every field maps to a closed-form
+equation in this book, and a standalone reference implementation
+(`tools/render_sidecar.py`, NumPy only, no NebulaScope code) reproduces
+NebulaScope's rendering from it — verified in CI to a few float32 ULPs at
+every pixel (`tests/conformance/`). This is what makes a stretch
+*explainable* (read the block, know exactly what was done) and
+*reproducible in other software* (implement six short equations).
+
+### 6.1 The block
+
+```json
+"display": {
+  "schema": 1,
+  "fn": "ghs",                       // linear | log | asinh | ghs
+  "count": 3,                        // channels the state was made for
+  "channels": [                      // R, G, B (index 0 used for mono)
+    { "lo": 0.0012, "hi": 0.9840,    // data window (raw units)
+      "black": 0.031, "mid": 0.118, "white": 1.0 },   // normalized in [lo,hi]
+    { ... }, { ... }
+  ],
+  "ghs":    { "D": 1.6, "b": 6.0, "SP": 0.18, "LP": 0.0, "HP": 1.0 },
+  "cmap": "gray", "cmapInvert": false, "cmapSplit": false, "split": 0.25,
+  "adjust": { "blackpoint": 0, "whitepoint": 1, "shadows": 0,
+              "highlights": 0, "brightness": 0, "contrast": 0, "gamma": 1,
+              "temperature": 0, "tint": 0, "hue": 0,
+              "saturation": 0, "vibrance": 0 }
+}
+```
+
+`schema` is the version of *this* block (independent of the sidecar's own
+`version`); a reader must refuse a schema newer than it knows. Enumerations
+are stored as names, never integers.
+
+### 6.2 The pipeline, per channel $c$ and raw pixel value $v$
+
+**Window.** The channel's black/mid/white handles live in *normalized
+window coordinates* on $[\mathrm{lo}_c, \mathrm{hi}_c]$ — that is what
+makes a state portable across images with different data ranges:
+
+$$t \;=\; \operatorname{clamp}_{[0,1]}\!\left(
+  \frac{\dfrac{v-\mathrm{lo}_c}{\mathrm{hi}_c-\mathrm{lo}_c} - \mathrm{black}_c}
+       {\mathrm{white}_c-\mathrm{black}_c}\right).$$
+
+**Transfer** $T(t)$, one of:
+
+- `linear`, `log`, `asinh` — a base shape followed by the midtones
+  transfer function (§5) with pivot
+  $m_c = (\mathrm{mid}_c-\mathrm{black}_c)/(\mathrm{white}_c-\mathrm{black}_c)$,
+  clamped to $[0.001, 0.999]$:
+  $$T(t) = \mathrm{MTF}\big(s(t);\, m_c\big),\qquad
+    s(t) = \begin{cases} t & \text{linear}\\
+      \ln(1+500t)/\ln 501 & \text{log}\\
+      \operatorname{asinh}(50t)/\operatorname{asinh}50 & \text{asinh}\end{cases}$$
+- `ghs` — one *master* curve shared by all channels: the normalized
+  cumulative integral of the local-stretch slope
+  $$\sigma(x) = D_e\,\big(1 + b\,D_e\,|x-\mathrm{SP}|\big)^{-(1+1/b)}
+    \quad (b>0;\ \text{logarithmic } D_e/(1+|b|D_e|x-\mathrm{SP}|) \text{ for } b<0,\
+    \text{exponential } D_e e^{-D_e|x-\mathrm{SP}|} \text{ for } b=0),$$
+  with $D_e = e^{D}-1$ and $x$ clamped to $[\mathrm{LP},\mathrm{HP}]$
+  before evaluating $\sigma$ (linear protection zones);
+  $T(t) = \int_0^t \sigma \,/\, \int_0^1 \sigma$. NebulaScope evaluates
+  this on a 4096-point trapezoid grid, and interpolates linearly between
+  grid points; a conforming implementation does the same, which is what
+  gives ULP-level agreement rather than mere visual agreement.
+
+**Tone adjustments** (monotone, per channel, composed into $T$), in this
+order: black/white-point re-window, then
+$y \mathrel{+}= \mathrm{shadows}\cdot 2y(1-y)^2$,
+$y \mathrel{+}= \mathrm{highlights}\cdot 2y^2(1-y)$,
+$y \mathrel{+}= \mathrm{brightness}/2$,
+$y = \tfrac12 + (y-\tfrac12)\tan\!\big((\mathrm{contrast}+1)\tfrac{\pi}{4}\big)$,
+clamp, then $y^{1/\gamma}$.
+
+**Colour adjustments** (cross-channel, RGB only), in this order:
+white-balance gains
+$R\,(1+0.30\,\mathrm{temp}+0.15\,\mathrm{tint}),\;
+ G\,(1-0.30\,\mathrm{tint}),\;
+ B\,(1-0.30\,\mathrm{temp}+0.15\,\mathrm{tint})$;
+the standard luminance-preserving hue-rotation matrix (the SVG/CSS
+`hue-rotate` coefficients) by `hue` degrees; then saturation about
+Rec.\,709 luma $Y$: $C = Y + (C-Y)\,f$ with
+$f = (1+\mathrm{saturation})\,(1+\mathrm{vibrance}\,(1-s))$, $s$ the
+pixel's HSV saturation. Clamp to $[0,1]$.
+
+**Output.** The result is the Float32 [0,1] rendition (what *Save
+Stretched As…* bakes). The 8-bit screen image is this rounded to 255
+levels — NebulaScope adds a ±1 LSB triangular dither on screen, which is a
+display cosmetic and deliberately *not* part of the format.
+
+### 6.3 Reading a transport fit
+
+A non-destructive transport fit (§3) is nothing but a display block: the
+per-channel `black/mid/white` it solved for, plus, when colour fitting was
+on, the `adjust` vector. Two fits diff as JSON, and the diff localizes
+where the effort went — windowing versus hue versus saturation — which is
+information about how the two images differ, not just a recipe.
+
+### 6.4 Scope and non-goals of the reference implementation
+
+`render_sidecar.py` covers the four transfer functions, per-channel
+windowing, all tone and colour adjustments, mono and RGB. False-colour
+maps (`cmap` other than `gray`, or the invert/split modifiers) are 8-bit
+tables defined by control points in `src/core/Colormap.cpp`, which remains
+authoritative for them; a mono image with an active map renders through
+the same stretch and is then indexed into that table.

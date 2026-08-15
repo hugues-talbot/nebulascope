@@ -119,6 +119,7 @@ Colormap cmapFromName(const QString& n) {
 
 QJsonObject StretchModel::stateToJson(const State& s) {
     QJsonObject o;
+    o["schema"] = kDisplaySchemaVersion;   // see docs/TRANSPORT.md §6 (spec)
     o["fn"] = fnName(s.fn);
     o["count"] = s.count;
     QJsonArray chans;
@@ -153,6 +154,10 @@ QJsonObject StretchModel::stateToJson(const State& s) {
 
 StretchModel::State StretchModel::stateFromJson(const QJsonObject& o) {
     State s;
+    // Forward-compatibility: a block from a NEWER schema may carry semantics
+    // this build does not know; refuse rather than misrender. Missing schema
+    // = 1 (blocks written before the field existed).
+    if (o.value("schema").toInt(1) > kDisplaySchemaVersion) return s;
     bool fnOk = false;
     s.fn = fnFromName(o.value("fn").toString(), &fnOk);
     const QJsonArray chans = o.value("channels").toArray();

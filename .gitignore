@@ -52,3 +52,6 @@ ui_*.h
 /smoke_cull_out/
 /smoke_crop_annotation.json
 PROBE_OUT/
+
+# Python bytecode (tools/, tests/conformance/)
+__pycache__/

@@ -276,3 +276,121 @@ de $10\,\%$), monotone et symétrique entre canaux.
 *Lectures : Pitié, Kokaram & Dahyot 2007 (le transfert de distribution
 itératif implémenté ici) ; Rabin et al. 2012 pour le point de vue
 Wasserstein par tranches — références complètes en bibliographie.*
+
+## 6. Annexe : le bloc d'affichage — un format d'apparence ouvert et reproductible
+
+Tout ajustement d'étirement finit en nombres, et NebulaScope les écrit.
+**Enregistrer les annotations et l'affichage** stocke l'état d'affichage
+complet dans le fichier annexe de l'image (`<image>_annotation.json`) sous
+une clé `display`. Le bloc est du JSON simple avec un schéma déclaré, chaque
+champ correspond à une équation en forme close de ce livre, et une
+implémentation de référence autonome (`tools/render_sidecar.py`, NumPy
+seul, sans aucun code NebulaScope) reproduit le rendu de NebulaScope à
+partir de lui — vérifié en intégration continue à quelques ULP float32 près
+sur chaque pixel (`tests/conformance/`). C'est ce qui rend un étirement
+*explicable* (lire le bloc, savoir exactement ce qui a été fait) et
+*reproductible dans d'autres logiciels* (implémenter six courtes
+équations).
+
+### 6.1 Le bloc
+
+```json
+"display": {
+  "schema": 1,
+  "fn": "ghs",                       // linear | log | asinh | ghs
+  "count": 3,                        // canaux pour lesquels l'état a été fait
+  "channels": [                      // R, V, B (l'indice 0 sert au mono)
+    { "lo": 0.0012, "hi": 0.9840,    // fenêtre de données (unités brutes)
+      "black": 0.031, "mid": 0.118, "white": 1.0 },   // normalisés dans [lo,hi]
+    { ... }, { ... }
+  ],
+  "ghs":    { "D": 1.6, "b": 6.0, "SP": 0.18, "LP": 0.0, "HP": 1.0 },
+  "cmap": "gray", "cmapInvert": false, "cmapSplit": false, "split": 0.25,
+  "adjust": { "blackpoint": 0, "whitepoint": 1, "shadows": 0,
+              "highlights": 0, "brightness": 0, "contrast": 0, "gamma": 1,
+              "temperature": 0, "tint": 0, "hue": 0,
+              "saturation": 0, "vibrance": 0 }
+}
+```
+
+`schema` est la version de *ce* bloc (indépendante de la `version` propre
+du fichier annexe) ; un lecteur doit refuser un schéma plus récent que
+celui qu'il connaît. Les énumérations sont stockées par nom, jamais par
+entier.
+
+### 6.2 La chaîne, par canal $c$ et valeur brute $v$
+
+**Fenêtre.** Les poignées noir/milieu/blanc du canal vivent en
+*coordonnées de fenêtre normalisées* sur $[\mathrm{lo}_c, \mathrm{hi}_c]$
+— c'est ce qui rend un état portable entre images de plages de données
+différentes :
+
+$$t \;=\; \operatorname{clamp}_{[0,1]}\!\left(
+  \frac{\dfrac{v-\mathrm{lo}_c}{\mathrm{hi}_c-\mathrm{lo}_c} - \mathrm{black}_c}
+       {\mathrm{white}_c-\mathrm{black}_c}\right).$$
+
+**Transfert** $T(t)$, l'un de :
+
+- `linear`, `log`, `asinh` — une forme de base suivie de la fonction de
+  transfert des tons moyens (§5) de pivot
+  $m_c = (\mathrm{mid}_c-\mathrm{black}_c)/(\mathrm{white}_c-\mathrm{black}_c)$,
+  borné à $[0{,}001,\ 0{,}999]$ :
+  $$T(t) = \mathrm{MTF}\big(s(t);\, m_c\big),\qquad
+    s(t) = \begin{cases} t & \text{linear}\\
+      \ln(1+500t)/\ln 501 & \text{log}\\
+      \operatorname{asinh}(50t)/\operatorname{asinh}50 & \text{asinh}\end{cases}$$
+- `ghs` — une courbe *maîtresse* partagée par tous les canaux : l'intégrale
+  cumulée normalisée de la pente d'étirement local
+  $$\sigma(x) = D_e\,\big(1 + b\,D_e\,|x-\mathrm{SP}|\big)^{-(1+1/b)}
+    \quad (b>0;\ \text{logarithmique } D_e/(1+|b|D_e|x-\mathrm{SP}|) \text{ pour } b<0,\
+    \text{exponentielle } D_e e^{-D_e|x-\mathrm{SP}|} \text{ pour } b=0),$$
+  avec $D_e = e^{D}-1$ et $x$ borné à $[\mathrm{LP},\mathrm{HP}]$ avant
+  d'évaluer $\sigma$ (zones de protection linéaires) ;
+  $T(t) = \int_0^t \sigma \,/\, \int_0^1 \sigma$. NebulaScope l'évalue sur
+  une grille trapézoïdale de 4096 points et interpole linéairement entre
+  les nœuds ; une implémentation conforme fait de même, ce qui donne un
+  accord au niveau de l'ULP plutôt qu'un simple accord visuel.
+
+**Ajustements de tonalité** (monotones, par canal, composés dans $T$), dans
+cet ordre : re-fenêtrage point noir/point blanc, puis
+$y \mathrel{+}= \mathrm{shadows}\cdot 2y(1-y)^2$,
+$y \mathrel{+}= \mathrm{highlights}\cdot 2y^2(1-y)$,
+$y \mathrel{+}= \mathrm{brightness}/2$,
+$y = \tfrac12 + (y-\tfrac12)\tan\!\big((\mathrm{contrast}+1)\tfrac{\pi}{4}\big)$,
+bornage, puis $y^{1/\gamma}$.
+
+**Ajustements de couleur** (inter-canaux, RVB seulement), dans cet ordre :
+gains de balance des blancs
+$R\,(1+0{,}30\,\mathrm{temp}+0{,}15\,\mathrm{tint}),\;
+ G\,(1-0{,}30\,\mathrm{tint}),\;
+ B\,(1-0{,}30\,\mathrm{temp}+0{,}15\,\mathrm{tint})$ ;
+la matrice standard de rotation de teinte à luminance préservée (les
+coefficients `hue-rotate` de SVG/CSS) de `hue` degrés ; puis saturation
+autour de la luma Rec.\,709 $Y$ : $C = Y + (C-Y)\,f$ avec
+$f = (1+\mathrm{saturation})\,(1+\mathrm{vibrance}\,(1-s))$, $s$ la
+saturation TSV du pixel. Bornage à $[0,1]$.
+
+**Sortie.** Le résultat est le rendu Float32 [0,1] (ce que *Enregistrer
+l'image étirée sous…* grave). L'image écran 8 bits en est l'arrondi sur
+255 niveaux — NebulaScope ajoute à l'écran un tramage triangulaire de
+±1 LSB, cosmétique d'affichage qui ne fait délibérément *pas* partie du
+format.
+
+### 6.3 Lire un ajustement de transport
+
+Un transport de couleurs non destructif (§3) n'est rien d'autre qu'un bloc
+d'affichage : les `black/mid/white` par canal qu'il a résolus, plus, quand
+l'ajustement couleur était activé, le vecteur `adjust`. Deux ajustements se
+comparent comme du JSON, et la différence se localise — fenêtrage contre
+teinte contre saturation — ce qui renseigne sur la façon dont les deux
+images diffèrent, et pas seulement sur une recette.
+
+### 6.4 Portée et hors-champ de l'implémentation de référence
+
+`render_sidecar.py` couvre les quatre fonctions de transfert, le fenêtrage
+par canal, tous les ajustements de tonalité et de couleur, mono et RVB.
+Les palettes en fausses couleurs (`cmap` autre que `gray`, ou les
+modificateurs inversion/scission) sont des tables 8 bits définies par
+points de contrôle dans `src/core/Colormap.cpp`, qui reste la référence à
+leur sujet ; une image mono avec palette active passe par le même
+étirement puis est indexée dans cette table.

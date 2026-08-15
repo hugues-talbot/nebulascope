@@ -86,6 +86,7 @@ public:
     // Annotations snapshots what the screen shows (e.g. a non-destructive
     // transport fit) and a fresh session reproduces it. Enum values are
     // written as NAMES, so files survive enum reordering.
+    static constexpr int kDisplaySchemaVersion = 1;
     static QJsonObject stateToJson(const State& s);
     static State stateFromJson(const QJsonObject& o);  // .valid=false if unusable
     State state() const {

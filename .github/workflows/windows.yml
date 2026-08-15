@@ -108,6 +108,11 @@ jobs:
           cmake --install libxisf-build --config Release
 
       # ---- NebulaScope -------------------------------------------------------
+      # numpy for the sidecar conformance test (CMake finds the runner's python3;
+      # the test is skipped when numpy is absent, so this only widens coverage).
+      - name: numpy for conformance test
+        run: python -m pip install --quiet numpy
+
       - name: Configure
         shell: pwsh
         run: |

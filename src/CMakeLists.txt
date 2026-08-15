@@ -149,4 +149,23 @@ if(BUILD_TESTING)
     set_tests_properties(smoke PROPERTIES
                          ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
                          TIMEOUT 120)
+
+    # Sidecar conformance: the display block rendered by NebulaScope and by
+    # the standalone reference (tools/render_sidecar.py, no NebulaScope code)
+    # must agree pixel-for-pixel. Needs python3 + numpy; skipped otherwise.
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+                        RESULT_VARIABLE _np_rc OUTPUT_QUIET ERROR_QUIET)
+        if(_np_rc EQUAL 0)
+            add_test(NAME sidecar_conformance
+                     COMMAND ${Python3_EXECUTABLE}
+                             ${CMAKE_SOURCE_DIR}/tests/conformance/check_sidecar.py
+                             $<TARGET_FILE:nebulascope>
+                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+            set_tests_properties(sidecar_conformance PROPERTIES TIMEOUT 300)
+        else()
+            message(STATUS "numpy not found - sidecar conformance test disabled")
+        endif()
+    endif()
 endif()
