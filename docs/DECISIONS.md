@@ -106,6 +106,19 @@ that one the *what*.)
   other software, and a transport fit becomes a diffable object. Rule:
   any change to the transfer/adjustment math updates spec, reference,
   and schema version together — the conformance test is the tripwire.
+- **Values in All Views = the link transforms made visible.** The per-cell
+  readout + crosshair (V) is not new machinery: it fans the hovered pixel
+  through the very `world` transforms calibrated linking navigates with, so
+  the crosshair shows where the software BELIEVES the correspondence lies.
+  That turns calibrated linking from a navigation convenience into a
+  measurement instrument with a visible error — hover a star, see whether
+  the other view's crosshair lands on it. Principle worth reusing: when a
+  hidden state drives behaviour (a transform, a fit, a calibration), the
+  cheapest high-value feature is usually to render that state, not to add
+  a new one. (Prior art — DS9's crosshair lock, medical viewers — assumes
+  a shared WCS or identical geometry; this works on unsolved frames of
+  different scale/rotation aligned by eye, which is the comparison case
+  that actually occurs in the field.)
 - **Save dialogs: native on macOS via NSSavePanel accessory views.** Qt can
   host inline option rows only in its own non-native dialog — which is why
   the rich save dialogs were Qt-drawn at first. The platform's intended
