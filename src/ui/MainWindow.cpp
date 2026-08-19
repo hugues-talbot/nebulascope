@@ -2815,6 +2815,13 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
             break;
         }
     }
+    // Make the one deviation from "only what is on screen" explicit: a
+    // reference that is not displayed in any cell has no framing to honour,
+    // so its WHOLE image feeds the estimate — say so, appended to whichever
+    // success message follows.
+    const QString refNote = refRoi.valid()
+        ? QString()
+        : tr(" · reference not displayed — matched over its full image");
 
     ColorTransportResult res = transportColors(srcDisp, refDisp, 15, 200000, srcRoi, refRoi);
     QApplication::restoreOverrideCursor();
@@ -2888,7 +2895,7 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
                                          tr("colour-match stretch")));
         statusBar()->showMessage(
             tr("Colour match fitted as stretch (non-destructive) — RMSE %1%2")
-                .arg(rms.join(QLatin1String(" / ")), colourNote), 6000);
+                .arg(rms.join(QLatin1String(" / ")), colourNote) + refNote, 6000);
         return true;
     }
 
@@ -2911,7 +2918,7 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         displayPath(newKey);
     }
     statusBar()->showMessage(tr("Colours transported from %1")
-                                 .arg(QFileInfo(key).fileName()), 4000);
+                                 .arg(QFileInfo(key).fileName()) + refNote, 4000);
     return true;
 }
 
