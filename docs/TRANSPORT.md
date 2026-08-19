@@ -184,6 +184,19 @@ mode remains one checkbox away.
 - Judging RMSE: values are in display units on $[0,1]$; experience suggests
   a fit below $\sim 0.02$ is visually convincing, while larger residuals
   usually indicate the reference demanded a hue rotation.
+- **The reference need not show the same field.** Transport matches
+  *distributions*, never pixels, so any image with the same *kind* of
+  content is a legitimate reference: two different parts of one supernova
+  remnant (OIII and Hα ribbons on a starfield) have alike colour
+  distributions even though no feature coincides. Field case: a
+  collaborator's NGC 6960 and NGC 6992, rendered with two different STFs,
+  were made identical in colour from two JPEGs alone — no linear data, no
+  pixel access, different fields. The non-destructive fit is what makes
+  this safe: a monotone per-channel curve plus a global hue/saturation move
+  cannot invent structure where the distributions genuinely disagree, so
+  "make these alike" degrades gracefully to "as alike as a display
+  transform can be". And because the result is a display block (§6), the
+  match is a file you can hand back.
 
 ## 5. Appendix: imported display functions and the Möbius rebase
 

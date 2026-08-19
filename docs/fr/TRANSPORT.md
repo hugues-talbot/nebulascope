@@ -211,6 +211,22 @@ exact reste à une case à cocher.
   convaincant, tandis que des résidus plus grands indiquent en général que
   la référence exigeait une rotation de teinte.
 
+- **La référence n'a pas besoin de montrer le même champ.** Le transport
+  apparie des *distributions*, jamais des pixels : toute image au contenu
+  du même *genre* est une référence légitime — deux parties différentes
+  d'un même rémanent de supernova (rubans OIII et Hα sur un champ
+  d'étoiles) ont des distributions de couleurs semblables alors qu'aucun
+  détail ne coïncide. Cas de terrain : les NGC 6960 et NGC 6992 d'un
+  collaborateur, rendues avec deux STF différentes, ont été rendues
+  identiques en couleur à partir de deux JPEG seulement — sans données
+  linéaires, sans accès aux pixels, champs différents. C'est l'ajustement
+  non destructif qui rend cela sûr : une courbe monotone par canal plus un
+  déplacement global de teinte/saturation ne peut inventer de structure là
+  où les distributions divergent réellement, et « rendre semblables » se
+  dégrade gracieusement en « aussi semblables qu'une transformation
+  d'affichage le permet ». Et comme le résultat est un bloc d'affichage
+  (§6), l'appariement est un fichier que l'on peut rendre à son auteur.
+
 ## 5. Annexe : fonctions d'affichage importées et recalage de Möbius
 
 Quand un XISF porte l'étirement d'écran enregistré par l'application
