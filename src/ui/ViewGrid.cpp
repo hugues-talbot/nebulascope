@@ -4,6 +4,7 @@
 #include <QGridLayout>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QFontDatabase>
 #include <QToolButton>
 #include <QEvent>
 #include <QMouseEvent>
@@ -23,6 +24,16 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
     m_placeholder->setAlignment(Qt::AlignCenter);
     m_placeholder->setStyleSheet(QStringLiteral("color:#3f4c5a;font-size:12px;background:transparent;border:none;"));
     m_placeholder->setAttribute(Qt::WA_TransparentForMouseEvents);   // clicks reach the view
+
+    // Parented to the GRID (not this cell) so it can be raised above the
+    // overlay panels, which are grid children stacked over the cells.
+    m_readout = new QLabel(parent);
+    m_readout->setStyleSheet(QStringLiteral(
+        "color:#e6edf3;background:rgba(10,14,20,190);border:none;"
+        "border-radius:3px;padding:2px 6px;font-size:11px;"));
+    m_readout->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    m_readout->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_readout->hide();
 
     m_linkBtn = new QToolButton(this);
     m_linkBtn->setText(QStringLiteral("\u21c4"));
@@ -55,6 +66,7 @@ void ViewCell::clearContent() {
     world = QTransform();
     calibrated = false;
     if (m_linkBtn) m_linkBtn->setChecked(false);
+    if (m_readout) m_readout->hide();
     m_view->clearDisplay();
     refreshChrome();
 }
@@ -94,9 +106,37 @@ bool ViewCell::eventFilter(QObject* obj, QEvent* ev) {
     return false;
 }
 
+// Bottom-left: the one corner no floating panel occupies (the overlay image
+// list sits top-left of the first cell, the histogram top-right of the last).
+void ViewCell::setReadout(const QString& text) {
+    if (text.isEmpty()) { m_readout->hide(); return; }
+    m_readout->setText(text);
+    m_readout->adjustSize();
+    placeReadout();
+    m_readout->raise();          // above the overlay panels (grid siblings)
+    m_readout->show();
+}
+
+void ViewCell::placeReadout() {
+    if (!m_readout->parentWidget()) return;
+    const QPoint local(8, height() - m_readout->height() - 8);
+    m_readout->move(mapTo(m_readout->parentWidget(), local));
+}
+
+void ViewCell::moveEvent(QMoveEvent* e) {
+    QFrame::moveEvent(e);
+    placeReadout();
+}
+
+void ViewCell::hideEvent(QHideEvent* e) {
+    QFrame::hideEvent(e);
+    if (m_readout) m_readout->hide();     // a regrid that hides this cell
+}
+
 void ViewCell::resizeEvent(QResizeEvent* e) {
     QFrame::resizeEvent(e);
     m_placeholder->setGeometry(rect());
+    placeReadout();
     m_linkBtn->move(width() - m_linkBtn->sizeHint().width() - 8, 8);
     m_linkBtn->resize(m_linkBtn->sizeHint());
     m_linkBtn->raise();

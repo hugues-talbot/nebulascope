@@ -212,6 +212,12 @@ private:
     bool m_hasCopiedAnn = false;
     int m_hoverX = 0, m_hoverY = 0;                        // last hovered image pixel
     bool m_hoverValid = false;
+    // Values Everywhere (V): the coordinates/values under the pointer shown as
+    // an overlay in EVERY cell, each reading its own data at the corresponding
+    // pixel (through calibrated-link transforms when present).
+    bool m_valuesEverywhere = false;
+    void updateReadouts(int x, int y, bool valid);   // fan the active hover out
+    void clearReadouts();
     QAction* m_toolEllipse = nullptr;
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;

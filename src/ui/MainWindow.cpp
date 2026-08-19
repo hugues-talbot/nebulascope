@@ -1111,6 +1111,19 @@ void MainWindow::buildMenusAndToolbar() {
     aAnnVis->setChecked(true);
     m_annVisAct = aAnnVis;
     acts["toggle_annotations"] = aAnnVis;
+    // Values Everywhere: while comparing split views, show the coordinates
+    // and values under the pointer in ALL cells (each from its own data at
+    // the corresponding pixel), independent of the histogram panel's line.
+    QAction* aVals = view->addAction(tr("&Values in All Views"), QKeySequence("V"), this, [this] {
+        m_valuesEverywhere = !m_valuesEverywhere;
+        if (!m_valuesEverywhere) clearReadouts();
+        else if (m_hoverValid) updateReadouts(m_hoverX, m_hoverY, true);
+        statusBar()->showMessage(m_valuesEverywhere
+            ? tr("Values in all views: on — hover to read every cell at the pointer")
+            : tr("Values in all views: off"), 3000);
+    });
+    aVals->setCheckable(true);
+    acts["values_everywhere"] = aVals;
     // Hide the scrollbars ("elevators") for a clean canvas — pans still work
     // (right-drag / Shift-drag / middle-drag). Applies to every split cell.
     QAction* aScroll = view->addAction(tr("Hide Scroll&bars"), QKeySequence("H"), this, [this] {
@@ -4786,6 +4799,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
 
 void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool valid) {
     m_hoverX = x; m_hoverY = y; m_hoverValid = valid;   // paste-at-cursor anchor
+    if (m_valuesEverywhere) updateReadouts(x, y, valid);
     if (!valid) { m_pixelLabel->setText("—"); return; }
     QString txt;
     if (m_image.channels() >= 3)
@@ -4797,6 +4811,47 @@ void MainWindow::onPixelHovered(int x, int y, double r, double g, double b, bool
     if (m_wcs.pixelToSky(x, y, ra, dec))
         txt += QStringLiteral("   ·   %1  %2").arg(Wcs::formatRa(ra), Wcs::formatDec(dec));
     m_pixelLabel->setText(txt);
+}
+
+// ---- Values Everywhere ------------------------------------------------------
+
+namespace {
+QString readoutText(const ImageData& img, int x, int y) {
+    if (!img.isValid() || x < 0 || y < 0 || x >= img.width() || y >= img.height())
+        return QStringLiteral("(%1, %2)  —").arg(x).arg(y);
+    const std::size_t i = std::size_t(y) * img.width() + x;
+    auto v = [&](int c) { return double(img.plane<float>(c)[i]); };
+    if (img.channels() >= 3)
+        return QStringLiteral("(%1, %2)  R %3  G %4  B %5").arg(x).arg(y)
+            .arg(v(0), 0, 'g', 5).arg(v(1), 0, 'g', 5).arg(v(2), 0, 'g', 5);
+    return QStringLiteral("(%1, %2)  %3").arg(x).arg(y).arg(v(0), 0, 'g', 5);
+}
+} // namespace
+
+// The active cell's hovered pixel, shown in every cell against ITS data. The
+// corresponding pixel in another cell is q = W_o^-1(W_c(p)) through the
+// cells' calibrated-link "world" transforms — identity for same-size or
+// unlinked views, i.e. the same coordinates, which is the comparison
+// assumption; a calibrated pair maps through the alignment the user set.
+void MainWindow::updateReadouts(int x, int y, bool valid) {
+    ViewCell* act = m_grid->activeCell();
+    if (!act) return;
+    if (!valid) { clearReadouts(); return; }
+    const QPointF world = act->world.map(QPointF(x + 0.5, y + 0.5));
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        const ImageData& img = (c == act) ? m_image : c->image;
+        if (!img.isValid()) { c->setReadout(QString()); continue; }
+        int qx = x, qy = y;
+        if (c != act && c->calibrated && act->calibrated) {
+            const QPointF q = c->world.inverted().map(world);
+            qx = int(std::floor(q.x())); qy = int(std::floor(q.y()));
+        }
+        c->setReadout(readoutText(img, qx, qy));
+    }
+}
+
+void MainWindow::clearReadouts() {
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) c->setReadout(QString());
 }
 
 } // namespace astro

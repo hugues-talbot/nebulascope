@@ -44,6 +44,11 @@ public:
     void setActive(bool on);
     void refreshChrome();
     void setChromeHidden(bool hidden);    // clean canvas: no border, no link button                 // placeholder / link-button visibility
+    // Values-everywhere readout (V): a small top-left overlay showing the
+    // coordinates and pixel values under the pointer, in THIS cell's own
+    // data. Empty text hides it.
+    void setReadout(const QString& text);
+    void placeReadout();                  // re-position after cell moves/resizes
 
     // Stash of MainWindow's current-image state while this cell is inactive.
     // (Moved in/out on activation swaps; see MainWindow::onCellSwap.)
@@ -68,6 +73,8 @@ signals:
 protected:
     bool eventFilter(QObject* obj, QEvent* ev) override;
     void resizeEvent(QResizeEvent*) override;
+    void moveEvent(QMoveEvent*) override;
+    void hideEvent(QHideEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
 
 private:
@@ -75,6 +82,7 @@ private:
     ImageView* m_view = nullptr;
     AnnotationLayer* m_layer = nullptr;
     QLabel* m_placeholder = nullptr;
+    QLabel* m_readout = nullptr;
     QToolButton* m_linkBtn = nullptr;
     bool m_active = false;
     bool m_chromeHidden = false;

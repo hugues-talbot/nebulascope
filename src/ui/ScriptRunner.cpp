@@ -40,6 +40,9 @@ const CommandRef kCommands[] = {
     "Select image-list row n (1-based) and display it."}},
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"hover",      {"hover <x> <y> | hover off",
+    "Synthesize a pointer hover over image pixel (x,y) of the active view\n"
+    "(status-bar readout; per-cell overlays when Values in All Views is on)."}},
   {"activate",   {"activate <n>",
     "Make view cell n (1-based, raster order) the active cell — the same\n"
     "path as a mouse click in that cell."}},
@@ -234,6 +237,27 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
     if (cmd == QLatin1String("prev")) { m_w->prevImage(); return true; }
+    if (cmd == QLatin1String("hover")) {
+        // hover <x> <y> — synthesize a pointer hover over image pixel (x,y) of
+        // the active view: drives the status-bar readout and, with Values in
+        // All Views on, the per-cell overlays. `hover off` = pointer left.
+        if (!needArgs(1)) return false;
+        if (t[1].toLower() == QLatin1String("off")) {
+            m_w->onPixelHovered(0, 0, 0, 0, 0, false);
+            return true;
+        }
+        if (t.size() < 3) { err = "hover <x> <y> | hover off"; return false; }
+        const ImageData& img = m_w->m_image;
+        if (!img.isValid()) { err = "no image shown"; return false; }
+        const int x = t[1].toInt(), y = t[2].toInt();
+        if (x < 0 || y < 0 || x >= img.width() || y >= img.height()) { err = "pixel out of bounds"; return false; }
+        const std::size_t i = std::size_t(y) * img.width() + x;
+        const double r = img.plane<float>(0)[i];
+        const double g = img.channels() >= 3 ? img.plane<float>(1)[i] : r;
+        const double b = img.channels() >= 3 ? img.plane<float>(2)[i] : r;
+        m_w->onPixelHovered(x, y, r, g, b, true);
+        return true;
+    }
     if (cmd == QLatin1String("activate")) {
         // activate <n> — make view cell n (1-based, raster order) the active
         // one: exactly the path a mouse click in that cell takes.

@@ -517,6 +517,14 @@ colonnes (max 5×5).
   liste ; glisser *au sein* de la liste réordonne toujours).
   Chaque cellule garde sa propre image décodée : les comparaisons ne
   redécodent pas (contrairement au blink de gros fichiers).
+- **Valeurs dans toutes les vues** (**V**, menu Affichage ; une bascule) —
+  pendant une comparaison, survoler la vue active affiche les coordonnées et
+  la ou les valeurs du pixel sous le pointeur en petite surimpression dans
+  **chaque** cellule, chacune lue dans *ses propres* données au pixel
+  correspondant : mêmes coordonnées pour des vues de même taille ou non
+  liées, et à travers l'alignement pour une paire calibrée. Indépendant de
+  la ligne de lecture du panneau histogramme (qui continue de ne montrer
+  que la vue active). **V** à nouveau pour désactiver.
 - **Liaison automatique** — les cellules dont les images ont des dimensions
   identiques partagent zoom/panoramique. Le bouton **⇄** de chaque cellule
   permet de s'en retirer.

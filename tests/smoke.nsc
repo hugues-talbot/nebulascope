@@ -171,6 +171,15 @@ action close_image
 assert rows 3
 assert name df_linked.xisf
 
+# Values in All Views (V): hover fans the active pixel out to every cell's
+# own data as an overlay; off again clears. Exercised through the script
+# hover + values_everywhere paths (rendering checked in the capture tests).
+action values_everywhere
+hover 10 10
+sleep 100
+hover off
+action values_everywhere
+
 # Metadata-less CFA: a raw mosaic dumped into plain grayscale PNG (planetary/
 # solar capture streams). Auto can't demosaic (no BAYERPAT anywhere); a
 # forced pattern must; `all` stamps the choice onto every listed frame.

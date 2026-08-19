@@ -444,6 +444,13 @@ data purity.
   the cell activates and shows that image (the row stays in the list;
   dragging *within* the list still reorders). Each cell keeps its own decoded image, so
   comparisons don't re-decode (unlike blinking large files).
+- **Values in all views** (**V**, View menu; a toggle) — while comparing,
+  hovering the active view shows the coordinates and pixel value(s) under
+  the pointer as a small overlay in **every** cell, each read from *its
+  own* data at the corresponding pixel: the same coordinates for
+  same-size or unlinked views, and through the alignment for a
+  calibrated pair. Independent of the histogram panel's readout line
+  (which keeps showing the active view only). Off again with **V**.
 - **Automatic linking** — cells with images of identical dimensions share
   zoom/pan. The **⇄** button on each cell opts out.
 - **Calibrated linking** (different sizes) — align the two views manually
