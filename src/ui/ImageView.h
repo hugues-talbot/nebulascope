@@ -24,6 +24,10 @@ public:
 
     void setDisplayImage(const QImage& img);
     void clearDisplay();            // drop the pixmap + scene (empty cell)
+    // Measurement crosshair (Values in All Views): a small marker at image
+    // pixel (x,y), in scene coordinates so it follows zoom/pan; cosmetic pen
+    // (1 px on screen at any zoom). Negative x hides it.
+    void setMarker(int x, int y);
     void setSource(const ImageData* img) { m_src = img; }   // for pixel readout
     void zoomToFit();
     void zoomActualSize();          // 1:1 — one image pixel per screen pixel, centred on the current view
@@ -71,6 +75,7 @@ signals:
 
 protected:
     void paintEvent(QPaintEvent*) override;
+    void drawForeground(QPainter* p, const QRectF& rect) override;
     void dragEnterEvent(QDragEnterEvent*) override;
     void dragMoveEvent(QDragMoveEvent*) override;
     void dropEvent(QDropEvent*) override;
@@ -82,6 +87,7 @@ protected:
 
 private:
     QGraphicsScene* m_scene = nullptr;
+    int m_markX = -1, m_markY = -1;   // measurement crosshair, image px
     QGraphicsPixmapItem* m_item = nullptr;
     QRubberBand* m_band = nullptr;
     QPoint m_press;

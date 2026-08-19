@@ -449,8 +449,11 @@ data purity.
   the pointer as a small overlay in **every** cell, each read from *its
   own* data at the corresponding pixel: the same coordinates for
   same-size or unlinked views, and through the alignment for a
-  calibrated pair. Independent of the histogram panel's readout line
-  (which keeps showing the active view only). Off again with **V**.
+  calibrated pair, and a small **crosshair** in every cell marks the pixel
+  being read — the tell-tale when two views are not where you think.
+  Independent of the histogram panel's readout line (which keeps showing
+  the active view only). Off again with **V**. (In the overlay layout a
+  floating panel can hide a readout or crosshair; **Tab** clears them.)
 - **Automatic linking** — cells with images of identical dimensions share
   zoom/pan. The **⇄** button on each cell opts out.
 - **Calibrated linking** (different sizes) — align the two views manually

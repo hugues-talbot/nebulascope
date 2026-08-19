@@ -4840,18 +4840,25 @@ void MainWindow::updateReadouts(int x, int y, bool valid) {
     const QPointF world = act->world.map(QPointF(x + 0.5, y + 0.5));
     for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
         const ImageData& img = (c == act) ? m_image : c->image;
-        if (!img.isValid()) { c->setReadout(QString()); continue; }
+        if (!img.isValid()) { c->setReadout(QString()); c->view()->setMarker(-1, -1); continue; }
         int qx = x, qy = y;
         if (c != act && c->calibrated && act->calibrated) {
             const QPointF q = c->world.inverted().map(world);
             qx = int(std::floor(q.x())); qy = int(std::floor(q.y()));
         }
         c->setReadout(readoutText(img, qx, qy));
+        // Crosshair where the value was read — the visual counterpart of the
+        // number, and the tell-tale when two views are NOT where you think.
+        const bool inside = qx >= 0 && qy >= 0 && qx < img.width() && qy < img.height();
+        c->view()->setMarker(inside ? qx : -1, inside ? qy : -1);
     }
 }
 
 void MainWindow::clearReadouts() {
-    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) c->setReadout(QString());
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        c->setReadout(QString());
+        c->view()->setMarker(-1, -1);
+    }
 }
 
 } // namespace astro

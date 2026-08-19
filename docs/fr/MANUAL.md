@@ -522,9 +522,13 @@ colonnes (max 5×5).
   la ou les valeurs du pixel sous le pointeur en petite surimpression dans
   **chaque** cellule, chacune lue dans *ses propres* données au pixel
   correspondant : mêmes coordonnées pour des vues de même taille ou non
-  liées, et à travers l'alignement pour une paire calibrée. Indépendant de
-  la ligne de lecture du panneau histogramme (qui continue de ne montrer
-  que la vue active). **V** à nouveau pour désactiver.
+  liées, et à travers l'alignement pour une paire calibrée, et un petit
+  **réticule** dans chaque cellule marque le pixel lu — l'indice révélateur
+  quand deux vues ne sont pas là où l'on croit. Indépendant de la ligne de
+  lecture du panneau histogramme (qui continue de ne montrer que la vue
+  active). **V** à nouveau pour désactiver. (En disposition surimpression,
+  un panneau flottant peut masquer une lecture ou un réticule ; **Tab** les
+  dégage.)
 - **Liaison automatique** — les cellules dont les images ont des dimensions
   identiques partagent zoom/panoramique. Le bouton **⇄** de chaque cellule
   permet de s'en retirer.

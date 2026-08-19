@@ -1,6 +1,8 @@
 #include "ui/ImageView.h"
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
+#include <QPen>
+#include <QPainter>
 #include <QRubberBand>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -83,6 +85,41 @@ void ImageView::paintEvent(QPaintEvent* e) {
             m_item->setTransformationMode(want);   // schedules one clean repaint
     }
     QGraphicsView::paintEvent(e);
+}
+
+void ImageView::setMarker(int x, int y) {
+    if (x == m_markX && y == m_markY) return;
+    m_markX = x; m_markY = y;
+    viewport()->update();
+}
+
+// Crosshair with a small open centre (the measured pixel stays visible),
+// drawn in scene = image coordinates so it tracks the pixel through
+// zoom/pan; the pen is cosmetic (1 px on screen at any zoom). Two-tone —
+// a dark halo under a light line — so it reads on both sky and stars.
+void ImageView::drawForeground(QPainter* p, const QRectF& rect) {
+    QGraphicsView::drawForeground(p, rect);
+    if (m_markX < 0 || m_markY < 0 || !m_item) return;
+    const QPointF c(m_markX + 0.5, m_markY + 0.5);              // pixel centre
+    const qreal s = std::sqrt(std::abs(transform().determinant()));  // px per image px
+    const qreal gap = 4.0 / s, arm = 14.0 / s;                    // screen-constant sizes
+    auto lines = [&](QPainter& q) {
+        q.drawLine(QPointF(c.x() - arm, c.y()), QPointF(c.x() - gap, c.y()));
+        q.drawLine(QPointF(c.x() + gap, c.y()), QPointF(c.x() + arm, c.y()));
+        q.drawLine(QPointF(c.x(), c.y() - arm), QPointF(c.x(), c.y() - gap));
+        q.drawLine(QPointF(c.x(), c.y() + gap), QPointF(c.x(), c.y() + arm));
+    };
+    p->save();
+    p->setRenderHint(QPainter::Antialiasing, false);
+    QPen halo(QColor(0, 0, 0, 170), 3.0);
+    halo.setCosmetic(true);
+    p->setPen(halo);
+    lines(*p);
+    QPen line(QColor(255, 235, 120), 1.0);                        // warm, unlike any palette
+    line.setCosmetic(true);
+    p->setPen(line);
+    lines(*p);
+    p->restore();
 }
 
 void ImageView::zoomToFit() {
