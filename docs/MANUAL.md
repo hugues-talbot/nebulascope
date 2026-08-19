@@ -461,18 +461,17 @@ data purity.
   image: the current correspondence becomes the calibration, and from then
   on the views navigate together, each at its own pixel scale. Calibrations
   survive rotations and flips of either image.
-- **Register from features** (**Shift+R**, then **⌥R**) — calibrate by
-  pointing instead of by eye. Rough-align the two views, press **Shift+R**,
+- **Match from features** (**M**, then **Shift+M**) — calibrate by
+  pointing instead of by eye. Rough-align the two views, press **M**,
   click a star (or any feature) in one view — a crosshair marks it — then
   click the *same* star in the other view. One pair **snaps the
   translation** exactly (scale and rotation stay as you aligned them). For
-  a full fit, press **⌥R** and click a *second*, different feature in both
+  a full fit, press **Shift+M** and click a *second*, different feature in both
   views: two pairs determine **scale + rotation + translation** in closed
   form (four equations, four unknowns — exact on both features, no
   fitting). The views are calibration-linked immediately; **V** then shows
   whether the crosshair lands on the stars everywhere else. **Esc** cancels
-  a pick in progress; plain **Shift+R** starts over. (Plain **R** remains
-  *Reset Stretch*.)
+  a pick in progress; plain **M** starts over.
 - `--split RxC` sets the grid from the command line (§13).
 
 ![NGC 7331 with SN 2025rbs: C11 (left) beside a 180mm camera lens (right)](screenshots/split-supernova.png)

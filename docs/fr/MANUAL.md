@@ -583,19 +583,18 @@ Cliquer `M81.xisf` dans un export PNG préremplit `M81`, enregistré
 `M81.png` ; avec le format correspondant sélectionné, le nom d'origine se
 reconstitue à l'identique, pour écraser ou réenregistrer.
 
-- **Recalage par points** (**Maj+R**, puis **⌥R**) — calibrer en pointant
+- **Appariement par points** (**M**, puis **Maj+M**) — calibrer en pointant
   plutôt qu'à l'œil. Alignez grossièrement les deux vues, appuyez sur
-  **Maj+R**, cliquez une étoile (ou tout détail) dans une vue — un réticule
+  **M**, cliquez une étoile (ou tout détail) dans une vue — un réticule
   la marque — puis cliquez la *même* étoile dans l'autre vue. Une paire
   **cale exactement la translation** (échelle et rotation restent telles
-  qu'alignées). Pour un ajustement complet, appuyez sur **⌥R** et cliquez
+  qu'alignées). Pour un ajustement complet, appuyez sur **Maj+M** et cliquez
   un *second* détail, différent, dans les deux vues : deux paires
   déterminent **échelle + rotation + translation** en forme close (quatre
   équations, quatre inconnues — exact sur les deux détails, sans
   ajustement). Les vues sont liées par calibration immédiatement ; **V**
   montre alors si le réticule tombe sur les étoiles partout ailleurs.
-  **Échap** annule un pointage en cours ; un nouveau **Maj+R** repart de
-  zéro. (**R** seul reste *Réinitialiser l'étirement*.)
+  **Échap** annule un pointage en cours ; un nouveau **M** repart de zéro.
 - **Fichier ▸ Enregistrer les données sous…** — les *données* (Float32,
   orientation courante) : FITS, XISF, ou TIFF 16 bits. Enregistrer un
   résultat en mémoire renomme son entrée de liste en fichier.

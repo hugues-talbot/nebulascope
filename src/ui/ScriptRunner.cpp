@@ -41,8 +41,8 @@ const CommandRef kCommands[] = {
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
   {"regpick",    {"regpick <cell> <x> <y>",
-    "A Register pick: image pixel (x,y) in view cell n (1-based), while\n"
-    "Register is armed (action register_views, or register_views_2 for the\n"
+    "A Match pick: image pixel (x,y) in view cell n (1-based), while\n"
+    "Match is armed (action register_views, or register_views_2 for the\n"
     "second pair). Two picks in different cells complete a pair."}},
   {"hover",      {"hover <x> <y> | hover off",
     "Synthesize a pointer hover over image pixel (x,y) of the active view\n"
@@ -247,7 +247,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (t.size() < 4) { err = "regpick <cell> <x> <y>"; return false; }
         ViewCell* c = m_w->m_grid->cellAt(t[1].toInt() - 1);
         if (!c) { err = "cell out of range"; return false; }
-        if (!m_w->m_regArmed) { err = "register not armed (action register_views first)"; return false; }
+        if (!m_w->m_regArmed) { err = "match not armed (action register_views first)"; return false; }
         m_w->onRegisterPointPicked(c->view(), t[2].toDouble(), t[3].toDouble());
         return true;
     }

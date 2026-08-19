@@ -1126,12 +1126,13 @@ void MainWindow::buildMenusAndToolbar() {
     });
     aVals->setCheckable(true);
     acts["values_everywhere"] = aVals;
-    // R itself is Reset Stretch (blink workflow) and ⌘R / ⌘⇧R are rotation /
-    // reload, so registration takes the free Shift+R / ⌥R pair.
-    acts["register_views"] = view->addAction(tr("&Register Views: Pick a Feature"),
-                                             QKeySequence("Shift+R"), this, [this] { startRegister(false); });
-    acts["register_views_2"] = view->addAction(tr("Register: Add Second Pair (scale+rotation)"),
-                                               QKeySequence("Alt+R"), this, [this] { startRegister(true); });
+    // "Match": M / Shift+M. (R and its modifier variants belong to the
+    // histogram workflow — Reset Stretch, rotate, reload — and a Shift+R
+    // next to a key hammered all day invites mis-keys both ways.)
+    acts["register_views"] = view->addAction(tr("&Match Views: Pick a Feature"),
+                                             QKeySequence("M"), this, [this] { startRegister(false); });
+    acts["register_views_2"] = view->addAction(tr("Match: Add Second Pair (scale+rotation)"),
+                                               QKeySequence("Shift+M"), this, [this] { startRegister(true); });
     // Hide the scrollbars ("elevators") for a clean canvas — pans still work
     // (right-drag / Shift-drag / middle-drag). Applies to every split cell.
     QAction* aScroll = view->addAction(tr("Hide Scroll&bars"), QKeySequence("H"), this, [this] {
@@ -4886,11 +4887,11 @@ void MainWindow::startRegister(bool secondPair) {
     int occ = 0;
     for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) if (c->occupied()) ++occ;
     if (occ < 2) {
-        statusBar()->showMessage(tr("Register needs two views with images — split the view first"), 4000);
+        statusBar()->showMessage(tr("Match needs two views with images — split the view first"), 4000);
         return;
     }
     if (secondPair && !m_regFirst.a) {
-        statusBar()->showMessage(tr("No first pair yet — Shift+R picks the first feature pair"), 4000);
+        statusBar()->showMessage(tr("No first pair yet — M picks the first feature pair"), 4000);
         return;
     }
     if (!secondPair) m_regFirst = RegPair{};        // fresh registration
@@ -4900,8 +4901,8 @@ void MainWindow::startRegister(bool secondPair) {
     for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
         if (c->occupied()) c->view()->setDrawTool(ImageView::DrawTool::Register);
     statusBar()->showMessage(secondPair
-        ? tr("Register (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels")
-        : tr("Register: click a feature (star) in one view, then the same feature in the other — Esc cancels"), 0);
+        ? tr("Match (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels")
+        : tr("Match: click a feature (star) in one view, then the same feature in the other — Esc cancels"), 0);
 }
 
 void MainWindow::cancelRegister() {
@@ -4911,7 +4912,7 @@ void MainWindow::cancelRegister() {
         c->view()->setDrawTool(ImageView::DrawTool::None);
         c->view()->setMarker(-1, -1);
     }
-    statusBar()->showMessage(tr("Register cancelled"), 2500);
+    statusBar()->showMessage(tr("Match cancelled"), 2500);
 }
 
 void MainWindow::onRegisterPointPicked(ImageView* v, double x, double y) {
@@ -4951,7 +4952,7 @@ void MainWindow::finishRegisterPair() {
         QPointF p0 = m_regFirst.pa, q0 = m_regFirst.pb;
         if (m_regFirst.a == B && m_regFirst.b == A) std::swap(p0, q0);
         else if (!(m_regFirst.a == A && m_regFirst.b == B)) {
-            statusBar()->showMessage(tr("Second pair must use the same two views as the first — registration restarted"), 5000);
+            statusBar()->showMessage(tr("Second pair must use the same two views as the first — match restarted"), 5000);
             m_regFirst = RegPair{}; m_regSecond = false;
             return;
         }
@@ -4988,7 +4989,7 @@ void MainWindow::finishRegisterPair() {
         const QTransform L(cur.m11(), cur.m12(), cur.m21(), cur.m22(), 0, 0);
         const QPointF Lp1 = L.map(p1);
         T = L * QTransform::fromTranslate(q1.x() - Lp1.x(), q1.y() - Lp1.y());
-        how = tr("translation snapped (scale/rotation as aligned by eye) — Alt+R adds a second pair for scale+rotation");
+        how = tr("translation snapped (scale/rotation as aligned by eye) — Shift+M adds a second pair for scale+rotation");
         m_regFirst = m_regCur;                        // available for a second pair
     }
     m_grid->calibrateFromCorrespondence(A, B, T);
@@ -4997,7 +4998,7 @@ void MainWindow::finishRegisterPair() {
         if (!m_regArmed && !m_valuesEverywhere)
             for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) c->view()->setMarker(-1, -1);
     });
-    statusBar()->showMessage(tr("Views registered — %1").arg(how), 8000);
+    statusBar()->showMessage(tr("Views matched — %1").arg(how), 8000);
 }
 
 void MainWindow::clearReadouts() {
