@@ -548,6 +548,18 @@ côte à côte, chacune à sa propre échelle de pixels. Avec la liaison
 calibrée (⇄) engagée, panoramique et zoom interrogent les deux optiques à
 la même position du ciel.*
 
+![Dentelles orientales, deux nuits : doublet Vixen 102/900, 5 h (gauche) apparié à une TS 80/380, ~1 h (droite), couleurs transportées sans destruction](../screenshots/veil-two-nights.png)
+
+*Deux acquisitions des Dentelles orientales (NGC 6992), appariées et
+comparées. À gauche : 5 h avec un doublet Vixen 102/900 mm, par un ami. À
+droite : environ 1 h avec une lunette TS 80/380 mm. Les vues sont
+appariées (**M**) — les mêmes filaments sous les mêmes pixels, chaque
+instrument à sa propre échelle — et les couleurs transportées sans
+destruction (§11) vers le rendu de gauche ; ce qui reste différent est du
+signal : temps d'intégration et focale, pas le traitement. L'instrument
+de comparaison en une image : géométrie calculée, pixels intacts, une
+sonde (**V**) qui lit les deux à la même position du ciel.*
+
 ## 13. Ligne de commande
 
 L'interface en ligne de commande et le langage de script restent en anglais
