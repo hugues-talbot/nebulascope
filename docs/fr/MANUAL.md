@@ -1,6 +1,6 @@
 # NebulaScope — Manuel de l'utilisateur
 
-*Version 0.94. Ceci est le guide complet ; pour un démarrage rapide, voir le
+*Version 0.95. Ceci est le guide complet ; pour un démarrage rapide, voir le
 [README](https://github.com/hugues-talbot/nebulascope#readme). Chaque
 raccourci clavier cité ici est un réglage par défaut — tous sont
 reconfigurables dans **Préférences ▸ Raccourcis** (stockés dans
