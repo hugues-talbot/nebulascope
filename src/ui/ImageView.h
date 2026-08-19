@@ -40,7 +40,7 @@ public:
     // Annotation drawing tools: while a tool is armed, left-drag draws the
     // shape (dashed preview) instead of the zoom rectangle; Text is a single
     // click. The tool disarms itself after each shape.
-    enum class DrawTool { None, Ellipse, Line, Text };
+    enum class DrawTool { None, Ellipse, Line, Text, Register };
     void setDrawTool(DrawTool t);
     DrawTool drawTool() const { return m_tool; }
 
@@ -64,6 +64,7 @@ signals:
     void ellipseDrawn(double cx, double cy, double a, double b);
     void lineDrawn(double x1, double y1, double x2, double y2);
     void textPointPicked(double x, double y);
+    void registerPointPicked(double x, double y);   // Register tool: a feature clicked
     void drawToolFinished();       // tool disarmed — uncheck the toolbar button
     void annotationsEdited();      // user finished dragging annotation items
     // Left-press resolved: on an annotation item (isHandle for resize squares)

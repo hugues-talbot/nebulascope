@@ -216,6 +216,20 @@ private:
     // an overlay in EVERY cell, each reading its own data at the corresponding
     // pixel (through calibrated-link transforms when present).
     bool m_valuesEverywhere = false;
+    // Register (R / Shift+R): point-pair calibration between two cells.
+    // Pick a feature in one cell, the same feature in another: one pair
+    // snaps the translation (scale/rotation as aligned by eye); a second
+    // pair (Shift+R) solves the full similarity (scale+rotation+translation)
+    // from both pairs. Esc cancels an armed pick.
+    struct RegPair { ViewCell* a = nullptr; QPointF pa; ViewCell* b = nullptr; QPointF pb; };
+    bool m_regArmed = false;          // waiting for a pick
+    bool m_regSecond = false;         // this arming adds a second pair
+    RegPair m_regCur;                 // the pair being collected
+    RegPair m_regFirst;               // completed first pair (for the similarity solve)
+    void startRegister(bool secondPair);
+    void onRegisterPointPicked(ImageView* v, double x, double y);
+    void cancelRegister();
+    void finishRegisterPair();
     void updateReadouts(int x, int y, bool valid);   // fan the active hover out
     void clearReadouts();
     QAction* m_toolEllipse = nullptr;

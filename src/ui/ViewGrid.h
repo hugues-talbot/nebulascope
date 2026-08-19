@@ -41,6 +41,7 @@ public:
     bool occupied() const;
     void clearContent();                  // drop image/path/stretch; show placeholder
     bool linkEnabled() const;
+    void setLinkEnabled(bool on);         // tick/untick ⇄ programmatically (emits linkToggled)
     void setActive(bool on);
     void refreshChrome();
     void setChromeHidden(bool hidden);    // clean canvas: no border, no link button                 // placeholder / link-button visibility
@@ -114,6 +115,12 @@ signals:
     void viewCreated(ImageView* v);       // hook up app-level signals once per view
     void linkMessage(const QString& text);  // calibration feedback for the status bar
     void gridChanged();                   // rows/cols changed and cells re-placed
+public:
+    // Register: set cell `c`'s world so that it is calibration-linked to
+    // `anchor` with the given image->image correspondence T (anchor px ->
+    // c px), then navigate c to match the anchor. Used by the point-pair
+    // registration in MainWindow.
+    void calibrateFromCorrespondence(ViewCell* anchor, ViewCell* c, const QTransform& anchorToC);
 
 public:
     // The active image's pixels were remapped by `forward` (old scene → new

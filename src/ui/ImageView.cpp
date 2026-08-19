@@ -200,6 +200,15 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
             emit drawToolFinished();
             return;
         }
+        if (m_tool == DrawTool::Register) {
+            // One pick per arming: MainWindow re-arms the views for the
+            // next pick (the tool stays cross-cursor on the OTHER cells
+            // until the pair completes).
+            const double rx = sp.x(), ry = sp.y();
+            setDrawTool(DrawTool::None);
+            emit registerPointPicked(rx, ry);
+            return;
+        }
         m_drawing = true;
         m_drawStart = sp;
         QPen pen(QColor("#8fc0f5"), 0, Qt::DashLine);

@@ -55,6 +55,7 @@ ViewCell::ViewCell(int index, QWidget* parent) : QFrame(parent), m_index(index) 
 
 bool ViewCell::occupied() const { return m_view->hasImage(); }
 bool ViewCell::linkEnabled() const { return m_linkBtn->isChecked(); }
+void ViewCell::setLinkEnabled(bool on) { m_linkBtn->setChecked(on); }
 
 void ViewCell::clearContent() {
     image = ImageData();
@@ -271,6 +272,28 @@ void ViewGrid::onLinkToggled(ViewCell* c, bool on) {
     c->calibrated = true;
     anchor->calibrated = true;            // keeps its current world (identity or prior)
     emit linkMessage(tr("Views calibration-linked at the current alignment"));
+}
+
+// A correspondence T: anchor image px -> c image px. Linking requires
+// W_c(T(p)) == W_anchor(p) for all p, i.e. W_c = W_anchor * T^-1 (Qt
+// composes left-to-right: apply T^-1 first, then W_anchor). Both cells are
+// marked calibrated (same-size auto-links promote, like remapActiveScene),
+// the link buttons are ticked, and c adopts the anchor's navigation so the
+// clicked features land on the same screen spot immediately.
+void ViewGrid::calibrateFromCorrespondence(ViewCell* anchor, ViewCell* c,
+                                           const QTransform& anchorToC) {
+    if (!anchor || !c || anchor == c || !anchor->occupied() || !c->occupied()) return;
+    if (!anchorToC.isInvertible()) return;
+    // Tick ⇄ on both WITHOUT letting onLinkToggled re-derive the world from
+    // the current viewports — the solved correspondence is the calibration.
+    for (ViewCell* x : { anchor, c })
+        if (!x->linkEnabled()) { QSignalBlocker b(x); x->setLinkEnabled(true); }
+    c->world = anchorToC.inverted() * anchor->world;
+    anchor->calibrated = true;
+    c->calibrated = true;
+    c->view()->adoptNavigationCalibrated(anchor->view(), anchor->world, c->world);
+    c->refreshChrome();
+    anchor->refreshChrome();
 }
 
 void ViewGrid::remapActiveScene(const QTransform& forward) {

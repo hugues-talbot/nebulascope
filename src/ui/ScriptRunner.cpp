@@ -40,6 +40,10 @@ const CommandRef kCommands[] = {
     "Select image-list row n (1-based) and display it."}},
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"regpick",    {"regpick <cell> <x> <y>",
+    "A Register pick: image pixel (x,y) in view cell n (1-based), while\n"
+    "Register is armed (action register_views, or register_views_2 for the\n"
+    "second pair). Two picks in different cells complete a pair."}},
   {"hover",      {"hover <x> <y> | hover off",
     "Synthesize a pointer hover over image pixel (x,y) of the active view\n"
     "(status-bar readout; per-cell overlays when Values in All Views is on)."}},
@@ -237,6 +241,34 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
     if (cmd == QLatin1String("prev")) { m_w->prevImage(); return true; }
+    if (cmd == QLatin1String("regpick")) {
+        // regpick <cell> <x> <y> — a Register pick: image pixel (x,y) in cell n
+        // (1-based) while Register is armed (action register_views / _2).
+        if (t.size() < 4) { err = "regpick <cell> <x> <y>"; return false; }
+        ViewCell* c = m_w->m_grid->cellAt(t[1].toInt() - 1);
+        if (!c) { err = "cell out of range"; return false; }
+        if (!m_w->m_regArmed) { err = "register not armed (action register_views first)"; return false; }
+        m_w->onRegisterPointPicked(c->view(), t[2].toDouble(), t[3].toDouble());
+        return true;
+    }
+    if (cmd == QLatin1String("assert") && t.size() >= 6 && t[1].toLower() == QLatin1String("mapped")) {
+        // assert mapped <x> <y> <cell> <qx> <qy> [tol] — the active cell's
+        // image pixel (x,y) corresponds (through the calibrated-link worlds)
+        // to pixel (qx,qy) in cell n. Verifies registration geometry.
+        if (t.size() < 7) { err = "assert mapped x y cell qx qy [tol]"; return false; }
+        ViewCell* act = m_w->m_grid->activeCell();
+        ViewCell* o = m_w->m_grid->cellAt(t[4].toInt() - 1);
+        if (!act || !o) { err = "cell out of range"; return false; }
+        if (!(act->calibrated && o->calibrated)) { err = "cells are not calibration-linked"; return false; }
+        const QPointF q = o->world.inverted().map(act->world.map(QPointF(t[2].toDouble(), t[3].toDouble())));
+        const double tol = t.size() > 7 ? t[7].toDouble() : 0.05;
+        const double ex = t[5].toDouble(), ey = t[6].toDouble();
+        if (std::abs(q.x() - ex) > tol || std::abs(q.y() - ey) > tol) {
+            err = QStringLiteral("mapped to (%1, %2)").arg(q.x(), 0, 'f', 4).arg(q.y(), 0, 'f', 4);
+            return false;
+        }
+        return true;
+    }
     if (cmd == QLatin1String("hover")) {
         // hover <x> <y> — synthesize a pointer hover over image pixel (x,y) of
         // the active view: drives the status-bar readout and, with Values in

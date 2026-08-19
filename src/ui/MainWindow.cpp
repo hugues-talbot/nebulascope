@@ -870,6 +870,8 @@ void MainWindow::connectViewSignals(ImageView* v) {
     connect(v, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
     connect(v, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(v, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
+    connect(v, &ImageView::registerPointPicked, this,
+            [this, v](double x, double y) { onRegisterPointPicked(v, x, y); });
     connect(v, &ImageView::annotationPressed, this, [this](const QPointF& sp, bool isHandle) {
         if (isHandle) return;                       // dragging a handle — keep the set
         m_annotations->setActive(m_annotations->hitTest(sp));
@@ -1124,6 +1126,12 @@ void MainWindow::buildMenusAndToolbar() {
     });
     aVals->setCheckable(true);
     acts["values_everywhere"] = aVals;
+    // R itself is Reset Stretch (blink workflow) and ⌘R / ⌘⇧R are rotation /
+    // reload, so registration takes the free Shift+R / ⌥R pair.
+    acts["register_views"] = view->addAction(tr("&Register Views: Pick a Feature"),
+                                             QKeySequence("Shift+R"), this, [this] { startRegister(false); });
+    acts["register_views_2"] = view->addAction(tr("Register: Add Second Pair (scale+rotation)"),
+                                               QKeySequence("Alt+R"), this, [this] { startRegister(true); });
     // Hide the scrollbars ("elevators") for a clean canvas — pans still work
     // (right-drag / Shift-drag / middle-drag). Applies to every split cell.
     QAction* aScroll = view->addAction(tr("Hide Scroll&bars"), QKeySequence("H"), this, [this] {
@@ -1189,7 +1197,10 @@ void MainWindow::buildMenusAndToolbar() {
     });
 
     auto* esc = new QShortcut(QKeySequence("Esc"), this);
-    connect(esc, &QShortcut::activated, this, [this] { if (m_imageOnly) toggleImageOnly(); });
+    connect(esc, &QShortcut::activated, this, [this] {
+        if (m_regArmed) { cancelRegister(); return; }    // Esc: abandon a pick in progress
+        if (m_imageOnly) toggleImageOnly();
+    });
 
     // Image — lossless 90° rotations and flips (applied to the pixel data).
     QMenu* image = menuBar()->addMenu(tr("&Image"));
@@ -4852,6 +4863,141 @@ void MainWindow::updateReadouts(int x, int y, bool valid) {
         const bool inside = qx >= 0 && qy >= 0 && qx < img.width() && qy < img.height();
         c->view()->setMarker(inside ? qx : -1, inside ? qy : -1);
     }
+}
+
+// ---- Register (point-pair calibration) ---------------------------------------
+//
+// Geometry. Cells share a frame through their `world` transforms (image px ->
+// shared frame); calibrated linking holds W_b(q) = W_a(p) for corresponding
+// points. We solve the correspondence T: a-px -> b-px and hand it to the grid,
+// which sets W_b = W_a * T^-1 (see ViewGrid::calibrateFromCorrespondence).
+//
+//  * One pair (p1 -> q1): the user already aligned scale/rotation by eye, so
+//    keep the CURRENT linear part of the correspondence (from the two cells'
+//    present worlds and viewports) and snap the translation so p1 maps exactly
+//    onto q1. L = linear part of W_b^-1 * W_a (current); T(p) = L(p - p1) + q1.
+//  * Two pairs (p1->q1, p2->q2): a similarity has 4 unknowns — translation
+//    (2), scale, rotation — and two pairs give 4 equations: closed form.
+//    Complex form: q = s·e^{iθ}·p + t, with s·e^{iθ} = (q2-q1)/(p2-p1).
+//    No least squares, no iteration; exact on the two picked features.
+
+void MainWindow::startRegister(bool secondPair) {
+    // Need at least two occupied cells.
+    int occ = 0;
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) if (c->occupied()) ++occ;
+    if (occ < 2) {
+        statusBar()->showMessage(tr("Register needs two views with images — split the view first"), 4000);
+        return;
+    }
+    if (secondPair && !m_regFirst.a) {
+        statusBar()->showMessage(tr("No first pair yet — Shift+R picks the first feature pair"), 4000);
+        return;
+    }
+    if (!secondPair) m_regFirst = RegPair{};        // fresh registration
+    m_regSecond = secondPair;
+    m_regCur = RegPair{};
+    m_regArmed = true;
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+        if (c->occupied()) c->view()->setDrawTool(ImageView::DrawTool::Register);
+    statusBar()->showMessage(secondPair
+        ? tr("Register (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels")
+        : tr("Register: click a feature (star) in one view, then the same feature in the other — Esc cancels"), 0);
+}
+
+void MainWindow::cancelRegister() {
+    m_regArmed = false;
+    m_regCur = RegPair{};
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        c->view()->setDrawTool(ImageView::DrawTool::None);
+        c->view()->setMarker(-1, -1);
+    }
+    statusBar()->showMessage(tr("Register cancelled"), 2500);
+}
+
+void MainWindow::onRegisterPointPicked(ImageView* v, double x, double y) {
+    if (!m_regArmed) return;
+    ViewCell* cell = nullptr;
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) if (c->view() == v) cell = c;
+    if (!cell) return;
+    if (!m_regCur.a) {
+        m_regCur.a = cell; m_regCur.pa = QPointF(x, y);
+        // Visual cue on the first pick: the crosshair stays on that feature;
+        // the other cells keep the cross cursor, this one is done.
+        cell->view()->setMarker(int(std::floor(x)), int(std::floor(y)));
+        cell->view()->setDrawTool(ImageView::DrawTool::None);
+        statusBar()->showMessage(tr("First feature marked — now click the SAME feature in another view (Esc cancels)"), 0);
+        return;
+    }
+    if (cell == m_regCur.a) {                         // re-pick in the same view: move the point
+        m_regCur.pa = QPointF(x, y);
+        cell->view()->setMarker(int(std::floor(x)), int(std::floor(y)));
+        return;
+    }
+    m_regCur.b = cell; m_regCur.pb = QPointF(x, y);
+    cell->view()->setMarker(int(std::floor(x)), int(std::floor(y)));
+    finishRegisterPair();
+}
+
+void MainWindow::finishRegisterPair() {
+    m_regArmed = false;
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+        c->view()->setDrawTool(ImageView::DrawTool::None);
+    ViewCell* A = m_regCur.a; ViewCell* B = m_regCur.b;
+    const QPointF p1 = m_regCur.pa, q1 = m_regCur.pb;
+    QTransform T;                                     // A px -> B px
+    QString how;
+    if (m_regSecond && m_regFirst.a) {
+        // Bring the stored first pair into (A,B) orientation.
+        QPointF p0 = m_regFirst.pa, q0 = m_regFirst.pb;
+        if (m_regFirst.a == B && m_regFirst.b == A) std::swap(p0, q0);
+        else if (!(m_regFirst.a == A && m_regFirst.b == B)) {
+            statusBar()->showMessage(tr("Second pair must use the same two views as the first — registration restarted"), 5000);
+            m_regFirst = RegPair{}; m_regSecond = false;
+            return;
+        }
+        const double dpx = p1.x() - p0.x(), dpy = p1.y() - p0.y();
+        const double dqx = q1.x() - q0.x(), dqy = q1.y() - q0.y();
+        const double den = dpx * dpx + dpy * dpy;
+        if (den < 1e-9) {
+            statusBar()->showMessage(tr("Second feature is the same point as the first — pick a different one"), 5000);
+            return;
+        }
+        // s·e^{iθ} = (q1-q0)/(p1-p0) as complex numbers.
+        const double re = (dqx * dpx + dqy * dpy) / den;
+        const double im = (dqy * dpx - dqx * dpy) / den;
+        // q = M p + t,  M = [[re,-im],[im,re]],  t = q0 - M p0.
+        const double tx = q0.x() - (re * p0.x() - im * p0.y());
+        const double ty = q0.y() - (im * p0.x() + re * p0.y());
+        T = QTransform(re, im, -im, re, tx, ty);       // Qt: (m11,m12,m21,m22,dx,dy), row-vector convention
+        const double scale = std::hypot(re, im);
+        const double ang = std::atan2(im, re) * 180.0 / M_PI;
+        how = tr("scale ×%1, rotation %2°, translation snapped")
+                  .arg(scale, 0, 'f', 4).arg(ang, 0, 'f', 2);
+        m_regFirst = RegPair{};                       // consumed
+    } else {
+        // Keep the linear part the user aligned by eye; snap translation.
+        // Current correspondence A->B: W_B^-1 ∘ W_A, but the two worlds only
+        // define a correspondence if the cells are already calibrated. If not,
+        // derive it from the two viewports: a world point lands at the same
+        // screen position in both views, so A-px -> screen(A) -> B-px.
+        QTransform cur;
+        if (A->calibrated && B->calibrated)
+            cur = A->world * B->world.inverted();
+        else
+            cur = A->view()->viewportTransform() * B->view()->viewportTransform().inverted();
+        const QTransform L(cur.m11(), cur.m12(), cur.m21(), cur.m22(), 0, 0);
+        const QPointF Lp1 = L.map(p1);
+        T = L * QTransform::fromTranslate(q1.x() - Lp1.x(), q1.y() - Lp1.y());
+        how = tr("translation snapped (scale/rotation as aligned by eye) — Alt+R adds a second pair for scale+rotation");
+        m_regFirst = m_regCur;                        // available for a second pair
+    }
+    m_grid->calibrateFromCorrespondence(A, B, T);
+    // Leave the crosshairs on the two features briefly as confirmation.
+    QTimer::singleShot(2500, this, [this] {
+        if (!m_regArmed && !m_valuesEverywhere)
+            for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) c->view()->setMarker(-1, -1);
+    });
+    statusBar()->showMessage(tr("Views registered — %1").arg(how), 8000);
 }
 
 void MainWindow::clearReadouts() {
