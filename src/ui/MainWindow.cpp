@@ -619,13 +619,34 @@ void MainWindow::applyUserShortcuts(const QHash<QString, QAction*>& acts,
 
     // Code-side defaults; entries missing from the INI are written out so the
     // file stays a complete, self-documenting template.
+    //
+    // Each entry also records the DEFAULT it was written with ("<name>.default")
+    // so a later build can tell a user customisation from a stale default: if
+    // the stored value still equals its recorded default, the user never
+    // touched it, and a renamed code default may replace it (e.g. register
+    // moved from Shift+R to M). A value that differs from its recorded default
+    // is a deliberate customisation and is kept verbatim. Entries written by
+    // builds before this scheme have no ".default" — treat the stored value as
+    // the recorded default (the only thing that could have written it).
     QHash<QString, QString> defs, vals;
     for (auto it = acts.cbegin(); it != acts.cend(); ++it)
         defs[it.key()] = it.value()->shortcut().toString(QKeySequence::PortableText);
     for (auto it = keys.cbegin(); it != keys.cend(); ++it)
         defs[it.key()] = it.value()->key().toString(QKeySequence::PortableText);
     for (auto it = defs.cbegin(); it != defs.cend(); ++it) {
-        if (!s.contains(it.key())) s.setValue(it.key(), it.value());
+        const QString defKey = it.key() + QStringLiteral(".default");
+        if (!s.contains(it.key())) {
+            s.setValue(it.key(), it.value());
+            s.setValue(defKey, it.value());
+        } else {
+            const QString stored = s.value(it.key()).toString();
+            const QString recordedDefault = s.contains(defKey) ? s.value(defKey).toString() : stored;
+            if (stored == recordedDefault && recordedDefault != it.value()) {
+                // Untouched stale default: adopt the new code default.
+                s.setValue(it.key(), it.value());
+            }
+            s.setValue(defKey, it.value());          // always track the current default
+        }
         vals[it.key()] = s.value(it.key()).toString();
     }
 

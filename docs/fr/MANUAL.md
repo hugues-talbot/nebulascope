@@ -667,7 +667,11 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     listes de fichiers récents.
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
-    rétablis).
+    rétablis). Chaque entrée enregistre le réglage par défaut avec lequel
+    elle a été écrite (`nom.default`) : quand une version change une
+    touche par défaut, les raccourcis que vous n'avez jamais modifiés
+    suivent le nouveau défaut, tandis que vos personnalisations sont
+    conservées.
 - **À propos** — la version et le copyright viennent de
   `src/app/AppInfo.h` (maintenu à la main), suivis de l'**identifiant de
   compilation** exact (`git describe`, p. ex. `v0.92-3-ga6a8118`,

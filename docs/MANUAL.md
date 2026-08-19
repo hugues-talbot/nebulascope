@@ -604,7 +604,10 @@ name reassembles exactly, for overwriting or re-saving.
     text size, line thickness; RA/Dec grid density; sidecar auto-load;
     overlay panel opacity; recent files list sizes.
   - **Shortcuts** — every action's binding, editable; stored in
-    `shortcuts.ini` (empty value disables; stale clashes revert).
+    `shortcuts.ini` (empty value disables; stale clashes revert). Each
+    entry records the default it was written with (`name.default`), so
+    when a release changes a default key, bindings you never touched
+    follow the new default while your own customisations are kept.
 - **About** — version and copyright come from `src/app/AppInfo.h`
   (user-maintained), followed by the exact **build id** (`git describe`,
   e.g. `v0.92-3-ga6a8118`, `-dirty` when built from uncommitted changes) —
