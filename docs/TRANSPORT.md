@@ -176,6 +176,15 @@ mode remains one checkbox away.
 - Dialog: **Tools ▸ Transport Colors from Reference…**, tick *Apply as
   stretch fit*. Scripts: `transport <row> [strength%] stretch`.
 - Strength applies *before* the fit — the fit targets the blended result.
+- **Framing is the relevance mask.** Both distributions are estimated only
+  from what is on screen: the source from the active view's visible
+  rectangle, the reference from *its* cell's visible rectangle when it is
+  displayed in one (rotations are unwound so expansion borders never
+  contribute; saturated pixels ≥ 0.98 are dropped from both). A reference
+  that is only a list row — shown in no cell — is estimated from its whole
+  image. So to control what the match is judged by, put the reference in a
+  split cell and frame the region that matters: pan away from a gradient
+  or a frame edge, and the transport never sees it.
 - Both modes are **undoable**: the exact mode as a list-entry addition, the
   stretch fit as a stretch-state change (⌘Z restores the previous stretch).
 - The fit absorbs the current display (including adjustments) into fresh

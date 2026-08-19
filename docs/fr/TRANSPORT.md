@@ -199,6 +199,17 @@ exact reste à une case à cocher.
   `transport <ligne> [force%] stretch`.
 - La force s'applique *avant* l'ajustement — l'ajustement vise le résultat
   mélangé.
+- **Le cadrage est le masque de pertinence.** Les deux distributions ne
+  sont estimées que sur ce qui est à l'écran : la source sur le rectangle
+  visible de la vue active, la référence sur le rectangle visible de *sa*
+  cellule quand elle y est affichée (les rotations sont défaites pour que
+  les bordures d'expansion ne contribuent jamais ; les pixels saturés
+  ≥ 0,98 sont écartés des deux côtés). Une référence qui n'est qu'une
+  ligne de liste — affichée dans aucune cellule — est estimée sur son
+  image entière. Pour contrôler ce qui juge l'appariement, affichez donc
+  la référence dans une cellule et cadrez la région qui compte : éloignez
+  un gradient ou un bord de champ du cadre, et le transport ne les verra
+  jamais.
 - Les deux modes sont **annulables** : le mode exact comme ajout d'entrée
   de liste, l'ajustement par étirement comme changement d'état d'étirement
   (⌘Z restaure l'étirement précédent).
