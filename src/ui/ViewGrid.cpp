@@ -64,15 +64,17 @@ void ViewCell::setActive(bool on) {
     applyBorder();
 }
 
-// Border style honours the clean-canvas mode: transparent (same widths, so
-// nothing shifts) instead of drawn, for chrome-free previews (wallpaper look).
+// Border style: the width is CONSTANT (2px) in every state — active, inactive,
+// clean-canvas — and only the colour changes. Stylesheet borders take part in
+// layout, so an active 2px vs inactive 1px border re-laid-out the whole grid
+// on every click (cells sharing a row shifted by the pixel difference, and
+// in the docked layout the reflow cascaded into the dock splitter — a
+// visible lurch of the images when clicking from one cell to the other).
 void ViewCell::applyBorder() {
-    const QString style = m_chromeHidden
-        ? (m_active ? QStringLiteral("2px solid transparent")
-                    : QStringLiteral("1px solid transparent"))
-        : (m_active ? QStringLiteral("2px solid #2a557e")
-                    : QStringLiteral("1px solid #18222d"));
-    setStyleSheet(QStringLiteral("astro--ViewCell{border:%1;}").arg(style));
+    const QString colour = m_chromeHidden ? QStringLiteral("transparent")
+                         : m_active       ? QStringLiteral("#2a557e")
+                                          : QStringLiteral("#18222d");
+    setStyleSheet(QStringLiteral("astro--ViewCell{border:2px solid %1;}").arg(colour));
 }
 
 void ViewCell::setChromeHidden(bool hidden) {

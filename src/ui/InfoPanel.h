@@ -28,6 +28,12 @@ public:
     void setData(const ImageData* img, const ImageHeader* hdr,
                  const std::vector<ChannelStats>& stats);
 
+    // The panel never dictates its dock's width: content (stats table, long
+    // unbreakable header values) may be wider than the panel and simply
+    // clips. Without this, refilling for a new image could widen the tab
+    // area it shares with the image list and shift the view grid.
+    QSize minimumSizeHint() const override { return QSize(160, 120); }
+
 private slots:
     void refresh();          // rebuild structure + stats (cheap)
     void applyFilter(const QString& text);

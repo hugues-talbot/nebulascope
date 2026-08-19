@@ -40,6 +40,9 @@ const CommandRef kCommands[] = {
     "Select image-list row n (1-based) and display it."}},
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"activate",   {"activate <n>",
+    "Make view cell n (1-based, raster order) the active cell — the same\n"
+    "path as a mouse click in that cell."}},
   {"split",      {"split <RxC>",
     "Split the view into R rows x C columns (max 5x5) and assign the first\n"
     "R*C list images to the cells in raster order."}},
@@ -231,6 +234,15 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
     if (cmd == QLatin1String("prev")) { m_w->prevImage(); return true; }
+    if (cmd == QLatin1String("activate")) {
+        // activate <n> — make view cell n (1-based, raster order) the active
+        // one: exactly the path a mouse click in that cell takes.
+        if (!needArgs(1)) return false;
+        ViewCell* c = m_w->m_grid->cellAt(t[1].toInt() - 1);
+        if (!c) { err = "cell out of range"; return false; }
+        m_w->m_grid->activate(c);
+        return true;
+    }
     if (cmd == QLatin1String("split")) {
         if (!needArgs(1)) return false;
         const QStringList p = t[1].toLower().split(QLatin1Char('x'));

@@ -42,6 +42,17 @@ InfoPanel::InfoPanel(StretchModel* model, QWidget* parent)
     m_stats->setTextFormat(Qt::RichText);
     m_stats->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     m_stats->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    // The statistics table is a fixed-font HTML table whose natural width is
+    // DATA-DEPENDENT (a negative min or a six-digit max widens a column). As
+    // a plain label it would impose that width as the panel's minimum — and
+    // this panel is tabified with the image list in the docked layout, where
+    // a tab area is sized by its WIDEST tab. Result: switching cells (which
+    // refills the table for the new image) widened the whole left dock and
+    // shoved the view grid sideways. Wrap it so it never dictates width:
+    // an Ignored horizontal policy lets the label be narrower than its
+    // content (the row simply clips; the values are also in the header table
+    // and copyable), and the panel yields to whatever the dock is.
+    m_stats->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     root->addWidget(m_stats);
 
     root->addWidget(sectionTitle(tr("HEADER")));
