@@ -4882,13 +4882,116 @@ void MainWindow::updateReadouts(int x, int y, bool valid) {
 //    Complex form: q = s·e^{iθ}·p + t, with s·e^{iθ} = (q2-q1)/(p2-p1).
 //    No least squares, no iteration; exact on the two picked features.
 
+// Least-squares affine fit q ≈ M p + t from point pairs (normal equations,
+// 6 unknowns). Returns false if degenerate. rms = residual in B pixels.
+static bool fitAffine(const std::vector<QPointF>& P, const std::vector<QPointF>& Q,
+                      QTransform& out, double& rms) {
+    const int n = int(P.size());
+    if (n < 3 || Q.size() != P.size()) return false;
+    // Solve two independent 3-unknown systems: qx = a·px + b·py + c, qy = d·px + e·py + f.
+    double Sxx = 0, Sxy = 0, Sx = 0, Syy = 0, Sy = 0, S = n;
+    double Sxqx = 0, Syqx = 0, Sqx = 0, Sxqy = 0, Syqy = 0, Sqy = 0;
+    for (int i = 0; i < n; ++i) {
+        const double x = P[i].x(), y = P[i].y(), u = Q[i].x(), v = Q[i].y();
+        Sxx += x * x; Sxy += x * y; Sx += x; Syy += y * y; Sy += y;
+        Sxqx += x * u; Syqx += y * u; Sqx += u;
+        Sxqy += x * v; Syqy += y * v; Sqy += v;
+    }
+    // 3x3 symmetric normal matrix N = [[Sxx,Sxy,Sx],[Sxy,Syy,Sy],[Sx,Sy,S]]
+    const double N[3][3] = { {Sxx, Sxy, Sx}, {Sxy, Syy, Sy}, {Sx, Sy, S} };
+    const double det = N[0][0]*(N[1][1]*N[2][2]-N[1][2]*N[2][1])
+                     - N[0][1]*(N[1][0]*N[2][2]-N[1][2]*N[2][0])
+                     + N[0][2]*(N[1][0]*N[2][1]-N[1][1]*N[2][0]);
+    if (std::abs(det) < 1e-12) return false;
+    auto solve3 = [&](double r0, double r1, double r2, double& a, double& b, double& c) {
+        // Cramer's rule
+        auto d3 = [&](double m[3][3]) {
+            return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+                 - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+                 + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+        };
+        double M0[3][3], M1[3][3], M2[3][3];
+        for (int i = 0; i < 3; ++i) for (int j = 0; j < 3; ++j) { M0[i][j] = N[i][j]; M1[i][j] = N[i][j]; M2[i][j] = N[i][j]; }
+        M0[0][0] = r0; M0[1][0] = r1; M0[2][0] = r2;
+        M1[0][1] = r0; M1[1][1] = r1; M1[2][1] = r2;
+        M2[0][2] = r0; M2[1][2] = r1; M2[2][2] = r2;
+        a = d3(M0) / det; b = d3(M1) / det; c = d3(M2) / det;
+    };
+    double a, b, c, d, e, f;
+    solve3(Sxqx, Syqx, Sqx, a, b, c);
+    solve3(Sxqy, Syqy, Sqy, d, e, f);
+    // Qt row-vector convention: x' = m11·x + m21·y + dx, y' = m12·x + m22·y + dy.
+    out = QTransform(a, d, b, e, c, f);
+    double se = 0;
+    for (int i = 0; i < n; ++i) {
+        const QPointF q = out.map(P[i]);
+        se += std::pow(q.x() - Q[i].x(), 2) + std::pow(q.y() - Q[i].y(), 2);
+    }
+    rms = std::sqrt(se / n);
+    return true;
+}
+
+bool MainWindow::matchFromWcs(ViewCell* A, ViewCell* B) {
+    const Wcs& wa = (A == m_grid->activeCell()) ? m_wcs : A->wcs;
+    const Wcs& wb = (B == m_grid->activeCell()) ? m_wcs : B->wcs;
+    if (!wa.valid() || !wb.valid()) return false;
+    const ImageData& ia = (A == m_grid->activeCell()) ? m_image : A->image;
+    const ImageData& ib = (B == m_grid->activeCell()) ? m_image : B->image;
+    if (!ia.isValid() || !ib.isValid()) return false;
+    // Sample a grid over A; keep the points whose sky position falls inside
+    // B (the overlap). Affine-fit A px -> B px through those.
+    std::vector<QPointF> P, Q;
+    const int G = 12;
+    for (int j = 0; j <= G; ++j)
+        for (int i = 0; i <= G; ++i) {
+            const double x = (ia.width() - 1) * double(i) / G;
+            const double y = (ia.height() - 1) * double(j) / G;
+            double ra, dec, bx, by;
+            if (!wa.pixelToSky(x, y, ra, dec)) continue;
+            if (!wb.skyToPixel(ra, dec, bx, by)) continue;
+            if (bx < -0.5 || by < -0.5 || bx > ib.width() - 0.5 || by > ib.height() - 0.5) continue;
+            P.push_back(QPointF(x, y)); Q.push_back(QPointF(bx, by));
+        }
+    if (P.size() < 6) {
+        statusBar()->showMessage(tr("Match from WCS: the two fields barely overlap on the sky (%n common sample(s))",
+                                    nullptr, int(P.size())), 6000);
+        return false;
+    }
+    QTransform T; double rms = 0;
+    if (!fitAffine(P, Q, T, rms)) return false;
+    m_grid->calibrateFromCorrespondence(A, B, T);
+    const double scale = std::sqrt(std::abs(T.determinant()));
+    const double ang = std::atan2(T.m12(), T.m11()) * 180.0 / M_PI;
+    statusBar()->showMessage(
+        tr("Views matched from their plate solutions — scale ×%1, rotation %2°, %n overlap sample(s), affine residual %3 px rms",
+           nullptr, int(P.size()))
+            .arg(scale, 0, 'f', 4).arg(ang, 0, 'f', 2).arg(rms, 0, 'f', 3), 8000);
+    return true;
+}
+
 void MainWindow::startRegister(bool secondPair) {
     // Need at least two occupied cells.
     int occ = 0;
-    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) if (c->occupied()) ++occ;
+    std::vector<ViewCell*> cells;
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) if (c->occupied()) { ++occ; cells.push_back(c); }
     if (occ < 2) {
         statusBar()->showMessage(tr("Match needs two views with images — split the view first"), 4000);
         return;
+    }
+    // Both plate-solved? Then no picking: compute the correspondence from the
+    // WCS. With exactly two occupied cells it is unambiguous; with more, the
+    // active cell is the anchor and every other solved cell matches to it.
+    if (!secondPair) {
+        ViewCell* anchor = m_grid->activeCell();
+        if (anchor && anchor->occupied()) {
+            const Wcs& wa = m_wcs;
+            if (wa.valid()) {
+                int matched = 0;
+                for (ViewCell* c : cells)
+                    if (c != anchor && c->wcs.valid() && matchFromWcs(anchor, c)) ++matched;
+                if (matched > 0) return;      // done — no picks needed
+            }
+        }
     }
     if (secondPair && !m_regFirst.a) {
         statusBar()->showMessage(tr("No first pair yet — M picks the first feature pair"), 4000);

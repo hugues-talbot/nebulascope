@@ -583,6 +583,15 @@ Cliquer `M81.xisf` dans un export PNG préremplit `M81`, enregistré
 `M81.png` ; avec le format correspondant sélectionné, le nom d'origine se
 reconstitue à l'identique, pour écraser ou réenregistrer.
 
+- **Appariement par solutions astrométriques** (**M**) — quand les deux
+  vues portent une solution astrométrique (§10), **M** ne demande aucun
+  pointage : la correspondance est *calculée* — pixel → ciel dans une
+  image, ciel → pixel dans l'autre — échantillonnée sur la zone de ciel
+  commune aux deux champs et ajustée par une application affine (une
+  projection n'est pas affine, mais l'est bien en deçà du pixel sur un
+  champ de quelques degrés ; la barre d'état indique le résidu). Avec plus
+  de deux vues, la vue active sert d'ancre et chaque autre vue résolue s'y
+  apparie. Les vues non résolues se rabattent sur les détails :
 - **Appariement par points** (**M**, puis **Maj+M**) — calibrer en pointant
   plutôt qu'à l'œil. Alignez grossièrement les deux vues, appuyez sur
   **M**, cliquez une étoile (ou tout détail) dans une vue — un réticule

@@ -461,6 +461,14 @@ data purity.
   image: the current correspondence becomes the calibration, and from then
   on the views navigate together, each at its own pixel scale. Calibrations
   survive rotations and flips of either image.
+- **Match from plate solutions** (**M**) — when both views carry an
+  astrometric solution (§10), **M** needs no picking at all: the
+  correspondence is *computed* — pixel → sky in one image, sky → pixel in
+  the other — sampled over the sky area the two fields share and fitted by
+  an affine map (a projection is not affine, but is to far below a pixel
+  over a few-degree field; the status bar reports the residual). With more
+  than two views, the active view is the anchor and every other solved
+  view matches to it. Unsolved views fall back to features:
 - **Match from features** (**M**, then **Shift+M**) — calibrate by
   pointing instead of by eye. Rough-align the two views, press **M**,
   click a star (or any feature) in one view — a crosshair marks it — then

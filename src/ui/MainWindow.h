@@ -227,6 +227,11 @@ private:
     RegPair m_regCur;                 // the pair being collected
     RegPair m_regFirst;               // completed first pair (for the similarity solve)
     void startRegister(bool secondPair);
+    // Both views plate-solved: the correspondence is COMPUTED, not picked —
+    // pixel→sky in A, sky→pixel in B, sampled over the overlap and fitted
+    // by an affine map (a projection is not affine, but is to far below a
+    // pixel over a few-degree field). Returns false when not applicable.
+    bool matchFromWcs(ViewCell* A, ViewCell* B);
     void onRegisterPointPicked(ImageView* v, double x, double y);
     void cancelRegister();
     void finishRegisterPair();

@@ -1667,58 +1667,74 @@ Essayez avec et sans : les deux sont à une annulation près.</translation>
         <source>Export zoomed region</source>
         <translation>Exporter la région zoomée</translation>
     </message>
-    <message>
-        <location filename="../ui/MainWindow.cpp" line="4890"/>
-        <source>Match needs two views with images — split the view first</source>
-        <translation>L'appariement demande deux vues avec images — divisez d'abord la vue</translation>
+    <message numerus="yes">
+        <location filename="../ui/MainWindow.cpp" line="4956"/>
+        <source>Match from WCS: the two fields barely overlap on the sky (%n common sample(s))</source>
+        <translation>
+            <numerusform>Appariement WCS : les deux champs se recouvrent à peine sur le ciel (%n échantillon commun)</numerusform>
+            <numerusform>Appariement WCS : les deux champs se recouvrent à peine sur le ciel (%n échantillons communs)</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../ui/MainWindow.cpp" line="4966"/>
+        <source>Views matched from their plate solutions — scale ×%1, rotation %2°, %n overlap sample(s), affine residual %3 px rms</source>
+        <translation>
+            <numerusform>Vues appariées d'après leurs solutions astrométriques — échelle ×%1, rotation %2°, %n échantillon de recouvrement, résidu affine %3 px rms</numerusform>
+            <numerusform>Vues appariées d'après leurs solutions astrométriques — échelle ×%1, rotation %2°, %n échantillons de recouvrement, résidu affine %3 px rms</numerusform>
+        </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4894"/>
+        <location filename="../ui/MainWindow.cpp" line="4978"/>
+        <source>Match needs two views with images — split the view first</source>
+        <translation>L&apos;appariement demande deux vues avec images — divisez d&apos;abord la vue</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="4997"/>
         <source>No first pair yet — M picks the first feature pair</source>
         <translation>Pas encore de première paire — M pointe la première paire de détails</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4904"/>
+        <location filename="../ui/MainWindow.cpp" line="5007"/>
         <source>Match (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels</source>
-        <translation>Appariement (2e paire) : cliquez un détail DIFFÉRENT dans une vue, puis le même dans l'autre — Échap annule</translation>
+        <translation>Appariement (2e paire) : cliquez un détail DIFFÉRENT dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4905"/>
+        <location filename="../ui/MainWindow.cpp" line="5008"/>
         <source>Match: click a feature (star) in one view, then the same feature in the other — Esc cancels</source>
-        <translation>Appariement : cliquez un détail (étoile) dans une vue, puis le même dans l'autre — Échap annule</translation>
+        <translation>Appariement : cliquez un détail (étoile) dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4915"/>
+        <location filename="../ui/MainWindow.cpp" line="5018"/>
         <source>Match cancelled</source>
         <translation>Appariement annulé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4955"/>
+        <location filename="../ui/MainWindow.cpp" line="5058"/>
         <source>Second pair must use the same two views as the first — match restarted</source>
         <translation>La seconde paire doit utiliser les deux mêmes vues que la première — appariement relancé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4992"/>
+        <location filename="../ui/MainWindow.cpp" line="5095"/>
         <source>translation snapped (scale/rotation as aligned by eye) — Shift+M adds a second pair for scale+rotation</source>
-        <translation>translation calée (échelle/rotation telles qu'alignées à l'œil) — Maj+M ajoute une seconde paire pour échelle+rotation</translation>
+        <translation>translation calée (échelle/rotation telles qu&apos;alignées à l&apos;œil) — Maj+M ajoute une seconde paire pour échelle+rotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5001"/>
+        <location filename="../ui/MainWindow.cpp" line="5104"/>
         <source>Views matched — %1</source>
         <translation>Vues appariées — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4929"/>
+        <location filename="../ui/MainWindow.cpp" line="5032"/>
         <source>First feature marked — now click the SAME feature in another view (Esc cancels)</source>
         <translation>Premier détail marqué — cliquez maintenant le MÊME détail dans une autre vue (Échap annule)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4963"/>
+        <location filename="../ui/MainWindow.cpp" line="5066"/>
         <source>Second feature is the same point as the first — pick a different one</source>
         <translation>Le second détail est le même point que le premier — choisissez-en un autre</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4975"/>
+        <location filename="../ui/MainWindow.cpp" line="5078"/>
         <source>scale ×%1, rotation %2°, translation snapped</source>
         <translation>échelle ×%1, rotation %2°, translation calée</translation>
     </message>

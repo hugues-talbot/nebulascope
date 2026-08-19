@@ -89,7 +89,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol]",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol]",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -265,6 +265,30 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         const double ex = t[5].toDouble(), ey = t[6].toDouble();
         if (std::abs(q.x() - ex) > tol || std::abs(q.y() - ey) > tol) {
             err = QStringLiteral("mapped to (%1, %2)").arg(q.x(), 0, 'f', 4).arg(q.y(), 0, 'f', 4);
+            return false;
+        }
+        return true;
+    }
+    if (cmd == QLatin1String("assert") && t.size() >= 5 && t[1].toLower() == QLatin1String("wcsmatch")) {
+        // assert wcsmatch <cell> <x> <y> [tol] — the active cell's pixel
+        // (x,y), mapped through the calibrated-link worlds into cell n, lands
+        // within tol px of where the two PLATE SOLUTIONS say it should
+        // (pixel→sky in the active image, sky→pixel in cell n). Verifies the
+        // WCS-based Match: the fitted affine agrees with the projections.
+        ViewCell* act = m_w->m_grid->activeCell();
+        ViewCell* o = m_w->m_grid->cellAt(t[2].toInt() - 1);
+        if (!act || !o) { err = "cell out of range"; return false; }
+        if (!(act->calibrated && o->calibrated)) { err = "cells are not calibration-linked"; return false; }
+        const double x = t[3].toDouble(), y = t[4].toDouble();
+        const double tol = t.size() > 5 ? t[5].toDouble() : 0.05;
+        double ra, dec, ex, ey;
+        if (!m_w->m_wcs.pixelToSky(x, y, ra, dec) || !o->wcs.skyToPixel(ra, dec, ex, ey)) {
+            err = "no plate solution on one of the cells"; return false;
+        }
+        const QPointF q = o->world.inverted().map(act->world.map(QPointF(x, y)));
+        if (std::abs(q.x() - ex) > tol || std::abs(q.y() - ey) > tol) {
+            err = QStringLiteral("affine maps to (%1, %2), WCS says (%3, %4)")
+                      .arg(q.x(), 0, 'f', 3).arg(q.y(), 0, 'f', 3).arg(ex, 0, 'f', 3).arg(ey, 0, 'f', 3);
             return false;
         }
         return true;

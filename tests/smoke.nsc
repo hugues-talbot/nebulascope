@@ -205,6 +205,27 @@ activate 2
 assert mapped 3.650635 52.801270 1 50 100 1e-3
 split 1x1
 
+# Match from plate solutions: both views solved (TAN; 2"/px unrotated vs
+# 0.5"/px rotated 30°, same centre) → M needs no picks. The fitted affine
+# must agree with the projections (pixel→sky→pixel) to 0.02 px, both ways.
+split 1x2
+activate 1
+open tests/testdata/wcs_wide.fits        # into cell 1 (active)
+waitloaded
+activate 2
+open tests/testdata/wcs_narrow.fits      # into cell 2 (active)
+waitloaded
+activate 1
+action register_views
+sleep 200
+assert wcsmatch 2 64 64 0.02
+assert wcsmatch 2 40 50 0.02
+assert wcsmatch 2 80 90 0.02
+activate 2
+assert wcsmatch 1 64 64 0.02
+assert wcsmatch 1 20 100 0.02
+split 1x1
+
 # Metadata-less CFA: a raw mosaic dumped into plain grayscale PNG (planetary/
 # solar capture streams). Auto can't demosaic (no BAYERPAT anywhere); a
 # forced pattern must; `all` stamps the choice onto every listed frame.
