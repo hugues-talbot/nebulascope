@@ -2,6 +2,52 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.95 — 2026-08-19
+
+v0.95 — comparison as an instrument: Match, Values in All Views, the open display format
+
+Highlights:
+
+- **Match views (M)** — calibrated linking by computation or by two
+  clicks instead of by eye. With two plate-solved views, **M** computes
+  the correspondence from the WCS (pixel→sky→pixel over the overlap,
+  affine-fitted; the status bar reports the residual) — no picks at all.
+  Otherwise: rough-align, **M**, click a star in one view and the same
+  star in the other — one pair snaps the translation exactly; **Shift+M**
+  and a second star solve scale + rotation + translation in closed form.
+  Verified against ground truth to 0.001 px (features) and 0.02 px (WCS).
+- **Values in All Views (V)** — hovering the active view shows the
+  coordinates and pixel value(s) under the pointer in EVERY cell, each
+  read from its own data at the corresponding pixel (through the
+  calibration for matched views), with a **crosshair** in each cell at the
+  measured pixel. The link transforms made visible: hover a star and see
+  whether the other view's crosshair lands on it.
+- **The display block is an open, reproducible format** — Save
+  Annotations & Display stores the full appearance (transfer function,
+  per-channel windowing, GHS, colormap, adjustments) in the sidecar under
+  a versioned `display` key. A written specification (Colour Transport
+  chapter §6) maps every field to its equation, and a standalone NumPy
+  reference renderer (`tools/render_sidecar.py`) reproduces NebulaScope's
+  rendering — verified in CI to a few float32 ULPs per pixel on macOS,
+  Linux and Windows. A stretch becomes explainable; a non-destructive
+  transport fit becomes a file you can hand to a collaborator.
+- **Native save panels on macOS** — Export View As… and Save Data As… are
+  real NSSavePanels with the format / depth / compression / quality
+  controls as a native accessory row (sidebar favourites, iCloud, folder
+  behaviours). Clicking any image still adopts its base name; the saved
+  extension always follows the chosen format.
+
+Fixes: in the docked layout, clicking between split cells no longer
+shifts the grid (the hidden Info tab's statistics table was resizing the
+shared dock area); a non-destructive transport fit saved in a sidecar now
+reloads exactly (the sidecar carried only the adjustment layer, not the
+stretch); shortcuts.ini records each entry's default, so renamed default
+keys follow the release while user customisations survive.
+
+Illustrated in the manual by the Eastern Veil, two nights: a friend's 5 h
+on a Vixen 102/900 matched to ~1 h on a TS 80/380, colours transported
+non-destructively — what remains different is signal, not processing.
+
 ## v0.94 — 2026-08-14
 
 v0.94 — selection-aware culling, instant batch close, metadata-less CFA, Stellarium
