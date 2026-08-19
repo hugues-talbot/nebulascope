@@ -703,7 +703,7 @@ div.csl-indent {
 <li><strong>Préférences…</strong> (menu de l’application sur macOS) :
 <ul>
 <li><strong>Général</strong> — langue de l’interface (système / English / Français) ; couleur, taille de texte et épaisseur de trait par défaut des annotations ; densité de la grille AD/Déc ; chargement automatique des fichiers annexes ; opacité des panneaux en surimpression ; tailles des listes de fichiers récents.</li>
-<li><strong>Raccourcis</strong> — le raccourci de chaque action, éditable ; stocké dans <code>shortcuts.ini</code> (valeur vide = désactivé ; les conflits obsolètes sont rétablis).</li>
+<li><strong>Raccourcis</strong> — le raccourci de chaque action, éditable ; stocké dans <code>shortcuts.ini</code> (valeur vide = désactivé ; les conflits obsolètes sont rétablis). Chaque entrée enregistre le réglage par défaut avec lequel elle a été écrite (<code>nom.default</code>) : quand une version change une touche par défaut, les raccourcis que vous n’avez jamais modifiés suivent le nouveau défaut, tandis que vos personnalisations sont conservées.</li>
 </ul></li>
 <li><strong>À propos</strong> — la version et le copyright viennent de <code>src/app/AppInfo.h</code> (maintenu à la main), suivis de l’<strong>identifiant de compilation</strong> exact (<code>git describe</code>, p.&nbsp;ex. <code>v0.92-3-ga6a8118</code>, <code>-dirty</code> si compilé avec des changements non commités) — un binaire de test dit ainsi toujours de quel commit il provient. Aussi en ligne de commande : <code>--version</code>.</li>
 </ul>
