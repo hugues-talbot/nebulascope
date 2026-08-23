@@ -222,6 +222,16 @@ exact reste à une case à cocher.
   convaincant, tandis que des résidus plus grands indiquent en général que
   la référence exigeait une rotation de teinte.
 
+- **L'ajustement utilise tout le domaine des poignées.** Les points noir
+  et blanc ajustés peuvent se trouver *hors* de la plage des données de la
+  source — noir sous le minimum quand la référence porte un plancher
+  relevé (un piédestal que la source n'a pas), blanc au-dessus du maximum
+  quand la référence ne sature pas là où la source sature. Avec les
+  anciennes bornes $[0,1]$, le minimum de la source s'affichait toujours à
+  0 et l'ajustement le payait dans les ombres ; la recherche couvre
+  désormais une plage de données au-delà de chaque extrémité et itère
+  jusqu'à convergence, si bien que ces références sont appariées aux deux
+  bouts.
 - **La référence n'a pas besoin de montrer le même champ.** Le transport
   apparie des *distributions*, jamais des pixels : toute image au contenu
   du même *genre* est une référence légitime — deux parties différentes

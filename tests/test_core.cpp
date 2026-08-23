@@ -320,6 +320,34 @@ NS_TEST(window_handles_outside_data_range) {
     NS_CHECK(std::abs(tMax - 0.75) < 1e-12);
 }
 
+// The stretch fit searches the full handle domain: a target rendered with a
+// black point BELOW the data minimum (lifted floor) and a white ABOVE the
+// maximum (headroom) must be matched — the old [0,1] bounds could not
+// reach either end (source min always displayed as 0, max always as 1).
+NS_TEST(fit_channel_stretch_reaches_outside_data_range) {
+    const std::size_t n = 20000;
+    std::vector<float> raw(n), disp(n);
+    ChannelStretch truth; truth.black = -0.3; truth.mid = 0.45; truth.white = 1.4;
+    const double m = (truth.mid - truth.black) / (truth.white - truth.black);
+    for (std::size_t i = 0; i < n; ++i) {
+        raw[i] = float(i) / (n - 1);
+        disp[i] = float(mtf(windowCoord(raw[i], 0.0, 1.0, truth), m));
+    }
+    NS_CHECK(disp[0] > 0.05);                // lifted floor: the minimum is not black
+    NS_CHECK(disp[n - 1] < 0.95);            // headroom: the maximum is not white
+    ChannelStretch fit;
+    const double rmse = fitChannelStretch(raw.data(), disp.data(), n, 1, 0.0, 1.0, fit);
+    NS_CHECK(rmse < 5e-3);
+    NS_CHECK(fit.black < 0.0);               // it used the room below the data
+    NS_CHECK(fit.white > 1.0);               // ... and above it
+    const double fm = (fit.mid - fit.black) / std::max(1e-6, fit.white - fit.black);
+    double worst = 0;
+    for (std::size_t i = 0; i < n; i += 97)
+        worst = std::max(worst, std::fabs(mtf(windowCoord(raw[i], 0.0, 1.0, fit), fm) - disp[i]));
+    NS_CHECK(worst < 0.02);
+    NS_CHECK(std::fabs(mtf(windowCoord(0.0f, 0.0, 1.0, fit), fm) - disp[0]) < 0.02);   // the floor itself
+}
+
 int main() { return nstest::runAll(); }
 
 // DisplayFunction import regime: a PI STF whose white point sits ~80x beyond

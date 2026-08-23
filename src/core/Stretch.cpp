@@ -100,14 +100,29 @@ double fitChannelStretch(const float* raw, const float* target, std::size_t n,
         return 0.5 * (a + b);
     };
 
+    // Search over the full handle domain — one span beyond the data on each
+    // side — not just [0,1]: a black point BELOW the data minimum is how a
+    // reference with a lifted floor (a pedestal the source lacks) is matched
+    // at the dark end, and a white ABOVE the maximum how an unsaturated
+    // reference is matched at the bright end. With black pinned at 0 the
+    // source minimum always displayed as 0 and the fit paid for it in the
+    // shadows. Same objective, larger feasible set: never a worse fit.
+    constexpr double kLo = -1.0, kHi = 2.0;
     double black = 0.0, white = 1.0, mid = 0.5;
-    for (int sweep = 0; sweep < 4; ++sweep) {           // coordinate descent
-        black = lineSearch(0.0, white - 0.02,
+    // Coordinate descent; the black–white direction is a shallow valley
+    // (both trade off against the midtone), so sweep until the objective
+    // stops improving rather than a fixed handful of times.
+    double prevE = mse(black, mid, white);
+    for (int sweep = 0; sweep < 24; ++sweep) {
+        black = lineSearch(kLo, white - 0.02,
                            [&](double v) { return mse(v, mid, white); });
-        white = lineSearch(black + 0.02, 1.0,
+        white = lineSearch(black + 0.02, kHi,
                            [&](double v) { return mse(black, mid, v); });
         mid   = lineSearch(black + 1e-4, white - 1e-4,
                            [&](double v) { return mse(black, v, white); });
+        const double e = mse(black, mid, white);
+        if (sweep >= 3 && prevE - e < 1e-9) break;
+        prevE = e;
     }
     out.black = black; out.mid = mid; out.white = white;
     return std::sqrt(mse(black, mid, white));

@@ -193,6 +193,14 @@ mode remains one checkbox away.
 - Judging RMSE: values are in display units on $[0,1]$; experience suggests
   a fit below $\sim 0.02$ is visually convincing, while larger residuals
   usually indicate the reference demanded a hue rotation.
+- **The fit uses the whole handle domain.** The fitted black and white
+  points may lie *outside* the source's data range — black below the
+  minimum when the reference carries a lifted floor (a pedestal the
+  source lacks), white above the maximum when the reference does not
+  saturate where the source does. With the earlier $[0,1]$ bounds the
+  source minimum always displayed as 0 and the fit paid for it in the
+  shadows; the search now spans one data span beyond each end and
+  iterates to convergence, so such references are matched at both ends.
 - **The reference need not show the same field.** Transport matches
   *distributions*, never pixels, so any image with the same *kind* of
   content is a legitimate reference: two different parts of one supernova
