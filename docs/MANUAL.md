@@ -132,9 +132,11 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
   handles may go **beyond** it: black *below* the minimum lifts a floor,
   white *above* the maximum leaves headroom, and the GHS symmetry point
   may sit outside the window — on a mode that the black point has clipped
-  away, say. **Wide** extends the plot half a span on each side; the
-  **mouse wheel** zooms about the cursor and **Shift+wheel** pans;
-  **double-click** the plot to refit. When the view extends past the
+  away, say. Simply **drag a grip past the plot's edge** and the axis
+  extends to follow it; **Wide** extends the plot half a span on each
+  side up front; the **mouse wheel** zooms about the cursor and
+  **Shift+wheel** pans; **double-click** the plot to refit (the refit
+  always keeps every handle in view). When the view extends past the
   data, dotted *min* / *max* lines mark where it ends, and a *0* line
   marks true zero, so negative values read as negative. The value boxes
   accept out-of-range numbers too. (The handle domain is one full span

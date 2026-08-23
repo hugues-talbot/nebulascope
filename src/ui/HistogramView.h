@@ -36,6 +36,9 @@ public:
     // Snap the GHS symmetry point to the histogram peak (the mode) of the
     // curve channel — the GHS tutorial's first move, as one gesture.
     void snapSpToMode();
+    // Widget position of the top grip for a handle at normalized value v
+    // (test hook for synthesized drags).
+    QPointF gripPos(double v) const { return QPointF(valToX(v), plotRect().top() - 2); }
 
 signals:
     void axisModeChanged();

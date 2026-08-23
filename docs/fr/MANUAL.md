@@ -156,10 +156,12 @@ Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
   mais les poignées peuvent aller **au-delà** : un point noir *sous* le
   minimum relève un plancher, un point blanc *au-dessus* du maximum laisse
   de la marge, et le point de symétrie GHS peut sortir de la fenêtre — sur
-  un mode que le point noir a écrêté, par exemple. **Large** étend le tracé
-  d'une demi-plage de chaque côté ; la **molette** zoome autour du curseur
-  et **Maj+molette** fait défiler ; un **double-clic** sur le tracé
-  réajuste. Quand la vue dépasse les données, des pointillés *min* / *max*
+  un mode que le point noir a écrêté, par exemple. Il suffit de **tirer
+  une poignée au-delà du bord du tracé** : l'axe s'étend pour la suivre ;
+  **Large** étend d'emblée le tracé d'une demi-plage de chaque côté ; la
+  **molette** zoome autour du curseur et **Maj+molette** fait défiler ; un
+  **double-clic** sur le tracé réajuste (le réajustement garde toujours
+  chaque poignée en vue). Quand la vue dépasse les données, des pointillés *min* / *max*
   marquent leurs bornes et une ligne *0* le vrai zéro, pour que les valeurs
   négatives se lisent comme telles. Les champs de valeur acceptent aussi des
   nombres hors plage. (Le domaine des poignées s'étend d'une plage complète

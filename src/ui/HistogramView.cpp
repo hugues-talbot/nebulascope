@@ -81,8 +81,15 @@ QRectF HistogramView::plotRect() const {
 
 void HistogramView::viewRange(double& a, double& b) const {
     if (m_axis == AxisMode::Manual) { a = m_manA; b = m_manB; return; }
-    if (m_model->fn() == StretchFn::Linear) { a = 0.0; b = 1.0; }
-    else {
+    if (m_model->fn() == StretchFn::Linear) {
+        // Fit the data AND the handles: a black point below the minimum or a
+        // white above the maximum must stay reachable after a refit.
+        a = 0.0; b = 1.0;
+        for (int c = 0; c < m_model->channelCount(); ++c) {
+            const ChannelStretch cs = m_model->channel(c);
+            a = std::min(a, cs.black); b = std::max(b, cs.white);
+        }
+    } else {
         const ChannelStretch w = m_model->channel(0);
         a = w.black; b = w.white;
         if (b - a < 1e-4) { a = 0.0; b = 1.0; }          // safety for a collapsed window
@@ -413,7 +420,27 @@ void HistogramView::mousePressEvent(QMouseEvent* e) {
 }
 
 void HistogramView::mouseMoveEvent(QMouseEvent* e) {
-    if (!m_dragHandle.isEmpty()) applyDrag(xToVal(e->position().x()));
+    if (m_dragHandle.isEmpty()) return;
+    // Dragging a handle past the plot's edge EXTENDS the axis in that
+    // direction (the view follows the hand) — the natural way to take a
+    // black point below the data minimum or a white above the maximum
+    // without first pressing Wide. Growth is proportional to the overshoot
+    // and bounded by the handle domain; the plot never collapses.
+    const QRectF r = plotRect();
+    const double px = e->position().x();
+    double a, b; viewRange(a, b);
+    const double span = std::max(1e-6, b - a);
+    double v = a + (px - r.left()) / std::max(1.0, r.width()) * span;   // unclamped
+    const double outerLo = kHandleMin - 0.5, outerHi = kHandleMax + 0.5;
+    bool grew = false;
+    if (v < a && a > outerLo) { m_manA = std::max(outerLo, v); m_manB = b; grew = true; }
+    else if (v > b && b < outerHi) { m_manB = std::min(outerHi, v); m_manA = a; grew = true; }
+    if (grew) {
+        m_axis = AxisMode::Manual;
+        recomputeHistogram();
+        emit axisModeChanged();
+    }
+    applyDrag(xToVal(px));
 }
 
 void HistogramView::mouseReleaseEvent(QMouseEvent*) {

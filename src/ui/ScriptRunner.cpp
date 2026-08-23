@@ -25,6 +25,7 @@
 #include <QTextStream>
 #include <QRegularExpression>
 #include <QTimer>
+#include <QMouseEvent>
 #include <cmath>
 #include <cstdio>
 
@@ -42,6 +43,9 @@ const CommandRef kCommands[] = {
     "Select image-list row n (1-based) and display it."}},
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"histdrag",   {"histdrag b|m|w <dx_px>",
+    "Synthesize a drag of the histogram's B/M/W grip by dx screen pixels\n"
+    "(past the plot edge extends the axis). Test hook."}},
   {"window",     {"window <c|all> <black> <mid> <white>",
     "Set the linear window (B/M/W) in RAW data units for channel c (0..2) or\n"
     "all channels. Values may lie outside the data range."}},
@@ -250,6 +254,30 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
     if (cmd == QLatin1String("prev")) { m_w->prevImage(); return true; }
+    if (cmd == QLatin1String("histdrag")) {
+        // histdrag b|m|w <dx_px> — synthesize a press on the Linear-mode grip
+        // of handle b/m/w in the histogram plot, a drag by dx pixels (may run
+        // past the plot edge), and a release. Exercises the edge-extend path.
+        if (t.size() < 3) { err = "histdrag b|m|w <dx_px>"; return false; }
+        HistogramView* hv = m_w->m_hist->histogramView();
+        const QString h = t[1].toLower();
+        const int c = hv->activeChannel() < 0 ? 0 : hv->activeChannel();
+        const ChannelStretch cs = m_w->m_model.channel(c);
+        const double v = h == QLatin1String("b") ? cs.black : h == QLatin1String("m") ? cs.mid : cs.white;
+        const QPointF start = hv->gripPos(v);
+        const QPointF end(start.x() + t[2].toDouble(), start.y());
+        auto send = [&](QEvent::Type ty, const QPointF& pos) {
+            QMouseEvent ev(ty, pos, hv->mapToGlobal(pos.toPoint()), Qt::LeftButton,
+                           ty == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(hv, &ev);
+        };
+        send(QEvent::MouseButtonPress, start);
+        const int steps = 12;
+        for (int i = 1; i <= steps; ++i)
+            send(QEvent::MouseMove, start + (end - start) * (double(i) / steps));
+        send(QEvent::MouseButtonRelease, end);
+        return true;
+    }
     if (cmd == QLatin1String("window")) {
         // window <c|all> <black> <mid> <white> — set the linear window in RAW
         // data units. Values may lie outside the data range (black below the

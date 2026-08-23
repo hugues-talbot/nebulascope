@@ -225,6 +225,13 @@ assert stretch 2 -0.25 0.4 1.3 1e-6
 fn ghs
 bake smoke_ghs_ext.fits
 reset
+# Dragging a grip past the plot edge extends the axis and takes the handle
+# with it: after a 400 px leftward drag of B, the black point is below the
+# data minimum (the fixture's min is ~0.23 on channel 0).
+fn linear
+histdrag b -400
+sleep 100
+assert stretch 0 -1 0.5 1.0 0.9      # black well below 0.23; mid/white untouched (loose)
 
 # Match from plate solutions: both views solved (TAN; 2"/px unrotated vs
 # 0.5"/px rotated 30°, same centre) → M needs no picks. The fitted affine
