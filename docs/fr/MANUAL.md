@@ -140,6 +140,12 @@ Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
     les trois ensemble.
   - *Log* et *Asinh* se composent avec la fenêtre linéaire ; le tracé zoome
     sur la fenêtre pour que leurs contrôles utilisent toute la largeur.
+  - *À la relâche, le tracé zoome sur la nouvelle fenêtre B–W* : la
+    distribution d'une fenêtre étroite remplit alors la largeur et sa
+    forme devient lisible (double-clic pour réajuster aux données
+    complètes ; Auto STF cadre la fenêtre qu'il a choisie). Déplacer B
+    ou W entraîne le point milieu M en proportion, si bien que les
+    extrémités de la fenêtre ne sont jamais bloquées par M.
   - *GHS* (étirement hyperbolique généralisé) : curseurs **D** (intensité)
     et **b** (focalisation locale), plus les poignées déplaçables **SP**
     (point de symétrie — où le contraste se concentre) et **LP/HP**

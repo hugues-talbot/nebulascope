@@ -24,6 +24,8 @@ void HistogramView::setSource(const ImageData* img) {
     m_binSrc = nullptr;   // the ImageData lives at a fixed address (MainWindow's
                           // member), so a new image can alias the old pointer —
                           // always invalidate the rebin cache on source change.
+    // A manual zoom belongs to the image it was made on.
+    if (m_axis == AxisMode::Manual) { m_axis = AxisMode::Auto; emit axisModeChanged(); }
     recomputeHistogram();
 }
 
@@ -90,14 +92,42 @@ void HistogramView::viewRange(double& a, double& b) const {
             a = std::min(a, cs.black); b = std::max(b, cs.white);
         }
     } else {
-        const ChannelStretch w = m_model->channel(0);
-        a = w.black; b = w.white;
+        // The window, as the UNION over channels (on a common axis the
+        // per-channel windows legitimately differ).
+        windowUnion(a, b);
         if (b - a < 1e-4) { a = 0.0; b = 1.0; }          // safety for a collapsed window
     }
     if (m_axis == AxisMode::Wide) {                      // half a span of air on each side
         const double span = b - a;
         a -= 0.5 * span; b += 0.5 * span;
     }
+}
+
+void HistogramView::windowUnion(double& a, double& b) const {
+    a = m_model->channel(0).black; b = m_model->channel(0).white;
+    for (int c = 1; c < m_model->channelCount(); ++c) {
+        const ChannelStretch cs = m_model->channel(c);
+        a = std::min(a, cs.black); b = std::max(b, cs.white);
+    }
+}
+
+// Linear mode, after a black/white drag: zoom the plot to the window so the
+// distribution INSIDE it fills the width (the nonlinear modes always show
+// the window; Linear is where it is set, so it needs the same view once
+// set). A small margin keeps the grips off the edges; outward drags still
+// extend the axis; double-click refits to the full data.
+void HistogramView::zoomToWindow() {
+    double wa, wb; windowUnion(wa, wb);
+    const double span = wb - wa;
+    if (span < 1e-4) return;
+    double va, vb; viewRange(va, vb);
+    if (span > 0.7 * (vb - va)) return;              // already fills the plot
+    const double margin = 0.08 * span;
+    m_manA = std::max(kHandleMin - 0.5, wa - margin);
+    m_manB = std::min(kHandleMax + 0.5, wb + margin);
+    m_axis = AxisMode::Manual;
+    recomputeHistogram();
+    emit axisModeChanged();
 }
 
 void HistogramView::setWideAxis(bool on) {
@@ -444,8 +474,10 @@ void HistogramView::mouseMoveEvent(QMouseEvent* e) {
 }
 
 void HistogramView::mouseReleaseEvent(QMouseEvent*) {
+    const bool windowEdge = (m_dragHandle == "b" || m_dragHandle == "w");
     m_dragHandle.clear();
     m_dragChannel = -1;
+    if (windowEdge && m_model->fn() == StretchFn::Linear) zoomToWindow();
 }
 
 void HistogramView::applyDrag(double v) {
@@ -468,10 +500,21 @@ void HistogramView::applyDrag(double v) {
         return;
     }
 
+    // Moving an END of the window carries the midtone along as a RATIO
+    // (m = (mid−black)/(white−black) stays put), so the curve keeps its
+    // shape and W can be dragged past where M sat — the midtone is never a
+    // wall. Dragging M itself moves it absolutely, inside the window.
     auto clampSet = [&](ChannelStretch cs) {
-        if (m_dragHandle == "b") cs.black = std::min(cs.mid - eps, std::max(kHandleMin, v));
-        else if (m_dragHandle == "m") cs.mid = std::min(cs.white - eps, std::max(cs.black + eps, v));
-        else if (m_dragHandle == "w") cs.white = std::max(cs.mid + eps, std::min(kHandleMax, v));
+        const double m = (cs.mid - cs.black) / std::max(1e-9, cs.white - cs.black);
+        if (m_dragHandle == "b") {
+            cs.black = std::min(cs.white - eps, std::max(kHandleMin, v));
+            cs.mid = cs.black + m * (cs.white - cs.black);
+        } else if (m_dragHandle == "m") {
+            cs.mid = std::min(cs.white - eps, std::max(cs.black + eps, v));
+        } else if (m_dragHandle == "w") {
+            cs.white = std::max(cs.black + eps, std::min(kHandleMax, v));
+            cs.mid = cs.black + m * (cs.white - cs.black);
+        }
         return cs;
     };
 
@@ -494,9 +537,9 @@ void HistogramView::applyDrag(double v) {
         for (int c = 0; c < n; ++c) {
             const ChannelStretch cs = m_model->channel(c);
             double lob, hib;
-            if (m_dragHandle == "b")      { lob = kHandleMin;     hib = cs.mid - eps; }
+            if (m_dragHandle == "b")      { lob = kHandleMin;     hib = cs.white - eps; }
             else if (m_dragHandle == "m") { lob = cs.black + eps; hib = cs.white - eps; }
-            else                          { lob = cs.mid + eps;   hib = std::max(kHandleMax, cs.white); }
+            else                          { lob = cs.black + eps; hib = std::max(kHandleMax, cs.white); }
             const double base = (m_dragHandle == "b") ? cs.black
                               : (m_dragHandle == "m") ? cs.mid : cs.white;
             delta = std::max(delta, lob - base);
@@ -504,9 +547,10 @@ void HistogramView::applyDrag(double v) {
         }
         for (int c = 0; c < n; ++c) {
             ChannelStretch cs = m_model->channel(c);
-            if (m_dragHandle == "b") cs.black += delta;
-            else if (m_dragHandle == "m") cs.mid += delta;
-            else cs.white += delta;
+            const double m = (cs.mid - cs.black) / std::max(1e-9, cs.white - cs.black);
+            if (m_dragHandle == "b")      { cs.black += delta; cs.mid = cs.black + m * (cs.white - cs.black); }
+            else if (m_dragHandle == "m") { cs.mid += delta; }
+            else                          { cs.white += delta; cs.mid = cs.black + m * (cs.white - cs.black); }
             m_model->setChannel(c, cs);
         }
     } else {

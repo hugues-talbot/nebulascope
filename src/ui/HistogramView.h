@@ -36,6 +36,7 @@ public:
     // Snap the GHS symmetry point to the histogram peak (the mode) of the
     // curve channel — the GHS tutorial's first move, as one gesture.
     void snapSpToMode();
+    void zoomToWindow();                    // Linear: fit the plot to the B/W window
     // Widget position of the top grip for a handle at normalized value v
     // (test hook for synthesized drags).
     QPointF gripPos(double v) const { return QPointF(valToX(v), plotRect().top() - 2); }
@@ -65,6 +66,7 @@ private:
     void   viewRange(double& a, double& b) const;
     void   applyDrag(double v);
     double modeU(int c) const;             // histogram peak of channel c, in view coords (NaN if none)
+    void   windowUnion(double& a, double& b) const;   // min black / max white over channels
 
     // Handle domain in normalized [lo,hi] units: one full span beyond the
     // data on each side. The renderer windows by an affine map and clamps,

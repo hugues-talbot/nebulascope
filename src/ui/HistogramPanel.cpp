@@ -293,9 +293,11 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     });
     connect(autoBtn, &QPushButton::clicked, this, [this] {
         if (m_src) m_model->autoStretch(computeStats(*m_src));
+        m_view->resetAxis(); m_view->zoomToWindow();       // show the window it chose
     });
     connect(autoLinkedBtn, &QPushButton::clicked, this, [this] {
         if (m_src) m_model->autoStretchLinked(computeStats(*m_src));
+        m_view->resetAxis(); m_view->zoomToWindow();
     });
     // Reset = the first-view ramps (each channel spanning its own data), not
     // an identity over whatever range is current — on a common axis the two
@@ -303,6 +305,7 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     connect(resetBtn, &QPushButton::clicked, this, [this] {
         m_model->reset();                                  // fn, GHS, adjustments
         if (m_src) m_model->linearWindow(computeStats(*m_src));   // the first-view ramps
+        m_view->resetAxis();                               // and the full-data view
     });
     connect(applyAllBtn, &QPushButton::clicked, this, &HistogramPanel::applyToAllRequested);
     connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });
@@ -450,6 +453,7 @@ void HistogramPanel::onParamEdited(int idx) {
         for (int c = 0; c < m_model->channelCount(); ++c) applyChan(c);
     else
         applyChan(editChannel());
+    if (m_view && (idx == 0 || idx == 2)) m_view->zoomToWindow();   // typed B/W: show the window
 }
 
 void HistogramPanel::onRgbEdited(int c, int idx) {

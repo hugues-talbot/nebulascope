@@ -116,7 +116,11 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
     **W** (white) directly on the plot. RGB images additionally show each
     channel's own B/M/W as thin coloured lines — grab one **in the plot body**
     to move that channel alone; the labelled grips on the top strip move all
-    three together.
+    three together. **On release, the plot zooms to the new B–W window** so
+    the distribution inside a narrow window fills the width and its shape is
+    legible (double-click to refit to the full data; Auto STF refits to the
+    window it chose). Moving B or W carries the midtone M along as a ratio,
+    so the window's ends are never blocked by M.
   - *Log* and *Asinh* compose with the linear window; the plot zooms into the
     window so their controls use the full widget width.
   - *GHS* (Generalised Hyperbolic Stretch): **D** (strength) and **b** (local

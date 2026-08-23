@@ -232,6 +232,16 @@ fn linear
 histdrag b -400
 sleep 100
 assert stretch 0 -1 0.5 1.0 0.9      # black well below 0.23; mid/white untouched (loose)
+# Narrowing the window (drag W far left) keeps M between B and W (midtone
+# carried as a ratio, never a wall) and — on release — the plot zooms to the
+# window so the distribution inside it is legible. On the pi_f32 fixture
+# (channel-0 data ~0.23..1.0) a leftward W drag narrows the window and keeps
+# M at the black+ratio*(white-black) position (midtone carried, not a wall).
+fn linear
+action reset_stretch
+histdrag w -330
+sleep 100
+assert stretch 0 0.2302 0.3064 0.3826 0.02
 
 # Match from plate solutions: both views solved (TAN; 2"/px unrotated vs
 # 0.5"/px rotated 30°, same centre) → M needs no picks. The fitted affine
