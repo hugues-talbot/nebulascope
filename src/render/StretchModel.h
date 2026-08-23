@@ -52,6 +52,22 @@ public:
     double hi(int c) const { return m_hi[clampC(c)]; }
     void setRange(int c, double lo, double hi) { c = clampC(c); m_lo[c] = lo; m_hi[c] = hi; }
 
+    // Common axis (RGB): when set, every windowing that derives lo/hi from
+    // statistics (first-view ramp, auto-STF, renormalized paste) uses ONE
+    // pooled [min,max] for all channels, so the three histograms are drawn on
+    // the same absolute scale and their offsets — the colour cast — are
+    // visible and draggable. Per-channel normalization (each channel over its
+    // own [min,max]) silently equalizes the channels in the plot. Default on.
+    bool commonAxis() const { return m_commonAxis; }
+    void setCommonAxis(bool on) { m_commonAxis = on; }
+    // Re-express the current black/mid/white on new per-channel ranges WITHOUT
+    // changing the displayed result (absolute handle positions are preserved).
+    // Used when switching the axis mode on a shown image.
+    void rebaseRanges(const double newLo[3], const double newHi[3]);
+    // Pooled [min,max] over the first `count` channels of `stats`.
+    static void pooledRange(const std::vector<ChannelStats>& stats, int count,
+                            double& mn, double& mx);
+
     int channelCount() const { return m_count; }
     void setChannelCount(int n) { m_count = n < 1 ? 1 : (n > 3 ? 3 : n); }
 
@@ -139,6 +155,7 @@ private:
     double m_lo[3] = {0, 0, 0};
     double m_hi[3] = {1, 1, 1};
     AdjustParams m_adj;
+    bool m_commonAxis = true;
 };
 
 } // namespace astro

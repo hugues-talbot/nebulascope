@@ -24,7 +24,23 @@ that one the *what*.)
   Asinh, GHS all compose with the linear window and get the full widget
   width for their controls. Rationale: astronomical dynamic range makes the
   useful window a sliver of the data range — controls must operate on the
-  window, not the range.
+  window, not the range. *Refined (v0.96): the plot's axis is a zoomable
+  view, not a constraint.* The fit-to-data/window remains the default
+  framing, but handles live on a domain one full span beyond the data on
+  each side (black below min, white above max, GHS SP/LP/HP outside the
+  window) — the renderer's affine windowing was always well-defined there,
+  and the GHS curve stays a valid monotone transfer since its slope
+  function is positive everywhere. Motivation: the Siril GHS workflow
+  (symmetry point on the histogram mode) was structurally impossible when
+  the black point had clipped the mode out of the window.
+- **RGB histograms share one pooled axis by default.** Per-channel
+  normalisation (each channel over its own [min,max]) silently equalises
+  the channels in the plot and hides exactly the offsets colour alignment
+  needs to see. Common axis is the honest default; switching is
+  display-invariant (handles are re-expressed on the new ranges). One
+  consumer must NOT be pooled: the DisplayFunction import's far-white
+  rebase reads t = 1 as the channel's own data maximum, so it runs on
+  per-channel ranges and the pooling happens afterwards.
 - **GHS follows the PixInsight formulation** (exponential-response D, focus
   b, SP symmetry point, LP/HP protection), windowed like Log/Asinh.
 - **LUTs hold only the curve shape; windowing is per-pixel float.**

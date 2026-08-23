@@ -6,6 +6,8 @@
 #include "ui/RotateDialog.h"
 #include "ui/CombineDialog.h"
 #include "ui/PreferencesDialog.h"
+#include "ui/HistogramPanel.h"
+#include "ui/HistogramView.h"
 #include "render/DisplayRenderer.h"
 #include "core/Debayer.h"
 #include "core/Preferences.h"
@@ -40,6 +42,13 @@ const CommandRef kCommands[] = {
     "Select image-list row n (1-based) and display it."}},
   {"next",       {"next", "Blink forward through the list (wraps)."}},
   {"prev",       {"prev", "Blink backward through the list (wraps)."}},
+  {"window",     {"window <c|all> <black> <mid> <white>",
+    "Set the linear window (B/M/W) in RAW data units for channel c (0..2) or\n"
+    "all channels. Values may lie outside the data range."}},
+  {"axis",       {"axis common|channel|wide|fit|peak",
+    "Histogram axis: RGB range policy (common = one pooled range, the\n"
+    "default; channel = each over its own), the Wide extended range / fit\n"
+    "back to the data, or peak = snap the GHS symmetry point to the mode."}},
   {"regpick",    {"regpick <cell> <x> <y>",
     "A Match pick: image pixel (x,y) in view cell n (1-based), while\n"
     "Match is armed (action register_views, or register_views_2 for the\n"
@@ -241,6 +250,48 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     }
     if (cmd == QLatin1String("next")) { m_w->nextImage(); return true; }
     if (cmd == QLatin1String("prev")) { m_w->prevImage(); return true; }
+    if (cmd == QLatin1String("window")) {
+        // window <c|all> <black> <mid> <white> — set the linear window in RAW
+        // data units. Values may lie outside the data range (black below the
+        // minimum, white above the maximum): the handle domain is one full
+        // span beyond the data on each side.
+        if (t.size() < 5) { err = "window <c|all> <black> <mid> <white>"; return false; }
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        const bool all = t[1].toLower() == QLatin1String("all");
+        const int c0 = all ? 0 : t[1].toInt();
+        const int c1 = all ? m_w->m_model.channelCount() - 1 : c0;
+        if (c0 < 0 || c1 > 2) { err = "channel is 0..2 or all"; return false; }
+        const double b = t[2].toDouble(), m = t[3].toDouble(), w = t[4].toDouble();
+        if (!(b < m && m < w)) { err = "need black < mid < white"; return false; }
+        for (int c = c0; c <= c1; ++c) {
+            const double lo = m_w->m_model.lo(c), hi = m_w->m_model.hi(c);
+            const double span = std::max(1e-12, hi - lo);
+            ChannelStretch cs;
+            cs.black = std::max(-1.0, std::min(2.0, (b - lo) / span));
+            cs.mid   = std::max(-1.0, std::min(2.0, (m - lo) / span));
+            cs.white = std::max(-1.0, std::min(2.0, (w - lo) / span));
+            m_w->m_model.setChannel(c, cs);
+        }
+        return true;
+    }
+    if (cmd == QLatin1String("axis")) {
+        // axis common|channel — the histogram's RGB range policy (display
+        // unchanged; handles are re-expressed on the new ranges).
+        if (!needArgs(1)) return false;
+        const QString w = t[1].toLower();
+        if (w == QLatin1String("wide") || w == QLatin1String("fit")) {
+            m_w->m_hist->histogramView()->setWideAxis(w == QLatin1String("wide"));
+            return true;
+        }
+        if (w == QLatin1String("peak")) {                 // GHS: SP -> histogram peak
+            m_w->m_hist->histogramView()->snapSpToMode();
+            return true;
+        }
+        if (w != QLatin1String("common") && w != QLatin1String("channel")) { err = "axis common|channel|wide|fit|peak"; return false; }
+        m_w->m_hist->setCommonAxisChecked(w == QLatin1String("common"));
+        emit m_w->m_hist->commonAxisToggled(w == QLatin1String("common"));
+        return true;
+    }
     if (cmd == QLatin1String("regpick")) {
         // regpick <cell> <x> <y> — a Register pick: image pixel (x,y) in cell n
         // (1-based) while Register is armed (action register_views / _2).

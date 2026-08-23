@@ -304,7 +304,11 @@ every pixel (`tests/conformance/`). This is what makes a stretch
 
 `schema` is the version of *this* block (independent of the sidecar's own
 `version`); a reader must refuse a schema newer than it knows. Enumerations
-are stored as names, never integers.
+are stored as names, never integers. `black`/`mid`/`white` and the GHS
+`SP`/`LP`/`HP` are normalized window coordinates and **may lie outside
+$[0,1]$** (a black point below the data minimum, a symmetry point beyond
+the window): the pipeline below is defined for any real values, and a
+conforming implementation must not clamp them.
 
 ### 6.2 The pipeline, per channel $c$ and raw pixel value $v$
 

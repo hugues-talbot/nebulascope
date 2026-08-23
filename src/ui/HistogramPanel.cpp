@@ -66,6 +66,26 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     logBtn->setCursor(Qt::PointingHandCursor);
     logBtn->setToolTip(tr("Logarithmic vs linear histogram frequency axis"));
     chRow->addWidget(logBtn);
+    // Axis range: Wide extends the plot half a span beyond the data/window on
+    // each side so handles can leave the data range; the wheel zooms/pans
+    // freely (double-click the plot to refit).
+    m_wideBtn = new QPushButton(tr("Wide"));
+    m_wideBtn->setCheckable(true);
+    m_wideBtn->setCursor(Qt::PointingHandCursor);
+    m_wideBtn->setToolTip(tr("Extend the axis beyond the data (black below the minimum, white above\n"
+                             "the maximum, GHS symmetry point outside the window). Mouse wheel\n"
+                             "zooms, Shift+wheel pans; double-click the plot to refit."));
+    chRow->addWidget(m_wideBtn);
+    // Common axis (RGB): all channels plotted on one pooled [min,max], so
+    // channel offsets — the colour cast — are visible and draggable.
+    m_axisBtn = new QPushButton(tr("Common"));
+    m_axisBtn->setCheckable(true);
+    m_axisBtn->setChecked(true);
+    m_axisBtn->setCursor(Qt::PointingHandCursor);
+    m_axisBtn->setToolTip(tr("Common axis: plot every channel over ONE pooled range, so the\n"
+                             "channels' offsets (the colour cast) are visible and can be dragged\n"
+                             "into alignment. Off: each channel normalized to its own range."));
+    chRow->addWidget(m_axisBtn);
     root->addLayout(chRow);
 
     // --- the plot ---
@@ -150,6 +170,17 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     };
     m_dSlider = addSlider(tr("D · strength"), 0, 800, 160);     // /100
     m_bSlider = addSlider(tr("b · focus"), -500, 1500, 600);    // /100
+    {
+        auto* row = new QHBoxLayout();
+        auto* spPeak = new QPushButton(tr("SP → peak"));
+        spPeak->setCursor(Qt::PointingHandCursor);
+        spPeak->setToolTip(tr("Put the symmetry point on the histogram peak (the mode) — the\n"
+                              "usual anchor for a first GHS stretch. Also: double-click the SP grip."));
+        connect(spPeak, &QPushButton::clicked, this, [this] { m_view->snapSpToMode(); });
+        row->addWidget(spPeak);
+        row->addStretch();
+        gl->addLayout(row);
+    }
     root->addWidget(m_ghsBox);
 
     // --- post-stretch display adjustments (always visible, any mode) ---
@@ -266,9 +297,21 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     connect(autoLinkedBtn, &QPushButton::clicked, this, [this] {
         if (m_src) m_model->autoStretchLinked(computeStats(*m_src));
     });
-    connect(resetBtn, &QPushButton::clicked, this, [this] { m_model->reset(); });
+    // Reset = the first-view ramps (each channel spanning its own data), not
+    // an identity over whatever range is current — on a common axis the two
+    // differ, and "Reset" has always meant "as first opened".
+    connect(resetBtn, &QPushButton::clicked, this, [this] {
+        m_model->reset();                                  // fn, GHS, adjustments
+        if (m_src) m_model->linearWindow(computeStats(*m_src));   // the first-view ramps
+    });
     connect(applyAllBtn, &QPushButton::clicked, this, &HistogramPanel::applyToAllRequested);
     connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });
+    connect(m_wideBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setWideAxis(on); });
+    connect(m_view, &HistogramView::axisModeChanged, this, [this] {
+        QSignalBlocker b(m_wideBtn);
+        m_wideBtn->setChecked(m_view->axisMode() == HistogramView::AxisMode::Wide);
+    });
+    connect(m_axisBtn, &QPushButton::toggled, this, [this](bool on) { emit commonAxisToggled(on); });
     connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncFromModel);
 
     if (auto* b = m_chanGroup->button(-1)) b->setChecked(true);
@@ -382,9 +425,10 @@ void HistogramPanel::onParamEdited(int idx) {
 
     if (m_model->fn() == StretchFn::GHS) {
         GHSParams g = m_model->ghs();
-        if (idx == 0)      g.LP = std::min(g.SP - eps, std::max(0.0, clamp01(val)));
-        else if (idx == 1) g.SP = std::min(g.HP - eps, std::max(g.LP + eps, clamp01(val)));
-        else if (idx == 2) g.HP = std::max(g.SP + eps, std::min(1.0, clamp01(val)));
+        auto clampDom = [](double x) { return std::max(-1.0, std::min(2.0, x)); };   // handle domain
+        if (idx == 0)      g.LP = std::min(g.SP - eps, std::max(-1.0, clampDom(val)));
+        else if (idx == 1) g.SP = std::min(g.HP - eps, std::max(g.LP + eps, clampDom(val)));
+        else if (idx == 2) g.HP = std::max(g.SP + eps, std::min(2.0, clampDom(val)));
         else if (idx == 3) g.D  = std::min(8.0,  std::max(0.0,  val));
         else if (idx == 4) g.b  = std::min(15.0, std::max(-5.0, val));
         m_model->setGhs(g);
@@ -394,11 +438,12 @@ void HistogramPanel::onParamEdited(int idx) {
     // Linear/Log/Asinh: idx 0=Black 1=Mid 2=White, entered as RAW data values.
     auto applyChan = [&](int c) {
         const double lo = m_model->lo(c), hi = m_model->hi(c);
-        double nv = clamp01((val - lo) / std::max(1e-12, hi - lo));
+        double nv = (val - lo) / std::max(1e-12, hi - lo);
+        nv = std::max(-1.0, std::min(2.0, nv));            // handle domain, not [0,1]
         ChannelStretch cs = m_model->channel(c);
-        if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(0.0, nv));
+        if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(-1.0, nv));
         else if (idx == 1) cs.mid   = std::min(cs.white - eps, std::max(cs.black + eps, nv));
-        else if (idx == 2) cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
+        else if (idx == 2) cs.white = std::max(cs.mid + eps, std::min(2.0, nv));
         m_model->setChannel(c, cs);
     };
     if (m_view && m_view->activeChannel() < 0)
@@ -416,11 +461,11 @@ void HistogramPanel::onRgbEdited(int c, int idx) {
     const double eps = 0.006;
     const double lo = m_model->lo(c), hi = m_model->hi(c);
     double nv = (val - lo) / std::max(1e-12, hi - lo);
-    nv = nv < 0 ? 0.0 : (nv > 1 ? 1.0 : nv);
+    nv = std::max(-1.0, std::min(2.0, nv));                // handle domain, not [0,1]
     ChannelStretch cs = m_model->channel(c);
-    if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(0.0, nv));
+    if (idx == 0)      cs.black = std::min(cs.mid - eps, std::max(-1.0, nv));
     else if (idx == 1) cs.mid   = std::min(cs.white - eps, std::max(cs.black + eps, nv));
-    else               cs.white = std::max(cs.mid + eps, std::min(1.0, nv));
+    else               cs.white = std::max(cs.mid + eps, std::min(2.0, nv));
     m_model->setChannel(c, cs);
 }
 
@@ -441,4 +486,12 @@ void HistogramPanel::onAdjChanged() {
     m_model->setAdjust(a);
 }
 
+} // namespace astro
+
+namespace astro {
+void HistogramPanel::setCommonAxisChecked(bool on) {
+    if (!m_axisBtn) return;
+    QSignalBlocker b(m_axisBtn);
+    m_axisBtn->setChecked(on);
+}
 } // namespace astro

@@ -42,6 +42,8 @@ CASES = [
     ("rgb_ghs_colour",  "rgb",  ["autostf", "fn ghs", "adjust hue -35",
                                  "adjust saturation 0.25", "adjust temperature -0.1",
                                  "adjust tint 0.05", "adjust vibrance 0.3"]),
+    ("rgb_extended_win","rgb",  ["window all -0.3 0.35 1.4", "fn asinh"]),   # handles beyond the data
+    ("ghs_sp_outside",  "mono", ["autostf", "fn ghs", "axis peak"]),           # SP snapped to the mode
     ("rgb_transportish","rgb",  ["autostf", "fn linear", "adjust hue -0.99995914",
                                  "adjust saturation 0.11033605",
                                  "adjust temperature -0.0738426",

@@ -32,6 +32,7 @@ void Preferences::load() {
     debayerMethod   = s.value(QStringLiteral("debayer_method"), debayerMethod).toInt();
     zoomStepCoarse  = s.value(QStringLiteral("zoom_step_coarse"), zoomStepCoarse).toInt();
     zoomStepFine    = s.value(QStringLiteral("zoom_step_fine"), zoomStepFine).toInt();
+    commonAxis      = s.value(QStringLiteral("histogram_common_axis"), commonAxis).toBool();
     s.endGroup();
     if (language != QLatin1String("en") && language != QLatin1String("fr"))
         language.clear();                      // anything else = follow the system
@@ -63,6 +64,7 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("debayer_method"), debayerMethod);
     s.setValue(QStringLiteral("zoom_step_coarse"), zoomStepCoarse);
     s.setValue(QStringLiteral("zoom_step_fine"), zoomStepFine);
+    s.setValue(QStringLiteral("histogram_common_axis"), commonAxis);
     s.endGroup();
 }
 

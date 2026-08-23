@@ -13,6 +13,7 @@ class QSlider;
 class QWidget;
 class QLineEdit;
 class QLabel;
+class QPushButton;
 
 namespace astro {
 
@@ -27,6 +28,12 @@ public:
 signals:
     // "Apply to All": the owner shares the current stretch with its list.
     void applyToAllRequested();
+    // Common-axis button: the owner switches the model (re-expressing the
+    // current handles on the new ranges, display unchanged) and persists it.
+    void commonAxisToggled(bool on);
+public:
+    void setCommonAxisChecked(bool on);   // reflect the model/preference
+    HistogramView* histogramView() const { return m_view; }
 
 private slots:
     void syncFromModel();
@@ -40,6 +47,8 @@ private:
     StretchModel* m_model;
     const ImageData* m_src = nullptr;
     HistogramView* m_view = nullptr;
+    QPushButton* m_wideBtn = nullptr;
+    QPushButton* m_axisBtn = nullptr;
     QButtonGroup* m_fnGroup = nullptr;
     QButtonGroup* m_chanGroup = nullptr;
     QWidget* m_ghsBox = nullptr;

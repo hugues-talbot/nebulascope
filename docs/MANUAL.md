@@ -127,6 +127,30 @@ The Histogram panel (toggle **F3**) is the heart of the tool:
 - **Editable value boxes** — exact numeric entry; RGB images get a full
   **3×3 grid** (R/G/B × Black/Mid/White) in raw data units.
 - **Log axis** button toggles logarithmic frequency scaling of the histogram.
+- **The axis is not pinned to the data.** By default the plot fits the
+  data range (Linear) or the black/white window (Log/Asinh/GHS), but the
+  handles may go **beyond** it: black *below* the minimum lifts a floor,
+  white *above* the maximum leaves headroom, and the GHS symmetry point
+  may sit outside the window — on a mode that the black point has clipped
+  away, say. **Wide** extends the plot half a span on each side; the
+  **mouse wheel** zooms about the cursor and **Shift+wheel** pans;
+  **double-click** the plot to refit. When the view extends past the
+  data, dotted *min* / *max* lines mark where it ends, and a *0* line
+  marks true zero, so negative values read as negative. The value boxes
+  accept out-of-range numbers too. (The handle domain is one full span
+  beyond the data on each side.)
+- **Common axis** (RGB, default on) — all three channels are plotted on
+  **one pooled range**, so their offsets — the colour cast — show as
+  offsets and can be dragged into alignment. Off, each channel is
+  normalised to its own range, which silently equalises them in the plot
+  (the screen is identical either way: switching re-expresses the handles
+  on the new ranges without moving them).
+- A small **triangle** on the top edge marks the histogram **peak** (the
+  mode) of the curve channel. In GHS, **SP → peak** (or a double-click on
+  the SP grip) puts the symmetry point exactly on it — the usual anchor for
+  a first GHS stretch, as in the Siril GHS tutorial — and SP may lie
+  outside the window, where the curve becomes log-like and steepest at the
+  sky.
 - **Auto STF** (**U**) — per-channel automatic stretch (background → ~0.25).
 - **Auto STF (linked)** (**Shift+U**) — one shared stretch from pooled statistics;
   preserves colour balance (use for colour-calibrated data).

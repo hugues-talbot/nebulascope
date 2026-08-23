@@ -29,6 +29,7 @@ struct Preferences {
                                                // 1 bilinear, 2 RCD (default)
     int    zoomStepCoarse  = 10;               // keyboard zoom > / < step, percent
     int    zoomStepFine    = 3;                // keyboard zoom . / , step, percent
+    bool   commonAxis      = true;             // histogram: RGB channels on one pooled axis
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <algorithm>
 #include <cmath>
 
@@ -79,10 +80,103 @@ QRectF HistogramView::plotRect() const {
 }
 
 void HistogramView::viewRange(double& a, double& b) const {
-    if (m_model->fn() == StretchFn::Linear) { a = 0.0; b = 1.0; return; }
-    const ChannelStretch w = m_model->channel(0);
-    a = w.black; b = w.white;
-    if (b - a < 1e-4) { a = 0.0; b = 1.0; }              // safety for a collapsed window
+    if (m_axis == AxisMode::Manual) { a = m_manA; b = m_manB; return; }
+    if (m_model->fn() == StretchFn::Linear) { a = 0.0; b = 1.0; }
+    else {
+        const ChannelStretch w = m_model->channel(0);
+        a = w.black; b = w.white;
+        if (b - a < 1e-4) { a = 0.0; b = 1.0; }          // safety for a collapsed window
+    }
+    if (m_axis == AxisMode::Wide) {                      // half a span of air on each side
+        const double span = b - a;
+        a -= 0.5 * span; b += 0.5 * span;
+    }
+}
+
+void HistogramView::setWideAxis(bool on) {
+    const AxisMode want = on ? AxisMode::Wide : AxisMode::Auto;
+    if (want == m_axis) return;
+    m_axis = want;
+    recomputeHistogram();
+    emit axisModeChanged();
+}
+
+void HistogramView::resetAxis() {
+    if (m_axis == AxisMode::Auto) return;
+    m_axis = AxisMode::Auto;
+    recomputeHistogram();
+    emit axisModeChanged();
+}
+
+double HistogramView::modeU(int c) const {
+    if (c < 0 || c >= int(m_hist.size())) return std::nan("");
+    const auto& hb = m_hist[c];
+    int best = -1; float mx = 0.0f;
+    for (int i = 0; i < int(hb.size()); ++i) if (hb[i] > mx) { mx = hb[i]; best = i; }
+    if (best < 0) return std::nan("");
+    double a, b; viewRange(a, b);
+    return a + (best + 0.5) / double(hb.size()) * (b - a);
+}
+
+void HistogramView::snapSpToMode() {
+    if (m_model->fn() != StretchFn::GHS) return;
+    const int ch = int(m_hist.size());
+    const int c = (m_active < 0 || m_active >= ch) ? 0 : m_active;
+    const double u = modeU(c);
+    if (!std::isfinite(u)) return;
+    const ChannelStretch wc = m_model->channel(0);
+    const double span = std::max(1e-6, wc.white - wc.black);
+    GHSParams g = m_model->ghs();
+    const double eps = 0.006;
+    double p = (u - wc.black) / span;
+    p = std::max(kHandleMin, std::min(kHandleMax, p));
+    // Keep the protection zones consistent: LP stays below SP, HP above.
+    g.SP = p;
+    if (g.LP > g.SP - eps) g.LP = g.SP - eps;
+    if (g.HP < g.SP + eps) g.HP = g.SP + eps;
+    m_model->setGhs(g);
+}
+
+void HistogramView::wheelEvent(QWheelEvent* e) {
+    const QRectF r = plotRect();
+    double a, b; viewRange(a, b);
+    const double span = b - a;
+    const QPoint ad = e->angleDelta();
+    if (e->modifiers() & Qt::ShiftModifier || (ad.x() != 0 && ad.y() == 0)) {
+        // Pan: Shift+wheel (or a horizontal wheel/trackpad swipe).
+        const int d = ad.x() != 0 ? ad.x() : ad.y();
+        const double shift = -d / 120.0 * 0.1 * span;
+        m_manA = a + shift; m_manB = b + shift;
+    } else {
+        // Zoom about the cursor's value, 15% per notch.
+        const double frac = (e->position().x() - r.left()) / std::max(1.0, r.width());
+        const double pivot = a + frac * span;
+        const double k = std::pow(1.15, -ad.y() / 120.0);
+        double na = pivot - (pivot - a) * k, nb = pivot + (b - pivot) * k;
+        if (nb - na < 0.002) { e->accept(); return; }   // don't collapse
+        m_manA = na; m_manB = nb;
+    }
+    // Outer bound: the handle domain plus a little air.
+    const double outerLo = kHandleMin - 0.5, outerHi = kHandleMax + 0.5;
+    if (m_manA < outerLo) { m_manB += outerLo - m_manA; m_manA = outerLo; }
+    if (m_manB > outerHi) { m_manA -= m_manB - outerHi; m_manB = outerHi; }
+    m_manA = std::max(outerLo, m_manA); m_manB = std::min(outerHi, m_manB);
+    m_axis = AxisMode::Manual;
+    recomputeHistogram();
+    emit axisModeChanged();
+    e->accept();
+}
+
+void HistogramView::mouseDoubleClickEvent(QMouseEvent* e) {
+    // On the GHS symmetry-point grip: snap SP to the histogram peak.
+    // Anywhere else: back to the automatic axis range.
+    if (m_model->fn() == StretchFn::GHS) {
+        const ChannelStretch wc = m_model->channel(0);
+        const double span = std::max(1e-6, wc.white - wc.black);
+        const double spx = valToX(wc.black + m_model->ghs().SP * span);
+        if (std::fabs(e->position().x() - spx) < 10.0) { snapSpToMode(); return; }
+    }
+    resetAxis();
 }
 
 double HistogramView::valToX(double v) const {
@@ -94,7 +188,7 @@ double HistogramView::xToVal(double px) const {
     const QRectF r = plotRect();
     double a, b; viewRange(a, b);
     double v = a + (px - r.left()) / std::max(1.0, r.width()) * (b - a);
-    return v < 0 ? 0 : (v > 1 ? 1 : v);
+    return v < a ? a : (v > b ? b : v);                  // can't drag off the plot
 }
 
 void HistogramView::paintEvent(QPaintEvent*) {
@@ -111,7 +205,7 @@ void HistogramView::paintEvent(QPaintEvent*) {
         const GHSParams gp = m_model->ghs();
         const ChannelStretch wc = m_model->channel(0);
         const double span = std::max(1e-6, wc.white - wc.black);
-        auto wx = [&](double p){ return valToX(wc.black + p * span); };
+        auto wx = [&](double p){ return std::max(r.left(), std::min(r.right(), valToX(wc.black + p * span))); };
         g.fillRect(QRectF(r.left(), r.top(), wx(gp.LP) - r.left(), r.height()), QColor(91, 104, 118, 32));
         g.fillRect(QRectF(wx(gp.HP), r.top(), r.right() - wx(gp.HP), r.height()), QColor(91, 104, 118, 32));
     }
@@ -121,6 +215,28 @@ void HistogramView::paintEvent(QPaintEvent*) {
     for (double gx = 0.25; gx < 1.0; gx += 0.25) {
         const double px = r.left() + gx * r.width();
         g.drawLine(QPointF(px, r.top()), QPointF(px, r.bottom()));
+    }
+    // When the view extends past the data, mark where the data ends (min /
+    // max of the axis range) and, if it lies in view and differs from the
+    // minimum, the true data zero — so negative values read as negative.
+    {
+        double va, vb; viewRange(va, vb);
+        g.setFont(QFont(g.font().family(), 8));
+        auto mark = [&](double u, const QString& label, const QColor& col) {
+            if (u < va || u > vb) return;
+            const double px = valToX(u);
+            g.setPen(QPen(col, 1.0, Qt::DotLine));
+            g.drawLine(QPointF(px, r.top()), QPointF(px, r.bottom()));
+            g.setPen(col);
+            g.drawText(QRectF(px + 2, r.bottom() - 14, 40, 12), Qt::AlignLeft, label);
+        };
+        if (va < 0.0 || vb > 1.0) {
+            mark(0.0, QStringLiteral("min"), QColor("#35455a"));
+            mark(1.0, QStringLiteral("max"), QColor("#35455a"));
+        }
+        const double lo0 = m_model->lo(0), hi0 = m_model->hi(0);
+        const double u0 = -lo0 / std::max(1e-12, hi0 - lo0);     // where value 0 falls
+        if (std::fabs(u0) > 1e-6) mark(u0, QStringLiteral("0"), QColor("#4a3a2a"));
     }
 
     // histogram areas (raw counts scaled linear or log per the toggle)
@@ -185,6 +301,19 @@ void HistogramView::paintEvent(QPaintEvent*) {
     }
     g.setPen(QPen(ghs ? GHS_COL : QColor("#eef3f8"), 1.8));
     g.drawPath(curve);
+
+    // Mode marker: a small triangle at the histogram peak of the curve
+    // channel (the GHS tutorial's anchor for the symmetry point).
+    {
+        const double mu = modeU(curveCh);
+        if (std::isfinite(mu)) {
+            const double px = valToX(mu);
+            QPainterPath tri;
+            tri.moveTo(px, r.top() + 9); tri.lineTo(px - 4, r.top() + 1); tri.lineTo(px + 4, r.top() + 1);
+            tri.closeSubpath();
+            g.fillPath(tri, QColor(ch == 1 ? "#9fb3c8" : CH_COL[curveCh].name()));
+        }
+    }
 
     // handles. `bottom` places the grip at the lower edge so GHS window (top)
     // and GHS shape (bottom) handles don't collide when they share an x.
@@ -300,19 +429,22 @@ void HistogramView::applyDrag(double v) {
         const ChannelStretch wc = m_model->channel(0);
         const double span = std::max(1e-6, wc.white - wc.black);
         double p = (v - wc.black) / span;
-        p = p < 0 ? 0 : (p > 1 ? 1 : p);
+        // SP/LP/HP may leave the window (the curve stays monotone: the slope
+        // function is positive everywhere — an SP below the window gives the
+        // log-like, steepest-at-the-sky shape that a clipped-away mode needs).
+        p = std::max(kHandleMin, std::min(kHandleMax, p));
         GHSParams g = m_model->ghs();
         if (m_dragHandle == "SP") g.SP = std::min(g.HP - eps, std::max(g.LP + eps, p));
-        else if (m_dragHandle == "LP") g.LP = std::min(g.SP - eps, std::max(0.0, p));
-        else if (m_dragHandle == "HP") g.HP = std::max(g.SP + eps, std::min(1.0, p));
+        else if (m_dragHandle == "LP") g.LP = std::min(g.SP - eps, std::max(kHandleMin, p));
+        else if (m_dragHandle == "HP") g.HP = std::max(g.SP + eps, std::min(kHandleMax, p));
         m_model->setGhs(g);
         return;
     }
 
     auto clampSet = [&](ChannelStretch cs) {
-        if (m_dragHandle == "b") cs.black = std::min(cs.mid - eps, std::max(0.0, v));
+        if (m_dragHandle == "b") cs.black = std::min(cs.mid - eps, std::max(kHandleMin, v));
         else if (m_dragHandle == "m") cs.mid = std::min(cs.white - eps, std::max(cs.black + eps, v));
-        else if (m_dragHandle == "w") cs.white = std::max(cs.mid + eps, std::min(1.0, v));
+        else if (m_dragHandle == "w") cs.white = std::max(cs.mid + eps, std::min(kHandleMax, v));
         return cs;
     };
 
@@ -335,9 +467,9 @@ void HistogramView::applyDrag(double v) {
         for (int c = 0; c < n; ++c) {
             const ChannelStretch cs = m_model->channel(c);
             double lob, hib;
-            if (m_dragHandle == "b")      { lob = 0.0;            hib = cs.mid - eps; }
+            if (m_dragHandle == "b")      { lob = kHandleMin;     hib = cs.mid - eps; }
             else if (m_dragHandle == "m") { lob = cs.black + eps; hib = cs.white - eps; }
-            else                          { lob = cs.mid + eps;   hib = std::max(1.0, cs.white); }
+            else                          { lob = cs.mid + eps;   hib = std::max(kHandleMax, cs.white); }
             const double base = (m_dragHandle == "b") ? cs.black
                               : (m_dragHandle == "m") ? cs.mid : cs.white;
             delta = std::max(delta, lob - base);

@@ -151,6 +151,32 @@ Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
   unités des données brutes.
 - Le bouton **Axe log** bascule l'échelle logarithmique des fréquences de
   l'histogramme.
+- **L'axe n'est pas rivé aux données.** Par défaut le tracé épouse la
+  plage des données (Linéaire) ou la fenêtre noir/blanc (Log/Asinh/GHS),
+  mais les poignées peuvent aller **au-delà** : un point noir *sous* le
+  minimum relève un plancher, un point blanc *au-dessus* du maximum laisse
+  de la marge, et le point de symétrie GHS peut sortir de la fenêtre — sur
+  un mode que le point noir a écrêté, par exemple. **Large** étend le tracé
+  d'une demi-plage de chaque côté ; la **molette** zoome autour du curseur
+  et **Maj+molette** fait défiler ; un **double-clic** sur le tracé
+  réajuste. Quand la vue dépasse les données, des pointillés *min* / *max*
+  marquent leurs bornes et une ligne *0* le vrai zéro, pour que les valeurs
+  négatives se lisent comme telles. Les champs de valeur acceptent aussi des
+  nombres hors plage. (Le domaine des poignées s'étend d'une plage complète
+  de chaque côté des données.)
+- **Axe commun** (RVB, activé par défaut) — les trois canaux sont tracés
+  sur **une seule plage mise en commun**, de sorte que leurs décalages — la
+  dominante colorée — apparaissent comme des décalages et se ramènent en
+  alignement par glissement. Désactivé, chaque canal est normalisé sur sa
+  propre plage, ce qui les égalise silencieusement dans le tracé (l'écran
+  est identique dans les deux cas : la bascule ré-exprime les poignées sur
+  les nouvelles plages sans les déplacer).
+- Un petit **triangle** sur le bord supérieur marque le **pic** de
+  l'histogramme (le mode) du canal de la courbe. En GHS, **SP → pic** (ou
+  un double-clic sur la poignée SP) place le point de symétrie exactement
+  dessus — l'ancrage habituel d'un premier étirement GHS, comme dans le
+  tutoriel GHS de Siril — et SP peut sortir de la fenêtre, où la courbe
+  devient logarithmique et la plus raide au niveau du ciel.
 - **Auto STF** (**U**) — étirement automatique par canal (fond → ~0,25).
 - **Auto STF (lié)** (**Maj+U**) — un étirement partagé issu des
   statistiques regroupées ; préserve la balance des couleurs (à utiliser sur

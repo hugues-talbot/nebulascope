@@ -244,6 +244,38 @@ void MainWindow::buildUi() {
     m_hist = new HistogramPanel(&m_model, m_rightDock);
     connect(m_hist, &HistogramPanel::applyToAllRequested,
             this, &MainWindow::applyStretchToAllList);
+    // Common axis (RGB): switch the model's range policy; re-express the
+    // current handles on the new ranges so the SCREEN does not change — only
+    // the plot's axis does. Persisted as a preference.
+    m_model.setCommonAxis(Preferences::get().commonAxis);
+    m_hist->setCommonAxisChecked(Preferences::get().commonAxis);
+    connect(m_hist, &HistogramPanel::commonAxisToggled, this, [this](bool on) {
+        m_model.setCommonAxis(on);
+        Preferences::get().commonAxis = on;
+        Preferences::get().save();
+        if (!m_image.isValid() || m_curStats.empty()) return;
+        const int n = std::min<int>(int(m_curStats.size()), 3);
+        double lo[3], hi[3];
+        if (on && n > 1) {
+            double pmn, pmx;
+            StretchModel::pooledRange(m_curStats, n, pmn, pmx);
+            for (int c = 0; c < 3; ++c) { lo[c] = pmn; hi[c] = std::max(pmn + 1e-6, pmx); }
+        } else {
+            for (int c = 0; c < 3; ++c) {
+                const int si = std::min(c, n - 1);
+                lo[c] = m_curStats[si].min;
+                hi[c] = std::max(double(m_curStats[si].min) + 1e-6, double(m_curStats[si].max));
+            }
+        }
+        // Not a stretch edit (display unchanged): squelch the undo coalescer.
+        // (StretchSquelch is defined further down; inline its two steps.)
+        flushStretchUndo();
+        ++m_squelchStretch;
+        m_model.rebaseRanges(lo, hi);
+        if (--m_squelchStretch == 0) resyncStretchUndoBase();
+        statusBar()->showMessage(on ? tr("Histogram: common axis — channels on one pooled range")
+                                    : tr("Histogram: per-channel axis — each channel over its own range"), 3000);
+    });
     m_hist->setSource(&m_image);
     m_rightDock->setWidget(m_hist);
     m_rightDock->setMinimumWidth(400);
@@ -1331,7 +1363,8 @@ void MainWindow::buildMenusAndToolbar() {
         if (!m_curStats.empty()) m_model.autoStretchLinked(m_curStats);
     });
     acts["reset_stretch"] = stretch->addAction(tr("&Reset Stretch"), QKeySequence("R"), this, [this] {
-        m_model.reset();
+        m_model.reset();                                   // fn, GHS, adjustments
+        if (!m_curStats.empty()) m_model.linearWindow(m_curStats);   // the first-view ramps
     });
     acts["apply_stf_all"] = stretch->addAction(tr("Apply Stretch to All"), QKeySequence("Shift+A"),
                                                this, &MainWindow::applyStretchToAllList);
@@ -3280,6 +3313,14 @@ void MainWindow::displayPath(const QString& path) {
             ChannelStretch pcs[3];
             bool allFar = true;
             double S = 0.0;
+            // The far-white algebra below reads t = 1 as THIS channel's data
+            // maximum (farWhiteEndpoint / rebaseFarWhiteTo), so the import
+            // runs on per-channel ranges regardless of the axis policy; the
+            // common-axis pooling afterwards re-expresses the result
+            // display-invariantly.
+            for (int c = 0; c < nch && c < int(stats.size()); ++c)
+                m_model.setRange(c, stats[c].min,
+                                 std::max(double(stats[c].min) + 1e-6, double(stats[c].max)));
             for (int c = 0; c < nch; ++c) {
                 const double lo = m_model.lo(c), hi = m_model.hi(c);
                 if (!(hi > lo)) { allFar = false; continue; }
@@ -3359,6 +3400,24 @@ void MainWindow::displayPath(const QString& path) {
             m_splitSlider->setValue(int(m_model.splitThreshold() * 100));
         }
         if (m_splitWidget) m_splitWidget->setVisible(mono && m_model.cmapSplit());
+    }
+
+    // Common axis: whichever path set the ranges above (remembered state,
+    // renormalized paste, an imported display function — all per channel),
+    // re-express them on ONE pooled range. Display unchanged; only the plot's
+    // axis is, so channel offsets show as offsets.
+    if (m_model.commonAxis() && m_image.channels() >= 3 && stats.size() >= 3) {
+        bool differ = false;
+        for (int c = 1; c < 3; ++c)
+            differ = differ || m_model.lo(c) != m_model.lo(0) || m_model.hi(c) != m_model.hi(0);
+        if (differ) {
+            double pmn, pmx;
+            StretchModel::pooledRange(stats, 3, pmn, pmx);
+            const double lo[3] = { pmn, pmn, pmn };
+            const double hi[3] = { std::max(pmn + 1e-6, pmx), std::max(pmn + 1e-6, pmx), std::max(pmn + 1e-6, pmx) };
+            StretchSquelch sq(this);
+            m_model.rebaseRanges(lo, hi);
+        }
     }
 
     updateDisplay();

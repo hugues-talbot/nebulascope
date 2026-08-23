@@ -24,6 +24,22 @@ public:
     void setLogScale(bool on) { m_logHist = on; update(); }
     bool logScale() const { return m_logHist; }
 
+    // Abscissa range. Auto = the classic fit (full data range in Linear, the
+    // black/white window in Log/Asinh/GHS). Wide = the same, extended by half
+    // a span on each side, so handles can go BEYOND the data (black below the
+    // minimum lifts a floor; white above the maximum gives headroom; GHS SP on
+    // a mode that the black point has clipped away). Manual = wheel-zoomed.
+    enum class AxisMode { Auto, Wide, Manual };
+    AxisMode axisMode() const { return m_axis; }
+    void setWideAxis(bool on);
+    void resetAxis();                       // back to Auto
+    // Snap the GHS symmetry point to the histogram peak (the mode) of the
+    // curve channel — the GHS tutorial's first move, as one gesture.
+    void snapSpToMode();
+
+signals:
+    void axisModeChanged();
+
 public slots:
     void recomputeHistogram();             // rebuild bins from current ranges
 
@@ -32,6 +48,8 @@ protected:
     void mousePressEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
+    void mouseDoubleClickEvent(QMouseEvent*) override;
+    void wheelEvent(QWheelEvent*) override;
     QSize sizeHint() const override { return QSize(380, 300); }
 
 private:
@@ -43,6 +61,15 @@ private:
     // the widget). Linear is therefore the coarse windowing tool.
     void   viewRange(double& a, double& b) const;
     void   applyDrag(double v);
+    double modeU(int c) const;             // histogram peak of channel c, in view coords (NaN if none)
+
+    // Handle domain in normalized [lo,hi] units: one full span beyond the
+    // data on each side. The renderer windows by an affine map and clamps,
+    // so out-of-range handles are already well-defined there.
+    static constexpr double kHandleMin = -1.0;
+    static constexpr double kHandleMax =  2.0;
+    AxisMode m_axis = AxisMode::Auto;
+    double m_manA = 0.0, m_manB = 1.0;
 
     StretchModel* m_model;
     const ImageData* m_src = nullptr;

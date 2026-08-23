@@ -283,6 +283,43 @@ NS_TEST(display_state_json_round_trip) {
     NS_CHECK(!StretchModel::stateFromJson(QJsonObject()).valid);
 }
 
+// GHS with the symmetry point / protection points OUTSIDE the window: the
+// slope function is positive everywhere, so the normalized cumulative curve
+// stays a valid monotone transfer 0 -> 1. SP below the window gives the
+// log-like, steepest-at-the-left shape a clipped-away mode needs.
+NS_TEST(ghs_symmetry_point_outside_window) {
+    const int N = 1024;
+    ChannelStretch cs;                               // identity window
+    for (double sp : { -0.4, -0.05, 1.3, 1.9 }) {
+        GHSParams g; g.D = 2.0; g.b = 4.0; g.SP = sp; g.LP = std::min(0.0, sp - 0.1); g.HP = std::max(1.0, sp + 0.1);
+        const auto lut = buildLut(StretchFn::GHS, cs, g, N);
+        NS_CHECK(lut.size() == std::size_t(N));
+        NS_CHECK(std::abs(lut[0]) < 1e-6);
+        NS_CHECK(std::abs(lut[N - 1] - 1.0f) < 1e-6);
+        bool mono = true;
+        for (int i = 1; i < N; ++i) mono = mono && lut[i] >= lut[i - 1];
+        NS_CHECK(mono);
+        // SP left of the window: concave (slope decreasing) -> first half rises
+        // more than the second; SP right of it: the reverse.
+        const float firstHalf = lut[N / 2] - lut[0], secondHalf = lut[N - 1] - lut[N / 2];
+        if (sp < 0) NS_CHECK(firstHalf > secondHalf);
+        else        NS_CHECK(secondHalf > firstHalf);
+    }
+}
+
+// Out-of-range window handles are well-defined for the renderer's affine
+// windowing: black below the data minimum lifts the floor (a value at the
+// minimum no longer maps to 0), white above the maximum leaves headroom.
+NS_TEST(window_handles_outside_data_range) {
+    ChannelStretch cs; cs.black = -0.5; cs.mid = 0.5; cs.white = 1.5;
+    // windowCoord: t = (u - black)/(white - black) for u normalized on [lo,hi]
+    const double lo = 0.0, hi = 1.0;
+    const double tMin = windowCoord(0.0, lo, hi, cs);   // data minimum
+    const double tMax = windowCoord(1.0, lo, hi, cs);   // data maximum
+    NS_CHECK(std::abs(tMin - 0.25) < 1e-12);
+    NS_CHECK(std::abs(tMax - 0.75) < 1e-12);
+}
+
 int main() { return nstest::runAll(); }
 
 // DisplayFunction import regime: a PI STF whose white point sits ~80x beyond

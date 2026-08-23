@@ -5,11 +5,43 @@
 
 namespace astro {
 
+void StretchModel::pooledRange(const std::vector<ChannelStats>& stats, int count,
+                               double& mn, double& mx) {
+    mn = stats[0].min; mx = stats[0].max;
+    for (int c = 1; c < count; ++c) {
+        mn = std::min(mn, double(stats[c].min));
+        mx = std::max(mx, double(stats[c].max));
+    }
+}
+
+void StretchModel::rebaseRanges(const double newLo[3], const double newHi[3]) {
+    for (int c = 0; c < 3; ++c) {
+        const double oldSpan = std::max(1e-12, m_hi[c] - m_lo[c]);
+        const double newSpan = std::max(1e-12, newHi[c] - newLo[c]);
+        auto remap = [&](double v) {                 // normalized old -> absolute -> normalized new
+            const double abs = m_lo[c] + v * oldSpan;
+            return (abs - newLo[c]) / newSpan;
+        };
+        m_chan[c].black = remap(m_chan[c].black);
+        m_chan[c].mid   = remap(m_chan[c].mid);
+        m_chan[c].white = remap(m_chan[c].white);
+        m_lo[c] = newLo[c];
+        m_hi[c] = newHi[c];
+    }
+    emit changed();
+}
+
 void StretchModel::autoStretch(const std::vector<ChannelStats>& stats) {
     m_fn = StretchFn::Linear;
     const int n = std::min<int>(int(stats.size()), 3);
+    double pmn = 0, pmx = 1;
+    if (n > 0 && m_commonAxis) pooledRange(stats, n, pmn, pmx);
     for (int c = 0; c < n; ++c) {
-        const double mn = stats[c].min, mx = stats[c].max;
+        // Per-channel STF (background -> 0.25 in each channel), expressed on
+        // the pooled range when the common axis is on: same result on screen,
+        // honest axis in the plot.
+        const double mn = m_commonAxis ? pmn : stats[c].min;
+        const double mx = m_commonAxis ? pmx : stats[c].max;
         const double span = std::max(1e-6, mx - mn);
         m_lo[c] = mn;
         m_hi[c] = mx;
@@ -70,12 +102,28 @@ void StretchModel::linearWindow(const std::vector<ChannelStats>& stats) {
     // Plain min→max linear ramp (same look as Reset, but with the display range
     // fitted to the data). No percentile "boost" — the user asked first views to
     // be predictable; Auto STF / Auto Linked remain the boosted options.
+    // Common axis: one pooled range, and each channel's ramp spans ITS data
+    // within it (black/white at the channel's own min/max), so the screen is
+    // the same as per-channel ramps while the plot shows the true offsets.
     m_fn = StretchFn::Linear;
     const int n = std::min<int>(int(stats.size()), 3);
+    double pmn = 0, pmx = 1;
+    if (n > 0 && m_commonAxis) pooledRange(stats, n, pmn, pmx);
     for (int c = 0; c < n; ++c) {
-        m_lo[c] = stats[c].min;
-        m_hi[c] = std::max(double(stats[c].min) + 1e-6, double(stats[c].max));
-        m_chan[c] = ChannelStretch{};        // black 0, mid 0.5, white 1 → identity ramp
+        const double cmn = stats[c].min;
+        const double cmx = std::max(double(stats[c].min) + 1e-6, double(stats[c].max));
+        if (m_commonAxis && n > 1) {
+            m_lo[c] = pmn;
+            m_hi[c] = std::max(pmn + 1e-6, pmx);
+            const double span = m_hi[c] - m_lo[c];
+            m_chan[c].black = (cmn - pmn) / span;
+            m_chan[c].white = (cmx - pmn) / span;
+            m_chan[c].mid   = 0.5 * (m_chan[c].black + m_chan[c].white);
+        } else {
+            m_lo[c] = cmn;
+            m_hi[c] = cmx;
+            m_chan[c] = ChannelStretch{};    // black 0, mid 0.5, white 1 → identity ramp
+        }
     }
     emit changed();
 }

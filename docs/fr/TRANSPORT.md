@@ -343,7 +343,11 @@ sur chaque pixel (`tests/conformance/`). C'est ce qui rend un étirement
 `schema` est la version de *ce* bloc (indépendante de la `version` propre
 du fichier annexe) ; un lecteur doit refuser un schéma plus récent que
 celui qu'il connaît. Les énumérations sont stockées par nom, jamais par
-entier.
+entier. `black`/`mid`/`white` et les `SP`/`LP`/`HP` de GHS sont des
+coordonnées de fenêtre normalisées et **peuvent sortir de $[0,1]$** (point
+noir sous le minimum des données, point de symétrie hors de la fenêtre) :
+la chaîne ci-dessous est définie pour toute valeur réelle, et une
+implémentation conforme ne doit pas les borner.
 
 ### 6.2 La chaîne, par canal $c$ et valeur brute $v$
 

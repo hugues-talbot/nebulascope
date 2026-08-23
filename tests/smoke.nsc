@@ -205,6 +205,27 @@ activate 2
 assert mapped 3.650635 52.801270 1 50 100 1e-3
 split 1x1
 
+# Extended window domain + common axis. On the 3-channel pi_f32 fixture:
+# black BELOW the data minimum and white ABOVE the maximum are legal and
+# read back exactly (raw units); toggling the axis policy re-expresses the
+# handles on new ranges without moving them (display-invariant).
+open tests/testdata/pi_f32_plain.xisf
+waitloaded
+assert channels 3
+window all -0.25 0.4 1.3
+assert stretch 0 -0.25 0.4 1.3 1e-6
+assert stretch 2 -0.25 0.4 1.3 1e-6
+axis channel
+assert stretch 0 -0.25 0.4 1.3 1e-6
+assert stretch 1 -0.25 0.4 1.3 1e-6
+axis common
+assert stretch 2 -0.25 0.4 1.3 1e-6
+# GHS with the symmetry point outside the window still renders (monotone
+# curve; see test_core) — set it through the value path and bake.
+fn ghs
+bake smoke_ghs_ext.fits
+reset
+
 # Match from plate solutions: both views solved (TAN; 2"/px unrotated vs
 # 0.5"/px rotated 30°, same centre) → M needs no picks. The fitted affine
 # must agree with the projections (pixel→sky→pixel) to 0.02 px, both ways.
