@@ -243,6 +243,42 @@ histdrag w -330
 sleep 100
 assert stretch 0 0.2302 0.3064 0.3826 0.02
 
+# Combine "As displayed" must not quantize: three mono sources with STEEP
+# GHS stretches (SP on the mode) bake through INTERPOLATED transfer LUTs —
+# nearest-lookup posterized the result to ~slope/4096 output steps while the
+# display (interpolated) looked smooth. The combine of three 128x128 sources
+# must keep (nearly) per-pixel level richness. (Fresh 3-row list: the
+# dialog's combo indices depend on the number of mono rows.)
+action clear_list
+open tests/testdata/sample.fits
+waitloaded
+autostf
+fn ghs
+axis peak
+open smoke_data.fits
+waitloaded
+autostf
+fn ghs
+axis peak
+open smoke_cull.fits
+waitloaded
+autostf
+fn ghs
+axis peak
+dialog combine
+dlgcombo 0 S
+dlgcombo 1 H
+dlgcombo 2 O
+dlgclick SHO
+dlgcombo 3 As
+dlgclick Create Image
+sleep 400
+waitloaded
+assert channels 3
+assert levels 0 3000
+action undo
+sleep 200
+
 # Match from plate solutions: both views solved (TAN; 2"/px unrotated vs
 # 0.5"/px rotated 30°, same centre) → M needs no picks. The fitted affine
 # must agree with the projections (pixel→sky→pixel) to 0.02 px, both ways.

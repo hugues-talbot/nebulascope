@@ -2335,12 +2335,21 @@ CombineDialog* MainWindow::makeCombineDialog(QString* whyNot) {
                     buildLut(st.fn, st.chan[0], st.ghs, N));
                 const double lo = st.lo[0], hi = st.hi[0];
                 const ChannelStretch cs = st.chan[0];
+                // INTERPOLATE the LUT, exactly as the display renderer does:
+                // nearest-entry lookup quantizes the input to 4096 steps, and
+                // through a steep transfer (a strong GHS around its symmetry
+                // point) adjacent entries differ by slope/4096 — output steps
+                // of a percent and more, i.e. visible posterization baked
+                // into the combined DATA while the screen (interpolated)
+                // looked smooth.
                 viewMap = [lut, lo, hi, cs](float v) -> float {
                     if (!std::isfinite(v)) return 0.0f;
                     const double t = windowCoord(v, lo, hi, cs);
-                    int idx = int(t * 4095.0 + 0.5);
-                    idx = idx < 0 ? 0 : (idx > 4095 ? 4095 : idx);
-                    return (*lut)[std::size_t(idx)];
+                    const double f = t * 4095.0;
+                    const int i0 = f < 0 ? 0 : (f >= 4095.0 ? 4094 : int(f));
+                    const double fr = std::min(1.0, std::max(0.0, f - i0));
+                    return float((*lut)[std::size_t(i0)] * (1.0 - fr)
+                               + (*lut)[std::size_t(i0) + 1] * fr);
                 };
             }
             mono.push_back({ item->text(), img, std::move(viewMap) });

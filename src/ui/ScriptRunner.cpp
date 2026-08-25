@@ -27,6 +27,7 @@
 #include <QTimer>
 #include <QMouseEvent>
 #include <cmath>
+#include <set>
 #include <cstdio>
 
 namespace astro {
@@ -102,7 +103,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol]",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol] | levels <c> <min>",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -843,6 +844,27 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
         static const char* names[] = { "linear", "log", "asinh", "ghs" };
         const QString got = QLatin1String(names[int(m_w->m_model.fn())]);
         if (got != t[2].toLower()) { err = QStringLiteral("fn is %1").arg(got); return false; }
+        return true;
+    }
+    if (what == QLatin1String("levels")) {
+        // assert levels <c> <min> — the displayed image's channel c holds at
+        // least <min> distinct values (up to 200k samples). Guards against
+        // quantization creeping into data-producing paths (the combine bake
+        // posterized through a nearest-LUT while the display interpolated).
+        if (t.size() < 4) { err = "assert levels <c> <min>"; return false; }
+        const ImageData& img = m_w->m_image;
+        const int c = t[2].toInt();
+        if (!img.isValid() || c < 0 || c >= img.channels()) { err = "bad channel"; return false; }
+        const float* p = img.plane<float>(c);
+        const std::size_t n = img.samplesPerChannel();
+        const std::size_t step = n > 200000 ? n / 200000 : 1;
+        std::set<float> uniq;
+        for (std::size_t i = 0; i < n; i += step)
+            if (std::isfinite(p[i])) uniq.insert(p[i]);
+        if (int(uniq.size()) < t[3].toInt()) {
+            err = QStringLiteral("only %1 distinct values").arg(uniq.size());
+            return false;
+        }
         return true;
     }
     if (what == QLatin1String("stretch")) {

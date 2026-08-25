@@ -43,10 +43,16 @@ that one the *what*.)
   per-channel ranges and the pooling happens afterwards.
 - **GHS follows the PixInsight formulation** (exponential-response D, focus
   b, SP symmetry point, LP/HP protection), windowed like Log/Asinh.
-- **LUTs hold only the curve shape; windowing is per-pixel float.**
-  4096-entry LUTs sampled over the *windowed* coordinate. Re-windowing inside
-  the LUT posterizes narrow windows — this was rediscovered painfully twice;
-  don't "optimize" it back.
+- **LUTs hold only the curve shape; windowing is per-pixel float — and every
+  LUT consumer INTERPOLATES.** 4096-entry LUTs sampled over the *windowed*
+  coordinate. Re-windowing inside the LUT posterizes narrow windows — this
+  was rediscovered painfully twice; don't "optimize" it back. Third
+  rediscovery (v0.96): the combine's "As displayed" bake read the LUT with
+  NEAREST lookup while the display interpolated — through a steep GHS
+  (slope ~100 around SP-on-the-mode) adjacent entries differ by slope/4096,
+  so the baked DATA posterized to ~40 levels while the screen looked
+  smooth. A steep transfer turns input quantization into output steps;
+  interpolate, always, everywhere the LUT is read.
 - **First view of an image = plain min→max linear ramp** (like Reset). The
   earlier percentile "boost" guessed wrong too often; Auto STF / Auto Linked
   are the explicit boosted options.
