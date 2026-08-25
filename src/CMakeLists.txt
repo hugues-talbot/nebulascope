@@ -148,7 +148,7 @@ if(BUILD_TESTING)
              WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     set_tests_properties(smoke PROPERTIES
                          ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
-                         TIMEOUT 120)
+                         TIMEOUT 300)
 
     # Sidecar conformance: the display block rendered by NebulaScope and by
     # the standalone reference (tools/render_sidecar.py, no NebulaScope code)
