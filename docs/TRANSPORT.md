@@ -171,6 +171,17 @@ closely, but cannot express hue rotation. The reported per-channel RMSE
 quantifies this gap for your pair of images; when it matters, the exact
 mode remains one checkbox away.
 
+![The Pillars of Creation: a TEC 140 from a club observatory (left) matched and colour-transported to the Hubble Space Telescope's rendition (right)](screenshots/pillars-tec140-hubble.png)
+
+*The thesis of this chapter, taken to its limit: the Pillars of Creation
+from a TEC 140/980 refractor at an amateur club's remote observatory —
+about 10 h over two nights, session planned and operated by the author —
+matched (**M**) and colour-transported non-destructively toward the Hubble
+Space Telescope's famous rendition (right; NASA/ESA/Hubble Heritage Team).
+The reference need not come from your data, your instrument, or even your
+planet: transport matches distributions, and what remains different after
+the match is optics and orbit, not processing.*
+
 ## 4. Practice
 
 - Dialog: **Tools ▸ Transport Colors from Reference…**, tick *Apply as

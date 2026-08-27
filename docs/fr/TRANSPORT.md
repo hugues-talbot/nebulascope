@@ -192,6 +192,18 @@ exprimer une rotation de teinte. L'erreur RMS par canal rapportée
 quantifie cet écart pour votre paire d'images ; quand il compte, le mode
 exact reste à une case à cocher.
 
+![Les Piliers de la Création : une TEC 140 depuis un observatoire de club (gauche) appariée et transportée en couleurs vers le rendu du télescope spatial Hubble (droite)](../screenshots/pillars-tec140-hubble.png)
+
+*La thèse de ce chapitre, poussée à sa limite : les Piliers de la Création
+avec une lunette TEC 140/980 depuis l'observatoire distant d'un club
+d'astronomie — environ 10 h sur deux nuits, session planifiée et conduite
+par l'auteur — appariés (**M**) et transportés en couleurs, sans
+destruction, vers le célèbre rendu du télescope spatial Hubble (droite ;
+NASA/ESA/Hubble Heritage Team). La référence n'a pas besoin de venir de
+vos données, de votre instrument, ni même de votre planète : le transport
+apparie des distributions, et ce qui reste différent après l'appariement
+relève de l'optique et de l'orbite, pas du traitement.*
+
 ## 4. En pratique
 
 - Boîte de dialogue : **Outils ▸ Transporter les couleurs d'une
