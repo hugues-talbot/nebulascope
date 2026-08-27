@@ -3160,7 +3160,15 @@ void MainWindow::displayPath(const QString& path) {
         lopts.fitsHdu = hduReq;                          // -1 = first image HDU
         io::LoadResult res = io::loadImage(base, lopts); // promoteToFloat = true
         if (!res.ok) {
-            QMessageBox::warning(this, tr("Open failed"), res.error);
+            // Scripts must never block on a modal (a headless run would hang
+            // forever); the failure lands in the status bar and on stderr,
+            // and the next script assertion reports it.
+            if (m_scriptDriving) {
+                statusBar()->showMessage(tr("Open failed: %1").arg(res.error), 8000);
+                fprintf(stderr, "open failed: %s\n", res.error.toLocal8Bit().constData());
+            } else {
+                QMessageBox::warning(this, tr("Open failed"), res.error);
+            }
             return;
         }
         loaded = std::move(res.image);

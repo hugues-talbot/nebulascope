@@ -252,15 +252,17 @@ assert stretch 0 0.2302 0.3064 0.3826 0.02
 action clear_list
 open tests/testdata/sample.fits
 waitloaded
+save smoke_comb2.fits
+save smoke_comb3.fits
 autostf
 fn ghs
 axis peak
-open smoke_data.fits
+open smoke_comb2.fits
 waitloaded
 autostf
 fn ghs
 axis peak
-open smoke_cull.fits
+open smoke_comb3.fits
 waitloaded
 autostf
 fn ghs
