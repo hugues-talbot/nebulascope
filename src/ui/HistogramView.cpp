@@ -123,8 +123,31 @@ void HistogramView::zoomToWindow() {
     double va, vb; viewRange(va, vb);
     if (span > 0.7 * (vb - va)) return;              // already fills the plot
     const double margin = 0.08 * span;
-    m_manA = std::max(kHandleMin - 0.5, wa - margin);
-    m_manB = std::min(kHandleMax + 0.5, wb + margin);
+    m_manA = std::max(kOuterLo, wa - margin);
+    m_manB = std::min(kOuterHi, wb + margin);
+    m_axis = AxisMode::Manual;
+    recomputeHistogram();
+    emit axisModeChanged();
+}
+
+void HistogramView::zoomBy(double factor) {
+    double a, b; viewRange(a, b);
+    const double centre = 0.5 * (a + b);
+    double half = 0.5 * (b - a) * factor;
+    half = std::max(0.001, std::min(half, 0.5 * (kOuterHi - kOuterLo)));
+    m_manA = std::max(kOuterLo, centre - half);
+    m_manB = std::min(kOuterHi, centre + half);
+    m_axis = AxisMode::Manual;
+    recomputeHistogram();
+    emit axisModeChanged();
+}
+
+void HistogramView::panTo(double a) {
+    double va, vb; viewRange(va, vb);
+    const double span = vb - va;
+    a = std::max(kOuterLo, std::min(kOuterHi - span, a));
+    if (std::fabs(a - va) < 1e-9) return;
+    m_manA = a; m_manB = a + span;
     m_axis = AxisMode::Manual;
     recomputeHistogram();
     emit axisModeChanged();
@@ -194,7 +217,7 @@ void HistogramView::wheelEvent(QWheelEvent* e) {
         m_manA = na; m_manB = nb;
     }
     // Outer bound: the handle domain plus a little air.
-    const double outerLo = kHandleMin - 0.5, outerHi = kHandleMax + 0.5;
+    const double outerLo = kOuterLo, outerHi = kOuterHi;
     if (m_manA < outerLo) { m_manB += outerLo - m_manA; m_manA = outerLo; }
     if (m_manB > outerHi) { m_manA -= m_manB - outerHi; m_manB = outerHi; }
     m_manA = std::max(outerLo, m_manA); m_manB = std::min(outerHi, m_manB);
@@ -461,7 +484,7 @@ void HistogramView::mouseMoveEvent(QMouseEvent* e) {
     double a, b; viewRange(a, b);
     const double span = std::max(1e-6, b - a);
     double v = a + (px - r.left()) / std::max(1.0, r.width()) * span;   // unclamped
-    const double outerLo = kHandleMin - 0.5, outerHi = kHandleMax + 0.5;
+    const double outerLo = kOuterLo, outerHi = kOuterHi;
     bool grew = false;
     if (v < a && a > outerLo) { m_manA = std::max(outerLo, v); m_manB = b; grew = true; }
     else if (v > b && b < outerHi) { m_manB = std::min(outerHi, v); m_manA = a; grew = true; }

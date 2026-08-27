@@ -163,9 +163,11 @@ Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
   minimum relève un plancher, un point blanc *au-dessus* du maximum laisse
   de la marge, et le point de symétrie GHS peut sortir de la fenêtre — sur
   un mode que le point noir a écrêté, par exemple. Il suffit de **tirer
-  une poignée au-delà du bord du tracé** : l'axe s'étend pour la suivre ;
-  **Large** étend d'emblée le tracé d'une demi-plage de chaque côté ; la
-  **molette** zoome autour du curseur et **Maj+molette** fait défiler ; un
+  une poignée au-delà du bord du tracé** : l'axe s'étend pour la suivre.
+  Les boutons **− / +** zooment la plage autour du centre de la vue, la
+  **molette** zoome autour du curseur, et la **barre de défilement sous le
+  tracé** fait défiler la plage visible — son curseur *est* la portion
+  visible de l'axe étendu, sa longueur montre donc ce que l'on voit. Un
   **double-clic** sur le tracé réajuste (le réajustement garde toujours
   chaque poignée en vue). Quand la vue dépasse les données, des pointillés *min* / *max*
   marquent leurs bornes et une ligne *0* le vrai zéro, pour que les valeurs

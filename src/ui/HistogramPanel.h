@@ -14,6 +14,7 @@ class QWidget;
 class QLineEdit;
 class QLabel;
 class QPushButton;
+class QScrollBar;
 
 namespace astro {
 
@@ -47,8 +48,11 @@ private:
     StretchModel* m_model;
     const ImageData* m_src = nullptr;
     HistogramView* m_view = nullptr;
-    QPushButton* m_wideBtn = nullptr;
     QPushButton* m_axisBtn = nullptr;
+    QScrollBar* m_rangeBar = nullptr;
+    bool m_rangeBarSync = false;
+    static constexpr int kRangeSteps = 10000;
+    void syncRangeBar();
     QButtonGroup* m_fnGroup = nullptr;
     QButtonGroup* m_chanGroup = nullptr;
     QWidget* m_ghsBox = nullptr;

@@ -10,6 +10,7 @@
 #include <QSlider>
 #include <QLabel>
 #include <QLineEdit>
+#include <QScrollBar>
 #include <QDoubleValidator>
 #include <QLocale>
 #include <QEvent>
@@ -66,16 +67,21 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     logBtn->setCursor(Qt::PointingHandCursor);
     logBtn->setToolTip(tr("Logarithmic vs linear histogram frequency axis"));
     chRow->addWidget(logBtn);
-    // Axis range: Wide extends the plot half a span beyond the data/window on
-    // each side so handles can leave the data range; the wheel zooms/pans
-    // freely (double-click the plot to refit).
-    m_wideBtn = new QPushButton(tr("Wide"));
-    m_wideBtn->setCheckable(true);
-    m_wideBtn->setCursor(Qt::PointingHandCursor);
-    m_wideBtn->setToolTip(tr("Extend the axis beyond the data (black below the minimum, white above\n"
-                             "the maximum, GHS symmetry point outside the window). Mouse wheel\n"
-                             "zooms, Shift+wheel pans; double-click the plot to refit."));
-    chRow->addWidget(m_wideBtn);
+    // Abscissa zoom: − / + zoom the range about the view centre (the wheel
+    // zooms about the cursor; double-click refits); the scrollbar under the
+    // plot pans the visible range across the extended domain.
+    auto* zoomOutBtn = new QPushButton(QStringLiteral("−"));
+    auto* zoomInBtn = new QPushButton(QStringLiteral("+"));
+    for (QPushButton* z : { zoomOutBtn, zoomInBtn }) {
+        z->setCursor(Qt::PointingHandCursor);
+        z->setFixedWidth(28);
+    }
+    zoomOutBtn->setToolTip(tr("Zoom the histogram range out (handles may then go beyond the data:\n"
+                              "black below the minimum, white above the maximum, GHS symmetry\n"
+                              "point outside the window). Wheel zooms at the cursor; double-click refits."));
+    zoomInBtn->setToolTip(tr("Zoom the histogram range in, about the view centre."));
+    chRow->addWidget(zoomOutBtn);
+    chRow->addWidget(zoomInBtn);
     // Common axis (RGB): all channels plotted on one pooled [min,max], so
     // channel offsets — the colour cast — are visible and draggable.
     m_axisBtn = new QPushButton(tr("Common"));
@@ -88,9 +94,14 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     chRow->addWidget(m_axisBtn);
     root->addLayout(chRow);
 
-    // --- the plot ---
+    // --- the plot + its range scrollbar (the thumb IS the visible range) ---
     m_view = new HistogramView(m_model);
     root->addWidget(m_view, 1);
+    m_rangeBar = new QScrollBar(Qt::Horizontal);
+    m_rangeBar->setRange(0, kRangeSteps);
+    m_rangeBar->setToolTip(tr("Pan the visible histogram range; the slider's length shows how much\n"
+                              "of the extended axis is on screen."));
+    root->addWidget(m_rangeBar);
 
     // --- editable parameter fields (precise entry; relabelled per mode) ---
     auto* pGrid = new QHBoxLayout();
@@ -309,11 +320,19 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     });
     connect(applyAllBtn, &QPushButton::clicked, this, &HistogramPanel::applyToAllRequested);
     connect(logBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setLogScale(on); });
-    connect(m_wideBtn, &QPushButton::toggled, this, [this](bool on) { m_view->setWideAxis(on); });
-    connect(m_view, &HistogramView::axisModeChanged, this, [this] {
-        QSignalBlocker b(m_wideBtn);
-        m_wideBtn->setChecked(m_view->axisMode() == HistogramView::AxisMode::Wide);
+    connect(zoomOutBtn, &QPushButton::clicked, this, [this] { m_view->zoomOut(); });
+    connect(zoomInBtn, &QPushButton::clicked, this, [this] { m_view->zoomIn(); });
+    connect(m_view, &HistogramView::axisModeChanged, this, &HistogramPanel::syncRangeBar);
+    connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncRangeBar);
+    connect(m_rangeBar, &QScrollBar::valueChanged, this, [this](int v) {
+        if (m_rangeBarSync) return;
+        const double outer = HistogramView::kOuterHi - HistogramView::kOuterLo;
+        double a, b; m_view->currentRange(a, b);
+        const double span = b - a;
+        const int mx = std::max(1, m_rangeBar->maximum());
+        m_view->panTo(HistogramView::kOuterLo + (outer - span) * double(v) / mx);
     });
+    syncRangeBar();
     connect(m_axisBtn, &QPushButton::toggled, this, [this](bool on) { emit commonAxisToggled(on); });
     connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncFromModel);
 
@@ -497,5 +516,23 @@ void HistogramPanel::setCommonAxisChecked(bool on) {
     if (!m_axisBtn) return;
     QSignalBlocker b(m_axisBtn);
     m_axisBtn->setChecked(on);
+}
+} // namespace astro
+
+namespace astro {
+void HistogramPanel::syncRangeBar() {
+    if (!m_rangeBar) return;
+    m_rangeBarSync = true;
+    double a, b; m_view->currentRange(a, b);
+    const double outer = HistogramView::kOuterHi - HistogramView::kOuterLo;
+    const double span = std::max(1e-6, b - a);
+    const double scrollable = std::max(1e-9, outer - span);
+    // Thumb length ∝ visible fraction; position ∝ a within the scrollable part.
+    m_rangeBar->setPageStep(int(kRangeSteps * span / outer));
+    m_rangeBar->setSingleStep(std::max(1, int(kRangeSteps * span / outer / 10)));
+    m_rangeBar->setMaximum(kRangeSteps - m_rangeBar->pageStep());
+    const int mx = std::max(1, m_rangeBar->maximum());
+    m_rangeBar->setValue(int((a - HistogramView::kOuterLo) / scrollable * mx + 0.5));
+    m_rangeBarSync = false;
 }
 } // namespace astro

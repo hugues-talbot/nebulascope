@@ -33,6 +33,15 @@ public:
     AxisMode axisMode() const { return m_axis; }
     void setWideAxis(bool on);
     void resetAxis();                       // back to Auto
+    // Abscissa zoom about the view centre (the wheel zooms about the cursor).
+    void zoomIn()  { zoomBy(1.0 / 1.5); }
+    void zoomOut() { zoomBy(1.5); }
+    void zoomBy(double factor);
+    // Pan the visible range so it starts at `a` (same span); Manual mode.
+    void panTo(double a);
+    // Current visible range and the outer pan domain (for the scrollbar).
+    void currentRange(double& a, double& b) const { viewRange(a, b); }
+    static constexpr double kOuterLo = -1.5, kOuterHi = 2.5;
     // Snap the GHS symmetry point to the histogram peak (the mode) of the
     // curve channel — the GHS tutorial's first move, as one gesture.
     void snapSpToMode();
@@ -68,11 +77,13 @@ private:
     double modeU(int c) const;             // histogram peak of channel c, in view coords (NaN if none)
     void   windowUnion(double& a, double& b) const;   // min black / max white over channels
 
+public:
     // Handle domain in normalized [lo,hi] units: one full span beyond the
     // data on each side. The renderer windows by an affine map and clamps,
     // so out-of-range handles are already well-defined there.
     static constexpr double kHandleMin = -1.0;
     static constexpr double kHandleMax =  2.0;
+private:
     AxisMode m_axis = AxisMode::Auto;
     double m_manA = 0.0, m_manB = 1.0;
 
