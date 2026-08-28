@@ -325,7 +325,13 @@ astrometric solution (reference pixel + CD matrix), and view-link
 calibrations. Orientation histories are **normalized** — rotating back always
 restores the exact original canvas (expansion borders never accumulate). The
 orientation is recorded per image (and in sidecars), so an image re-opens the
-way you left it. Note: after an *arbitrary* rotation, **Save Data As** writes
+way you left it. **Image ▸ Reset Orientation is the panic button**: rotation
+state lives in three places — per-image data histories, calibrated-link
+transforms, and each view's navigation (a calibrated Match legitimately puts
+a rotation into the viewport, which same-size auto-links then propagate) —
+and Reset Orientation vacates **all of it, for every image and every view**,
+redisplaying everything as freshly read. No confirmation: the result is
+exactly the well-defined just-opened state. Note: after an *arbitrary* rotation, **Save Data As** writes
 resampled pixels — do photometry on unrotated data.
 
 **Crop to Visible Region** (**Shift+C**, Image menu; scripts: `crop x y w h`

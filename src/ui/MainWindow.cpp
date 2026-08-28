@@ -2964,23 +2964,70 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
     return true;
 }
 
+// FORCEFUL by design (field report): rotation state lives in three places —
+// per-image data histories (rot90/flip/rotate), per-cell calibrated-link
+// "world" transforms, and each view's navigation (a calibrated Match can
+// legitimately put a ROTATION into the viewport, which same-size auto-links
+// then propagate to every other view). A reset that touches only one of the
+// three leaves the user in a rotated state with no visible cause and no
+// exit — closing and reopening images does not help, because cell view
+// state deliberately survives for same-size stepping. So: vacate ALL of it,
+// everywhere, and redisplay as freshly read. No confirmation — the result
+// is exactly the well-defined "just opened" state.
 void MainWindow::resetOrientation() {
-    if (m_currentPath.isEmpty() || !m_image.isValid()) return;
-    const QStringList ops = m_xformByPath.value(m_currentPath);
-    if (ops.isEmpty()) { statusBar()->showMessage(tr("No stored orientation for this image"), 3000); return; }
-    auto it = m_annByPath.find(m_currentPath);
-    if (it != m_annByPath.end() && !it.value().empty()) {
-        unmapAnnotationsToDiskFrame(it.value(), ops);
-        m_annDirty.insert(m_currentPath);
+    // 1. Data orientation histories, all images (annotations walked back to
+    //    the disk frame first so their positions survive).
+    for (auto it = m_xformByPath.begin(); it != m_xformByPath.end(); ++it) {
+        auto an = m_annByPath.find(it.key());
+        if (an != m_annByPath.end() && !an.value().empty()) {
+            unmapAnnotationsToDiskFrame(an.value(), it.value());
+            m_annDirty.insert(it.key());
+        }
+        bumpXformRev(it.key());
     }
-    m_xformByPath.remove(m_currentPath);
-    bumpXformRev(m_currentPath);
+    m_xformByPath.clear();
     m_rotBasePath.clear();                    // stale rotation-dialog base
     m_rotBase = ImageData();
     m_undo->clear();
-    displayPath(m_currentPath);               // fresh decode; replay is now a no-op
-    statusBar()->showMessage(tr("Orientation reset — showing disk pixels (%1\u00d7%2)")
-                                 .arg(m_image.width()).arg(m_image.height()), 4000);
+
+    // 2. Calibrated-link worlds and every view's navigation (rotation lives
+    //    in the viewport transform after a calibrated Match).
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        c->world = QTransform();
+        c->calibrated = false;
+        c->view()->resetTransform();
+        c->view()->setMarker(-1, -1);
+        c->setReadout(QString());
+    }
+    cancelRegister();
+
+    // 3. Redisplay: non-active occupied cells re-decode from disk through
+    //    their own stretch; the active image re-runs displayPath.
+    for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i) {
+        if (c == m_grid->activeCell() || c->path.isEmpty()) continue;
+        int hduReq = -1;
+        const QString base = splitHduKey(c->path, hduReq);
+        if (base.startsWith(QLatin1String("mem://"))) { c->view()->zoomToFit(); continue; }
+        io::LoadOptions lopts;
+        lopts.fitsHdu = hduReq;
+        io::LoadResult res = io::loadImage(base, lopts);
+        if (!res.ok) continue;
+        c->image = applyDebayer(std::move(res.image), res.header, c->path);
+        c->header = std::move(res.header);
+        c->stats = computeStats(c->image);
+        c->view()->setSource(&c->image);
+        StretchModel cellModel;
+        cellModel.setChannelCount(c->image.channels());
+        if (c->hasStretch) cellModel.setState(c->stretch);
+        c->view()->setDisplayImage(DisplayRenderer::render(c->image, cellModel));
+        c->xformRev = m_xformRev.value(c->path, 0);
+        c->view()->zoomToFit();
+    }
+    if (!m_currentPath.isEmpty()) {
+        displayPath(m_currentPath);           // fresh decode; replay is now a no-op
+        m_view->zoomToFit();
+    }
+    statusBar()->showMessage(tr("Orientation reset everywhere — data, view links and navigation as freshly read"), 5000);
 }
 
 // Replay the orientation stashed from the annotation sidecar on the current

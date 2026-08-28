@@ -378,7 +378,16 @@ calibrations de liaison de vues. Les historiques d'orientation sont
 **normalisés** — revenir en arrière restaure toujours exactement le canevas
 d'origine (les bordures d'expansion ne s'accumulent jamais). L'orientation
 est enregistrée par image (et dans les fichiers annexes) : une image se
-rouvre comme vous l'aviez laissée. Note : après une rotation *arbitraire*,
+rouvre comme vous l'aviez laissée. **Image ▸ Réinitialiser l'orientation est
+le bouton d'urgence** : l'état de rotation vit en trois endroits —
+historiques de données par image, transformations de liaison calibrée, et la
+navigation de chaque vue (un appariement calibré place légitimement une
+rotation dans la fenêtre d'affichage, que les liaisons automatiques
+propagent ensuite entre vues de même taille) — et Réinitialiser
+l'orientation vide **tout, pour chaque image et chaque vue**, en
+réaffichant tout comme fraîchement lu. Sans confirmation : le résultat est
+exactement l'état bien défini d'une première ouverture. Note : après une
+rotation *arbitraire*,
 **Enregistrer les données sous** écrit des pixels rééchantillonnés — faites
 la photométrie sur des données non tournées.
 

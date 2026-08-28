@@ -203,6 +203,17 @@ assert mapped 90 40 2 35.971143 36.820508 1e-3
 assert mapped 50 100 2 3.650635 52.801270 1e-3
 activate 2
 assert mapped 3.650635 52.801270 1 50 100 1e-3
+# Reset Orientation is FORCEFUL: it vacates the calibration worlds and view
+# navigation everywhere (the field stuck-state: a Match with reversed pick
+# order rotates a viewport, auto-links propagate it, and no per-image action
+# could clear it). After reset, a fresh Match must start from clean state.
+action reset_orientation
+activate 1
+action register_views
+regpick 1 10 10
+regpick 2 30 40
+assert mapped 10 10 2 30 40 1e-3
+action reset_orientation
 split 1x1
 
 # Extended window domain + common axis. On the 3-channel pi_f32 fixture:
