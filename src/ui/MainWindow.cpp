@@ -2743,17 +2743,23 @@ void MainWindow::transportColorsFromRef() {
                             "the transported colours with the original."));
     hint->setStyleSheet("color:#7e8b98; font-size:11px;");
     form->addRow(QString(), hint);
+    // Both lossless options default ON (user call, 2026-08-30): the stretch
+    // fit cannot posterize, and without the colour stage a starless pair —
+    // whose transport is mostly a cross-channel rotation — comes back washed.
+    static bool s_lastAsStretch = true, s_lastColourFit = true;
     auto* asStretchBox = new QCheckBox(tr("Apply as stretch fit (non-destructive)"));
     asStretchBox->setToolTip(tr("Instead of writing new pixels, fit per-channel B/M/W so the\n"
                              "display matches the transported colours — the data is untouched,\n"
                              "so nothing can posterize. Colour match is close, not exact\n"
                              "(cross-channel rotations are outside the stretch family)."));
     form->addRow(QString(), asStretchBox);
+    asStretchBox->setChecked(s_lastAsStretch);
     auto* colourFitBox = new QCheckBox(tr("Also fit colour adjustments (hue/temperature)"));
     colourFitBox->setToolTip(tr("A second fitting stage over temperature/tint/hue/saturation —\n"
                              "the cross-channel part per-channel curves cannot express.\n"
                              "Try with and without: both are one Undo apart."));
-    colourFitBox->setEnabled(false);
+    colourFitBox->setChecked(s_lastColourFit);
+    colourFitBox->setEnabled(asStretchBox->isChecked());
     connect(asStretchBox, &QCheckBox::toggled, colourFitBox, &QCheckBox::setEnabled);
     form->addRow(QString(), colourFitBox);
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -2763,6 +2769,8 @@ void MainWindow::transportColorsFromRef() {
     ok = dlg.exec() == QDialog::Accepted;
     if (!ok) return;
     s_lastStrength = strength->value();
+    s_lastAsStretch = asStretchBox->isChecked();
+    s_lastColourFit = colourFitBox->isChecked();
     QString terr;
     if (!runColorTransport(keys[combo->currentIndex()], strength->value(), &terr,
                            asStretchBox->isChecked(),

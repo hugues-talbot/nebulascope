@@ -348,6 +348,35 @@ NS_TEST(fit_channel_stretch_reaches_outside_data_range) {
     NS_CHECK(std::fabs(mtf(windowCoord(0.0f, 0.0, 1.0, fit), fm) - disp[0]) < 0.02);   // the floor itself
 }
 
+NS_TEST(fit_color_adjust_recovers_hue_rotation) {
+    // A starless SHO pair's transport is mostly a cross-channel rotation —
+    // the one thing the per-channel stretch family cannot express, and the
+    // reason the colour-adjust stage exists. Ground truth: a pure 60-degree
+    // hue rotation must be recovered nearly exactly. (Regression: the field
+    // search was once capped at [-1,1] for ALL fields, so hue — in DEGREES —
+    // could never move more than 1 degree and starless pairs came back
+    // untouched.)
+    const std::size_t n = 20000;
+    std::vector<float> dr(n), dg(n), db(n), tr(n), tg(n), tb(n);
+    AdjustParams rot; rot.hue = 60.0;
+    unsigned int seed = 12345;
+    auto urand = [&seed] {                        // deterministic LCG in [0,1)
+        seed = seed * 1664525u + 1013904223u;
+        return float(seed >> 8) / float(1u << 24);
+    };
+    for (std::size_t i = 0; i < n; ++i) {
+        float r = urand(), g = urand(), b = urand();
+        dr[i] = r; dg[i] = g; db[i] = b;
+        applyColor(r, g, b, rot);
+        tr[i] = r; tg[i] = g; tb[i] = b;
+    }
+    AdjustParams fit;
+    const double rmse = fitColorAdjust(dr.data(), dg.data(), db.data(),
+                                       tr.data(), tg.data(), tb.data(), n, 1, fit);
+    NS_CHECK(rmse < 1e-3);
+    NS_CHECK(std::fabs(fit.hue - 60.0) < 1.0);
+}
+
 int main() { return nstest::runAll(); }
 
 // DisplayFunction import regime: a PI STF whose white point sits ~80x beyond

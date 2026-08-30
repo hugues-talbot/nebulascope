@@ -170,15 +170,40 @@ double fitColorAdjust(const float* dR, const float* dG, const float* dB,
         return 0.5 * (a + b);
     };
 
-    double* fields[4] = { &adj.temperature, &adj.tint, &adj.hue, &adj.saturation };
-    for (int sweep = 0; sweep < 3; ++sweep)
-        for (double* f : fields)
-            *f = lineSearch(-1.0, 1.0, [&](double v) {
-                const double keep = *f; *f = v;
+    // Each field searched over ITS OWN domain — hue is in degrees, and with
+    // the search once capped at [-1,1] the one parameter able to express a
+    // palette rotation could never move more than a degree (starless SHO
+    // pairs, whose transport IS a rotation, came back untouched). A coarse
+    // scan precedes the golden section: the hue objective is multimodal, and
+    // a pure descent from 0 misses a distant rotated minimum.
+    struct Field { double* p; double lo, hi; };
+    const Field fields[4] = { { &adj.temperature, -1.0, 1.0 },
+                              { &adj.tint,        -1.0, 1.0 },
+                              { &adj.hue,       -180.0, 180.0 },
+                              { &adj.saturation,  -1.0, 1.0 } };
+    double prevE = mse(adj);
+    for (int sweep = 0; sweep < 6; ++sweep) {
+        for (const Field& f : fields) {
+            auto evalAt = [&](double v) {
+                const double keep = *f.p; *f.p = v;
                 const double e = mse(adj);
-                *f = keep;
+                *f.p = keep;
                 return e;
-            });
+            };
+            double best = *f.p, bestE = evalAt(best);
+            for (int k = 0; k <= 16; ++k) {
+                const double v = f.lo + (f.hi - f.lo) * k / 16.0;
+                const double e = evalAt(v);
+                if (e < bestE) { bestE = e; best = v; }
+            }
+            const double step = (f.hi - f.lo) / 16.0;
+            *f.p = lineSearch(std::max(f.lo, best - step),
+                              std::min(f.hi, best + step), evalAt);
+        }
+        const double e = mse(adj);
+        if (prevE - e < 1e-9) break;
+        prevE = e;
+    }
     return std::sqrt(mse(adj));
 }
 

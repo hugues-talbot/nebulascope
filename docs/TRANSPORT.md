@@ -185,7 +185,12 @@ the match is optics and orbit, not processing.*
 ## 4. Practice
 
 - Dialog: **Tools ▸ Transport Colors from Reference…**, tick *Apply as
-  stretch fit*. Scripts: `transport <row> [strength%] stretch`.
+  stretch fit*. Scripts: `transport <row> [strength%] stretch [colour]`.
+  Keep the **colour-adjustment stage** on for cross-palette matches: a
+  *starless* pair's transport is mostly a cross-channel rotation — the one
+  thing per-channel curves cannot express (stars pin all three channels at
+  the bright end, which is why starry pairs fit well without it). Both
+  lossless options are on by default.
 - Strength applies *before* the fit — the fit targets the blended result.
 - **Framing is the relevance mask.** Both distributions are estimated only
   from what is on screen: the source from the active view's visible

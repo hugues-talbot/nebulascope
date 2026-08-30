@@ -201,3 +201,21 @@ WYSIWYG through the view transform at ~1 image px per output px. Lesson:
 any API returning "the visible region" as a QRect bakes in the assumption
 that navigation is axis-aligned; every caller written before rotation
 existed inherits that assumption invisibly.
+
+## The hue knob that could never turn (2026-08-30)
+
+Lossless colour transport washed out on STARLESS pairs and worked on starry
+ones — the user isolated the variable in the field. The mathematics first:
+stars pin all three channels at the bright end, dragging OT's map into the
+per-channel family; a starless pair's transport is almost purely a
+cross-channel rotation, which per-channel curves cannot express at all. The
+colour-adjustment stage exists for exactly that — and it never worked,
+because fitColorAdjust swept every field over [-1, 1] while hue is in
+DEGREES: the one parameter able to rotate a palette was capped at one
+degree. Fixed with per-field domains and a coarse scan before the golden
+section (the hue objective is multimodal; descent from zero misses a
+distant rotated minimum). Ground-truth unit test: a synthetic 60-degree
+rotation must be recovered to <1 degree. Both lossless options now default
+on (user call). Lesson: a fit that silently returns "no improvement" for a
+whole parameter looks identical to a hard problem — sweep domains deserve
+the same per-field scrutiny as the parameters themselves.

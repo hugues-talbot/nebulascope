@@ -208,7 +208,13 @@ relève de l'optique et de l'orbite, pas du traitement.*
 
 - Boîte de dialogue : **Outils ▸ Transporter les couleurs d'une
   référence…**, cochez *Appliquer comme ajustement d'étirement*. Scripts :
-  `transport <ligne> [force%] stretch`.
+  `transport <ligne> [force%] stretch [colour]`. Gardez l'**étage
+  d'ajustements couleur** actif pour les appariements entre palettes : le
+  transport d'une paire *sans étoiles* est surtout une rotation
+  inter-canaux — la seule chose que les courbes par canal ne peuvent pas
+  exprimer (les étoiles épinglent les trois canaux dans les hautes
+  lumières, d'où les bons ajustements des paires étoilées sans cet étage).
+  Les deux options non destructives sont actives par défaut.
 - La force s'applique *avant* l'ajustement — l'ajustement vise le résultat
   mélangé.
 - **Le cadrage est le masque de pertinence.** Les deux distributions ne
