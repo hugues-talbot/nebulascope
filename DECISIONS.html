@@ -384,6 +384,7 @@ div.csl-indent {
   <li><a href="#tools" id="toc-tools" class="nav-link" data-scroll-target="#tools">Tools</a></li>
   <li><a href="#ui-performance" id="toc-ui-performance" class="nav-link" data-scroll-target="#ui-performance">UI / performance</a></li>
   <li><a href="#build-release" id="toc-build-release" class="nav-link" data-scroll-target="#build-release">Build / release</a></li>
+  <li><a href="#the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" id="toc-the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" class="nav-link" data-scroll-target="#the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30">The visible region is a quad, not its bounding box (2026-08-30)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -476,6 +477,10 @@ div.csl-indent {
 <li><strong><code>src/app/AppInfo.h</code> is user-maintained</strong> (version/copyright/About) — the assistant never rewrites it unasked (see CLAUDE.md). Version also lives in CMakeLists (CPACK), CITATION.cff and vcpkg.json; bump all four when tagging.</li>
 <li><strong><code>-psn</code> arguments</strong> (Finder) are ignored by the CLI parser.</li>
 </ul>
+</section>
+<section id="the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" class="level2">
+<h2 class="anchored" data-anchor-id="the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30">The visible region is a quad, not its bounding box (2026-08-30)</h2>
+<p>A calibrated Match legitimately puts a rotation into a view’s navigation — and <code>visibleImageRect()</code>, the bounding box of the rotated viewport quad, silently became a <em>superset</em> of what the user saw. Three consumers inherited the lie: OT’s relevance masks sampled off-screen sky (the field report: lossless transport of the pillars washed to khaki because the reference distribution was dominated by surrounding nebulosity — reproduced exactly by feeding OT a mismatched region), Export Zoomed Region wrote the unrotated bbox (“not what I see”), and Crop to Visible cropped it. The fix is one distinction, applied per consumer’s needs: distribution <em>sampling</em> (OT, crop) takes the largest rectangle INSIDE the visible quad — a subset is a fair sample, a superset is contamination — while <em>export</em> renders WYSIWYG through the view transform at ~1 image px per output px. Lesson: any API returning “the visible region” as a QRect bakes in the assumption that navigation is axis-aligned; every caller written before rotation existed inherits that assumption invisibly.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
