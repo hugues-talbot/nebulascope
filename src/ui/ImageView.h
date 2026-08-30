@@ -35,7 +35,26 @@ public:
 
     // The image-pixel rectangle currently visible in the viewport, clamped to
     // the image bounds (empty if nothing is shown). Used for region export.
+    // NOTE: with a rotated navigation (a calibrated Match legitimately puts a
+    // rotation into the viewport) this is the BOUNDING BOX of the visible
+    // quad — a superset that includes off-screen pixels. Callers that must
+    // never sample what the user cannot see (OT relevance masks, data crops)
+    // use visibleInnerRect() instead.
     QRect visibleImageRect() const;
+
+    // The largest axis-aligned image-pixel rectangle fully INSIDE the visible
+    // region — a subset of what is shown, never off-screen sky. Equals
+    // visibleImageRect() when the navigation is unrotated.
+    QRect visibleInnerRect() const;
+
+    // True when the navigation transform carries rotation (or shear), i.e.
+    // the visible region is not an axis-aligned rectangle of image pixels.
+    bool navigationRotated() const;
+
+    // What the viewport shows, rendered from `display` (the full displayed
+    // frame in image coordinates) at ~1 image pixel per output pixel through
+    // the CURRENT navigation — rotation included. WYSIWYG region export.
+    QImage renderVisible(const QImage& display) const;
 
     // Annotation drawing tools: while a tool is armed, left-drag draws the
     // shape (dashed preview) instead of the zoom rectangle; Text is a single

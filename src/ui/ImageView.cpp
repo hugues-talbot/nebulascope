@@ -144,6 +144,73 @@ QRect ImageView::visibleImageRect() const {
     return inter.toRect();
 }
 
+bool ImageView::navigationRotated() const {
+    const QTransform t = transform();
+    return std::abs(t.m12()) > 1e-9 || std::abs(t.m21()) > 1e-9;
+}
+
+QRect ImageView::visibleInnerRect() const {
+    if (!m_item) return QRect();
+    if (!navigationRotated()) return visibleImageRect();
+    // The visible region is the (convex) intersection of the rotated viewport
+    // quad with the image rectangle. Largest inscribed axis-aligned rect,
+    // approximated by shrinking the intersection's bounding box about its
+    // centroid until all four corners lie inside — a representative sample of
+    // only-visible pixels, which is what distribution estimates need.
+    const QPolygonF quad = mapToScene(viewport()->rect());
+    const QPolygonF poly = quad.intersected(QPolygonF(m_item->boundingRect()));
+    if (poly.size() < 3) return QRect();
+    const QRectF bb = poly.boundingRect();
+    QPointF c(0, 0);
+    for (const QPointF& p : poly) c += p;
+    c /= double(poly.size());
+    auto fits = [&](double s) {
+        const QRectF r(c.x() - s * bb.width() / 2, c.y() - s * bb.height() / 2,
+                       s * bb.width(), s * bb.height());
+        for (const QPointF& corner : { r.topLeft(), r.topRight(),
+                                       r.bottomLeft(), r.bottomRight() })
+            if (!poly.containsPoint(corner, Qt::OddEvenFill)) return false;
+        return true;
+    };
+    double lo = 0.0, hi = 1.0;
+    if (!fits(0.05)) return QRect();
+    for (int it = 0; it < 24; ++it) {
+        const double m = 0.5 * (lo + hi);
+        (fits(m) ? lo : hi) = m;
+    }
+    const QRectF r(c.x() - lo * bb.width() / 2, c.y() - lo * bb.height() / 2,
+                   lo * bb.width(), lo * bb.height());
+    const QRect out = r.toRect();
+    return (out.width() < 1 || out.height() < 1) ? QRect() : out;
+}
+
+QImage ImageView::renderVisible(const QImage& display) const {
+    if (!m_item || display.isNull()) return QImage();
+    // 1 output pixel ~ 1 image pixel at the navigation's own scale: divide the
+    // scene->viewport transform by its scale, keeping the rotation.
+    const QTransform vt = viewportTransform();
+    const double s = std::sqrt(std::abs(vt.determinant()));
+    if (s <= 1e-12) return QImage();
+    // Zoomed far out the viewport spans mostly empty scene; no output side
+    // needs to exceed the image diagonal (the largest extent any rotation of
+    // the frame can show). Past that, render the whole view at reduced scale
+    // rather than growing the canvas.
+    const double diag = std::hypot(display.width(), display.height());
+    const double wantW = viewport()->width() / s, wantH = viewport()->height() / s;
+    const double shrink = std::min(1.0, diag / std::max(wantW, wantH));
+    const QSize outSize(std::max(1, int(std::lround(wantW * shrink))),
+                        std::max(1, int(std::lround(wantH * shrink))));
+    QImage out(outSize, display.format() == QImage::Format_RGBX64
+                            ? QImage::Format_RGBX64 : QImage::Format_RGB32);
+    out.fill(Qt::black);
+    QPainter p(&out);
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
+    p.setTransform(vt * QTransform::fromScale(shrink / s, shrink / s));
+    p.drawImage(0, 0, display);
+    p.end();
+    return out;
+}
+
 void ImageView::setDrawTool(DrawTool t) {
     m_tool = t;
     if (m_preview) { scene()->removeItem(m_preview); delete m_preview; m_preview = nullptr; }

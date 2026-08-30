@@ -89,7 +89,7 @@ const CommandRef kCommands[] = {
   {"flip",       {"flip h|v", "Lossless horizontal/vertical flip of the data."}},
   {"rotate",     {"rotate <deg>",
     "Absolute arbitrary rotation (bilinear, expanded canvas, NaN corners)."}},
-  {"export",     {"export <path>",
+  {"export",     {"export [region] <path>",
     "Write the displayed rendition (stretch, adjustments, colormap baked)\n"
     "as PNG/JPEG/TIFF."}},
   {"saveann",    {"saveann [path]",
@@ -472,8 +472,23 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
     if (cmd == QLatin1String("export")) {
         if (!needArgs(1)) return false;
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
-        const QImage img = DisplayRenderer::render(m_w->m_image, m_w->m_model);
-        if (!img.save(t[1])) { err = "could not write " + t[1]; return false; }
+        const QImage full = DisplayRenderer::render(m_w->m_image, m_w->m_model);
+        // `export region <path>`: the Export Zoomed Region render — visible
+        // pixels only, WYSIWYG through a rotated navigation.
+        if (t[1] == QLatin1String("region")) {
+            if (!needArgs(2)) return false;
+            QImage img;
+            if (m_w->m_view->navigationRotated()) {
+                img = m_w->m_view->renderVisible(full);
+            } else {
+                const QRect roi = m_w->m_view->visibleImageRect().intersected(full.rect());
+                if (roi.isEmpty()) { err = "nothing visible"; return false; }
+                img = full.copy(roi);
+            }
+            if (img.isNull() || !img.save(t[2])) { err = "could not write " + t[2]; return false; }
+            return true;
+        }
+        if (!full.save(t[1])) { err = "could not write " + t[1]; return false; }
         return true;
     }
     if (cmd == QLatin1String("saveann")) {

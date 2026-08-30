@@ -337,4 +337,35 @@ debayer auto all
 waitloaded
 assert channels 3
 
+# Rotated navigation (a calibrated Match with rotated correspondence): the
+# region export is WYSIWYG — the rotated frame as shown, never the unrotated
+# bounding box — and a data crop stays INSIDE the visible quad (the bbox
+# would sample off-screen sky; that superset also fed OT's relevance mask —
+# the "khaki wash" field report). 45-degree ground truth: q = R(45)(p - p1) + q1.
+action clear_list
+open tests/testdata/sample.fits
+waitloaded
+open tests/testdata/cfa_asiair_rggb.fits
+waitloaded
+split 1x2
+activate 1
+action register_views
+regpick 1 60 60
+regpick 2 40 40
+action register_views_2
+regpick 1 80 60
+regpick 2 54.142136 54.142136
+sleep 200
+activate 2
+export region smoke_rotregion.png
+action crop_visible
+waitloaded
+assert rows 3
+open smoke_rotregion.png
+waitloaded
+assert channels 3
+assert rows 4
+action reset_orientation
+split 1x1
+
 quit

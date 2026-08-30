@@ -183,3 +183,21 @@ that one the *what*.)
   CMakeLists (CPACK), CITATION.cff and vcpkg.json; bump all four when
   tagging.
 - **`-psn` arguments** (Finder) are ignored by the CLI parser.
+
+## The visible region is a quad, not its bounding box (2026-08-30)
+
+A calibrated Match legitimately puts a rotation into a view's navigation —
+and `visibleImageRect()`, the bounding box of the rotated viewport quad,
+silently became a *superset* of what the user saw. Three consumers
+inherited the lie: OT's relevance masks sampled off-screen sky (the field
+report: lossless transport of the pillars washed to khaki because the
+reference distribution was dominated by surrounding nebulosity — reproduced
+exactly by feeding OT a mismatched region), Export Zoomed Region wrote the
+unrotated bbox ("not what I see"), and Crop to Visible cropped it. The fix
+is one distinction, applied per consumer's needs: distribution *sampling*
+(OT, crop) takes the largest rectangle INSIDE the visible quad — a subset
+is a fair sample, a superset is contamination — while *export* renders
+WYSIWYG through the view transform at ~1 image px per output px. Lesson:
+any API returning "the visible region" as a QRect bakes in the assumption
+that navigation is axis-aligned; every caller written before rotation
+existed inherits that assumption invisibly.

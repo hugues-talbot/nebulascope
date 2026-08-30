@@ -191,7 +191,11 @@ the match is optics and orbit, not processing.*
   from what is on screen: the source from the active view's visible
   rectangle, the reference from *its* cell's visible rectangle when it is
   displayed in one (rotations are unwound so expansion borders never
-  contribute; saturated pixels ≥ 0.98 are dropped from both). A reference
+  contribute; saturated pixels ≥ 0.98 are dropped from both). When a
+  calibrated Match has rotated a view's navigation, the mask is the largest
+  rectangle *inside* the visible quad — never its bounding box, whose
+  off-screen sky would silently steer both distributions toward whatever
+  surrounds the framed region. A reference
   that is only a list row — shown in no cell — is estimated from its whole
   image. So to control what the match is judged by, put the reference in a
   split cell and frame the region that matters: pan away from a gradient

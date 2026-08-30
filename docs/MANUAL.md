@@ -337,7 +337,9 @@ resampled pixels — do photometry on unrotated data.
 **Crop to Visible Region** (**Shift+C**, Image menu; scripts: `crop x y w h`
 or `crop view`): frame the region by zooming — exactly as you would for a
 screenshot — and crop it into a NEW in-memory list entry at **full bit
-depth**; the original is untouched. *The plate solution survives exactly*: a
+depth**; under a rotated navigation the crop is the largest rectangle
+*inside* what you see (an axis-aligned crop cannot represent a rotated
+framing, and its bounding box would include sky you don't); the original is untouched. *The plate solution survives exactly*: a
 crop only translates the reference pixel (CRPIX), so the rebased solution is
 written into the crop's header as standard FITS cards — even when the source
 carried it only as PixInsight XISF properties. Annotations translate with
@@ -625,7 +627,9 @@ name reassembles exactly, for overwriting or re-saving.
   PNG/TIFF (16-bit is built from the float render — band-free gradients),
   **quality** for JPEG/WebP; each enables with the matching format.
 - **File ▸ Export Zoomed Region As…** (⌘⇧E) — same, but only the visible
-  region.
+  region — *as shown*: when a calibrated Match has put a rotation into the
+  view, the export is resampled through it (WYSIWYG), not the unrotated
+  bounding box. Scripts: `export region <path>`.
 - **File ▸ Export / Import Image List…** — session round-trip (§7).
 - Annotations and adjustments export via their JSON sidecars (§9).
 - **On macOS the two rich save dialogs are native** (`NSSavePanel`): the

@@ -394,7 +394,10 @@ la photométrie sur des données non tournées.
 **Recadrer sur la région visible** (**Maj+C**, menu Image ; scripts :
 `crop x y w h` ou `crop view`) : cadrez la région en zoomant — exactement
 comme pour une capture d'écran — et recadrez-la dans une NOUVELLE entrée de
-liste en mémoire, en **pleine profondeur de bits** ; l'original est
+liste en mémoire, en **pleine profondeur de bits** ; sous une navigation
+tournée, le recadrage est le plus grand rectangle *à l'intérieur* de ce que
+vous voyez (un recadrage aligné aux axes ne peut représenter un cadrage
+tourné, et sa boîte englobante inclurait du ciel que vous ne voyez pas) ; l'original est
 intouché. *La solution astrométrique survit exactement* : un recadrage ne
 fait que translater le pixel de référence (CRPIX), et la solution recalée
 est écrite dans l'en-tête du recadrage en cartes FITS standard — même quand
@@ -688,7 +691,10 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
   depuis le rendu flottant — dégradés sans bandes), **qualité** pour
   JPEG/WebP ; chacune s'active avec le format correspondant.
 - **Fichier ▸ Exporter la région zoomée sous…** (⌘⇧E) — idem, mais
-  seulement la région visible.
+  seulement la région visible — *telle qu'affichée* : quand un appariement
+  calibré a placé une rotation dans la vue, l'export est rééchantillonné à
+  travers elle (tel écran, tel export), et non la boîte englobante non
+  tournée. Scripts : `export region <chemin>`.
 - **Fichier ▸ Exporter / Importer une liste d'images…** — aller-retour de
   session (§7).
 - Annotations et ajustements s'exportent via leurs fichiers annexes JSON

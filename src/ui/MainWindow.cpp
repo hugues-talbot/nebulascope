@@ -1272,7 +1272,9 @@ void MainWindow::buildMenusAndToolbar() {
 
     image->addSeparator();
     acts["crop_visible"] = image->addAction(tr("&Crop to Visible Region"), QKeySequence("Shift+C"), this, [this] {
-        if (m_image.isValid()) cropCurrentToRect(m_view->visibleImageRect());
+        // Inner rect: with a rotated navigation the visible region is a quad;
+        // an axis-aligned data crop must stay INSIDE it, not take its bbox.
+        if (m_image.isValid()) cropCurrentToRect(m_view->visibleInnerRect());
     });
 
     // Debayer: per-image pattern mode + the global algorithm.
@@ -2830,12 +2832,16 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
     auto toRoi = [](const QRect& r) {
         TransportRoi t; t.x = r.x(); t.y = r.y(); t.w = r.width(); t.h = r.height(); return t;
     };
+    // Inner rects throughout: a calibrated Match can put a rotation into the
+    // navigation, and the visible-quad BOUNDING BOX would then sample
+    // off-screen sky into the distribution estimate — the "khaki wash" when
+    // reference framing and shown sky no longer correspond.
     TransportRoi srcRoi;
     if (!diskFrame) {
-        srcRoi = toRoi(m_view->visibleImageRect());
+        srcRoi = toRoi(m_view->visibleInnerRect());
     } else {
         const QTransform T = diskToViewTransform(srcOps, QSize(srcPix->width(), srcPix->height()));
-        const QRect diskRect = T.inverted().mapRect(QRectF(m_view->visibleImageRect()))
+        const QRect diskRect = T.inverted().mapRect(QRectF(m_view->visibleInnerRect()))
                                    .toAlignedRect()
                                    .intersected(QRect(0, 0, srcPix->width(), srcPix->height()));
         srcRoi = toRoi(diskRect);
@@ -2845,7 +2851,7 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         ViewCell* c = m_grid->cellAt(i);
         if (c && c != m_grid->activeCell() && c->path == key) {
             const QStringList refOps = m_xformByPath.value(key);
-            QRect vis = c->view()->visibleImageRect();
+            QRect vis = c->view()->visibleInnerRect();
             if (!refOps.isEmpty()) {
                 // refDisp is decoded from disk (unrotated); map the cell's view
                 // rect back to that frame.
@@ -3850,6 +3856,20 @@ void MainWindow::exportRegion() {
     const QRect roi = m_view->visibleImageRect();
     if (roi.isEmpty()) {
         QMessageBox::information(this, tr("Export region"), tr("Nothing is visible to export."));
+        return;
+    }
+    // WYSIWYG under a rotated navigation (a calibrated Match puts rotation in
+    // the viewport): resample the display through the view transform at ~1
+    // image px per output px, so what is exported IS what is on screen. An
+    // axis-aligned crop of the frame would silently export the unrotated
+    // bounding box instead.
+    if (m_view->navigationRotated()) {
+        const QImage full = DisplayRenderer::render(m_image, m_model);
+        saveRenderedImage(m_view->renderVisible(full), tr("Export zoomed region"),
+            [this] {
+                return m_view->renderVisible(
+                    floatToRgb64(DisplayRenderer::renderFloat(m_image, m_model)));
+            });
         return;
     }
     // Render the whole frame, then crop to the currently visible image pixels.

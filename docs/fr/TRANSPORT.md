@@ -216,7 +216,11 @@ relève de l'optique et de l'orbite, pas du traitement.*
   visible de la vue active, la référence sur le rectangle visible de *sa*
   cellule quand elle y est affichée (les rotations sont défaites pour que
   les bordures d'expansion ne contribuent jamais ; les pixels saturés
-  ≥ 0,98 sont écartés des deux côtés). Une référence qui n'est qu'une
+  ≥ 0,98 sont écartés des deux côtés). Quand un appariement calibré a
+  tourné la navigation d'une vue, le masque est le plus grand rectangle
+  *à l'intérieur* du quadrilatère visible — jamais sa boîte englobante,
+  dont le ciel hors écran orienterait silencieusement les deux
+  distributions vers ce qui entoure la région cadrée. Une référence qui n'est qu'une
   ligne de liste — affichée dans aucune cellule — est estimée sur son
   image entière. Pour contrôler ce qui juge l'appariement, affichez donc
   la référence dans une cellule et cadrez la région qui compte : éloignez
