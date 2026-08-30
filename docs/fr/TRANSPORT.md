@@ -368,13 +368,23 @@ sur chaque pixel (`tests/conformance/`). C'est ce qui rend un étirement
   "adjust": { "blackpoint": 0, "whitepoint": 1, "shadows": 0,
               "highlights": 0, "brightness": 0, "contrast": 0, "gamma": 1,
               "temperature": 0, "tint": 0, "hue": 0,
-              "saturation": 0, "vibrance": 0 }
+              "saturation": 0, "vibrance": 0,
+              "mix": [1,0,0, 0,1,0, 0,0,1] }   // schéma 2, optionnel
 }
 ```
 
 `schema` est la version de *ce* bloc (indépendante de la `version` propre
 du fichier annexe) ; un lecteur doit refuser un schéma plus récent que
-celui qu'il connaît. Les énumérations sont stockées par nom, jamais par
+celui qu'il connaît. Le **schéma 2** ajoute un seul champ optionnel,
+`adjust.mix` : un mélangeur couleur 3×3 (ligne par ligne) appliqué EN
+PREMIER dans l'étage couleur, $\mathbf{c}' = M\,\mathbf{c}$ — absent
+signifie identité, et un écrivain n'estampille `schema: 2` que lorsque le
+mélangeur est présent : les blocs sans mélangeur restent des schémas 1
+valides. Le mélangeur est ce que l'ajustement non destructif du transport
+de couleurs enregistre : température, teinte, rotation de teinte et
+saturation sont toutes linéaires en RVB, une matrice complète les subsume
+donc, et c'est la partie dont la rotation de palette d'une paire sans
+étoiles a besoin. Les énumérations sont stockées par nom, jamais par
 entier. `black`/`mid`/`white` et les `SP`/`LP`/`HP` de GHS sont des
 coordonnées de fenêtre normalisées et **peuvent sortir de $[0,1]$** (point
 noir sous le minimum des données, point de symétrie hors de la fenêtre) :
@@ -423,7 +433,8 @@ $y = \tfrac12 + (y-\tfrac12)\tan\!\big((\mathrm{contrast}+1)\tfrac{\pi}{4}\big)$
 bornage, puis $y^{1/\gamma}$.
 
 **Ajustements de couleur** (inter-canaux, RVB seulement), dans cet ordre :
-gains de balance des blancs
+la matrice `mix` (schéma 2 ; identité si absente) ; gains de balance des
+blancs
 $R\,(1+0{,}30\,\mathrm{temp}+0{,}15\,\mathrm{tint}),\;
  G\,(1-0{,}30\,\mathrm{tint}),\;
  B\,(1-0{,}30\,\mathrm{temp}+0{,}15\,\mathrm{tint})$ ;

@@ -167,7 +167,10 @@ Colormap cmapFromName(const QString& n) {
 
 QJsonObject StretchModel::stateToJson(const State& s) {
     QJsonObject o;
-    o["schema"] = kDisplaySchemaVersion;   // see docs/TRANSPORT.md §6 (spec)
+    // Schema 2 only when the block actually USES schema-2 semantics (a colour
+    // mixer): older readers refuse schema-2 blocks rather than misrender, and
+    // every mixer-free sidecar stays byte-identical to a schema-1 writer's.
+    o["schema"] = s.adj.mixIdentity() ? 1 : kDisplaySchemaVersion;
     o["fn"] = fnName(s.fn);
     o["count"] = s.count;
     QJsonArray chans;
@@ -196,6 +199,11 @@ QJsonObject StretchModel::stateToJson(const State& s) {
     a["gamma"]      = s.adj.gamma;        a["temperature"]= s.adj.temperature;
     a["tint"]       = s.adj.tint;         a["hue"]        = s.adj.hue;
     a["saturation"] = s.adj.saturation;   a["vibrance"]   = s.adj.vibrance;
+    if (!s.adj.mixIdentity()) {
+        QJsonArray mx;
+        for (int i = 0; i < 9; ++i) mx.append(s.adj.mix[i]);
+        a["mix"] = mx;                     // row-major, out = mix . rgb, first
+    }
     o["adjust"] = a;
     return o;
 }
@@ -242,6 +250,10 @@ StretchModel::State StretchModel::stateFromJson(const QJsonObject& o) {
     s.adj.hue        = a.value("hue").toDouble(0.0);
     s.adj.saturation = a.value("saturation").toDouble(0.0);
     s.adj.vibrance   = a.value("vibrance").toDouble(0.0);
+    const QJsonArray mx = a.value("mix").toArray();
+    if (mx.size() == 9)
+        for (int i = 0; i < 9; ++i)
+            s.adj.mix[i] = mx[i].toDouble(i % 4 == 0 ? 1.0 : 0.0);
     s.valid = true;
     return s;
 }

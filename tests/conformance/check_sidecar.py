@@ -44,6 +44,9 @@ CASES = [
                                  "adjust tint 0.05", "adjust vibrance 0.3"]),
     ("rgb_extended_win","rgb",  ["window all -0.3 0.35 1.4", "fn asinh"]),   # handles beyond the data
     ("ghs_sp_outside",  "mono", ["autostf", "fn ghs", "axis peak"]),           # SP snapped to the mode
+    ("rgb_colour_mix",  "rgb",  ["autostf", "fn asinh",                        # schema 2: 3x3 mixer
+                                 "adjust mix 0.62 0.31 0.07 -0.12 0.94 0.18 0.05 -0.4 1.35",
+                                 "adjust saturation 0.15"]),
     ("rgb_transportish","rgb",  ["autostf", "fn linear", "adjust hue -0.99995914",
                                  "adjust saturation 0.11033605",
                                  "adjust temperature -0.0738426",

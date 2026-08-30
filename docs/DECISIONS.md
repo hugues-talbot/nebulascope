@@ -219,3 +219,21 @@ rotation must be recovered to <1 degree. Both lossless options now default
 on (user call). Lesson: a fit that silently returns "no improvement" for a
 whole parameter looks identical to a hard problem — sweep domains deserve
 the same per-field scrutiny as the parameters themselves.
+
+## The colour stage is a matrix, not four sliders (2026-08-30)
+
+Even with hue freed, the lossless transport fit kept failing on starless
+pairs — this time to grey, the MMSE escape of a SEQUENTIAL fit (curves
+first against a rotated target, colour after on the curves' compromise).
+Two changes. First, the fit alternates: each round re-fits the per-channel
+curves against the colour-INVERTED target (the colour stage is invertible
+in closed form), block coordinate descent instead of a one-shot pipeline.
+Second, the colour stage itself became a full 3×3 mixer solved by weighted
+least squares in closed form — temperature, tint, hue rotation and
+saturation are all linear in RGB, so the matrix subsumes the slider family,
+and its normal equations have no multimodality to trap a line search. The
+display block spec moves to schema 2 (optional adjust.mix; written only
+when present, so every existing sidecar and reader is untouched), with the
+reference renderer and a conformance case updated in the same commit.
+Lesson: when a fit keeps landing on desaturation, the family is too weak —
+grey is what least squares does when the right map is outside the model.

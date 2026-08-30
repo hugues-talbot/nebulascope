@@ -57,6 +57,14 @@ struct AdjustParams;
 double fitColorAdjust(const float* dR, const float* dG, const float* dB,
                       const float* tR, const float* tG, const float* tB,
                       std::size_t n, std::size_t stride, AdjustParams& adj);
+// Weighted least-squares 3x3 colour mixer M minimizing sum w |M.d - t|^2
+// (w = 0.05 + target luma, the same weighting as the other fits). CLOSED
+// FORM — one shared 3x3 Gram inversion, no line searches — and strictly more
+// expressive than temperature/tint/hue/saturation, all of which are linear.
+// Returns the weighted RMSE; M is row-major.
+double fitColorMatrix(const float* dR, const float* dG, const float* dB,
+                      const float* tR, const float* tG, const float* tB,
+                      std::size_t n, std::size_t stride, double M[9]);
 // Base curve shape for Linear/Log/Asinh on a black/white-normalized t in [0,1].
 double baseShape(double t, StretchFn fn);
 // GHS local stretch intensity (the slope of the transfer); max at SP.

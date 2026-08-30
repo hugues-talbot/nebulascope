@@ -377,6 +377,42 @@ NS_TEST(fit_color_adjust_recovers_hue_rotation) {
     NS_CHECK(std::fabs(fit.hue - 60.0) < 1.0);
 }
 
+NS_TEST(fit_color_matrix_recovers_mixer) {
+    // The colour stage of the lossless transport fit is a full 3x3 mixer,
+    // solved in closed form. Ground truth: a known (asymmetric, off-diagonal)
+    // matrix applied to random RGB must be recovered entry-for-entry.
+    const double truth[9] = { 0.62, 0.31, 0.07,  -0.12, 0.94, 0.18,  0.05, -0.40, 1.35 };
+    const std::size_t n = 20000;
+    std::vector<float> d[3], t[3];
+    for (int c = 0; c < 3; ++c) { d[c].resize(n); t[c].resize(n); }
+    unsigned int seed = 99;
+    auto urand = [&seed] {
+        seed = seed * 1664525u + 1013904223u;
+        return float(seed >> 8) / float(1u << 24);
+    };
+    for (std::size_t i = 0; i < n; ++i) {
+        const double v[3] = { urand(), urand(), urand() };
+        for (int c = 0; c < 3; ++c) {
+            d[c][i] = float(v[c]);
+            t[c][i] = float(truth[3*c+0]*v[0] + truth[3*c+1]*v[1] + truth[3*c+2]*v[2]);
+        }
+    }
+    double M[9];
+    const double rmse = fitColorMatrix(d[0].data(), d[1].data(), d[2].data(),
+                                       t[0].data(), t[1].data(), t[2].data(), n, 1, M);
+    NS_CHECK(rmse < 1e-5);
+    for (int i = 0; i < 9; ++i) NS_CHECK(std::fabs(M[i] - truth[i]) < 1e-3);
+    // And the display inverse undoes the forward mix (identity round trip).
+    // Round trip on a pixel whose mixed output stays in gamut (the forward
+    // clamp is, correctly, not invertible for out-of-gamut results).
+    AdjustParams a; for (int i = 0; i < 9; ++i) a.mix[i] = truth[i];
+    float r = 0.50f, g = 0.55f, b = 0.60f;
+    applyColor(r, g, b, a);
+    applyColorInverse(r, g, b, a);
+    NS_CHECK(std::fabs(r - 0.50) < 1e-5 && std::fabs(g - 0.55) < 1e-5 &&
+             std::fabs(b - 0.60) < 1e-5);
+}
+
 int main() { return nstest::runAll(); }
 
 // DisplayFunction import regime: a PI STF whose white point sits ~80x beyond

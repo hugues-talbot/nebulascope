@@ -2754,10 +2754,11 @@ void MainWindow::transportColorsFromRef() {
                              "(cross-channel rotations are outside the stretch family)."));
     form->addRow(QString(), asStretchBox);
     asStretchBox->setChecked(s_lastAsStretch);
-    auto* colourFitBox = new QCheckBox(tr("Also fit colour adjustments (hue/temperature)"));
-    colourFitBox->setToolTip(tr("A second fitting stage over temperature/tint/hue/saturation —\n"
-                             "the cross-channel part per-channel curves cannot express.\n"
-                             "Try with and without: both are one Undo apart."));
+    auto* colourFitBox = new QCheckBox(tr("Also fit the cross-channel colour mix"));
+    colourFitBox->setToolTip(tr("A second stage fitting a full 3\u00d73 colour mixer, alternated\n"
+                             "with the curves \u2014 the cross-channel part per-channel curves\n"
+                             "cannot express (a starless pair's transport is mostly exactly\n"
+                             "that). Try with and without: both are one Undo apart."));
     colourFitBox->setChecked(s_lastColourFit);
     colourFitBox->setEnabled(asStretchBox->isChecked());
     connect(asStretchBox, &QCheckBox::toggled, colourFitBox, &QCheckBox::setEnabled);
@@ -2918,27 +2919,59 @@ bool MainWindow::runColorTransport(const QString& key, int strengthPct,
         st.fn = StretchFn::Linear;
         st.adj = AdjustParams{};             // the fit absorbed the old display
         // Stage 2 (optional): fit the cross-channel colour adjustments so the
-        // stretched display tracks OT's hue behaviour too.
+        // stretched display tracks OT's hue behaviour too. ALTERNATED with the
+        // per-channel curves: fitting curves first against a rotated target
+        // and rotating afterwards is a sequential compromise whose MMSE escape
+        // is desaturation (the field symptom: starless pairs came back grey).
+        // Block coordinate descent instead — each round re-fits the curves
+        // against the colour-INVERTED target, then the colour params against
+        // the curves' output; both stages end up solving the joint problem.
         QString colourNote;
         if (fitColourAdj && nch == 3 && res.image.channels() == 3) {
-            std::vector<float> d[3], tv[3];
+            std::vector<float> rawS[3], tv[3], tinv[3], d[3];
             for (int c = 0; c < 3; ++c) {
-                const ChannelStretch& cs = st.chan[c];
-                const double denom = std::max(1e-6, cs.white - cs.black);
-                const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
                 const float* rawp = srcPix->plane<float>(c);
                 const float* tgtp = res.image.plane<float>(c);
-                d[c].reserve(np / stride + 1);
+                rawS[c].reserve(np / stride + 1);
                 tv[c].reserve(np / stride + 1);
                 for (std::size_t i = 0; i < np; i += stride) {
-                    d[c].push_back(float(mtf(windowCoord(rawp[i], st.lo[c], st.hi[c], cs), m)));
+                    rawS[c].push_back(rawp[i]);
                     tv[c].push_back(tgtp[i]);
                 }
+                tinv[c].resize(rawS[c].size());
+                d[c].resize(rawS[c].size());
             }
-            AdjustParams fitted;
-            const double e2 = fitColorAdjust(d[0].data(), d[1].data(), d[2].data(),
-                                             tv[0].data(), tv[1].data(), tv[2].data(),
-                                             d[0].size(), 1, fitted);
+            const std::size_t nS = rawS[0].size();
+            AdjustParams fitted;                 // identity mix in round 0
+            double e2 = 1.0;
+            for (int round = 0; round < 3; ++round) {
+                for (std::size_t i = 0; i < nS; ++i) {
+                    float r = tv[0][i], g = tv[1][i], b = tv[2][i];
+                    applyColorInverse(r, g, b, fitted);
+                    tinv[0][i] = r; tinv[1][i] = g; tinv[2][i] = b;
+                }
+                rms.clear();
+                for (int c = 0; c < 3; ++c) {
+                    const double e = fitChannelStretch(rawS[c].data(), tinv[c].data(),
+                                                       nS, 1,
+                                                       st.lo[c], st.hi[c], st.chan[c],
+                                                       /*intensityWeight=*/true);
+                    rms << QString::number(e, 'f', 4);
+                }
+                for (int c = 0; c < 3; ++c) {
+                    const ChannelStretch& cs = st.chan[c];
+                    const double denom = std::max(1e-6, cs.white - cs.black);
+                    const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+                    for (std::size_t i = 0; i < nS; ++i)
+                        d[c][i] = float(mtf(windowCoord(rawS[c][i], st.lo[c], st.hi[c], cs), m));
+                }
+                // The colour stage is a full 3x3 mixer, solved in closed form —
+                // strictly more expressive than the slider family (temperature,
+                // tint, hue and saturation are all linear in RGB).
+                e2 = fitColorMatrix(d[0].data(), d[1].data(), d[2].data(),
+                                    tv[0].data(), tv[1].data(), tv[2].data(),
+                                    nS, 1, fitted.mix);
+            }
             st.adj = fitted;
             colourNote = tr(" · with colour fit: %1").arg(e2, 0, 'f', 4);
         }

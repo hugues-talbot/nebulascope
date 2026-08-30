@@ -448,6 +448,10 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         else if (k == "hue")         a.hue = v;
         else if (k == "saturation")  a.saturation = v;
         else if (k == "vibrance")    a.vibrance = v;
+        else if (k == "mix") {                     // adjust mix m0 .. m8 (row-major)
+            if (t.size() < 11) { err = "mix needs 9 values"; return false; }
+            for (int i = 0; i < 9; ++i) a.mix[i] = t[2 + i].toDouble();
+        }
         else { err = "unknown adjustment"; return false; }
         m_w->m_model.setAdjust(a);
         return true;

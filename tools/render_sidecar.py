@@ -123,7 +123,7 @@ def load_display(sidecar_path, inline_json=None):
         with open(sidecar_path) as f:
             obj = json.load(f)
     disp = obj.get("display", obj)          # accept the sidecar or a bare block
-    if int(disp.get("schema", 1)) > 1:
+    if int(disp.get("schema", 1)) > 2:
         raise SystemExit("display schema %s is newer than this renderer" % disp["schema"])
     if "channels" not in disp or len(disp["channels"]) != 3:
         raise SystemExit("not a NebulaScope display block")
@@ -203,9 +203,13 @@ def tone_identity(a):
             and a["contrast"] == 0.0 and a["gamma"] == 1.0)
 
 
+MIX_IDENTITY = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+
 def color_identity(a):
     return (a["temperature"] == 0.0 and a["tint"] == 0.0 and a["hue"] == 0.0
-            and a["saturation"] == 0.0 and a["vibrance"] == 0.0)
+            and a["saturation"] == 0.0 and a["vibrance"] == 0.0
+            and list(a.get("mix", MIX_IDENTITY)) == MIX_IDENTITY)
 
 
 def apply_tone(y, a):
@@ -230,8 +234,15 @@ def apply_tone(y, a):
 
 
 def apply_color(r, g, b, a):
-    """Vectorised applyColor: white balance -> hue rotation -> sat/vibrance."""
+    """Vectorised applyColor: mixer -> white balance -> hue rotation -> sat/vibrance."""
     R = r.astype(np.float64); G = g.astype(np.float64); B = b.astype(np.float64)
+    mix = list(a.get("mix", MIX_IDENTITY))
+    if mix != MIX_IDENTITY:
+        M = mix                                     # row-major, out = M . rgb
+        nR = M[0]*R + M[1]*G + M[2]*B
+        nG = M[3]*R + M[4]*G + M[5]*B
+        nB = M[6]*R + M[7]*G + M[8]*B
+        R, G, B = nR, nG, nB
     if a["temperature"] != 0.0 or a["tint"] != 0.0:
         R = R * (1.0 + 0.30 * a["temperature"] + 0.15 * a["tint"])
         G = G * (1.0 - 0.30 * a["tint"])

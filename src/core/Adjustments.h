@@ -30,6 +30,18 @@ struct AdjustParams {
     double hue         = 0.0;   // degrees, -180..180
     double saturation  = 0.0;   // -1..1
     double vibrance    = 0.0;   // -1..1    saturation weighted to muted pixels
+    // Cross-channel colour MIXER (row-major, out = mix . rgb), applied first
+    // in the colour stage. Identity unless set by the colour-transport
+    // stretch fit: a full linear mix subsumes temperature/tint/hue/saturation
+    // (all linear in RGB), which remain as the user-facing sliders.
+    double mix[9] = { 1, 0, 0,  0, 1, 0,  0, 0, 1 };
+
+    bool mixIdentity() const {
+        static constexpr double I[9] = { 1, 0, 0,  0, 1, 0,  0, 0, 1 };
+        for (int i = 0; i < 9; ++i)
+            if (mix[i] != I[i]) return false;
+        return true;
+    }
 
     bool toneIdentity() const {
         return blackpoint == 0.0 && whitepoint == 1.0 && shadows == 0.0 &&
@@ -37,7 +49,7 @@ struct AdjustParams {
     }
     bool colorIdentity() const {
         return temperature == 0.0 && tint == 0.0 && hue == 0.0 &&
-               saturation == 0.0 && vibrance == 0.0;
+               saturation == 0.0 && vibrance == 0.0 && mixIdentity();
     }
     bool identity() const { return toneIdentity() && colorIdentity(); }
 };
@@ -67,10 +79,66 @@ inline float applyTone(float y, const AdjustParams& a) {
     return float(v);
 }
 
+// Closed-form inverse of applyColor's colour part, in reverse order
+// (saturation, then hue, then temperature/tint). Exact where the forward map
+// is invertible: the hue-rotate matrices form a one-parameter group (rotation
+// about the grey axis in a sheared basis), so M(-h) undoes M(h); saturation
+// preserves luma Y, so Y is recoverable; temperature/tint are diagonal
+// scalings. Vibrance is ignored (never fitted) and the forward clamp is not
+// undone — outputs may leave [0,1], which fitting code accepts as targets.
+// Used by the transport stretch fit to ALTERNATE curve and colour estimation:
+// curves are refit against applyColorInverse(target) each round, so the two
+// stages solve a joint problem instead of a sequential compromise.
+inline void applyColorInverse(float& r, float& g, float& b, const AdjustParams& a) {
+    double R = r, G = g, B = b;
+    if (a.saturation != 0.0) {
+        const double f = std::max(0.05, 1.0 + a.saturation);
+        const double Y = 0.2126 * R + 0.7152 * G + 0.0722 * B;
+        R = Y + (R - Y) / f; G = Y + (G - Y) / f; B = Y + (B - Y) / f;
+    }
+    if (a.hue != 0.0) {
+        const double th = -a.hue * 0.01745329251994329577;   // deg -> rad, inverse
+        const double c = std::cos(th), s = std::sin(th);
+        const double nR = R*(0.299+0.701*c+0.168*s) + G*(0.587-0.587*c+0.330*s) + B*(0.114-0.114*c-0.497*s);
+        const double nG = R*(0.299-0.299*c-0.328*s) + G*(0.587+0.413*c+0.035*s) + B*(0.114-0.114*c+0.292*s);
+        const double nB = R*(0.299-0.300*c+1.250*s) + G*(0.587-0.588*c-1.050*s) + B*(0.114+0.886*c-0.203*s);
+        R = nR; G = nG; B = nB;
+    }
+    if (a.temperature != 0.0 || a.tint != 0.0) {
+        R /= std::max(0.05, 1.0 + 0.30 * a.temperature + 0.15 * a.tint);
+        G /= std::max(0.05, 1.0 - 0.30 * a.tint);
+        B /= std::max(0.05, 1.0 - 0.30 * a.temperature + 0.15 * a.tint);
+    }
+    if (!a.mixIdentity()) {
+        const double* M = a.mix;
+        const double det = M[0]*(M[4]*M[8]-M[5]*M[7]) - M[1]*(M[3]*M[8]-M[5]*M[6])
+                         + M[2]*(M[3]*M[7]-M[4]*M[6]);
+        if (std::abs(det) > 1e-9) {                 // singular mix: leave as-is
+            const double i0 =  (M[4]*M[8]-M[5]*M[7])/det, i1 = -(M[1]*M[8]-M[2]*M[7])/det,
+                         i2 =  (M[1]*M[5]-M[2]*M[4])/det, i3 = -(M[3]*M[8]-M[5]*M[6])/det,
+                         i4 =  (M[0]*M[8]-M[2]*M[6])/det, i5 = -(M[0]*M[5]-M[2]*M[3])/det,
+                         i6 =  (M[3]*M[7]-M[4]*M[6])/det, i7 = -(M[0]*M[7]-M[1]*M[6])/det,
+                         i8 =  (M[0]*M[4]-M[1]*M[3])/det;
+            const double nR = i0*R + i1*G + i2*B;
+            const double nG = i3*R + i4*G + i5*B;
+            const double nB = i6*R + i7*G + i8*B;
+            R = nR; G = nG; B = nB;
+        }
+    }
+    r = float(R); g = float(G); b = float(B);
+}
+
 // Cross-channel colour ops on a stretched RGB triple, in place.
 // Order: white balance (temperature/tint gains) -> hue rotation -> sat/vibrance.
 inline void applyColor(float& r, float& g, float& b, const AdjustParams& a) {
     double R = r, G = g, B = b;
+    if (!a.mixIdentity()) {
+        const double* M = a.mix;
+        const double nR = M[0]*R + M[1]*G + M[2]*B;
+        const double nG = M[3]*R + M[4]*G + M[5]*B;
+        const double nB = M[6]*R + M[7]*G + M[8]*B;
+        R = nR; G = nG; B = nB;
+    }
     if (a.temperature != 0.0 || a.tint != 0.0) {
         R *= 1.0 + 0.30 * a.temperature + 0.15 * a.tint;
         G *= 1.0 - 0.30 * a.tint;

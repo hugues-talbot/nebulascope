@@ -326,12 +326,20 @@ every pixel (`tests/conformance/`). This is what makes a stretch
   "adjust": { "blackpoint": 0, "whitepoint": 1, "shadows": 0,
               "highlights": 0, "brightness": 0, "contrast": 0, "gamma": 1,
               "temperature": 0, "tint": 0, "hue": 0,
-              "saturation": 0, "vibrance": 0 }
+              "saturation": 0, "vibrance": 0,
+              "mix": [1,0,0, 0,1,0, 0,0,1] }   // schema 2, optional
 }
 ```
 
 `schema` is the version of *this* block (independent of the sidecar's own
-`version`); a reader must refuse a schema newer than it knows. Enumerations
+`version`); a reader must refuse a schema newer than it knows. **Schema 2**
+adds one optional field, `adjust.mix`: a row-major 3×3 colour mixer applied
+FIRST in the colour stage, $\mathbf{c}' = M\,\mathbf{c}$ — absent means
+identity, and a writer stamps `schema: 2` only when the mix is present, so
+mixer-free blocks stay valid schema 1. The mixer is what the lossless
+colour-transport fit stores: temperature, tint, hue rotation and saturation
+are all linear in RGB, so a full matrix subsumes them, and it is the part a
+starless pair's palette rotation needs. Enumerations
 are stored as names, never integers. `black`/`mid`/`white` and the GHS
 `SP`/`LP`/`HP` are normalized window coordinates and **may lie outside
 $[0,1]$** (a black point below the data minimum, a symmetry point beyond
@@ -378,8 +386,8 @@ $y \mathrel{+}= \mathrm{brightness}/2$,
 $y = \tfrac12 + (y-\tfrac12)\tan\!\big((\mathrm{contrast}+1)\tfrac{\pi}{4}\big)$,
 clamp, then $y^{1/\gamma}$.
 
-**Colour adjustments** (cross-channel, RGB only), in this order:
-white-balance gains
+**Colour adjustments** (cross-channel, RGB only), in this order: the
+`mix` matrix (schema 2; identity when absent); white-balance gains
 $R\,(1+0.30\,\mathrm{temp}+0.15\,\mathrm{tint}),\;
  G\,(1-0.30\,\mathrm{tint}),\;
  B\,(1-0.30\,\mathrm{temp}+0.15\,\mathrm{tint})$;

@@ -207,6 +207,68 @@ double fitColorAdjust(const float* dR, const float* dG, const float* dB,
     return std::sqrt(mse(adj));
 }
 
+double fitColorMatrix(const float* dR, const float* dG, const float* dB,
+                      const float* tR, const float* tG, const float* tB,
+                      std::size_t n, std::size_t stride, double M[9]) {
+    // Weighted normal equations, one shared Gram matrix G = sum w d d^T and a
+    // right-hand side per output channel. Row k of M solves G m_k = rhs_k.
+    double G[9] = { 0 }, rhs[3][3] = { { 0 } };
+    double wsum = 0.0, tss = 0.0;
+    std::size_t cnt = 0;
+    for (std::size_t i = 0; i < n; i += std::max<std::size_t>(1, stride)) {
+        const double d[3] = { dR[i], dG[i], dB[i] };
+        const double t[3] = { tR[i], tG[i], tB[i] };
+        bool ok = true;
+        for (int k = 0; k < 3; ++k)
+            ok = ok && std::isfinite(d[k]) && std::isfinite(t[k]);
+        if (!ok) continue;
+        const double w = 0.05 + 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];
+        for (int r = 0; r < 3; ++r)
+            for (int c = 0; c < 3; ++c)
+                G[3 * r + c] += w * d[r] * d[c];
+        for (int k = 0; k < 3; ++k)
+            for (int c = 0; c < 3; ++c)
+                rhs[k][c] += w * t[k] * d[c];
+        for (int k = 0; k < 3; ++k) tss += w * t[k] * t[k];
+        wsum += w;
+        ++cnt;
+    }
+    for (int i = 0; i < 9; ++i) M[i] = (i % 4 == 0) ? 1.0 : 0.0;   // identity default
+    if (cnt < 64) return 1.0;
+    // Tikhonov hair on the diagonal: a constant-colour channel must not blow up.
+    const double lam = 1e-6 * std::max({ G[0], G[4], G[8], 1e-12 });
+    G[0] += lam; G[4] += lam; G[8] += lam;
+    const double det = G[0]*(G[4]*G[8]-G[5]*G[7]) - G[1]*(G[3]*G[8]-G[5]*G[6])
+                     + G[2]*(G[3]*G[7]-G[4]*G[6]);
+    if (std::abs(det) < 1e-18) return 1.0;
+    const double inv[9] = {
+         (G[4]*G[8]-G[5]*G[7])/det, -(G[1]*G[8]-G[2]*G[7])/det,  (G[1]*G[5]-G[2]*G[4])/det,
+        -(G[3]*G[8]-G[5]*G[6])/det,  (G[0]*G[8]-G[2]*G[6])/det, -(G[0]*G[5]-G[2]*G[3])/det,
+         (G[3]*G[7]-G[4]*G[6])/det, -(G[0]*G[7]-G[1]*G[6])/det,  (G[0]*G[4]-G[1]*G[3])/det };
+    (void)tss;
+    for (int k = 0; k < 3; ++k)
+        for (int c = 0; c < 3; ++c)
+            M[3 * k + c] = inv[3 * c + 0] * rhs[k][0] + inv[3 * c + 1] * rhs[k][1]
+                         + inv[3 * c + 2] * rhs[k][2];
+    // Residual by a direct pass: the projection identity sse = tss - m.rhs
+    // cancels catastrophically when the fit is near-exact.
+    double sse = 0.0;
+    for (std::size_t i = 0; i < n; i += std::max<std::size_t>(1, stride)) {
+        const double d[3] = { dR[i], dG[i], dB[i] };
+        const double t[3] = { tR[i], tG[i], tB[i] };
+        bool ok = true;
+        for (int k = 0; k < 3; ++k)
+            ok = ok && std::isfinite(d[k]) && std::isfinite(t[k]);
+        if (!ok) continue;
+        const double w = 0.05 + 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];
+        for (int k = 0; k < 3; ++k) {
+            const double r = M[3*k+0]*d[0] + M[3*k+1]*d[1] + M[3*k+2]*d[2] - t[k];
+            sse += w * r * r;
+        }
+    }
+    return std::sqrt(sse / (3.0 * std::max(1e-12, wsum)));
+}
+
 static inline double mtfInverse(double y, double m) {
     return m * y / (y * (2.0 * m - 1.0) - m + 1.0);
 }
