@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "NebulaScope",
     "section": "",
-    "text": "Preface\nNebulaScope is a cross-platform Qt 6 desktop tool for inspecting and annotating astronomical images, focused on the thing most tools do poorly: precise, draggable RGB-histogram control — including a Generalised Hyperbolic Stretch for pulling faint galaxy signal out of a high-dynamic-range background without blowing out cores and stars.\nIt reads FITS (Pence et al. 2010) — including multi-HDU and tile-compressed files — PixInsight XISF (Conejero 2015) with embedded astrometric solutions, and ordinary JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor (Bertin and Arnouts 1996) import directly as annotation overlays, and a reference image’s colour palette can be transferred onto the displayed image through sliced optimal transport (Pitié et al. 2007).\nWhere it fits: between viewers like SAOImage DS9 (Joye and Mandel 2003) (regions, WCS readout, but dated stretch ergonomics) and processing suites like PixInsight or Siril (powerful stretches, but not fast annotation-centric inspectors). NebulaScope combines modern histogram manipulation — including the Generalised Hyperbolic Stretch (Payne et al. 2022) — blink comparison with per-image stretch memory, and an editable, undoable vector annotation layer that can be fed from SExtractor catalogs, e.g. for building machine-learning training sets.\nThis document collects the complete user manual, the developer-facing architecture map and design-decision log, with the per-platform build instructions and the release history as appendices. Every screenshot in this book is generated reproducibly by NebulaScope’s own scripting mode (see the manual’s command-line chapter) from real acquired data.\nThe project’s source code and issue tracker live at https://github.com/hugues-talbot/nebulascope.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Preface\nNebulaScope is a cross-platform Qt 6 desktop tool for inspecting and annotating astronomical images, focused on the thing most tools do poorly: precise, draggable RGB-histogram control — including a Generalised Hyperbolic Stretch for pulling faint galaxy signal out of a high-dynamic-range background without blowing out cores and stars.\nIt reads FITS (Pence et al. 2010) — including multi-HDU and tile-compressed files — PixInsight XISF (Conejero 2015) with embedded astrometric solutions, and ordinary JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor (Bertin and Arnouts 1996) import directly as annotation overlays, and a reference image’s colour palette can be transferred onto the displayed image through sliced optimal transport (Pitié et al. 2007).\nWhere it fits: between viewers like SAOImage DS9 (Joye and Mandel 2003) (regions, WCS readout, but dated stretch ergonomics) and processing suites like PixInsight or Siril (powerful stretches, but not fast annotation-centric inspectors). NebulaScope combines modern histogram manipulation — including the Generalised Hyperbolic Stretch (Payne et al. 2022) — blink comparison with per-image stretch memory, and an editable, undoable vector annotation layer that can be fed from SExtractor catalogs, e.g. for building machine-learning training sets.\nThis document collects the complete user manual, the developer-facing architecture map and design-decision log, with the per-platform build instructions and the release history as appendices. Every screenshot in this book is generated reproducibly by NebulaScope’s own scripting mode (see the manual’s command-line chapter) from real acquired data.\nThe project’s source code and issue tracker live at https://github.com/hugues-talbot/nebulascope.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Preface"
     ]
@@ -174,7 +174,7 @@
     "href": "MANUAL.html#troubleshooting",
     "title": "NebulaScope — User Manual",
     "section": "16. Troubleshooting",
-    "text": "16. Troubleshooting\n\n“No 2-D image in primary HDU” — the image lives in an extension; pick the HDU from the image list entry.\nWashed-out or black view — Reset, then Auto STF; check the window handles aren’t collapsed.\nAdjustment sliders seem inert — colour sliders (Temp…Vibrance) are disabled for mono images; tone sliders work everywhere.\nA colour-calibrated (SPCC/PCC) image looks uncalibrated — per-channel Auto STF (U) equalises the channels, cancelling the calibration’s balance on screen. Use Auto STF (linked) (Shift+U), which preserves it — or save from PI with its STF active: the saved display function is applied on open.\nNebulaScope XISF looks like noise in PixInsight — fixed in v0.84+ (floats normalized to [0,1]); re-save the file. Compressed blocks (v0.86+) are PI-verified and not the culprit.\nRA/Dec missing on an XISF — confirm the file carries PCL:AstrometricSolution:* properties (Info panel filter: Astrometric).\nAnnotations misplaced after import — they map through the recorded orientation; if the sidecar predates v0.12, re-orient and re-save once.\nSlow zoom/pan with overlay panels — set overlay opacity to 100% in Preferences (translucency costs repaints).\nBuild issues — see docs/BUILDING-{macos,linux,windows}.md.\n\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "16. Troubleshooting\n\n“No 2-D image in primary HDU” — the image lives in an extension; pick the HDU from the image list entry.\nWashed-out or black view — Reset, then Auto STF; check the window handles aren’t collapsed.\nAdjustment sliders seem inert — colour sliders (Temp…Vibrance) are disabled for mono images; tone sliders work everywhere.\nA colour-calibrated (SPCC/PCC) image looks uncalibrated — per-channel Auto STF (U) equalises the channels, cancelling the calibration’s balance on screen. Use Auto STF (linked) (Shift+U), which preserves it — or save from PI with its STF active: the saved display function is applied on open.\nNebulaScope XISF looks like noise in PixInsight — fixed in v0.84+ (floats normalized to [0,1]); re-save the file. Compressed blocks (v0.86+) are PI-verified and not the culprit.\nRA/Dec missing on an XISF — confirm the file carries PCL:AstrometricSolution:* properties (Info panel filter: Astrometric).\nAnnotations misplaced after import — they map through the recorded orientation; if the sidecar predates v0.12, re-orient and re-save once.\nSlow zoom/pan with overlay panels — set overlay opacity to 100% in Preferences (translucency costs repaints).\nBuild issues — see docs/BUILDING-{macos,linux,windows}.md.\n\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>NebulaScope — User Manual</span>"
     ]
@@ -214,7 +214,7 @@
     "href": "TRANSPORT.html#the-stretch-fit-match-the-look-not-the-pixels",
     "title": "Colour Transport — Theory and the Stretch Fit",
     "section": "3. The stretch fit: match the look, not the pixels",
-    "text": "3. The stretch fit: match the look, not the pixels\nNebulaScope’s display applies, per channel \\(c\\), a smooth parametric transfer to the raw value \\(v\\):\n\\[D_c(v) \\;=\\; \\mathrm{MTF}\\!\\big(W_c(v);\\, m_c\\big),\\]\nwhere the window normalises and clips,\n\\[W_c(v) \\;=\\; \\operatorname{clip}_{[0,1]}\n\\left( \\frac{\\dfrac{v - \\ell_c}{h_c - \\ell_c} - b_c}{w_c - b_c} \\right),\\]\nwith data range \\([\\ell_c, h_c]\\) and black/white points \\(b_c, w_c\\), and the midtone transfer function is the rational curve\n\\[\\mathrm{MTF}(x; m) \\;=\\; \\frac{(m-1)\\,x}{(2m-1)\\,x - m},\n\\qquad m_c = \\frac{\\mathrm{mid}_c - b_c}{w_c - b_c},\\]\nwhich fixes \\(\\mathrm{MTF}(0)=0\\), \\(\\mathrm{MTF}(1)=1\\) and \\(\\mathrm{MTF}(m)=\\tfrac12\\). Every such curve is smooth and strictly monotone on the window.\nThe fit. Let \\(t_i = T_c(u_i)\\) be the transported display values of a pixel sample and \\(v_i\\) the corresponding raw values. The stretch fit solves, independently per channel,\n\\[\\min_{\\,b_c,\\ \\mathrm{mid}_c,\\ w_c}\\;\n\\sum_i \\omega_i \\Big( D_c(v_i;\\, b_c, \\mathrm{mid}_c, w_c) - t_i \\Big)^{2},\n\\qquad \\omega_i = 0.05 + t_i,\\]\na bounded three-parameter weighted least-squares problem. The intensity weighting \\(\\omega_i\\) matters: background pixels vastly outnumber signal pixels, and an unweighted fit would match the sky while shrugging at the nebula. Weighting each residual by the (floored) target brightness makes the signal colours govern the fit while the small floor keeps the black point anchored. Stars are best excluded at the source — match starless renditions of both images. NebulaScope solves it by coordinate descent — four sweeps of golden-section line searches over \\(b_c \\in [0, w_c)\\), \\(w_c \\in (b_c, 1]\\), \\(\\mathrm{mid}_c \\in (b_c, w_c)\\) — on up to \\(6 \\times 10^4\\) sample pairs. The root-mean-square residual per channel is reported in the status bar.\nThe result is only a stretch state: it lives in the same place as any Auto STF, composes with copy/paste and Apply to All, persists in the sidecar, and the underlying data is untouched.\n\n3.1 Guarantees\n\nZero data loss — nothing is written; the “result” is a view.\nNo posterization — the fitted curve is smooth and strictly monotone; there are no empirical steps for ties to collapse onto.\nControlled noise behaviour — the curve’s slope is the smooth parametric \\(D_c'(v)\\), free of the locally extreme slopes an empirical density ratio can produce.\n\n\n\n3.2 Stage two: fitting the colour adjustments\nOptionally, a second stage narrows the separability gap. With the fitted per-channel curves held fixed, NebulaScope fits the four cross-channel colour adjustments — temperature, tint, hue, saturation — minimising the intensity-weighted error over full RGB triples:\n\\[\\min_{\\theta}\\; \\sum_i \\omega_i\\,\n\\big\\lVert A_\\theta\\big(D(v_i)\\big) - T(u_i) \\big\\rVert^2 ,\\]\nwhere \\(A_\\theta\\) is the adjustment operator. These four parameters mix channels — which is precisely what OT’s slicing rotations do and what separable curves cannot — so hue-rotation targets that stage 1 misses become reachable. The status bar reports the overall RMSE after this stage; with undo one keystroke away, trying both variants costs nothing.\n\n\n3.3 The approximation gap\nThe stretch family is separable: three independent monotone curves. The optimal transport map is generally not — its slicing rotations mix channels, which is how it can rotate hues. The projection of \\(T\\) onto the separable family therefore reproduces global colour balance and tonality closely, but cannot express hue rotation. The reported per-channel RMSE quantifies this gap for your pair of images; when it matters, the exact mode remains one checkbox away.\n\n\n\nThe Pillars of Creation: a TEC 140 from a club observatory (left) matched and colour-transported to the Hubble Space Telescope’s rendition (right)\n\n\nThe thesis of this chapter, taken to its limit: the Pillars of Creation from a TEC 140/980 refractor at an amateur club’s remote observatory — about 10 h over two nights, session planned and operated by the author — matched (M) and colour-transported non-destructively toward the Hubble Space Telescope’s famous rendition (right; NASA/ESA/Hubble Heritage Team). The reference need not come from your data, your instrument, or even your planet: transport matches distributions, and what remains different after the match is optics and orbit, not processing.",
+    "text": "3. The stretch fit: match the look, not the pixels\nNebulaScope’s display applies, per channel \\(c\\), a smooth parametric transfer to the raw value \\(v\\):\n\\[D_c(v) \\;=\\; \\mathrm{MTF}\\!\\big(W_c(v);\\, m_c\\big),\\]\nwhere the window normalises and clips,\n\\[W_c(v) \\;=\\; \\operatorname{clip}_{[0,1]}\n\\left( \\frac{\\dfrac{v - \\ell_c}{h_c - \\ell_c} - b_c}{w_c - b_c} \\right),\\]\nwith data range \\([\\ell_c, h_c]\\) and black/white points \\(b_c, w_c\\), and the midtone transfer function is the rational curve\n\\[\\mathrm{MTF}(x; m) \\;=\\; \\frac{(m-1)\\,x}{(2m-1)\\,x - m},\n\\qquad m_c = \\frac{\\mathrm{mid}_c - b_c}{w_c - b_c},\\]\nwhich fixes \\(\\mathrm{MTF}(0)=0\\), \\(\\mathrm{MTF}(1)=1\\) and \\(\\mathrm{MTF}(m)=\\tfrac12\\). Every such curve is smooth and strictly monotone on the window.\nThe fit. Let \\(t_i = T_c(u_i)\\) be the transported display values of a pixel sample and \\(v_i\\) the corresponding raw values. The stretch fit solves, independently per channel,\n\\[\\min_{\\,b_c,\\ \\mathrm{mid}_c,\\ w_c}\\;\n\\sum_i \\omega_i \\Big( D_c(v_i;\\, b_c, \\mathrm{mid}_c, w_c) - t_i \\Big)^{2},\n\\qquad \\omega_i = 0.05 + t_i,\\]\na bounded three-parameter weighted least-squares problem. The intensity weighting \\(\\omega_i\\) matters: background pixels vastly outnumber signal pixels, and an unweighted fit would match the sky while shrugging at the nebula. Weighting each residual by the (floored) target brightness makes the signal colours govern the fit while the small floor keeps the black point anchored. Stars are best excluded at the source — match starless renditions of both images. NebulaScope solves it by coordinate descent — four sweeps of golden-section line searches over \\(b_c \\in [0, w_c)\\), \\(w_c \\in (b_c, 1]\\), \\(\\mathrm{mid}_c \\in (b_c, w_c)\\) — on up to \\(6 \\times 10^4\\) sample pairs. The root-mean-square residual per channel is reported in the status bar.\nThe result is only a stretch state: it lives in the same place as any Auto STF, composes with copy/paste and Apply to All, persists in the sidecar, and the underlying data is untouched.\n\n3.1 Guarantees\n\nZero data loss — nothing is written; the “result” is a view.\nNo posterization — the fitted curve is smooth and strictly monotone; there are no empirical steps for ties to collapse onto.\nControlled noise behaviour — the curve’s slope is the smooth parametric \\(D_c'(v)\\), free of the locally extreme slopes an empirical density ratio can produce.\n\n\n\n3.2 Stage two: fitting the colour adjustments\nOptionally, a second stage narrows the separability gap. With the fitted per-channel curves held fixed, NebulaScope fits the four cross-channel colour adjustments — temperature, tint, hue, saturation — minimising the intensity-weighted error over full RGB triples:\n\\[\\min_{\\theta}\\; \\sum_i \\omega_i\\,\n\\big\\lVert A_\\theta\\big(D(v_i)\\big) - T(u_i) \\big\\rVert^2 ,\\]\nwhere \\(A_\\theta\\) is the adjustment operator. These four parameters mix channels — which is precisely what OT’s slicing rotations do and what separable curves cannot — so hue-rotation targets that stage 1 misses become reachable. The status bar reports the overall RMSE after this stage; with undo one keystroke away, trying both variants costs nothing.\n\n\n3.3 The approximation gap\nThe stretch family is separable: three independent monotone curves. The optimal transport map is generally not — its slicing rotations mix channels, which is how it can rotate hues. The projection of \\(T\\) onto the separable family therefore reproduces global colour balance and tonality closely, but cannot express hue rotation. The reported per-channel RMSE quantifies this gap for your pair of images; when it matters, the exact mode remains one checkbox away.\n\n\n\nThe Pillars of Creation: a TEC 140 from a club observatory (left) matched and colour-transported to the Hubble Space Telescope’s rendition (right)\n\n\nThe thesis of this chapter, taken to its limit: the Pillars of Creation from a TEC 140/980 refractor at an amateur club’s remote observatory — about 10 h over two nights, session planned and operated by the author — matched (M) and colour-transported non-destructively toward the Hubble Space Telescope’s famous rendition (right; NASA/ESA/Hubble Heritage Team). The reference need not come from your data, your instrument, or even your planet: transport matches distributions, and what remains different after the match is optics and orbit, not processing.\nExactly how much optics-and-orbit remains is a measurable question — the PSF study appendix takes this very pair and measures it: the refractor’s true PSF from the extended structure, star-free, with Hubble as ground truth.",
     "crumbs": [
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Colour Transport — Theory and the Stretch Fit</span>"
     ]
@@ -244,7 +244,7 @@
     "href": "TRANSPORT.html#appendix-the-display-block-an-open-reproducible-appearance-format",
     "title": "Colour Transport — Theory and the Stretch Fit",
     "section": "6. Appendix: the display block — an open, reproducible appearance format",
-    "text": "6. Appendix: the display block — an open, reproducible appearance format\nEvery stretch fit ends as numbers, and NebulaScope writes those numbers down. Save Annotations & Display stores the complete display state in the image’s sidecar (&lt;image&gt;_annotation.json) under a display key. The block is plain JSON with a stated schema, every field maps to a closed-form equation in this book, and a standalone reference implementation (tools/render_sidecar.py, NumPy only, no NebulaScope code) reproduces NebulaScope’s rendering from it — verified in CI to a few float32 ULPs at every pixel (tests/conformance/). This is what makes a stretch explainable (read the block, know exactly what was done) and reproducible in other software (implement six short equations).\n\n6.1 The block\n\"display\": {\n  \"schema\": 1,\n  \"fn\": \"ghs\",                       // linear | log | asinh | ghs\n  \"count\": 3,                        // channels the state was made for\n  \"channels\": [                      // R, G, B (index 0 used for mono)\n    { \"lo\": 0.0012, \"hi\": 0.9840,    // data window (raw units)\n      \"black\": 0.031, \"mid\": 0.118, \"white\": 1.0 },   // normalized in [lo,hi]\n    { ... }, { ... }\n  ],\n  \"ghs\":    { \"D\": 1.6, \"b\": 6.0, \"SP\": 0.18, \"LP\": 0.0, \"HP\": 1.0 },\n  \"cmap\": \"gray\", \"cmapInvert\": false, \"cmapSplit\": false, \"split\": 0.25,\n  \"adjust\": { \"blackpoint\": 0, \"whitepoint\": 1, \"shadows\": 0,\n              \"highlights\": 0, \"brightness\": 0, \"contrast\": 0, \"gamma\": 1,\n              \"temperature\": 0, \"tint\": 0, \"hue\": 0,\n              \"saturation\": 0, \"vibrance\": 0,\n              \"mix\": [1,0,0, 0,1,0, 0,0,1] }   // schema 2, optional\n}\nschema is the version of this block (independent of the sidecar’s own version); a reader must refuse a schema newer than it knows. Schema 2 adds one optional field, adjust.mix: a row-major 3×3 colour mixer applied FIRST in the colour stage, \\(\\mathbf{c}' = M\\,\\mathbf{c}\\) — absent means identity, and a writer stamps schema: 2 only when the mix is present, so mixer-free blocks stay valid schema 1. The mixer is what the lossless colour-transport fit stores: temperature, tint, hue rotation and saturation are all linear in RGB, so a full matrix subsumes them, and it is the part a starless pair’s palette rotation needs. Enumerations are stored as names, never integers. black/mid/white and the GHS SP/LP/HP are normalized window coordinates and may lie outside \\([0,1]\\) (a black point below the data minimum, a symmetry point beyond the window): the pipeline below is defined for any real values, and a conforming implementation must not clamp them.\n\n\n6.2 The pipeline, per channel \\(c\\) and raw pixel value \\(v\\)\nWindow. The channel’s black/mid/white handles live in normalized window coordinates on \\([\\mathrm{lo}_c, \\mathrm{hi}_c]\\) — that is what makes a state portable across images with different data ranges:\n\\[t \\;=\\; \\operatorname{clamp}_{[0,1]}\\!\\left(\n  \\frac{\\dfrac{v-\\mathrm{lo}_c}{\\mathrm{hi}_c-\\mathrm{lo}_c} - \\mathrm{black}_c}\n       {\\mathrm{white}_c-\\mathrm{black}_c}\\right).\\]\nTransfer \\(T(t)\\), one of:\n\nlinear, log, asinh — a base shape followed by the midtones transfer function (§5) with pivot \\(m_c = (\\mathrm{mid}_c-\\mathrm{black}_c)/(\\mathrm{white}_c-\\mathrm{black}_c)\\), clamped to \\([0.001, 0.999]\\): \\[T(t) = \\mathrm{MTF}\\big(s(t);\\, m_c\\big),\\qquad\n  s(t) = \\begin{cases} t & \\text{linear}\\\\\n    \\ln(1+500t)/\\ln 501 & \\text{log}\\\\\n    \\operatorname{asinh}(50t)/\\operatorname{asinh}50 & \\text{asinh}\\end{cases}\\]\nghs — one master curve shared by all channels: the normalized cumulative integral of the local-stretch slope \\[\\sigma(x) = D_e\\,\\big(1 + b\\,D_e\\,|x-\\mathrm{SP}|\\big)^{-(1+1/b)}\n  \\quad (b&gt;0;\\ \\text{logarithmic } D_e/(1+|b|D_e|x-\\mathrm{SP}|) \\text{ for } b&lt;0,\\\n  \\text{exponential } D_e e^{-D_e|x-\\mathrm{SP}|} \\text{ for } b=0),\\] with \\(D_e = e^{D}-1\\) and \\(x\\) clamped to \\([\\mathrm{LP},\\mathrm{HP}]\\) before evaluating \\(\\sigma\\) (linear protection zones); \\(T(t) = \\int_0^t \\sigma \\,/\\, \\int_0^1 \\sigma\\). NebulaScope evaluates this on a 4096-point trapezoid grid, and interpolates linearly between grid points; a conforming implementation does the same, which is what gives ULP-level agreement rather than mere visual agreement.\n\nTone adjustments (monotone, per channel, composed into \\(T\\)), in this order: black/white-point re-window, then \\(y \\mathrel{+}= \\mathrm{shadows}\\cdot 2y(1-y)^2\\), \\(y \\mathrel{+}= \\mathrm{highlights}\\cdot 2y^2(1-y)\\), \\(y \\mathrel{+}= \\mathrm{brightness}/2\\), \\(y = \\tfrac12 + (y-\\tfrac12)\\tan\\!\\big((\\mathrm{contrast}+1)\\tfrac{\\pi}{4}\\big)\\), clamp, then \\(y^{1/\\gamma}\\).\nColour adjustments (cross-channel, RGB only), in this order: the mix matrix (schema 2; identity when absent); white-balance gains \\(R\\,(1+0.30\\,\\mathrm{temp}+0.15\\,\\mathrm{tint}),\\;\nG\\,(1-0.30\\,\\mathrm{tint}),\\;\nB\\,(1-0.30\\,\\mathrm{temp}+0.15\\,\\mathrm{tint})\\); the standard luminance-preserving hue-rotation matrix (the SVG/CSS hue-rotate coefficients) by hue degrees; then saturation about Rec.,709 luma \\(Y\\): \\(C = Y + (C-Y)\\,f\\) with \\(f = (1+\\mathrm{saturation})\\,(1+\\mathrm{vibrance}\\,(1-s))\\), \\(s\\) the pixel’s HSV saturation. Clamp to \\([0,1]\\).\nOutput. The result is the Float32 [0,1] rendition (what Save Stretched As… bakes). The 8-bit screen image is this rounded to 255 levels — NebulaScope adds a ±1 LSB triangular dither on screen, which is a display cosmetic and deliberately not part of the format.\n\n\n6.3 Reading a transport fit\nA non-destructive transport fit (§3) is nothing but a display block: the per-channel black/mid/white it solved for, plus, when colour fitting was on, the adjust vector. Two fits diff as JSON, and the diff localizes where the effort went — windowing versus hue versus saturation — which is information about how the two images differ, not just a recipe.\n\n\n6.4 Scope and non-goals of the reference implementation\nrender_sidecar.py covers the four transfer functions, per-channel windowing, all tone and colour adjustments, mono and RGB. False-colour maps (cmap other than gray, or the invert/split modifiers) are 8-bit tables defined by control points in src/core/Colormap.cpp, which remains authoritative for them; a mono image with an active map renders through the same stretch and is then indexed into that table.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "6. Appendix: the display block — an open, reproducible appearance format\nEvery stretch fit ends as numbers, and NebulaScope writes those numbers down. Save Annotations & Display stores the complete display state in the image’s sidecar (&lt;image&gt;_annotation.json) under a display key. The block is plain JSON with a stated schema, every field maps to a closed-form equation in this book, and a standalone reference implementation (tools/render_sidecar.py, NumPy only, no NebulaScope code) reproduces NebulaScope’s rendering from it — verified in CI to a few float32 ULPs at every pixel (tests/conformance/). This is what makes a stretch explainable (read the block, know exactly what was done) and reproducible in other software (implement six short equations).\n\n6.1 The block\n\"display\": {\n  \"schema\": 1,\n  \"fn\": \"ghs\",                       // linear | log | asinh | ghs\n  \"count\": 3,                        // channels the state was made for\n  \"channels\": [                      // R, G, B (index 0 used for mono)\n    { \"lo\": 0.0012, \"hi\": 0.9840,    // data window (raw units)\n      \"black\": 0.031, \"mid\": 0.118, \"white\": 1.0 },   // normalized in [lo,hi]\n    { ... }, { ... }\n  ],\n  \"ghs\":    { \"D\": 1.6, \"b\": 6.0, \"SP\": 0.18, \"LP\": 0.0, \"HP\": 1.0 },\n  \"cmap\": \"gray\", \"cmapInvert\": false, \"cmapSplit\": false, \"split\": 0.25,\n  \"adjust\": { \"blackpoint\": 0, \"whitepoint\": 1, \"shadows\": 0,\n              \"highlights\": 0, \"brightness\": 0, \"contrast\": 0, \"gamma\": 1,\n              \"temperature\": 0, \"tint\": 0, \"hue\": 0,\n              \"saturation\": 0, \"vibrance\": 0,\n              \"mix\": [1,0,0, 0,1,0, 0,0,1] }   // schema 2, optional\n}\nschema is the version of this block (independent of the sidecar’s own version); a reader must refuse a schema newer than it knows. Schema 2 adds one optional field, adjust.mix: a row-major 3×3 colour mixer applied FIRST in the colour stage, \\(\\mathbf{c}' = M\\,\\mathbf{c}\\) — absent means identity, and a writer stamps schema: 2 only when the mix is present, so mixer-free blocks stay valid schema 1. The mixer is what the lossless colour-transport fit stores: temperature, tint, hue rotation and saturation are all linear in RGB, so a full matrix subsumes them, and it is the part a starless pair’s palette rotation needs. Enumerations are stored as names, never integers. black/mid/white and the GHS SP/LP/HP are normalized window coordinates and may lie outside \\([0,1]\\) (a black point below the data minimum, a symmetry point beyond the window): the pipeline below is defined for any real values, and a conforming implementation must not clamp them.\n\n\n6.2 The pipeline, per channel \\(c\\) and raw pixel value \\(v\\)\nWindow. The channel’s black/mid/white handles live in normalized window coordinates on \\([\\mathrm{lo}_c, \\mathrm{hi}_c]\\) — that is what makes a state portable across images with different data ranges:\n\\[t \\;=\\; \\operatorname{clamp}_{[0,1]}\\!\\left(\n  \\frac{\\dfrac{v-\\mathrm{lo}_c}{\\mathrm{hi}_c-\\mathrm{lo}_c} - \\mathrm{black}_c}\n       {\\mathrm{white}_c-\\mathrm{black}_c}\\right).\\]\nTransfer \\(T(t)\\), one of:\n\nlinear, log, asinh — a base shape followed by the midtones transfer function (§5) with pivot \\(m_c = (\\mathrm{mid}_c-\\mathrm{black}_c)/(\\mathrm{white}_c-\\mathrm{black}_c)\\), clamped to \\([0.001, 0.999]\\): \\[T(t) = \\mathrm{MTF}\\big(s(t);\\, m_c\\big),\\qquad\n  s(t) = \\begin{cases} t & \\text{linear}\\\\\n    \\ln(1+500t)/\\ln 501 & \\text{log}\\\\\n    \\operatorname{asinh}(50t)/\\operatorname{asinh}50 & \\text{asinh}\\end{cases}\\]\nghs — one master curve shared by all channels: the normalized cumulative integral of the local-stretch slope \\[\\sigma(x) = D_e\\,\\big(1 + b\\,D_e\\,|x-\\mathrm{SP}|\\big)^{-(1+1/b)}\n  \\quad (b&gt;0;\\ \\text{logarithmic } D_e/(1+|b|D_e|x-\\mathrm{SP}|) \\text{ for } b&lt;0,\\\n  \\text{exponential } D_e e^{-D_e|x-\\mathrm{SP}|} \\text{ for } b=0),\\] with \\(D_e = e^{D}-1\\) and \\(x\\) clamped to \\([\\mathrm{LP},\\mathrm{HP}]\\) before evaluating \\(\\sigma\\) (linear protection zones); \\(T(t) = \\int_0^t \\sigma \\,/\\, \\int_0^1 \\sigma\\). NebulaScope evaluates this on a 4096-point trapezoid grid, and interpolates linearly between grid points; a conforming implementation does the same, which is what gives ULP-level agreement rather than mere visual agreement.\n\nTone adjustments (monotone, per channel, composed into \\(T\\)), in this order: black/white-point re-window, then \\(y \\mathrel{+}= \\mathrm{shadows}\\cdot 2y(1-y)^2\\), \\(y \\mathrel{+}= \\mathrm{highlights}\\cdot 2y^2(1-y)\\), \\(y \\mathrel{+}= \\mathrm{brightness}/2\\), \\(y = \\tfrac12 + (y-\\tfrac12)\\tan\\!\\big((\\mathrm{contrast}+1)\\tfrac{\\pi}{4}\\big)\\), clamp, then \\(y^{1/\\gamma}\\).\nColour adjustments (cross-channel, RGB only), in this order: the mix matrix (schema 2; identity when absent); white-balance gains \\(R\\,(1+0.30\\,\\mathrm{temp}+0.15\\,\\mathrm{tint}),\\;\nG\\,(1-0.30\\,\\mathrm{tint}),\\;\nB\\,(1-0.30\\,\\mathrm{temp}+0.15\\,\\mathrm{tint})\\); the standard luminance-preserving hue-rotation matrix (the SVG/CSS hue-rotate coefficients) by hue degrees; then saturation about Rec.,709 luma \\(Y\\): \\(C = Y + (C-Y)\\,f\\) with \\(f = (1+\\mathrm{saturation})\\,(1+\\mathrm{vibrance}\\,(1-s))\\), \\(s\\) the pixel’s HSV saturation. Clamp to \\([0,1]\\).\nOutput. The result is the Float32 [0,1] rendition (what Save Stretched As… bakes). The 8-bit screen image is this rounded to 255 levels — NebulaScope adds a ±1 LSB triangular dither on screen, which is a display cosmetic and deliberately not part of the format.\n\n\n6.3 Reading a transport fit\nA non-destructive transport fit (§3) is nothing but a display block: the per-channel black/mid/white it solved for, plus, when colour fitting was on, the adjust vector. Two fits diff as JSON, and the diff localizes where the effort went — windowing versus hue versus saturation — which is information about how the two images differ, not just a recipe.\n\n\n6.4 Scope and non-goals of the reference implementation\nrender_sidecar.py covers the four transfer functions, per-channel windowing, all tone and colour adjustments, mono and RGB. False-colour maps (cmap other than gray, or the invert/split modifiers) are 8-bit tables defined by control points in src/core/Colormap.cpp, which remains authoritative for them; a mono image with an active map renders through the same stretch and is then indexed into that table.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>Colour Transport — Theory and the Stretch Fit</span>"
     ]
@@ -294,7 +294,7 @@
     "href": "ARCHITECTURE.html#tests",
     "title": "NebulaScope — Architecture",
     "section": "Tests",
-    "text": "Tests\ntests/ holds framework-free CTest units (nstest.h: NS_TEST/NS_CHECK, exit code = failure count) — six binaries: core (stretch/adjust/transform/ stats invariants), io (format round-trips incl. XISF normalization + per-codec compression), wcs, catalog, combine (+ colour transport), colormap — plus the smoke test, which runs the real app headless (offscreen QPA) through tests/smoke.nsc via ScriptRunner. All run in the three CI jobs; failing output is published to the job summary.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Tests\ntests/ holds framework-free CTest units (nstest.h: NS_TEST/NS_CHECK, exit code = failure count) — six binaries: core (stretch/adjust/transform/ stats invariants), io (format round-trips incl. XISF normalization + per-codec compression), wcs, catalog, combine (+ colour transport), colormap — plus the smoke test, which runs the real app headless (offscreen QPA) through tests/smoke.nsc via ScriptRunner. All run in the three CI jobs; failing output is published to the job summary.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "<span class='chapter-number'>3</span>  <span class='chapter-title'>NebulaScope — Architecture</span>"
     ]
@@ -404,482 +404,570 @@
     "href": "DECISIONS.html#the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30",
     "title": "NebulaScope — Design Decisions",
     "section": "The colour stage is a matrix, not four sliders (2026-08-30)",
-    "text": "The colour stage is a matrix, not four sliders (2026-08-30)\nEven with hue freed, the lossless transport fit kept failing on starless pairs — this time to grey, the MMSE escape of a SEQUENTIAL fit (curves first against a rotated target, colour after on the curves’ compromise). Two changes. First, the fit alternates: each round re-fits the per-channel curves against the colour-INVERTED target (the colour stage is invertible in closed form), block coordinate descent instead of a one-shot pipeline. Second, the colour stage itself became a full 3×3 mixer solved by weighted least squares in closed form — temperature, tint, hue rotation and saturation are all linear in RGB, so the matrix subsumes the slider family, and its normal equations have no multimodality to trap a line search. The display block spec moves to schema 2 (optional adjust.mix; written only when present, so every existing sidecar and reader is untouched), with the reference renderer and a conformance case updated in the same commit. Lesson: when a fit keeps landing on desaturation, the family is too weak — grey is what least squares does when the right map is outside the model.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "The colour stage is a matrix, not four sliders (2026-08-30)\nEven with hue freed, the lossless transport fit kept failing on starless pairs — this time to grey, the MMSE escape of a SEQUENTIAL fit (curves first against a rotated target, colour after on the curves’ compromise). Two changes. First, the fit alternates: each round re-fits the per-channel curves against the colour-INVERTED target (the colour stage is invertible in closed form), block coordinate descent instead of a one-shot pipeline. Second, the colour stage itself became a full 3×3 mixer solved by weighted least squares in closed form — temperature, tint, hue rotation and saturation are all linear in RGB, so the matrix subsumes the slider family, and its normal equations have no multimodality to trap a line search. The display block spec moves to schema 2 (optional adjust.mix; written only when present, so every existing sidecar and reader is untouched), with the reference renderer and a conformance case updated in the same commit. Lesson: when a fit keeps landing on desaturation, the family is too weak — grey is what least squares does when the right map is outside the model.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "<span class='chapter-number'>4</span>  <span class='chapter-title'>NebulaScope — Design Decisions</span>"
     ]
   },
   {
+    "objectID": "PSF-STUDY.html",
+    "href": "PSF-STUDY.html",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "",
+    "text": "The question\nA case study in comparison as an instrument — the PSF of a TEC 140 refractor measured star-free against HST ground truth, an audit of what neural deconvolution does to stars versus nebulosity, and a full-frame calibrated deconvolution whose every pixel has a stated model. The scripts live in tools/psf_study/; this appendix records the method, the numbers, and — deliberately — the mistakes, because most of what the study taught was learned by being wrong in public and checking.\nThe Colour transport chapter closes on a comparison: ten hours of M16 through a 140 mm apochromat beside the Hubble Heritage image of the same pillars. The natural quantitative question follows: what is the true point-spread function of the amateur image — measured not from its stars, but from the extended structure itself, using Hubble as ground truth? Stars are the standard PSF probe, but they are also exactly what modern neural deconvolution (BlurXTerminator, “BXT”) treats best; a star-based figure flatters it. The Hubble overlap allows the star-free measurement: if \\(t\\) is the amateur image and \\(h\\) the Hubble image registered onto its grid, the kernel \\(k\\) minimizing \\(\\lVert h \\ast k - t \\rVert^2\\) is the amateur PSF — nebulosity and all — obtained in closed form as a Wiener quotient of spectra.\nThe study grew into four instruments, each validating or correcting the others:",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#the-question",
+    "href": "PSF-STUDY.html#the-question",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "",
+    "text": "Instrument\nSpace\nMeasures\n\n\n\n\npsf_pipeline.py\ndisplay (stretched exports)\nrelative PSF across processing variants\n\n\nstar_fwhm.py\nlinear\nstellar PSF: elliptical Moffat fits, field maps\n\n\nlinear_deconv.py\nlinear\nextended-structure PSF vs HST; held-out fidelity\n\n\nfull_deconv.py\nlinear\nfull-frame calibrated deconvolution + verification",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#registration-the-load-bearing-wall",
+    "href": "PSF-STUDY.html#registration-the-load-bearing-wall",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "Registration, the load-bearing wall",
+    "text": "Registration, the load-bearing wall\nEvery measurement rests on registering two images that share nothing but sky: different samplings (0.04″ to 0.76″ per pixel), arbitrary rotation, sometimes opposite parity (the HST mosaic’s CD matrix has negative determinant; a similarity transform cannot represent a reflection, so the mirror state is tried both ways and decided by correlation). The machinery that proved robust, after star-matching alone repeatedly converged to false minima under large unknown rotations:\n\nExhaustive similarity search — band-passed cross-correlation over a rotation × scale grid (phase shift recovered from the correlation peak), parallelized over the scale axis. No correspondences exist to be fooled; the true peak dominates by construction. Bright cores are first compressed with asinh so a saturated star cannot own the spectrum.\nStar refinement — unique nearest-neighbour pairs (greedy by distance), similarity fitted by complex least squares \\(q = a p + b,\\ a = s e^{i\\theta}\\), iterated with a shrinking tolerance. Residuals of 0.1–0.4 px were routine once seeded correctly.\nVerification by eye, always — a checkerboard blend of the warped reference against the target. Two of the study’s wrong turns were caught only because a human looked at this image.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#the-scale-lesson",
+    "href": "PSF-STUDY.html#the-scale-lesson",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "The scale lesson",
+    "text": "The scale lesson\nThe first arcsecond figures hung on a chain: comparison-image pixels → master pixels (a template match) → arcseconds (the plate solve). The template-match link was wrong by a factor 1.69, and its supposed corroboration — an assumed Hubble field size — was 30 %-loose confirmation bias. It was falsified only when a clean export was registered directly against the plate-solved master: same-source stars, 16 pairs, 0.12 px residual, scale 0.9999 — the exports were at native sampling. Every earlier absolute number moved by 1.69×; every relative conclusion survived untouched.\nLesson. In any calibration chain, the error lives in the one link never verified against ground truth. “Consistent with an assumed field size” is not a check; a same-source registration with sub-pixel residuals is.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#display-space-inflates-linear-space-decides",
+    "href": "PSF-STUDY.html#display-space-inflates-linear-space-decides",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "Display space inflates; linear space decides",
+    "text": "Display space inflates; linear space decides\nThe first campaign measured stretched 8-bit exports, because that is what one has at hand. A nonlinear stretch is concave: it widens every profile at half maximum. Simulation predicted 1.5–2× inflation for stellar contrast; the linear re-measurement then pinned it empirically at 2.0–2.6×, varying with each row’s stretch — so a display-space table cannot even be rescaled into truth. It retains exactly one use: relative comparison of variants that share a stretch.\nThe linear stellar measurement (star_fwhm.py: elliptical Moffat (Moffat 1969) fits over ~2 700 stars per channel, cross-validated within 3 % of PixInsight’s FWHMEccentricity) gave the study its reference table for the four processing variants of the same data — full stack versus best-15 % “lucky” selection, before and after BXT:\n\n\n\nVariant\nS II\nHα\nO III\n\n\n\n\nFull stack, raw\n1.96″\n1.94″\n2.27″\n\n\nFull + BXT\n1.38″\n1.30″\n1.37″\n\n\nLucky, raw\n1.82″\n1.77″\n1.92″\n\n\nLucky + BXT\n1.25″\n1.18″\n1.19″\n\n\n\nThree physical findings fell out. The optics are diffraction-limited: 0.99″ diffraction for 140 mm at Hα, field-uniform FWHM to ~5 % across a 2° field, and BXT able to reach within ~20 % of the diffraction limit — none of which a deficient objective could produce. The eccentricity (0.35–0.56) is one-axis drift, not optics: its position angle is uniform across the entire field in every channel (tilt or collimation would rotate toward the corners), indicting guiding/flexure along a single axis — worth ~0.2″ of real resolution, the cheapest gain in the system. And sub selection buys little once the stacker’s quality weighting has already suppressed poor frames: hard-culling 85 % of subs improved the stack by only ~0.15″.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#what-bxt-does-to-nebulosity",
+    "href": "PSF-STUDY.html#what-bxt-does-to-nebulosity",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "What BXT does to nebulosity",
+    "text": "What BXT does to nebulosity\nThe star-free question needed linear ground truth: the Hubble Heritage WFC3/UVIS mosaics of M16 (F673N/F657N/F502N — filter-matched to S II, Hα, O III), registered onto the linear masters and compared through a Wiener kernel estimated on the west half of the overlap only, with the east half held out for validation. Two traps cost a day each: linear images concentrate power at DC, so the Wiener quotient must be band-passed or its regularizer flattens everything into an arcseconds-wide pseudo-kernel; and the mosaic’s rotated footprint requires all statistics to be confined to fully-covered regions.\nResults (extended-structure kernel FWHM, raw → BXT): S II 1.92″ → 1.55″, Hα 3.08″ → 2.62″, O III 2.49″ → 1.39″. The S II raw kernel matching the stellar 1.96″ validates the method; the Hα kernel is inflated by [N II] emission present in F657N but excluded by the narrow Hα filter — a spectral, not optical, mismatch. The headline: in the clean channels BXT sharpens extended structure by 15–19 %, versus 30–33 % on stars — the star-based figure of merit roughly doubles the real gain on the astrophysically interesting content. On fidelity, however, BXT is honest at these scales: scored against Hubble degraded to a common 1.3″ on the held-out half (star profiles masked), its nebulosity moves toward the truth in S II and Hα and is neutral in O III — no evidence of hallucination at 1.3″ scales, merely conservatism.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#calibrated-deconvolution-with-a-stated-model",
+    "href": "PSF-STUDY.html#calibrated-deconvolution-with-a-stated-model",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "Calibrated deconvolution with a stated model",
+    "text": "Calibrated deconvolution with a stated model\nThe final experiment: deconvolve the full raw master with the measured PSF, to a declared target, and verify the delivery. Three formulations failed instructively before one worked:\n\nTruncated Richardson–Lucy (Richardson 1972; Lucy 1974) with the iteration count chosen for fidelity stops at ~5–10 iterations — far short of shape convergence, so the input’s elongation survives. An iterative solver trades noise against the PSF contract implicitly, and loses.\nAn explicit “partial kernel” \\(p = k \\oslash t\\) formed by Fourier division explodes: a Moffat spectrum decays polynomially, a Gaussian target’s super-exponentially, so the quotient diverges at high frequency and the clipped kernel is structurally wrong.\nThe working form is the MCS one-filter transform of Magain, Courbin & Sohy\n\n— see also the review by Starck, Pantin & Murtagh (2002): deconvolve by the measured OTF and reconvolve by the target in a single linear pass, \\[\\hat X = Y \\cdot \\frac{T\\,\\overline{K}}{|K|^2 + \\lambda},\\] the target’s own spectral decay taming the high band. Regularization is chosen contract-first: the largest \\(\\lambda\\) whose delivered stellar FWHM — re-measured on the filtered frame — still honours the declared target within 5 %. Fidelity is then reported, not optimized.\n\n\nTwo honest limits emerged. A 1.5″ round target is unsupported by the data: the anisotropy correction lives at frequencies where the noise floor forbids amplification, which is precisely the quantitative sense in which BXT’s 1.3″ output is drawn from its prior rather than from the photons. And saturated star cores violate the convolution model outright; they are excluded by a feathered mask (0.04 % of pixels retain input values), the exception recorded in the output header.\nAt a 1.9″ circular target the contract closes: delivered geometric-mean FWHM 1.89–1.91″ in all three channels — the PSF homogenized across S II/Hα/O III to 1 %, valuable in itself for any line-ratio work — eccentricity reduced (0.56 → 0.36 in the worst channel, position angles decohered), and held-out nebular fidelity statistically tied with both the raw master and BXT. The product is not the sharpest image of the three; it is the only one whose every pixel is a stated linear functional of the data.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
+    "objectID": "PSF-STUDY.html#lessons-collected",
+    "href": "PSF-STUDY.html#lessons-collected",
+    "title": "Appendix A — Appendix: measuring a telescope against Hubble",
+    "section": "Lessons, collected",
+    "text": "Lessons, collected\n\nThe unverified link in a calibration chain is where the error is; verify same-source, sub-pixel, or not at all.\nNever compare a stretched measurement to a linear one; the stretch bias is large (2×) and non-uniform.\nA fit that silently returns “no improvement” for a whole parameter looks identical to a hard problem (this study found two such bugs — a search domain and a kernel quotient — each masquerading as physics).\nRegistration failures under large unknown transforms are best solved by exhaustive search over the group, not by better correspondence heuristics; and parity is part of the group.\nIterative deconvolution cannot promise a PSF; a linear filter can, and the promise can be audited by re-measuring stars on the product.\nGround truth changes the epistemics: with a held-out half of a Hubble overlap, every processing claim — including a neural network’s — becomes a measurement.\n\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
+    "crumbs": [
+      "Appendices",
+      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Appendix: measuring a telescope against Hubble</span>"
+    ]
+  },
+  {
     "objectID": "BUILDING-macos.html",
     "href": "BUILDING-macos.html",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "",
     "text": "1. Dependencies from Homebrew\nTested with Homebrew under /opt/homebrew.\nThat covers Qt6, CFITSIO, and CCfits. libXISF is not in Homebrew — build it yourself (next step).",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#dependencies-from-homebrew",
     "href": "BUILDING-macos.html#dependencies-from-homebrew",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "",
     "text": "brew install cmake ninja pkg-config qt cfitsio ccfits",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#build-and-install-libxisf",
     "href": "BUILDING-macos.html#build-and-install-libxisf",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "2. Build and install libXISF",
     "text": "2. Build and install libXISF\ngit clone https://gitea.nouspiro.space/nou/libXISF\ncd libXISF\ncmake -B build -DCMAKE_INSTALL_PREFIX=/opt/homebrew\ncmake --build build\ncmake --install build\ncd ..\nThis installs /opt/homebrew/lib/libXISF.dylib and /opt/homebrew/include/libxisf.h.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#configure-and-build-nebulascope",
     "href": "BUILDING-macos.html#configure-and-build-nebulascope",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "3. Configure and build NebulaScope",
     "text": "3. Configure and build NebulaScope\nFrom the repository root, first generate the app icon (once), then build:\n./icon/make_icns.sh                       # creates icon/NebulaScope.icns (uses iconutil)\ncmake -B build -G Ninja -DCMAKE_PREFIX_PATH=/opt/homebrew\ncmake --build build\nopen build/src/NebulaScope.app            # launch the bundle (dock icon + native menu)\nThe build produces a real NebulaScope.app bundle (Info.plist + galaxy dock icon), and the About entry lands in the application menu. The icon step is optional — without it the app still builds, just with the generic icon.\nCommand-line use runs the inner binary directly:\nbuild/src/NebulaScope.app/Contents/MacOS/NebulaScope --help\nbuild/src/NebulaScope.app/Contents/MacOS/NebulaScope *.fits\nbuild/src/NebulaScope.app/Contents/MacOS/NebulaScope --list set.txt\n-DCMAKE_PREFIX_PATH=/opt/homebrew is the only flag you need — it lets CMake find Qt6 (/opt/homebrew/lib/cmake), CCfits (find_library/find_path), and adds /opt/homebrew/lib/pkgconfig to pkg-config so CFITSIO is found. During configure you should see:\n-- libXISF: /opt/homebrew/lib/libXISF.dylib  (headers: /opt/homebrew/include)\n(That line prints at configure time, not during cmake --build.)",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#the-app-icon-.icns",
     "href": "BUILDING-macos.html#the-app-icon-.icns",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "4. The app icon (.icns)",
     "text": "4. The app icon (.icns)\nicon/make_icns.sh builds icon/NebulaScope.icns from the PNGs in icon/NebulaScope.iconset/. The Retina variants are stored with -2x in their names (the asset generator couldn’t write @); the script stages a temp .iconset with the @2x names macOS requires and runs iconutil. Re-run it if you change the artwork. The generated .icns is committed, so a fresh clone can build the bundle without running the script.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#troubleshooting",
     "href": "BUILDING-macos.html#troubleshooting",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "Troubleshooting",
     "text": "Troubleshooting\nld: library 'XISF' not found — you’re configuring with an old CMakeLists that links the bare name XISF (→ -lXISF), and /opt/homebrew/lib is not a default linker search path on Apple Silicon. This repo’s CMake uses find_library(XISF_LIB …) and links the absolute path, which avoids it. Reconfigure clean: rm -rf build && cmake -B build ….\npkg-config can’t find cfitsio — add it to the search path explicitly:\nexport PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH\nno member named 'ZSTD' in CompressionCodec — your libXISF predates zstd support (added upstream in 2023). Current libXISF (Homebrew 0.2.13+, or master) has DataBlock::ZSTD; the writer probes CompressionCodecSupported(ZSTD) at runtime and falls back to Zlib when the library was built without it. If the symbol is missing at compile time, update libXISF.\nUndefined symbols for lz4_* / zlib / pugixml at link time — your libXISF was built static. Uncomment the find_library lines in the top-level CMakeLists.txt and the matching entry in target_link_libraries in src/CMakeLists.txt.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-macos.html#verify-the-link",
     "href": "BUILDING-macos.html#verify-the-link",
-    "title": "Appendix A — Building on macOS (Apple Silicon / Homebrew)",
+    "title": "Appendix B — Building on macOS (Apple Silicon / Homebrew)",
     "section": "Verify the link",
-    "text": "Verify the link\notool -L build/src/NebulaScope.app/Contents/MacOS/NebulaScope | grep -i xisf\nShould list libXISF.*.dylib.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Verify the link\notool -L build/src/NebulaScope.app/Contents/MacOS/NebulaScope | grep -i xisf\nShould list libXISF.*.dylib.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>A</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
+      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on macOS (Apple Silicon / Homebrew)</span>"
     ]
   },
   {
     "objectID": "BUILDING-linux.html",
     "href": "BUILDING-linux.html",
-    "title": "Appendix B — Building on Linux",
+    "title": "Appendix C — Building on Linux",
     "section": "",
     "text": "1. Dependencies\nTested on Debian/Ubuntu-style distros; adapt package names for your distro.\nThat covers Qt6, CFITSIO, and CCfits. libXISF is not packaged — build it next. (JPEG/PNG plugins come with qt6-base-dev, but TIFF and WebP live in qt6-image-formats-plugins — without it, TIFF export and the TIFF/WebP readers silently disappear.)",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on Linux</span>"
+      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Linux</span>"
     ]
   },
   {
     "objectID": "BUILDING-linux.html#dependencies",
     "href": "BUILDING-linux.html#dependencies",
-    "title": "Appendix B — Building on Linux",
+    "title": "Appendix C — Building on Linux",
     "section": "",
     "text": "sudo apt install build-essential cmake ninja-build pkg-config \\\n                 qt6-base-dev qt6-image-formats-plugins \\\n                 libcfitsio-dev libccfits-dev zlib1g-dev liblz4-dev \\\n                 libzstd-dev libpugixml-dev",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on Linux</span>"
+      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Linux</span>"
     ]
   },
   {
     "objectID": "BUILDING-linux.html#build-and-install-libxisf",
     "href": "BUILDING-linux.html#build-and-install-libxisf",
-    "title": "Appendix B — Building on Linux",
+    "title": "Appendix C — Building on Linux",
     "section": "2. Build and install libXISF",
     "text": "2. Build and install libXISF\ngit clone https://gitea.nouspiro.space/nou/libXISF\ncd libXISF\ncmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local\ncmake --build build\nsudo cmake --install build\nsudo ldconfig            # refresh the shared-library cache\ncd ..\nInstalls /usr/local/lib/libXISF.so and /usr/local/include/libxisf.h.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on Linux</span>"
+      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Linux</span>"
     ]
   },
   {
     "objectID": "BUILDING-linux.html#configure-and-build-nebulascope",
     "href": "BUILDING-linux.html#configure-and-build-nebulascope",
-    "title": "Appendix B — Building on Linux",
+    "title": "Appendix C — Building on Linux",
     "section": "3. Configure and build NebulaScope",
     "text": "3. Configure and build NebulaScope\nFrom the repository root:\ncmake -B build -G Ninja\ncmake --build build\n./build/src/nebulascope                  # empty session\n./build/src/nebulascope *.fits           # open a set\n./build/src/nebulascope --list set.txt   # reload a saved list\n./build/src/nebulascope --help\nCFITSIO is found via pkg-config; CCfits and libXISF via find_library. If Qt6 is in a non-standard location, add -DCMAKE_PREFIX_PATH=/path/to/qt6.\nAt configure time you should see:\n-- CFITSIO link: &lt;paths to libcfitsio&gt;\n-- libXISF: /usr/local/lib/libXISF.so  (headers: /usr/local/include)",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on Linux</span>"
+      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Linux</span>"
     ]
   },
   {
     "objectID": "BUILDING-linux.html#troubleshooting",
     "href": "BUILDING-linux.html#troubleshooting",
-    "title": "Appendix B — Building on Linux",
+    "title": "Appendix C — Building on Linux",
     "section": "Troubleshooting",
-    "text": "Troubleshooting\nlibXISF.so: cannot open shared object file at runtime — the loader can’t find it. Run sudo ldconfig, or set LD_LIBRARY_PATH=/usr/local/lib.\nUndefined symbols for lz4 / zlib / pugixml at link — your libXISF is static. Uncomment the find_library lines in the top-level CMakeLists.txt and the matching entry in src/CMakeLists.txt.\nQt6 not found — install qt6-base-dev (Debian/Ubuntu) or the equivalent, or point -DCMAKE_PREFIX_PATH at your Qt install.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Troubleshooting\nlibXISF.so: cannot open shared object file at runtime — the loader can’t find it. Run sudo ldconfig, or set LD_LIBRARY_PATH=/usr/local/lib.\nUndefined symbols for lz4 / zlib / pugixml at link — your libXISF is static. Uncomment the find_library lines in the top-level CMakeLists.txt and the matching entry in src/CMakeLists.txt.\nQt6 not found — install qt6-base-dev (Debian/Ubuntu) or the equivalent, or point -DCMAKE_PREFIX_PATH at your Qt install.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>B</span>  <span class='chapter-title'>Building on Linux</span>"
+      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Linux</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html",
     "href": "BUILDING-windows.html",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "",
     "text": "1. Toolchain\nThe recommended route on Windows is vcpkg for dependencies and the Visual Studio (MSVC) toolchain. There is no pkg-config requirement — the build falls back to CMake package configs / find_library.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html#toolchain",
     "href": "BUILDING-windows.html#toolchain",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "",
     "text": "Visual Studio 2022 (Desktop C++ workload) or the Build Tools.\nvcpkg bootstrapped somewhere, e.g. C:\\vcpkg.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html#dependencies-via-vcpkg",
     "href": "BUILDING-windows.html#dependencies-via-vcpkg",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "2. Dependencies via vcpkg",
     "text": "2. Dependencies via vcpkg\nThe repo root carries a vcpkg.json manifest, so vcpkg runs in manifest mode: don’t pass package names, just install the manifest from the project directory (CI does the same):\nvcpkg install --triplet x64-windows\nThat provides cfitsio, zlib, lz4, zstd and pugixml. Qt itself comes from the official installer or aqt — include the qtimageformats module (the TIFF/WebP plugins live there, not in qtbase).\nCCfits and libXISF are not in vcpkg — build them yourself against the same toolchain and install into a prefix you pass to CMake (below). For each:\ncmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ^\n               -DCMAKE_INSTALL_PREFIX=C:/local\ncmake --build build --config Release\ncmake --install build --config Release\n(CCfits source: HEASARC. libXISF: https://gitea.nouspiro.space/nou/libXISF)",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html#configure-and-build-nebulascope",
     "href": "BUILDING-windows.html#configure-and-build-nebulascope",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "3. Configure and build NebulaScope",
     "text": "3. Configure and build NebulaScope\nFrom the repository root:\ncmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ^\n               -DCMAKE_PREFIX_PATH=C:/local\ncmake --build build --config Release\nbuild\\src\\Release\\nebulascope.exe\n\ncfitsio is found through its vcpkg CMake config (the build auto-detects the cfitsio / CFITSIO::CFITSIO target — no pkg-config needed).\nCCfits and libXISF are found via find_library/find_path under CMAKE_PREFIX_PATH. If they sit elsewhere, pass them explicitly: -DCCFITS_INCLUDE_DIR=... -DCCFITS_LIB=... -DXISF_INCLUDE_DIR=... -DXISF_LIB=...\n\nAt configure time you should see a line like:\n-- CFITSIO link: &lt;paths to cfitsio&gt;\n-- libXISF: C:/local/lib/XISF.lib  (headers: C:/local/include)",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html#running",
     "href": "BUILDING-windows.html#running",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "4. Running",
     "text": "4. Running\nQt apps on Windows need their DLLs alongside the .exe. The simplest way:\nwindeployqt build\\src\\Release\\nebulascope.exe\nThat copies the required Qt DLLs and image-format plugins next to the binary. Also ensure cfitsio.dll, CCfits.dll, and XISF.dll (and zlib/lz4) are on PATH or copied beside the .exe.\nCommand-line use is the same as elsewhere:\nnebulascope.exe *.fits\nnebulascope.exe --list set.txt\nnebulascope.exe --help",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "BUILDING-windows.html#troubleshooting",
     "href": "BUILDING-windows.html#troubleshooting",
-    "title": "Appendix C — Building on Windows (MSVC + vcpkg)",
+    "title": "Appendix D — Building on Windows (MSVC + vcpkg)",
     "section": "Troubleshooting",
-    "text": "Troubleshooting\nThe application was unable to start (0xc000007b) / missing DLLs — run windeployqt, and copy the cfitsio/CCfits/XISF DLLs next to the .exe.\ncfitsio not found — make sure you passed the vcpkg toolchain file. Without it, CMake can’t see vcpkg-installed packages.\nLink errors for lz4/zlib/pugixml — your libXISF is static; uncomment the find_library lines in the top-level CMakeLists.txt and add them in src/CMakeLists.txt.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Troubleshooting\nThe application was unable to start (0xc000007b) / missing DLLs — run windeployqt, and copy the cfitsio/CCfits/XISF DLLs next to the .exe.\ncfitsio not found — make sure you passed the vcpkg toolchain file. Without it, CMake can’t see vcpkg-installed packages.\nLink errors for lz4/zlib/pugixml — your libXISF is static; uncomment the find_library lines in the top-level CMakeLists.txt and add them in src/CMakeLists.txt.\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>C</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
+      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Building on Windows (MSVC + vcpkg)</span>"
     ]
   },
   {
     "objectID": "RELEASES.html",
     "href": "RELEASES.html",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "",
     "text": "v0.95 — 2026-08-19\nGenerated from the annotated v* tags (docs/make-releases.sh).\nv0.95 — comparison as an instrument: Match, Values in All Views, the open display format\nHighlights:\nFixes: in the docked layout, clicking between split cells no longer shifts the grid (the hidden Info tab’s statistics table was resizing the shared dock area); a non-destructive transport fit saved in a sidecar now reloads exactly (the sidecar carried only the adjustment layer, not the stretch); shortcuts.ini records each entry’s default, so renamed default keys follow the release while user customisations survive.\nIllustrated in the manual by the Eastern Veil, two nights: a friend’s 5 h on a Vixen 102/900 matched to ~1 h on a TS 80/380, colours transported non-destructively — what remains different is signal, not processing.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.95-2026-08-19",
     "href": "RELEASES.html#v0.95-2026-08-19",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "",
     "text": "Match views (M) — calibrated linking by computation or by two clicks instead of by eye. With two plate-solved views, M computes the correspondence from the WCS (pixel→sky→pixel over the overlap, affine-fitted; the status bar reports the residual) — no picks at all. Otherwise: rough-align, M, click a star in one view and the same star in the other — one pair snaps the translation exactly; Shift+M and a second star solve scale + rotation + translation in closed form. Verified against ground truth to 0.001 px (features) and 0.02 px (WCS).\nValues in All Views (V) — hovering the active view shows the coordinates and pixel value(s) under the pointer in EVERY cell, each read from its own data at the corresponding pixel (through the calibration for matched views), with a crosshair in each cell at the measured pixel. The link transforms made visible: hover a star and see whether the other view’s crosshair lands on it.\nThe display block is an open, reproducible format — Save Annotations & Display stores the full appearance (transfer function, per-channel windowing, GHS, colormap, adjustments) in the sidecar under a versioned display key. A written specification (Colour Transport chapter §6) maps every field to its equation, and a standalone NumPy reference renderer (tools/render_sidecar.py) reproduces NebulaScope’s rendering — verified in CI to a few float32 ULPs per pixel on macOS, Linux and Windows. A stretch becomes explainable; a non-destructive transport fit becomes a file you can hand to a collaborator.\nNative save panels on macOS — Export View As… and Save Data As… are real NSSavePanels with the format / depth / compression / quality controls as a native accessory row (sidebar favourites, iCloud, folder behaviours). Clicking any image still adopts its base name; the saved extension always follows the chosen format.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.94-2026-08-14",
     "href": "RELEASES.html#v0.94-2026-08-14",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.94 — 2026-08-14",
     "text": "v0.94 — 2026-08-14\nv0.94 — selection-aware culling, instant batch close, metadata-less CFA, Stellarium\nHighlights:\n\nSelection-aware image list — the culling keep-checks understand multi-selection: B group-toggles the highlighted rows (checks all; unchecks only when all are already checked), clicking a checkbox inside a multi-row selection retags the whole selection, and C closes every highlighted image. The context-menu entry is now Close & Remove from List, and it means it: decoded pixels, per-view copies, and all per-image state are freed on close. In-app results (Combine, transport, crop) carry the keep-check too.\nInstant batch close — closing hundreds of blinked frames used to freeze the app for tens of seconds: each removed row triggered a full decode of its neighbour. Row removals now run signal-blocked with a single display fix-up, so clearing a 400-sub session is instantaneous.\nAnnotation-safe closing — when closed images carry unsaved annotation edits, one prompt covers the whole batch: Save Annotations writes every affected image’s default sidecar, Ignore and Close discards, Cancel aborts untouched.\nMetadata-less CFA (mosaic sniffer) — planetary/solar capture tools can dump raw Bayer mosaics into plain grayscale PNG/TIFF with no pattern keyword anywhere. NebulaScope now detects the mosaic statistically on open and names the two candidate patterns in the status bar; Image ▸ Debayer ▸ Apply Choice to All in List (script: debayer bggr rcd all) stamps a forced pattern onto a whole capture stream. Born from — and illustrated in the manual by — the total solar eclipse of August 12, 2026.\nPoint Stellarium Here — the sky context menu can point a running Stellarium (Remote Control plugin) at the clicked J2000 coordinates, field of view matched: where Aladin/SIMBAD answer “what is this”, Stellarium answers “where is it in tonight’s sky”.\nClean canvas — H now also hides the active-cell border and link buttons; with fullscreen (⌥F) the display is pure image, e.g. to preview a wallpaper.\n\nAlso: HISTORY.md, a development chronicle of how this program came to be; design notes on the removal cascade in DECISIONS; French translations for everything above.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.93-2026-08-06",
     "href": "RELEASES.html#v0.93-2026-08-06",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.93 — 2026-08-06",
     "text": "v0.93 — 2026-08-06\nv0.93 — PixInsight display interop, stretch history, DS9 palettes\nHighlights:\n\nPixInsight display interop — a PI-saved XISF now opens LOOKING as PI showed it, with far-out STF white points rebased onto the data range in closed form (histogram controls stay fully usable, SPCC channel balance preserved exactly; derivation in the book’s new Mobius-rebase appendix): the embedded display function (STF) applies on first view, embedded ICC profiles are honoured, and on macOS the window is colour-managed for wide-gamut (P3) panels. The transfer LUT adapts its resolution to the occupied window and the histogram’s curve overlay is evaluated exactly — imported stretches with far-out white points render smoothly.\nStretch undo history — every stretch/adjustment gesture is one undo step (drags coalesce): ⌘Z walks back to the as-loaded state, through Auto STFs, pastes, transport fits. Reload Original (⌘⇧R) re-decodes from disk and re-runs the first-view rules, itself undoable.\nDS9 classic palettes — a, b, bb, he, cool, rainbow, standard, and the stepped i8, aips0, sls, reproduced from SAOImage DS9’s reference control points (renditions match DS9 exactly); compose with the invert/split modifiers. Requested by a user.\nSave ergonomics — an in-memory result’s list entry takes the saved file’s name on every save path (Save Data As, Save Stretched As, script save); clicking any image in a save dialog adopts its base name, the extension following the chosen format.\nBuild provenance — the About headline and –version carry the exact git build id, so test binaries identify their commit.\n\nAn imported UNLINKED display function (the channel-equalizing STF that visually cancels an SPCC calibration) is flagged in the status bar with the remedy: Shift+U preserves calibrated colour. The import pipeline is regression-tested end to end via synthetic XISF fixtures and the new assert stretch script assertion.\nFixes: linked histogram drags are rigid (per-channel clamps no longer ratchet the channels’ offsets apart on repeated drags); the panel-resize cursor no longer sticks over overlay panel contents; the script cmap command actually applies the selected map.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.92-2026-08-04",
     "href": "RELEASES.html#v0.92-2026-08-04",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.92 — 2026-08-04",
     "text": "v0.92 — 2026-08-04\nv0.92 — list & session ergonomics, inline export options, display sampling\nHighlights:\n\nLarge-list workflows — drag a list row onto any view cell to show it there; the list holds each image once (re-opening selects the existing row); batch opens fill the empty cells in the order given; Clear List & Close All (⌥C) sweeps the session in one stroke. Together with Apply to All and blink culling, per-filter inspection of a full night’s acquisitions is now a tight loop.\nInline save options — pixel depth (PNG/TIFF), quality (JPEG, and now WebP), and XISF compression are options INSIDE the save dialogs, enabled by the selected format — no follow-up prompts.\nDisplay sampling — bilinear when zoomed out (kills the moiré that nearest-neighbour subsampling beats out of CMOS fixed-pattern noise), crisp nearest-neighbour at 1:1 and beyond.\nWindow & dialogs — ⌥F is the green button on a key (native full screen on macOS; maximize elsewhere); every file dialog starts in the current image’s directory.\nFixes — Zoom to Fit/1:1 acted on the wrong cell in split views (stale receiver); overlay panels no longer hide behind newly created cells after a split; Finder open events carry status-bar feedback and Console logging; proper French plural forms for counts.\nManual — §12 gains a real-data showcase: NGC 7331 with SN 2025rbs, a C11 beside a 180mm camera lens in linked views. Release notes now live in the annotated tag, rendered identically on the release page, in the manual appendix, and in both PDFs.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.91-2026-08-01",
     "href": "RELEASES.html#v0.91-2026-08-01",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.91 — 2026-08-01",
     "text": "v0.91 — 2026-08-01\nv0.91 — French localization, blink culling, crop tool, transport stretch fit\nHighlights:\n\nFrançais — the full UI is localized (system-language default, Preferences ▸ Language override, --lang CLI flag), alongside a French user manual and colour-transport chapter: on the manual site, and as a second PDF on every release. The .nsc script language and CLI output stay English as a stable, locale-independent API.\nColour transport, stage two — the non-destructive stretch fit (matches the transported look with zero data loss — cannot posterize, never amplifies noise) gains intensity weighting and an optional cross-channel colour-adjust stage for hue-rotation targets. Undoable; derivations in the new Colour Transport chapter.\nBlink culling — keep-checks on every list row (toggle with B while blinking), then sort / move / remove checked frames; scriptable via tag/tagsort/tagmove/tagremove.\nCrop to Visible Region (Shift+C) — full-bit-depth crop into a new list entry; the astrometric solution survives exactly (CRPIX rebase), annotations and stretch follow.\nKeyboard zoom — &gt; / &lt; (10%) and . / , (3%), configurable; arrow keys reserved for panning.\nManual online — the documentation book is published at https://hugues-talbot.github.io/nebulascope/ (English) and /fr/ (français), rebuilt on every docs change.\n\nFixes: large TIFF re-open (Qt decode allocation limit), XISF→FITS metadata preservation (typed keyword values; standard cards synthesized from PixInsight properties), Save Annotations enabled for orientation-only state.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.90-2026-07-30",
     "href": "RELEASES.html#v0.90-2026-07-30",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.90 — 2026-07-30",
     "text": "v0.90 — 2026-07-30\nv0.90: OSC debayering (RCD validated against Siril, undoable), auto-reload interop, fast batch opens, shared STF, stretch-function shortcuts",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.89-2026-07-28",
     "href": "RELEASES.html#v0.89-2026-07-28",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.89 — 2026-07-28",
     "text": "v0.89 — 2026-07-28\nv0.89: script-command CLI reference (–run list / –help ), Quarto documentation book, PDF attached to releases",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.88-2026-07-28",
     "href": "RELEASES.html#v0.88-2026-07-28",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.88 — 2026-07-28",
     "text": "v0.88 — 2026-07-28\nv0.88: scripted documentation complete, dialog automation, transport CLI, macOS open fix",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.87-2026-07-28",
     "href": "RELEASES.html#v0.87-2026-07-28",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.87 — 2026-07-28",
     "text": "v0.87 — 2026-07-28\nv0.87: testing + docs consolidation — 7 CTest suites on 3 platforms, PI interop fixtures, script-driven screenshots, zstd/Finder-open/split fixes",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.86-2026-07-26",
     "href": "RELEASES.html#v0.86-2026-07-26",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.86 — 2026-07-26",
     "text": "v0.86 — 2026-07-26\nv0.86: XISF block compression re-enabled, save-time codec choice (Zstd/Zlib/Uncompressed); CI: Qt imageformats + Windows test DLL paths",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.85-2026-07-24",
     "href": "RELEASES.html#v0.85-2026-07-24",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.85 — 2026-07-24",
     "text": "v0.85 — 2026-07-24\nUnit test with a cheap command language.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.84-2026-07-24",
     "href": "RELEASES.html#v0.84-2026-07-24",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.84 — 2026-07-24",
     "text": "v0.84 — 2026-07-24\nNew features described in the manual, more extensive testing.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.83-2026-07-24",
     "href": "RELEASES.html#v0.83-2026-07-24",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.83 — 2026-07-24",
     "text": "v0.83 — 2026-07-24\nRotation adding border persistent bug removed",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.82-2026-07-24",
     "href": "RELEASES.html#v0.82-2026-07-24",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.82 — 2026-07-24",
     "text": "v0.82 — 2026-07-24\nOptimal transport colour match. Amazing feature.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.81-2026-07-23",
     "href": "RELEASES.html#v0.81-2026-07-23",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.81 — 2026-07-23",
     "text": "v0.81 — 2026-07-23\nGeneral improvements to the user interface",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.80-2026-07-23",
     "href": "RELEASES.html#v0.80-2026-07-23",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.80 — 2026-07-23",
     "text": "v0.80 — 2026-07-23\nThis version sets up a workable distribution system on Github",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.73-2026-07-23",
     "href": "RELEASES.html#v0.73-2026-07-23",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.73 — 2026-07-23",
     "text": "v0.73 — 2026-07-23\nThis version is deployed on github",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.72-2026-07-23",
     "href": "RELEASES.html#v0.72-2026-07-23",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.72 — 2026-07-23",
     "text": "v0.72 — 2026-07-23\nThis version compiles on Windows, Linux and Macos",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.71-2026-07-22",
     "href": "RELEASES.html#v0.71-2026-07-22",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.71 — 2026-07-22",
     "text": "v0.71 — 2026-07-22\nVersion with side panels",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.70-2026-07-21",
     "href": "RELEASES.html#v0.70-2026-07-21",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.70 — 2026-07-21",
     "text": "v0.70 — 2026-07-21\nNew version with linked view. Totally cool",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.52-2026-07-20",
     "href": "RELEASES.html#v0.52-2026-07-20",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.52 — 2026-07-20",
     "text": "v0.52 — 2026-07-20\nNow we have annotations, pretty solid and consistent.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.6-2026-07-21",
     "href": "RELEASES.html#v0.6-2026-07-21",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.6 — 2026-07-21",
     "text": "v0.6 — 2026-07-21\nThis version now reads and displays sextractor catalogs as annotations.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.5-2026-07-19",
     "href": "RELEASES.html#v0.5-2026-07-19",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.5 — 2026-07-19",
     "text": "v0.5 — 2026-07-19\nSmooth display pipeline: dithered, interpolated rendering",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
     "objectID": "RELEASES.html#v0.0-2026-06-26",
     "href": "RELEASES.html#v0.0-2026-06-26",
-    "title": "Appendix D — Release notes",
+    "title": "Appendix E — Release notes",
     "section": "v0.0 — 2026-06-26",
-    "text": "v0.0 — 2026-06-26\nv0.0: project inception — FITS/XISF inspector skeleton with histogram stretch\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "v0.0 — 2026-06-26\nv0.0: project inception — FITS/XISF inspector skeleton with histogram stretch\n\n\n\n\nBertin, E., and S. Arnouts. 1996. “SExtractor: Software for Source Extraction.” Astronomy and Astrophysics Supplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification: Extensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage DS9.” Astronomical Data Analysis Software and Systems XII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of Observed Distributions.” The Astronomical Journal 79: 745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with Correct Sampling.” The Astrophysical Journal 494: 472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.” Astronomy and Astrophysics 3: 455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic Stretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie. 2010. “Definition of the Flexible Image Transport System (FITS), Version 3.0.” Astronomy & Astrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. “Automated Colour Grading Using Colour Distribution Transfer.” Computer Vision and Image Understanding 107 (1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. “Wasserstein Barycenter and Its Application to Texture Mixing.” Scale Space and Variational Methods in Computer Vision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method of Image Restoration.” Journal of the Optical Society of America 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in Astronomy: A Review.” Publications of the Astronomical Society of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Appendices",
-      "<span class='chapter-number'>D</span>  <span class='chapter-title'>Release notes</span>"
+      "<span class='chapter-number'>E</span>  <span class='chapter-title'>Release notes</span>"
     ]
   },
   {
@@ -887,7 +975,7 @@
     "href": "references.html",
     "title": "References",
     "section": "",
-    "text": "Bertin, E., and S. Arnouts. 1996. “SExtractor:\nSoftware for Source Extraction.” Astronomy and Astrophysics\nSupplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification:\nExtensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage\nDS9.” Astronomical Data Analysis Software and Systems\nXII, ASP conference series, vol. 295: 489.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic\nStretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie.\n2010. “Definition of the Flexible Image Transport System\n(FITS), Version 3.0.” Astronomy &\nAstrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007.\n“Automated Colour Grading Using Colour Distribution\nTransfer.” Computer Vision and Image Understanding 107\n(1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012.\n“Wasserstein Barycenter and Its Application to Texture\nMixing.” Scale Space and Variational Methods in Computer\nVision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.",
+    "text": "Bertin, E., and S. Arnouts. 1996. “SExtractor:\nSoftware for Source Extraction.” Astronomy and Astrophysics\nSupplement Series 117: 393–404. https://doi.org/10.1051/aas:1996164.\n\n\nConejero, Juan. 2015. XISF Version 1.0 Specification:\nExtensible Image Serialization Format. Pleiades Astrophoto, https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html.\n\n\nJoye, W. A., and E. Mandel. 2003. “New Features of SAOImage\nDS9.” Astronomical Data Analysis Software and Systems\nXII, ASP conference series, vol. 295: 489.\n\n\nLucy, L. B. 1974. “An Iterative Technique for the Rectification of\nObserved Distributions.” The Astronomical Journal 79:\n745–54. https://doi.org/10.1086/111605.\n\n\nMagain, P., F. Courbin, and S. Sohy. 1998. “Deconvolution with\nCorrect Sampling.” The Astrophysical Journal 494:\n472–77. https://doi.org/10.1086/305187.\n\n\nMoffat, A. F. J. 1969. “A Theoretical Investigation of Focal\nStellar Images in the Photographic Emulsion and Application to\nPhotographic Photometry.” Astronomy and Astrophysics 3:\n455–61.\n\n\nPayne, M., D. Robbins, and S. Carr. 2022. The Generalised Hyperbolic\nStretch: Equations and Rationale. https://ghsastro.co.uk/.\n\n\nPence, W. D., L. Chiappetti, C. G. Page, R. A. Shaw, and E. Stobie.\n2010. “Definition of the Flexible Image Transport System\n(FITS), Version 3.0.” Astronomy &\nAstrophysics 524: A42. https://doi.org/10.1051/0004-6361/201015362.\n\n\nPitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007.\n“Automated Colour Grading Using Colour Distribution\nTransfer.” Computer Vision and Image Understanding 107\n(1–2): 123–37. https://doi.org/10.1016/j.cviu.2006.11.011.\n\n\nRabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012.\n“Wasserstein Barycenter and Its Application to Texture\nMixing.” Scale Space and Variational Methods in Computer\nVision (SSVM), LNCS 6667: 435–46. https://doi.org/10.1007/978-3-642-24785-9_37.\n\n\nRichardson, William Hadley. 1972. “Bayesian-Based Iterative Method\nof Image Restoration.” Journal of the Optical Society of\nAmerica 62: 55–59. https://doi.org/10.1364/JOSA.62.000055.\n\n\nStarck, J.-L., E. Pantin, and F. Murtagh. 2002. “Deconvolution in\nAstronomy: A Review.” Publications of the Astronomical\nSociety of the Pacific 114: 1051–69. https://doi.org/10.1086/342606.",
     "crumbs": [
       "Appendices",
       "References"

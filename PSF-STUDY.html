@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>NebulaScope — Design Decisions – NebulaScope</title>
+<title>Appendix A — Appendix: measuring a telescope against Hubble – NebulaScope</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -55,8 +55,8 @@ div.csl-indent {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./PSF-STUDY.html" rel="next">
-<link href="./ARCHITECTURE.html" rel="prev">
+<link href="./BUILDING-macos.html" rel="next">
+<link href="./DECISIONS.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -99,6 +99,35 @@ div.csl-indent {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="web.css">
 </head>
@@ -274,7 +303,7 @@ div.csl-indent {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./DECISIONS.html"><span class="chapter-title">NebulaScope — Design Decisions</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./PSF-STUDY.html">Appendices</a></li><li class="breadcrumb-item"><a href="./PSF-STUDY.html"><span class="chapter-title">Appendix: measuring a telescope against Hubble</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -327,7 +356,7 @@ div.csl-indent {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./DECISIONS.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">NebulaScope — Design Decisions</span></a>
+  <a href="./DECISIONS.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">NebulaScope — Design Decisions</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -341,7 +370,7 @@ div.csl-indent {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./PSF-STUDY.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Appendix: measuring a telescope against Hubble</span></a>
+  <a href="./PSF-STUDY.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">Appendix: measuring a telescope against Hubble</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -382,16 +411,13 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#core-model" id="toc-core-model" class="nav-link active" data-scroll-target="#core-model">Core model</a></li>
-  <li><a href="#histogram-stretch" id="toc-histogram-stretch" class="nav-link" data-scroll-target="#histogram-stretch">Histogram / stretch</a></li>
-  <li><a href="#geometry" id="toc-geometry" class="nav-link" data-scroll-target="#geometry">Geometry</a></li>
-  <li><a href="#formats-interop" id="toc-formats-interop" class="nav-link" data-scroll-target="#formats-interop">Formats / interop</a></li>
-  <li><a href="#tools" id="toc-tools" class="nav-link" data-scroll-target="#tools">Tools</a></li>
-  <li><a href="#ui-performance" id="toc-ui-performance" class="nav-link" data-scroll-target="#ui-performance">UI / performance</a></li>
-  <li><a href="#build-release" id="toc-build-release" class="nav-link" data-scroll-target="#build-release">Build / release</a></li>
-  <li><a href="#the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" id="toc-the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" class="nav-link" data-scroll-target="#the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30">The visible region is a quad, not its bounding box (2026-08-30)</a></li>
-  <li><a href="#the-hue-knob-that-could-never-turn-2026-08-30" id="toc-the-hue-knob-that-could-never-turn-2026-08-30" class="nav-link" data-scroll-target="#the-hue-knob-that-could-never-turn-2026-08-30">The hue knob that could never turn (2026-08-30)</a></li>
-  <li><a href="#the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30" id="toc-the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30" class="nav-link" data-scroll-target="#the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30">The colour stage is a matrix, not four sliders (2026-08-30)</a></li>
+  <li><a href="#the-question" id="toc-the-question" class="nav-link active" data-scroll-target="#the-question">The question</a></li>
+  <li><a href="#registration-the-load-bearing-wall" id="toc-registration-the-load-bearing-wall" class="nav-link" data-scroll-target="#registration-the-load-bearing-wall">Registration, the load-bearing wall</a></li>
+  <li><a href="#the-scale-lesson" id="toc-the-scale-lesson" class="nav-link" data-scroll-target="#the-scale-lesson">The scale lesson</a></li>
+  <li><a href="#display-space-inflates-linear-space-decides" id="toc-display-space-inflates-linear-space-decides" class="nav-link" data-scroll-target="#display-space-inflates-linear-space-decides">Display space inflates; linear space decides</a></li>
+  <li><a href="#what-bxt-does-to-nebulosity" id="toc-what-bxt-does-to-nebulosity" class="nav-link" data-scroll-target="#what-bxt-does-to-nebulosity">What BXT does to nebulosity</a></li>
+  <li><a href="#calibrated-deconvolution-with-a-stated-model" id="toc-calibrated-deconvolution-with-a-stated-model" class="nav-link" data-scroll-target="#calibrated-deconvolution-with-a-stated-model">Calibrated deconvolution with a stated model</a></li>
+  <li><a href="#lessons-collected" id="toc-lessons-collected" class="nav-link" data-scroll-target="#lessons-collected">Lessons, collected</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -399,9 +425,9 @@ div.csl-indent {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./PSF-STUDY.html">Appendices</a></li><li class="breadcrumb-item"><a href="./PSF-STUDY.html"><span class="chapter-title">Appendix: measuring a telescope against Hubble</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-title">NebulaScope — Design Decisions</span></h1>
+<h1 class="title"><span id="sec-psf-study" class="quarto-section-identifier">Appendix A — Appendix: measuring a telescope against Hubble</span></h1>
 </div>
 
 
@@ -418,84 +444,133 @@ div.csl-indent {
 </header>
 
 
-<p>Why things are the way they are. Newest entries at the bottom; don’t delete entries when circumstances change — strike through and note the successor. (Companion to <a href="./ARCHITECTURE.html">ARCHITECTURE.md</a>; this file records the <em>why</em>, that one the <em>what</em>.)</p>
-<section id="core-model" class="level2">
-<h2 class="anchored" data-anchor-id="core-model">Core model</h2>
+<p><em>A case study in comparison as an instrument — the PSF of a TEC 140 refractor measured star-free against HST ground truth, an audit of what neural deconvolution does to stars versus nebulosity, and a full-frame calibrated deconvolution whose every pixel has a stated model. The scripts live in <a href="https://github.com/hugues-talbot/nebulascope/tree/main/tools/psf_study"><code>tools/psf_study/</code></a>; this appendix records the method, the numbers, and — deliberately — the mistakes, because most of what the study taught was learned by being wrong in public and checking.</em></p>
+<section id="the-question" class="level2">
+<h2 class="anchored" data-anchor-id="the-question">The question</h2>
+<p>The <em>Colour transport</em> chapter closes on a comparison: ten hours of M16 through a 140 mm apochromat beside the Hubble Heritage image of the same pillars. The natural quantitative question follows: <strong>what is the true point-spread function of the amateur image — measured not from its stars, but from the extended structure itself, using Hubble as ground truth?</strong> Stars are the standard PSF probe, but they are also exactly what modern neural deconvolution (BlurXTerminator, “BXT”) treats best; a star-based figure flatters it. The Hubble overlap allows the star-free measurement: if <span class="math inline">\(t\)</span> is the amateur image and <span class="math inline">\(h\)</span> the Hubble image registered onto its grid, the kernel <span class="math inline">\(k\)</span> minimizing <span class="math inline">\(\lVert h \ast k - t \rVert^2\)</span> <em>is</em> the amateur PSF — nebulosity and all — obtained in closed form as a Wiener quotient of spectra.</p>
+<p>The study grew into four instruments, each validating or correcting the others:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Instrument</th>
+<th>Space</th>
+<th>Measures</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>psf_pipeline.py</code></td>
+<td>display (stretched exports)</td>
+<td>relative PSF across processing variants</td>
+</tr>
+<tr class="even">
+<td><code>star_fwhm.py</code></td>
+<td>linear</td>
+<td>stellar PSF: elliptical Moffat fits, field maps</td>
+</tr>
+<tr class="odd">
+<td><code>linear_deconv.py</code></td>
+<td>linear</td>
+<td>extended-structure PSF vs HST; held-out fidelity</td>
+</tr>
+<tr class="even">
+<td><code>full_deconv.py</code></td>
+<td>linear</td>
+<td>full-frame calibrated deconvolution + verification</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="registration-the-load-bearing-wall" class="level2">
+<h2 class="anchored" data-anchor-id="registration-the-load-bearing-wall">Registration, the load-bearing wall</h2>
+<p>Every measurement rests on registering two images that share nothing but sky: different samplings (0.04″ to 0.76″ per pixel), arbitrary rotation, sometimes opposite <strong>parity</strong> (the HST mosaic’s CD matrix has negative determinant; a similarity transform cannot represent a reflection, so the mirror state is tried both ways and decided by correlation). The machinery that proved robust, after star-matching alone repeatedly converged to false minima under large unknown rotations:</p>
+<ol type="1">
+<li><strong>Exhaustive similarity search</strong> — band-passed cross-correlation over a rotation × scale grid (phase shift recovered from the correlation peak), parallelized over the scale axis. No correspondences exist to be fooled; the true peak dominates by construction. Bright cores are first compressed with <code>asinh</code> so a saturated star cannot own the spectrum.</li>
+<li><strong>Star refinement</strong> — unique nearest-neighbour pairs (greedy by distance), similarity fitted by complex least squares <span class="math inline">\(q = a p + b,\ a = s e^{i\theta}\)</span>, iterated with a shrinking tolerance. Residuals of 0.1–0.4 px were routine once seeded correctly.</li>
+<li><strong>Verification by eye, always</strong> — a checkerboard blend of the warped reference against the target. Two of the study’s wrong turns were caught only because a human looked at this image.</li>
+</ol>
+</section>
+<section id="the-scale-lesson" class="level2">
+<h2 class="anchored" data-anchor-id="the-scale-lesson">The scale lesson</h2>
+<p>The first arcsecond figures hung on a chain: comparison-image pixels → master pixels (a template match) → arcseconds (the plate solve). The template-match link was <strong>wrong by a factor 1.69</strong>, and its supposed corroboration — an assumed Hubble field size — was 30 %-loose confirmation bias. It was falsified only when a clean export was registered <em>directly against the plate-solved master</em>: same-source stars, 16 pairs, 0.12 px residual, scale 0.9999 — the exports were at native sampling. Every earlier absolute number moved by 1.69×; every relative conclusion survived untouched.</p>
+<p><strong>Lesson.</strong> In any calibration chain, the error lives in the one link never verified against ground truth. “Consistent with an assumed field size” is not a check; a same-source registration with sub-pixel residuals is.</p>
+</section>
+<section id="display-space-inflates-linear-space-decides" class="level2">
+<h2 class="anchored" data-anchor-id="display-space-inflates-linear-space-decides">Display space inflates; linear space decides</h2>
+<p>The first campaign measured stretched 8-bit exports, because that is what one has at hand. A nonlinear stretch is concave: it widens every profile at half maximum. Simulation predicted 1.5–2× inflation for stellar contrast; the linear re-measurement then pinned it empirically at <strong>2.0–2.6×, varying with each row’s stretch</strong> — so a display-space table cannot even be rescaled into truth. It retains exactly one use: relative comparison of variants that share a stretch.</p>
+<p>The linear stellar measurement (<code>star_fwhm.py</code>: elliptical Moffat (Moffat 1969) fits over ~2 700 stars per channel, cross-validated within 3 % of PixInsight’s FWHMEccentricity) gave the study its reference table for the four processing variants of the same data — full stack versus best-15 % “lucky” selection, before and after BXT:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>S II</th>
+<th>Hα</th>
+<th>O III</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Full stack, raw</td>
+<td>1.96″</td>
+<td>1.94″</td>
+<td>2.27″</td>
+</tr>
+<tr class="even">
+<td>Full + BXT</td>
+<td>1.38″</td>
+<td>1.30″</td>
+<td>1.37″</td>
+</tr>
+<tr class="odd">
+<td>Lucky, raw</td>
+<td>1.82″</td>
+<td>1.77″</td>
+<td>1.92″</td>
+</tr>
+<tr class="even">
+<td>Lucky + BXT</td>
+<td>1.25″</td>
+<td>1.18″</td>
+<td>1.19″</td>
+</tr>
+</tbody>
+</table>
+<p>Three physical findings fell out. The <strong>optics are diffraction-limited</strong>: 0.99″ diffraction for 140 mm at Hα, field-uniform FWHM to ~5 % across a 2° field, and BXT able to reach within ~20 % of the diffraction limit — none of which a deficient objective could produce. The <strong>eccentricity (0.35–0.56) is one-axis drift, not optics</strong>: its position angle is uniform across the entire field in every channel (tilt or collimation would rotate toward the corners), indicting guiding/flexure along a single axis — worth ~0.2″ of real resolution, the cheapest gain in the system. And <strong>sub selection buys little</strong> once the stacker’s quality weighting has already suppressed poor frames: hard-culling 85 % of subs improved the stack by only ~0.15″.</p>
+</section>
+<section id="what-bxt-does-to-nebulosity" class="level2">
+<h2 class="anchored" data-anchor-id="what-bxt-does-to-nebulosity">What BXT does to nebulosity</h2>
+<p>The star-free question needed <em>linear</em> ground truth: the Hubble Heritage WFC3/UVIS mosaics of M16 (F673N/F657N/F502N — filter-matched to S II, Hα, O III), registered onto the linear masters and compared through a Wiener kernel estimated on the <strong>west half</strong> of the overlap only, with the <strong>east half</strong> held out for validation. Two traps cost a day each: linear images concentrate power at DC, so the Wiener quotient must be band-passed or its regularizer flattens everything into an arcseconds-wide pseudo-kernel; and the mosaic’s rotated footprint requires all statistics to be confined to fully-covered regions.</p>
+<p>Results (extended-structure kernel FWHM, raw → BXT): S II 1.92″ → 1.55″, Hα 3.08″ → 2.62″, O III 2.49″ → 1.39″. The S II raw kernel matching the stellar 1.96″ validates the method; the Hα kernel is inflated by [N II] emission present in F657N but excluded by the narrow Hα filter — a spectral, not optical, mismatch. The headline: <strong>in the clean channels BXT sharpens extended structure by 15–19 %, versus 30–33 % on stars</strong> — the star-based figure of merit roughly doubles the real gain on the astrophysically interesting content. On <em>fidelity</em>, however, BXT is honest at these scales: scored against Hubble degraded to a common 1.3″ on the held-out half (star profiles masked), its nebulosity moves toward the truth in S II and Hα and is neutral in O III — no evidence of hallucination at 1.3″ scales, merely conservatism.</p>
+</section>
+<section id="calibrated-deconvolution-with-a-stated-model" class="level2">
+<h2 class="anchored" data-anchor-id="calibrated-deconvolution-with-a-stated-model">Calibrated deconvolution with a stated model</h2>
+<p>The final experiment: deconvolve the full raw master with the <em>measured</em> PSF, to a <em>declared</em> target, and verify the delivery. Three formulations failed instructively before one worked:</p>
+<ol type="1">
+<li><strong>Truncated Richardson–Lucy</strong> (Richardson 1972; Lucy 1974) with the iteration count chosen for fidelity stops at ~5–10 iterations — far short of shape convergence, so the input’s elongation survives. An iterative solver trades noise against the PSF contract <em>implicitly</em>, and loses.</li>
+<li><strong>An explicit “partial kernel”</strong> <span class="math inline">\(p = k \oslash t\)</span> formed by Fourier division explodes: a Moffat spectrum decays polynomially, a Gaussian target’s super-exponentially, so the quotient diverges at high frequency and the clipped kernel is structurally wrong.</li>
+<li>The working form is the <strong>MCS one-filter transform</strong> of Magain, Courbin &amp; Sohy
+<ol start="1998" type="1">
+<li>— see also the review by Starck, Pantin &amp; Murtagh (2002): deconvolve by the measured OTF and reconvolve by the target in a single linear pass, <span class="math display">\[\hat X = Y \cdot \frac{T\,\overline{K}}{|K|^2 + \lambda},\]</span> the target’s own spectral decay taming the high band. Regularization is chosen <strong>contract-first</strong>: the largest <span class="math inline">\(\lambda\)</span> whose <em>delivered</em> stellar FWHM — re-measured on the filtered frame — still honours the declared target within 5 %. Fidelity is then reported, not optimized.</li>
+</ol></li>
+</ol>
+<p>Two honest limits emerged. A 1.5″ round target is <strong>unsupported by the data</strong>: the anisotropy correction lives at frequencies where the noise floor forbids amplification, which is precisely the quantitative sense in which BXT’s 1.3″ output is drawn from its prior rather than from the photons. And saturated star cores violate the convolution model outright; they are excluded by a feathered mask (0.04 % of pixels retain input values), the exception recorded in the output header.</p>
+<p>At a 1.9″ circular target the contract closes: delivered geometric-mean FWHM 1.89–1.91″ in all three channels — <strong>the PSF homogenized across S II/Hα/O III to 1 %</strong>, valuable in itself for any line-ratio work — eccentricity reduced (0.56 → 0.36 in the worst channel, position angles decohered), and held-out nebular fidelity statistically tied with both the raw master and BXT. The product is not the sharpest image of the three; it is the only one whose every pixel is a stated linear functional of the data.</p>
+</section>
+<section id="lessons-collected" class="level2">
+<h2 class="anchored" data-anchor-id="lessons-collected">Lessons, collected</h2>
 <ul>
-<li><strong>Everything promotes to Float32 on load.</strong> One pipeline code path, NaN as the universal blank. Memory cost accepted (2× for 16-bit data) for the simplicity; original bit depth is recorded for save-time choices.</li>
-<li><strong>Display never touches data.</strong> All stretch/adjust/colormap work happens in a render-only pipeline (StretchModel → DisplayRenderer). “Save Stretched As” is an explicit, separate bake.</li>
-<li><strong>Per-image state is keyed by path</strong> (<code>m_*ByPath</code> maps in MainWindow), not per view. Views are dumb displays; a revision counter (<code>m_xformRev</code>) invalidates a cell’s stashed pixels when the image’s orientation changed elsewhere. Decision made after the “black border” bug family (see below).</li>
+<li>The unverified link in a calibration chain is where the error is; verify same-source, sub-pixel, or not at all.</li>
+<li>Never compare a stretched measurement to a linear one; the stretch bias is large (2×) and non-uniform.</li>
+<li>A fit that silently returns “no improvement” for a whole parameter looks identical to a hard problem (this study found two such bugs — a search domain and a kernel quotient — each masquerading as physics).</li>
+<li>Registration failures under large unknown transforms are best solved by exhaustive search over the group, not by better correspondence heuristics; and parity is part of the group.</li>
+<li>Iterative deconvolution cannot promise a PSF; a linear filter can, and the promise can be <em>audited</em> by re-measuring stars on the product.</li>
+<li>Ground truth changes the epistemics: with a held-out half of a Hubble overlap, every processing claim — including a neural network’s — becomes a measurement.</li>
 </ul>
-</section>
-<section id="histogram-stretch" class="level2">
-<h2 class="anchored" data-anchor-id="histogram-stretch">Histogram / stretch</h2>
-<ul>
-<li><strong>Linear stretch = the window; nonlinear modes live inside it.</strong> Log, Asinh, GHS all compose with the linear window and get the full widget width for their controls. Rationale: astronomical dynamic range makes the useful window a sliver of the data range — controls must operate on the window, not the range. <em>Refined (v0.96): the plot’s axis is a zoomable view, not a constraint.</em> The fit-to-data/window remains the default framing, but handles live on a domain one full span beyond the data on each side (black below min, white above max, GHS SP/LP/HP outside the window) — the renderer’s affine windowing was always well-defined there, and the GHS curve stays a valid monotone transfer since its slope function is positive everywhere. Motivation: the Siril GHS workflow (symmetry point on the histogram mode) was structurally impossible when the black point had clipped the mode out of the window.</li>
-<li><strong>RGB histograms share one pooled axis by default.</strong> Per-channel normalisation (each channel over its own [min,max]) silently equalises the channels in the plot and hides exactly the offsets colour alignment needs to see. Common axis is the honest default; switching is display-invariant (handles are re-expressed on the new ranges). One consumer must NOT be pooled: the DisplayFunction import’s far-white rebase reads t = 1 as the channel’s own data maximum, so it runs on per-channel ranges and the pooling happens afterwards.</li>
-<li><strong>GHS follows the PixInsight formulation</strong> (exponential-response D, focus b, SP symmetry point, LP/HP protection), windowed like Log/Asinh.</li>
-<li><strong>LUTs hold only the curve shape; windowing is per-pixel float — and every LUT consumer INTERPOLATES.</strong> 4096-entry LUTs sampled over the <em>windowed</em> coordinate. Re-windowing inside the LUT posterizes narrow windows — this was rediscovered painfully twice; don’t “optimize” it back. Third rediscovery (v0.96): the combine’s “As displayed” bake read the LUT with NEAREST lookup while the display interpolated — through a steep GHS (slope ~100 around SP-on-the-mode) adjacent entries differ by slope/4096, so the baked DATA posterized to ~40 levels while the screen looked smooth. A steep transfer turns input quantization into output steps; interpolate, always, everywhere the LUT is read.</li>
-<li><strong>First view of an image = plain min→max linear ramp</strong> (like Reset). The earlier percentile “boost” guessed wrong too often; Auto STF / Auto Linked are the explicit boosted options.</li>
-<li><strong>Post-stretch adjustments</strong> (brightness/contrast/gamma/shadows/highlights/ BP/WP + temp/tint/hue/sat/vibrance) apply to the stretched [0,1] values: tone ops compose into the LUTs (free), colour ops run per pixel only when non-identity. They are per-image state, persisted in annotation sidecars.</li>
-</ul>
-</section>
-<section id="geometry" class="level2">
-<h2 class="anchored" data-anchor-id="geometry">Geometry</h2>
-<ul>
-<li><strong>Orientation is a replayable history</strong> (<code>m_xformByPath</code>), canonicalized: arbitrary rotations commute to the tail (angle negates across mirrors) and merge into at most ONE trailing rotation. Consequence: net-zero rotations restore exact original dimensions; expansion borders cannot accumulate. (Supersedes the earlier “record ops verbatim, never merge” rule, which caused permanent black borders.)</li>
-<li><strong>Arbitrary rotation is absolute</strong>: always ONE resample from the pristine base, never rotation-of-rotation.</li>
-<li><strong>Every geometric op feeds four consumers</strong>: pixels, annotations, WCS, view-link calibrations. Adding a new op means updating all four.</li>
-</ul>
-</section>
-<section id="formats-interop" class="level2">
-<h2 class="anchored" data-anchor-id="formats-interop">Formats / interop</h2>
-<ul>
-<li><strong>XISF float output is normalized to [0,1]</strong> (NSSCALE/NSZERO keywords keep the inverse map): PixInsight assumes the [0,1] bounds convention and renders out-of-range floats as noise.</li>
-<li><del><strong>XISF data blocks are written uncompressed by default.</strong> The older gitea libXISF’s compressed (shuffled) blocks decode as structured noise in PixInsight. Re-enable LZ4 only after a PI round-trip test with the installed libXISF.</del> <em>Superseded (v0.86): the “noise” was the un-normalized-float bug all along — libXISF ≥ 0.2.13 compressed output was verified spec-conformant and PI-round-tripped. Blocks are now compressed (byte-shuffled) with a save-time Zstd/Zlib/Uncompressed choice; Zstd falls back to Zlib where libXISF lacks it.</em></li>
-<li><strong>FITS multi-HDU</strong>: list entries expand per image HDU; “no 2-D image in primary HDU” is handled by scanning extensions.</li>
-<li><strong>Sidecars</strong> (<code>&lt;image&gt;_annotation.json</code>) carry annotations + orientation + display adjustments. Manual <em>Load Annotations</em> re-maps shapes onto the current view (ignores the file’s orientation as a view instruction); auto-load applies it.</li>
-</ul>
-</section>
-<section id="tools" class="level2">
-<h2 class="anchored" data-anchor-id="tools">Tools</h2>
-<ul>
-<li><strong>Colour transport (OT)</strong> runs on the “as displayed” renditions, estimates distributions only from each view’s <em>visible</em> pixels, excludes saturated pixels (≥0.98), and — for rotated sources — runs in the disk frame and adopts the orientation history afterwards (never bakes borders).</li>
-<li><strong>Star recomposition = screen blend</strong> <code>1−(1−a)(1−k·b)</code> on displayed values; separate small dialog (Combine Stars), not a mode of Combine Channels (that dialog is mono-plane/role based).</li>
-<li><strong>Combine Channels “As displayed” prenorm</strong> merges channels through their current view stretches — the user’s prepared renditions are the input.</li>
-</ul>
-</section>
-<section id="ui-performance" class="level2">
-<h2 class="anchored" data-anchor-id="ui-performance">UI / performance</h2>
-<ul>
-<li><strong>Rendering is async and coalescing</strong> (QtConcurrent): sliders never block; intermediate states are skipped. A frame is shown only if its source pixels are still current (pointer+size identity check). ImageData copies are DEEP — capture identity <em>before</em> copying.</li>
-<li><strong>Overlay panels are opaque by default</strong>: any translucency defeats Qt’s repaint clipping and slows zoom/pan. Opacity is a preference (50–100%).</li>
-<li><strong>Adjust sliders: click first, then wheel</strong> — hover-wheel must not silently edit the display.</li>
-<li><strong>256→4096-level LUTs</strong> killed visible banding; dithered 8-bit output handles the rest.</li>
-<li><strong>The display block is a specified, reference-implemented format.</strong> The sidecar’s <code>display</code> key is not private state: it has a schema version, names instead of enum integers, a written spec (TRANSPORT §6) mapping every field to an equation, and a standalone NumPy renderer (tools/render_sidecar.py) that CI checks against DisplayRenderer:: renderFloat to a few float32 ULPs per pixel (tests/conformance). The point is scientific: a stretch becomes explainable and reproducible in other software, and a transport fit becomes a diffable object. Rule: any change to the transfer/adjustment math updates spec, reference, and schema version together — the conformance test is the tripwire.</li>
-<li><strong>Values in All Views = the link transforms made visible.</strong> The per-cell readout + crosshair (V) is not new machinery: it fans the hovered pixel through the very <code>world</code> transforms calibrated linking navigates with, so the crosshair shows where the software BELIEVES the correspondence lies. That turns calibrated linking from a navigation convenience into a measurement instrument with a visible error — hover a star, see whether the other view’s crosshair lands on it. Principle worth reusing: when a hidden state drives behaviour (a transform, a fit, a calibration), the cheapest high-value feature is usually to render that state, not to add a new one. (Prior art — DS9’s crosshair lock, medical viewers — assumes a shared WCS or identical geometry; this works on unsolved frames of different scale/rotation aligned by eye, which is the comparison case that actually occurs in the field.)</li>
-<li><strong>Save dialogs: native on macOS via NSSavePanel accessory views.</strong> Qt can host inline option rows only in its own non-native dialog — which is why the rich save dialogs were Qt-drawn at first. The platform’s intended design for save-with-options is the accessory view (cf.&nbsp;Preview’s export panel): MacSavePanel.mm reproduces the three behaviours that forced non-native (inline format-reactive options, every image type clickable, base-name-only adoption) with native controls, and enforces the chosen-format suffix in the delegate at OK time (no “name.xisf.png”). Other platforms keep the Qt dialog: Windows’ IFileDialogCustomize is not exposed by Qt.</li>
-<li><strong>Batch row removal runs signal-blocked, one display fix-up at the end.</strong> Removing list rows one by one has a hidden cascade: whenever the row being deleted is the <em>current</em> one, Qt promotes its neighbour to current, and an unblocked <code>currentRowChanged</code> then synchronously decodes, stretches and renders that image — which is itself deleted next, promoting another. One full decode per closed row. The trap arms exactly when the current row sits at the top of the removal order, which is where a blink session leaves it (Space wraps to the top after the last image), so “close all” after culling hit it every time. Measured on 300 × 4 MB FITS blinked through then closed: +4.4 s with the cascade, +0.3 s with removals signal-blocked and a single explicit re-display at the end — and the cost scales with image size (tens of seconds for a session of full-size subs). Rule of thumb: any loop that mutates list rows must hold a <code>QSignalBlocker</code> and reconcile the display once, after the loop.</li>
-</ul>
-</section>
-<section id="build-release" class="level2">
-<h2 class="anchored" data-anchor-id="build-release">Build / release</h2>
-<ul>
-<li><strong>CI</strong>: GitHub Actions build macOS (official Qt + macdeployqt), Linux (system Qt), Windows (vcpkg + FindCFITSIO stub + libXISF from gitea). All three jobs need the Qt image-formats module (TIFF/WebP plugins live there, not in qtbase). Tags <code>v*</code> publish a Release (zip ×3 + .deb).</li>
-<li><strong>Tests are framework-free CTest binaries</strong> (<code>tests/nstest.h</code>) plus a scripted smoke run of the real app (<code>tests/smoke.nsc</code>, offscreen QPA) — the CI gate since v0.85. Failing ctest output is published to the job summary so failures are diagnosable from the run page. Test fixtures in <code>tests/testdata/</code> are explicitly exempted from the data-file gitignore rules (a <code>*.fits</code> ignore once silently swallowed the smoke fixture).</li>
-<li><strong><code>src/app/AppInfo.h</code> is user-maintained</strong> (version/copyright/About) — the assistant never rewrites it unasked (see CLAUDE.md). Version also lives in CMakeLists (CPACK), CITATION.cff and vcpkg.json; bump all four when tagging.</li>
-<li><strong><code>-psn</code> arguments</strong> (Finder) are ignored by the CLI parser.</li>
-</ul>
-</section>
-<section id="the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30" class="level2">
-<h2 class="anchored" data-anchor-id="the-visible-region-is-a-quad-not-its-bounding-box-2026-08-30">The visible region is a quad, not its bounding box (2026-08-30)</h2>
-<p>A calibrated Match legitimately puts a rotation into a view’s navigation — and <code>visibleImageRect()</code>, the bounding box of the rotated viewport quad, silently became a <em>superset</em> of what the user saw. Three consumers inherited the lie: OT’s relevance masks sampled off-screen sky (the field report: lossless transport of the pillars washed to khaki because the reference distribution was dominated by surrounding nebulosity — reproduced exactly by feeding OT a mismatched region), Export Zoomed Region wrote the unrotated bbox (“not what I see”), and Crop to Visible cropped it. The fix is one distinction, applied per consumer’s needs: distribution <em>sampling</em> (OT, crop) takes the largest rectangle INSIDE the visible quad — a subset is a fair sample, a superset is contamination — while <em>export</em> renders WYSIWYG through the view transform at ~1 image px per output px. Lesson: any API returning “the visible region” as a QRect bakes in the assumption that navigation is axis-aligned; every caller written before rotation existed inherits that assumption invisibly.</p>
-</section>
-<section id="the-hue-knob-that-could-never-turn-2026-08-30" class="level2">
-<h2 class="anchored" data-anchor-id="the-hue-knob-that-could-never-turn-2026-08-30">The hue knob that could never turn (2026-08-30)</h2>
-<p>Lossless colour transport washed out on STARLESS pairs and worked on starry ones — the user isolated the variable in the field. The mathematics first: stars pin all three channels at the bright end, dragging OT’s map into the per-channel family; a starless pair’s transport is almost purely a cross-channel rotation, which per-channel curves cannot express at all. The colour-adjustment stage exists for exactly that — and it never worked, because fitColorAdjust swept every field over [-1, 1] while hue is in DEGREES: the one parameter able to rotate a palette was capped at one degree. Fixed with per-field domains and a coarse scan before the golden section (the hue objective is multimodal; descent from zero misses a distant rotated minimum). Ground-truth unit test: a synthetic 60-degree rotation must be recovered to &lt;1 degree. Both lossless options now default on (user call). Lesson: a fit that silently returns “no improvement” for a whole parameter looks identical to a hard problem — sweep domains deserve the same per-field scrutiny as the parameters themselves.</p>
-</section>
-<section id="the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30" class="level2">
-<h2 class="anchored" data-anchor-id="the-colour-stage-is-a-matrix-not-four-sliders-2026-08-30">The colour stage is a matrix, not four sliders (2026-08-30)</h2>
-<p>Even with hue freed, the lossless transport fit kept failing on starless pairs — this time to grey, the MMSE escape of a SEQUENTIAL fit (curves first against a rotated target, colour after on the curves’ compromise). Two changes. First, the fit alternates: each round re-fits the per-channel curves against the colour-INVERTED target (the colour stage is invertible in closed form), block coordinate descent instead of a one-shot pipeline. Second, the colour stage itself became a full 3×3 mixer solved by weighted least squares in closed form — temperature, tint, hue rotation and saturation are all linear in RGB, so the matrix subsumes the slider family, and its normal equations have no multimodality to trap a line search. The display block spec moves to schema 2 (optional adjust.mix; written only when present, so every existing sidecar and reader is untouched), with the reference renderer and a conformance case updated in the same commit. Lesson: when a fit keeps landing on desaturation, the family is too weak — grey is what least squares does when the right map is outside the model.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
@@ -954,13 +1029,13 @@ Starck, J.-L., E. Pantin, and F. Murtagh. 2002. <span>“Deconvolution in Astron
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./ARCHITECTURE.html" class="pagination-link" aria-label="NebulaScope — Architecture">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">NebulaScope — Architecture</span></span>
+      <a href="./DECISIONS.html" class="pagination-link" aria-label="NebulaScope — Design Decisions">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">NebulaScope — Design Decisions</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./PSF-STUDY.html" class="pagination-link" aria-label="Appendix: measuring a telescope against Hubble">
-        <span class="nav-page-text"><span class="chapter-title">Appendix: measuring a telescope against Hubble</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./BUILDING-macos.html" class="pagination-link" aria-label="Building on macOS (Apple Silicon / Homebrew)">
+        <span class="nav-page-text"><span class="chapter-title">Building on macOS (Apple Silicon / Homebrew)</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
