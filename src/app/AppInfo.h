@@ -10,7 +10,7 @@
 //
 namespace appinfo {
 
-inline constexpr const char* kVersion   = "0.95";
+inline constexpr const char* kVersion   = "0.96";
 inline constexpr const char* kCopyright = "© 2026 Hugues Talbot";
 
 // Extra HTML appended to the About dialog body. Add acknowledgements,
