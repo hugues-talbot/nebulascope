@@ -417,6 +417,8 @@ window.Quarto = {
   <li><a href="#display-space-inflates-linear-space-decides" id="toc-display-space-inflates-linear-space-decides" class="nav-link" data-scroll-target="#display-space-inflates-linear-space-decides">Display space inflates; linear space decides</a></li>
   <li><a href="#what-bxt-does-to-nebulosity" id="toc-what-bxt-does-to-nebulosity" class="nav-link" data-scroll-target="#what-bxt-does-to-nebulosity">What BXT does to nebulosity</a></li>
   <li><a href="#calibrated-deconvolution-with-a-stated-model" id="toc-calibrated-deconvolution-with-a-stated-model" class="nav-link" data-scroll-target="#calibrated-deconvolution-with-a-stated-model">Calibrated deconvolution with a stated model</a></li>
+  <li><a href="#was-hubble-necessary" id="toc-was-hubble-necessary" class="nav-link" data-scroll-target="#was-hubble-necessary">Was Hubble necessary?</a></li>
+  <li><a href="#future-work-a-spatially-variant-psf" id="toc-future-work-a-spatially-variant-psf" class="nav-link" data-scroll-target="#future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</a></li>
   <li><a href="#lessons-collected" id="toc-lessons-collected" class="nav-link" data-scroll-target="#lessons-collected">Lessons, collected</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
@@ -561,6 +563,26 @@ window.Quarto = {
 <p>Two honest limits emerged. A 1.5″ round target is <strong>unsupported by the data</strong>: the anisotropy correction lives at frequencies where the noise floor forbids amplification, which is precisely the quantitative sense in which BXT’s 1.3″ output is drawn from its prior rather than from the photons. And saturated star cores violate the convolution model outright; they are excluded by a feathered mask (0.04 % of pixels retain input values), the exception recorded in the output header.</p>
 <p>At a 1.9″ circular target the contract closes: delivered geometric-mean FWHM 1.89–1.91″ in all three channels — <strong>the PSF homogenized across S II/Hα/O III to 1 %</strong>, valuable in itself for any line-ratio work — eccentricity reduced (0.56 → 0.36 in the worst channel, position angles decohered), and held-out nebular fidelity statistically tied with both the raw master and BXT. The product is not the sharpest image of the three; it is the only one whose every pixel is a stated linear functional of the data.</p>
 </section>
+<section id="was-hubble-necessary" class="level2">
+<h2 class="anchored" data-anchor-id="was-hubble-necessary">Was Hubble necessary?</h2>
+<p>For the <em>deconvolution</em>: no — and noticing this is worth a section. The shipped product consumed only the frame’s own stars (the Moffat PSF), a declared target, and a regularizer chosen by the delivered-PSF contract, itself checked on the frame’s own stars. Not one HST pixel enters the operator. What the Hubble overlap provided is <strong>certification</strong> — three claims the deconvolution could not make about itself:</p>
+<ol type="1">
+<li>that the star-derived PSF applies to extended structure at all (the S II channel proved it: extended-structure kernel 1.92″ against a stellar 1.96″ — textbook-true in principle, <em>measured</em> here);</li>
+<li>that the operator does not distort what it sharpens (the held-out fidelity tie), including the negative certificate that a 1.5″ target is unsupported by the data;</li>
+<li>the star-versus-nebula asymmetry of neural deconvolution, unknowable without ground truth by definition.</li>
+</ol>
+<p>The right mental model is instrument calibration: the method was taken to the standard once, certified, and now transfers to any field with a few hundred usable stars — no HST overlap required. The certificate covers this optical system and processing chain; a materially changed setup deserves a re-issue, and the fit/validate framework for doing so is in the repository.</p>
+</section>
+<section id="future-work-a-spatially-variant-psf" class="level2">
+<h2 class="anchored" data-anchor-id="future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</h2>
+<p>This field earned a single kernel per channel — stellar FWHM uniform to ~5 % across 2°, eccentricity axis constant — but that is the exception among amateur optical trains, not the rule. Fast Newtonians, reduced refractors and imperfectly spaced flatteners show coma and astigmatism that grow radially: the PSF is then a <em>field</em> of kernels, typically well parameterized as elliptical Moffat parameters varying smoothly with radius (and the elongation axis rotating tangentially, coma’s signature). The measurement side already exists: the star fitter’s per-zone field map <em>is</em> the sampled PSF field. The natural extension of the present method:</p>
+<ul>
+<li>fit the Moffat parameters as low-order functions of field position (radial polynomials suffice for centred aberrations);</li>
+<li>deconvolve by <strong>overlapping tiles</strong>, each with its locally interpolated kernel through the same MCS one-filter transform, cross-faded in the overlaps — the classic interpolated-PSF decomposition of Nagy &amp; O’Leary (1998), of which efficient filter flow (Hirsch et al.&nbsp;2010) is the modern refinement;</li>
+<li>keep the contract audit per zone: the delivered stellar FWHM map of the output must be flat at the declared target, which turns “the corners are soft” from an aesthetic complaint into a testable claim.</li>
+</ul>
+<p>Nothing about the certification argument changes: the field’s own stars supply the PSF field, and ground truth remains necessary only the first time, to certify the machinery.</p>
+</section>
 <section id="lessons-collected" class="level2">
 <h2 class="anchored" data-anchor-id="lessons-collected">Lessons, collected</h2>
 <ul>
@@ -580,6 +602,9 @@ Bertin, E., and S. Arnouts. 1996. <span>“<span>SExtractor</span>: Software for
 <div id="ref-xisf10" class="csl-entry" role="listitem">
 Conejero, Juan. 2015. <em><span>XISF</span> Version 1.0 Specification: Extensible Image Serialization Format</em>. Pleiades Astrophoto, <a href="https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html" class="uri">https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html</a>.
 </div>
+<div id="ref-hirsch2010" class="csl-entry" role="listitem">
+Hirsch, Michael, Suvrit Sra, Bernhard Schölkopf, and Stefan Harmeling. 2010. <span>“Efficient Filter Flow for Space-Variant Multiframe Blind Deconvolution.”</span> <em>IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 607–14. <a href="https://doi.org/10.1109/CVPR.2010.5540158">https://doi.org/10.1109/CVPR.2010.5540158</a>.
+</div>
 <div id="ref-joye2003" class="csl-entry" role="listitem">
 Joye, W. A., and E. Mandel. 2003. <span>“New Features of <span>SAOImage DS9</span>.”</span> <em>Astronomical Data Analysis Software and Systems XII</em>, ASP conference series, vol. 295: 489.
 </div>
@@ -591,6 +616,9 @@ Magain, P., F. Courbin, and S. Sohy. 1998. <span>“Deconvolution with Correct S
 </div>
 <div id="ref-moffat1969" class="csl-entry" role="listitem">
 Moffat, A. F. J. 1969. <span>“A Theoretical Investigation of Focal Stellar Images in the Photographic Emulsion and Application to Photographic Photometry.”</span> <em>Astronomy and Astrophysics</em> 3: 455–61.
+</div>
+<div id="ref-nagy1998" class="csl-entry" role="listitem">
+Nagy, James G., and Dianne P. O’Leary. 1998. <span>“Restoring Images Degraded by Spatially Variant Blur.”</span> <em>SIAM Journal on Scientific Computing</em> 19: 1063–82. <a href="https://doi.org/10.1137/S106482759528507X">https://doi.org/10.1137/S106482759528507X</a>.
 </div>
 <div id="ref-ghs2022" class="csl-entry" role="listitem">
 Payne, M., D. Robbins, and S. Carr. 2022. <em>The Generalised Hyperbolic Stretch: Equations and Rationale</em>. <a href="https://ghsastro.co.uk/">https://ghsastro.co.uk/</a>.
