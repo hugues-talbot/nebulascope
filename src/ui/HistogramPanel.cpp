@@ -199,6 +199,16 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
         auto* hdr = new QHBoxLayout();
         auto* al = new QLabel(tr("ADJUST"));
         al->setStyleSheet("color:#5b6876; font-size:10px; letter-spacing:1.5px; font-weight:600;");
+        // The sliders shape the WHOLE image — every channel at once, whatever
+        // the R/G/B selector shows. Say so in the header for RGB images: the
+        // live output histogram makes the all-channel effect visible, and the
+        // label explains it. Per-channel balance lives in the B/M/W handles.
+        al->setToolTip(tr("Adjustments apply to the whole image — every channel at once.\n"
+                          "Per-channel balance lives in the histogram handles (B/M/W)."));
+        connect(m_model, &StretchModel::changed, al, [this, al] {
+            al->setText(m_model->channelCount() >= 3 ? tr("ADJUST — ALL CHANNELS")
+                                                     : tr("ADJUST"));
+        });
         auto* adjReset = new QPushButton(tr("Reset"));
         adjReset->setCursor(Qt::PointingHandCursor);
         adjReset->setStyleSheet("font-size:10px; padding:1px 8px;");

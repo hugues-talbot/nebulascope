@@ -184,19 +184,19 @@ montre la part de l&apos;axe étendu affichée à l&apos;écran.</translation>
     </message>
     <message>
         <location filename="../ui/HistogramPanel.cpp" line="137"/>
-        <location filename="../ui/HistogramPanel.cpp" line="430"/>
+        <location filename="../ui/HistogramPanel.cpp" line="440"/>
         <source>Black</source>
         <translation>Noir</translation>
     </message>
     <message>
         <location filename="../ui/HistogramPanel.cpp" line="137"/>
-        <location filename="../ui/HistogramPanel.cpp" line="431"/>
+        <location filename="../ui/HistogramPanel.cpp" line="441"/>
         <source>Mid</source>
         <translation>Médian</translation>
     </message>
     <message>
         <location filename="../ui/HistogramPanel.cpp" line="137"/>
-        <location filename="../ui/HistogramPanel.cpp" line="432"/>
+        <location filename="../ui/HistogramPanel.cpp" line="442"/>
         <source>White</source>
         <translation>Blanc</translation>
     </message>
@@ -224,174 +224,187 @@ l&apos;ancrage habituel d&apos;un premier étirement GHS. Aussi : double-clic su
     </message>
     <message>
         <location filename="../ui/HistogramPanel.cpp" line="200"/>
+        <location filename="../ui/HistogramPanel.cpp" line="210"/>
         <source>ADJUST</source>
         <translation>AJUSTER</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="202"/>
-        <location filename="../ui/HistogramPanel.cpp" line="275"/>
+        <location filename="../ui/HistogramPanel.cpp" line="206"/>
+        <source>Adjustments apply to the whole image — every channel at once.
+Per-channel balance lives in the histogram handles (B/M/W).</source>
+        <translation>Les ajustements s'appliquent à l'image entière — tous les canaux à la fois.
+L'équilibre par canal vit dans les poignées de l'histogramme (B/M/W).</translation>
+    </message>
+    <message>
+        <location filename="../ui/HistogramPanel.cpp" line="209"/>
+        <source>ADJUST — ALL CHANNELS</source>
+        <translation>AJUSTER — TOUS LES CANAUX</translation>
+    </message>
+    <message>
+        <location filename="../ui/HistogramPanel.cpp" line="212"/>
+        <location filename="../ui/HistogramPanel.cpp" line="285"/>
         <source>Reset</source>
         <translation>Réinit.</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="205"/>
+        <location filename="../ui/HistogramPanel.cpp" line="215"/>
         <source>Reset adjustments only (stretch untouched)</source>
         <translation>Réinitialise les ajustements seuls (étirement intact)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="216"/>
+        <location filename="../ui/HistogramPanel.cpp" line="226"/>
         <source>Bright</source>
         <translation>Lumin.</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="216"/>
+        <location filename="../ui/HistogramPanel.cpp" line="226"/>
         <source>Brightness</source>
         <translation>Luminosité</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="217"/>
+        <location filename="../ui/HistogramPanel.cpp" line="227"/>
         <source>Contrast</source>
         <translation>Contraste</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="217"/>
+        <location filename="../ui/HistogramPanel.cpp" line="227"/>
         <source>Contrast (pivot at mid-gray)</source>
         <translation>Contraste (pivot au gris moyen)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="218"/>
+        <location filename="../ui/HistogramPanel.cpp" line="228"/>
         <source>Gamma</source>
         <translation>Gamma</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="218"/>
+        <location filename="../ui/HistogramPanel.cpp" line="228"/>
         <source>Gamma 0.33–3 (log scale)</source>
         <translation>Gamma 0,33–3 (échelle log)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="219"/>
+        <location filename="../ui/HistogramPanel.cpp" line="229"/>
         <source>Shadows</source>
         <translation>Ombres</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="219"/>
+        <location filename="../ui/HistogramPanel.cpp" line="229"/>
         <source>Lift / crush dark tones (black point pinned)</source>
         <translation>Relève / écrase les tons sombres (point noir épinglé)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="220"/>
+        <location filename="../ui/HistogramPanel.cpp" line="230"/>
         <source>Highlights</source>
         <translation>Htes lum.</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="220"/>
+        <location filename="../ui/HistogramPanel.cpp" line="230"/>
         <source>Boost / recover bright tones (white point pinned)</source>
         <translation>Renforce / récupère les tons clairs (point blanc épinglé)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="221"/>
+        <location filename="../ui/HistogramPanel.cpp" line="231"/>
         <source>Black pt</source>
         <translation>Pt noir</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="221"/>
+        <location filename="../ui/HistogramPanel.cpp" line="231"/>
         <source>Clip-in from black (display space)</source>
         <translation>Écrêtage depuis le noir (espace d&apos;affichage)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="222"/>
+        <location filename="../ui/HistogramPanel.cpp" line="232"/>
         <source>White pt</source>
         <translation>Pt blanc</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="222"/>
+        <location filename="../ui/HistogramPanel.cpp" line="232"/>
         <source>Clip-in from white (display space)</source>
         <translation>Écrêtage depuis le blanc (espace d&apos;affichage)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="223"/>
+        <location filename="../ui/HistogramPanel.cpp" line="233"/>
         <source>Temp</source>
         <translation>Temp.</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="223"/>
+        <location filename="../ui/HistogramPanel.cpp" line="233"/>
         <source>Colour temperature: blue ↔ amber</source>
         <translation>Température de couleur : bleu ↔ ambre</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="224"/>
+        <location filename="../ui/HistogramPanel.cpp" line="234"/>
         <source>Tint</source>
         <translation>Teinte</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="224"/>
+        <location filename="../ui/HistogramPanel.cpp" line="234"/>
         <source>Tint: green ↔ magenta</source>
         <translation>Teinte : vert ↔ magenta</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="225"/>
+        <location filename="../ui/HistogramPanel.cpp" line="235"/>
         <source>Hue</source>
         <translation>Rotation</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="225"/>
+        <location filename="../ui/HistogramPanel.cpp" line="235"/>
         <source>Hue rotation (degrees)</source>
         <translation>Rotation de teinte (degrés)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="226"/>
+        <location filename="../ui/HistogramPanel.cpp" line="236"/>
         <source>Saturation</source>
         <translation>Saturation</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="226"/>
+        <location filename="../ui/HistogramPanel.cpp" line="236"/>
         <source>Saturation about luminance</source>
         <translation>Saturation autour de la luminance</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="227"/>
+        <location filename="../ui/HistogramPanel.cpp" line="237"/>
         <source>Vibrance</source>
         <translation>Vibrance</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="227"/>
+        <location filename="../ui/HistogramPanel.cpp" line="237"/>
         <source>Saturation weighted to muted pixels (protects stars)</source>
         <translation>Saturation pondérée vers les pixels peu saturés (protège les étoiles)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="271"/>
+        <location filename="../ui/HistogramPanel.cpp" line="281"/>
         <source>Auto STF</source>
         <translation>Auto STF</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="272"/>
+        <location filename="../ui/HistogramPanel.cpp" line="282"/>
         <source>Per-channel auto stretch — equalises the channels (neutralises colour cast)</source>
         <translation>Étirement automatique par canal — égalise les canaux (neutralise une dominante)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="273"/>
+        <location filename="../ui/HistogramPanel.cpp" line="283"/>
         <source>Auto Linked</source>
         <translation>Auto lié</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="274"/>
+        <location filename="../ui/HistogramPanel.cpp" line="284"/>
         <source>One shared auto stretch for all channels — preserves colour balance</source>
         <translation>Un étirement automatique partagé par tous les canaux — préserve la balance des couleurs</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="276"/>
+        <location filename="../ui/HistogramPanel.cpp" line="286"/>
         <source>Apply to All</source>
         <translation>Appliquer à tout</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="277"/>
+        <location filename="../ui/HistogramPanel.cpp" line="287"/>
         <source>Share this stretch + adjustments with every image in the list
 (each applies as that image loads — same-session frames)</source>
         <translation>Partage cet étirement + ajustements avec chaque image de la liste
 (appliqué au chargement de chacune — images d&apos;une même session)</translation>
     </message>
     <message>
-        <location filename="../ui/HistogramPanel.cpp" line="287"/>
+        <location filename="../ui/HistogramPanel.cpp" line="297"/>
         <source>COLORBAR</source>
         <translation>BARRE DE COULEURS</translation>
     </message>

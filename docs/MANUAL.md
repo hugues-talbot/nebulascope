@@ -210,6 +210,15 @@ every stretch mode, with its own **Reset** (stretch untouched). All twelve
 apply to the stretched display values, so they compose identically with
 Linear/Log/Asinh/GHS:
 
+**Adjustments are global — every channel at once**, whatever the R/G/B
+selector shows (the selector scopes the histogram *view*, not the sliders;
+the live output histogram makes this visible). The division of labour:
+per-channel balance lives in the **B/M/W handles** — each channel carries
+its own window and midtone, which is a per-channel brightness/contrast/gamma
+family in calibrated form — while the sliders shape the whole image, and
+half of them (temperature, tint, hue, saturation, vibrance) are
+cross-channel by nature and could not scope to one channel anyway.
+
 ![ADJUST sliders, a temperature/saturation edit in progress](screenshots/adjust-panel.png)
 
 | Left column | Right column |

@@ -246,6 +246,16 @@ visible, dans chaque mode, avec son propre **Réinitialiser** (l'étirement
 n'est pas touché). Les douze curseurs s'appliquent aux valeurs d'affichage
 étirées, et se composent donc à l'identique avec Linéaire/Log/Asinh/GHS :
 
+**Les ajustements sont globaux — tous les canaux à la fois**, quel que soit
+le sélecteur R/V/B (le sélecteur porte sur la *vue* de l'histogramme, pas
+sur les curseurs ; l'histogramme de sortie en direct le rend visible). La
+répartition des rôles : l'équilibre par canal vit dans les **poignées
+B/M/W** — chaque canal porte sa propre fenêtre et ses tons moyens, une
+famille luminosité/contraste/gamma par canal sous forme étalonnée — tandis
+que les curseurs façonnent l'image entière, et la moitié d'entre eux
+(température, teinte, rotation, saturation, vibrance) sont inter-canaux par
+nature et ne pourraient de toute façon pas se limiter à un canal.
+
 ![Curseurs AJUSTER, une retouche température/saturation en cours](../screenshots/adjust-panel.png)
 
 | Colonne gauche | Colonne droite |
