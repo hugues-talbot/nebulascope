@@ -126,11 +126,29 @@ pixels, and an unweighted fit would match the sky while shrugging at the
 nebula. Weighting each residual by the (floored) target brightness makes
 the signal colours govern the fit while the small floor keeps the black
 point anchored. Stars are best excluded at the source — match starless
-renditions of both images. NebulaScope solves it by
-coordinate descent — four sweeps of golden-section line searches over
-$b_c \in [0, w_c)$, $w_c \in (b_c, 1]$, $\mathrm{mid}_c \in (b_c, w_c)$ —
-on up to $6 \times 10^4$ sample pairs. The root-mean-square residual per
-channel is reported in the status bar.
+renditions of both images.
+
+NebulaScope solves the per-channel problem by **coordinate descent whose
+one-dimensional subproblems are golden-section line searches**: black →
+white → midtone in turn, each over the full extended handle domain
+$[-1, 2]$ (one data span beyond each end — a black point below the data
+minimum is how a lifted reference floor is matched), sweeping until the
+objective stops improving (the black–white direction is a shallow valley,
+so the sweep count is adaptive rather than fixed), on up to
+$6 \times 10^4$ sample pairs.
+
+With the colour-mix stage on (the default), that per-channel fit is one
+**block of an outer alternation**. Cross-channel structure — a starless
+pair's transport is almost purely a palette rotation — is outside any
+per-channel family, so a second block fits a full $3\times 3$ colour
+mixer $M$ on the curves' output, by weighted least squares **in closed
+form** (one shared Gram-matrix inversion — exact, no search, no local
+minima). The two blocks alternate as a block coordinate descent: each
+round re-fits the curves against the *mixer-inverted* target, then
+re-solves the mixer; fitted sequentially instead, the least-squares
+escape is desaturation — the curves absorb a compromise the mixer can no
+longer undo. The root-mean-square residuals are reported in the status
+bar.
 
 The result is **only a stretch state**: it lives in the same place as any
 Auto STF, composes with copy/paste and *Apply to All*, persists in the

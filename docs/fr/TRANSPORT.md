@@ -140,11 +140,30 @@ Pondérer chaque résidu par la luminosité (avec plancher) de la cible fait
 gouverner l'ajustement par les couleurs du signal, tandis que le petit
 plancher maintient le point noir ancré. Les étoiles s'excluent au mieux à
 la source — faites correspondre des rendus sans étoiles des deux images.
-NebulaScope résout le problème par descente par coordonnées — quatre
-passes de recherches linéaires par section dorée sur $b_c \in [0, w_c)$,
-$w_c \in (b_c, 1]$, $\mathrm{mid}_c \in (b_c, w_c)$ — sur jusqu'à
-$6 \times 10^4$ paires d'échantillons. Le résidu quadratique moyen par
-canal est rapporté dans la barre d'état.
+
+NebulaScope résout le problème par canal par **descente par coordonnées
+dont les sous-problèmes unidimensionnels sont des recherches par section
+dorée** : noir → blanc → tons moyens tour à tour, chacun sur le domaine
+étendu des poignées $[-1, 2]$ (une pleine étendue des données au-delà de
+chaque extrémité — un point noir sous le minimum des données est la façon
+d'apparier un plancher de référence surélevé), en balayant jusqu'à ce que
+l'objectif cesse de s'améliorer (la direction noir–blanc est une vallée
+peu profonde : le nombre de passes est adaptatif, pas fixe), sur jusqu'à
+$6 \times 10^4$ paires d'échantillons.
+
+Avec l'étage de mélange couleur actif (le défaut), cet ajustement par
+canal est un **bloc d'une alternance externe**. La structure
+inter-canaux — le transport d'une paire sans étoiles est presque une pure
+rotation de palette — échappe à toute famille par canal : un second bloc
+ajuste donc un mélangeur couleur $3\times 3$ complet $M$ sur la sortie
+des courbes, par moindres carrés pondérés **en forme close** (une seule
+inversion de matrice de Gram partagée — exact, sans recherche, sans
+minima locaux). Les deux blocs alternent en descente par coordonnées par
+blocs : chaque tour réajuste les courbes contre la cible *inversée par le
+mélangeur*, puis résout à nouveau le mélangeur ; ajustés séquentiellement,
+l'échappatoire des moindres carrés est la désaturation — les courbes
+absorbent un compromis que le mélangeur ne peut plus défaire. Les résidus
+quadratiques moyens sont rapportés dans la barre d'état.
 
 Le résultat n'est **qu'un état d'étirement** : il vit au même endroit que
 n'importe quel Auto STF, se compose avec copier/coller et *Appliquer à
