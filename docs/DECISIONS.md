@@ -237,3 +237,22 @@ when present, so every existing sidecar and reader is untouched), with the
 reference renderer and a conformance case updated in the same commit.
 Lesson: when a fit keeps landing on desaturation, the family is too weak —
 grey is what least squares does when the right map is outside the model.
+
+## The histogram shows the result; the image waits for your hand (2026-08-31)
+
+Two user calls from field practice with Siril's GHS, landed together
+because each makes the other affordable. The histogram's filled shape is
+now the OUTPUT distribution — the result of the current stretch — computed
+as the measure pushforward of the input bins through the transfer curve:
+no image pass, microseconds, so it tracks every drag tick. (Pushforward,
+not point-mapping: mapping bin centres combs the plot wherever the curve's
+slope exceeds one; each input bin's mass spreads over the output interval
+of its edges.) The input histogram stays as a faint dotted outline, because
+the grips live on its axis. And because that live feedback is free, the
+image render — seconds per frame on a 60-Mpx master — is deferred entirely
+until the grip or slider is released: one render, from the final state.
+The old async-coalescing pipeline stays for everything non-interactive.
+Lesson: when live feedback is demanded of something expensive, look for a
+cheap statistic that answers the same question — the user was never
+watching individual pixels during a drag; they were watching the
+distribution.

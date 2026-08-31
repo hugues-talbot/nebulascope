@@ -27,6 +27,9 @@ public:
     void setSource(const ImageData* img);
 
 signals:
+    // A histogram grip or a panel slider is being dragged: the owner defers
+    // the image render until release (the plot's output histogram is live).
+    void interactiveDrag(bool active);
     // "Apply to All": the owner shares the current stretch with its list.
     void applyToAllRequested();
     // Common-axis button: the owner switches the model (re-expressing the

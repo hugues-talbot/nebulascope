@@ -101,12 +101,24 @@ Raw data are never modified by display operations. Each frame goes through:
 4. **Colormap** (mono images) — false-colour lookup.
 5. **Dithered 8-bit conversion** — removes banding in smooth gradients.
 
-Rendering is asynchronous: dragging any control stays fluid, the image
-catches up at render rate (intermediate positions are skipped, never queued).
+Rendering is asynchronous — and during a histogram-grip or slider drag the
+image render is **deferred entirely until release**: the live feedback comes
+from the histogram's output distribution (§3), which costs microseconds, so
+even a 60-megapixel frame drags fluidly and renders exactly once, from the
+final position.
 
 ## 3. Histogram & stretch control
 
-The Histogram panel (toggle **F3**) is the heart of the tool:
+The Histogram panel (toggle **F3**) is the heart of the tool. The filled
+shape it draws is the **output histogram** — the distribution of the
+displayed values, i.e. the *result* of the current stretch, computed by
+pushing the data histogram through the transfer curve (no image pass, so it
+tracks every drag live; this is the feedback that tells you when a stretch
+fills the output range well). The **input** histogram stays as a faint
+dotted outline — that is the axis the grips live on, and where the mode
+marker points. The transfer curve overlays both.
+
+Panel tour:
 
 ![Histogram panel: Linear mode, RGB image, per-channel lines](screenshots/histogram-linear.png)
 

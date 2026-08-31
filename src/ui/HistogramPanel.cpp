@@ -323,6 +323,12 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
     connect(zoomOutBtn, &QPushButton::clicked, this, [this] { m_view->zoomOut(); });
     connect(zoomInBtn, &QPushButton::clicked, this, [this] { m_view->zoomIn(); });
     connect(m_view, &HistogramView::axisModeChanged, this, &HistogramPanel::syncRangeBar);
+    connect(m_view, &HistogramView::interactiveDrag, this, &HistogramPanel::interactiveDrag);
+    // Panel sliders defer the image render the same way as plot grips.
+    for (QSlider* s : findChildren<QSlider*>()) {
+        connect(s, &QSlider::sliderPressed,  this, [this] { emit interactiveDrag(true); });
+        connect(s, &QSlider::sliderReleased, this, [this] { emit interactiveDrag(false); });
+    }
     connect(m_model, &StretchModel::changed, this, &HistogramPanel::syncRangeBar);
     connect(m_rangeBar, &QScrollBar::valueChanged, this, [this](int v) {
         if (m_rangeBarSync) return;

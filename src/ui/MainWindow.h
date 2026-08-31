@@ -68,6 +68,7 @@ private slots:
     void exportView();
     void exportRegion();
     void updateDisplay();
+    void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
@@ -362,6 +363,7 @@ protected:
     // intermediate states are coalesced (only the latest is rendered).
     QFutureWatcher<QImage>* m_renderWatcher = nullptr;
     bool        m_renderPending = false;  // a newer state arrived mid-render
+    int         m_renderHold = 0;         // nested interactive-drag holds
     QNetworkAccessManager* m_net = nullptr;   // Stellarium remote control
     QColorTransform m_iccToSrgb;          // embedded-ICC → sRGB (see updateIccTransform)
     bool        m_hasIcc = false;         // m_iccToSrgb is meaningful

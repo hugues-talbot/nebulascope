@@ -242,6 +242,7 @@ void MainWindow::buildUi() {
     m_rightDock = new QDockWidget(tr("Histogram"), this);
     m_rightDock->setObjectName("rightDock");
     m_hist = new HistogramPanel(&m_model, m_rightDock);
+    connect(m_hist, &HistogramPanel::interactiveDrag, this, &MainWindow::holdRenders);
     connect(m_hist, &HistogramPanel::applyToAllRequested,
             this, &MainWindow::applyStretchToAllList);
     // Common axis (RGB): switch the model's range policy; re-express the
@@ -4005,8 +4006,21 @@ QImage MainWindow::renderDisplayImage(const ImageData& img, const StretchModel& 
     return DisplayRenderer::render(img, m, m_hasIcc ? &m_iccToSrgb : nullptr);
 }
 
+// While a histogram grip or adjustment slider is held down, image renders
+// are deferred entirely — the histogram's OUTPUT curve gives the live
+// feedback for free, and the (multi-second on large frames) render runs
+// once, on release, from the final state.
+void MainWindow::holdRenders(bool on) {
+    if (on) { ++m_renderHold; return; }
+    if (m_renderHold > 0 && --m_renderHold == 0 && m_renderPending) {
+        m_renderPending = false;
+        updateDisplay();
+    }
+}
+
 void MainWindow::updateDisplay() {
     if (!m_image.isValid()) return;
+    if (m_renderHold > 0) { m_renderPending = true; return; }
     // Coalescing async render: the GUI thread never blocks on a frame. If a
     // render is in flight, just note that a newer state exists — when the
     // worker returns, the LATEST model state is rendered next (intermediate

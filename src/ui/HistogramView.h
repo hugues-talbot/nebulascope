@@ -52,6 +52,9 @@ public:
 
 signals:
     void axisModeChanged();
+    // True while a grip drag is in progress — the window defers the (heavy)
+    // image render until release; the plot's output histogram tracks live.
+    void interactiveDrag(bool active);
 
 public slots:
     void recomputeHistogram();             // rebuild bins from current ranges
@@ -94,6 +97,7 @@ private:
     int m_active = -1;
     bool m_logHist = true;                    // log vs linear frequency axis
     QString m_dragHandle;                     // "", b/m/w, SP/LP/HP
+    bool m_dragNotify = false;                // interactiveDrag(true) emitted
     int m_dragChannel = -1;                   // Linear RGB: drag one channel's line (-1 = linked)
 
     // Rebin cache: recomputeHistogram() fires on every model change (each drag

@@ -299,26 +299,97 @@ void HistogramView::paintEvent(QPaintEvent*) {
         if (std::fabs(u0) > 1e-6) mark(u0, QStringLiteral("0"), QColor("#4a3a2a"));
     }
 
-    // histogram areas (raw counts scaled linear or log per the toggle)
+    // OUTPUT histogram — the distribution of the DISPLAYED values, obtained
+    // by pushing the input bins through the per-channel scalar transfer
+    // (window + function + tone). No image pass: microseconds, so it tracks
+    // a drag LIVE while the image render itself waits for release. Drawn as
+    // the primary filled shape on a [0,1] output axis spanning the plot; the
+    // input histogram stays as a faint outline (the grips live on ITS axis).
     const int ch = int(m_hist.size());
+    {
+        constexpr int OB = 256;
+        double va2, vb2; viewRange(va2, vb2);
+        const int NL = 512;
+        for (int c = 0; c < ch; ++c) {
+            const auto& hb = m_hist[c];
+            const ChannelStretch cc = m_model->channel(c);
+            const double den = std::max(1e-6, cc.white - cc.black);
+            std::vector<float> lutc;
+            if (m_model->fn() == StretchFn::GHS) {
+                lutc = buildLut(StretchFn::GHS, cc, m_model->ghs(), NL);
+                if (!m_model->adjust().toneIdentity())
+                    for (float& v : lutc) v = applyTone(v, m_model->adjust());
+            }
+            auto evalY = [&](double u) -> double {
+                double t = (u - cc.black) / den;
+                t = t < 0 ? 0 : (t > 1 ? 1 : t);
+                float yv;
+                if (!lutc.empty()) {
+                    const double f = t * (NL - 1);
+                    const int i0 = int(f);
+                    const int i1 = i0 < NL - 1 ? i0 + 1 : i0;
+                    yv = lutc[i0] * float(1.0 - (f - i0)) + lutc[i1] * float(f - i0);
+                } else {
+                    yv = float(transferAt(t, m_model->fn(), cc, m_model->ghs()));
+                    if (!m_model->adjust().toneIdentity())
+                        yv = applyTone(yv, m_model->adjust());
+                }
+                return std::min(1.0, std::max(0.0, double(yv)));
+            };
+            // Proper measure pushforward: each input bin's count spreads over
+            // the OUTPUT interval of its EDGES. Mapping bin centres point-wise
+            // combs the plot wherever the curve's slope exceeds one.
+            std::vector<float> ob(OB, 0.0f);
+            const int nb = int(hb.size());
+            for (int i = 0; i < nb; ++i) {
+                if (hb[i] <= 0.0f) continue;
+                const double uA = va2 + double(i) / nb * (vb2 - va2);
+                const double uB = va2 + double(i + 1) / nb * (vb2 - va2);
+                double bA = evalY(uA) * (OB - 1), bB = evalY(uB) * (OB - 1);
+                if (bA > bB) std::swap(bA, bB);
+                const int iA = int(bA), iB = std::min(OB - 1, int(bB));
+                if (iA >= iB) { ob[iA] += hb[i]; continue; }
+                const double w = bB - bA;
+                for (int j = iA; j <= iB; ++j) {
+                    const double lo = std::max(bA, double(j));
+                    const double hi = std::min(bB, double(j + 1));
+                    if (hi > lo) ob[j] += hb[i] * float((hi - lo) / w);
+                }
+            }
+            float mx = 0.0f;
+            for (float v : ob) { const float sc = m_logHist ? std::log1p(v) : v; if (sc > mx) mx = sc; }
+            QPainterPath path;
+            path.moveTo(r.left(), r.bottom());
+            for (int i = 0; i < OB; ++i) {
+                const double x = r.left() + (double(i) / (OB - 1)) * r.width();
+                const double sc = m_logHist ? std::log1p(ob[i]) : double(ob[i]);
+                const double y = r.bottom() - (mx > 0 ? sc / mx : 0.0) * (r.height() - 4);
+                path.lineTo(x, y);
+            }
+            path.lineTo(r.right(), r.bottom());
+            path.closeSubpath();
+            QColor fill = (ch == 1) ? QColor("#9fb3c8") : CH_COL[c];
+            QColor f2 = fill; f2.setAlpha(ch == 1 ? 70 : 55);
+            g.setPen(QPen(fill, 1.0));
+            g.fillPath(path, f2);
+            g.drawPath(path);
+        }
+    }
+    // input histogram, faint outline — the reference the grips are placed on
     for (int c = 0; c < ch; ++c) {
         const auto& hb = m_hist[c];
         float mx = 0.0f;
-        for (float v : hb) { const float s = m_logHist ? std::log1p(v) : v; if (s > mx) mx = s; }
+        for (float v : hb) { const float sc = m_logHist ? std::log1p(v) : v; if (sc > mx) mx = sc; }
         QPainterPath path;
-        path.moveTo(r.left(), r.bottom());
         for (int i = 0; i < int(hb.size()); ++i) {
             const double x = r.left() + (double(i) / (hb.size() - 1)) * r.width();
-            const double s = m_logHist ? std::log1p(hb[i]) : double(hb[i]);
-            const double y = r.bottom() - (mx > 0 ? s / mx : 0.0) * (r.height() - 4);
-            path.lineTo(x, y);
+            const double sc = m_logHist ? std::log1p(hb[i]) : double(hb[i]);
+            const double y = r.bottom() - (mx > 0 ? sc / mx : 0.0) * (r.height() - 4);
+            if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
         }
-        path.lineTo(r.right(), r.bottom());
-        path.closeSubpath();
-        QColor fill = (ch == 1) ? QColor("#9fb3c8") : CH_COL[c];
-        QColor f2 = fill; f2.setAlpha(ch == 1 ? 70 : 55);
-        g.setPen(QPen(fill, 1.0));
-        g.fillPath(path, f2);
+        QColor line = (ch == 1) ? QColor("#9fb3c8") : CH_COL[c];
+        line.setAlpha(80);
+        g.setPen(QPen(line, 1.0, Qt::DotLine));
         g.drawPath(path);
     }
 
@@ -469,7 +540,12 @@ void HistogramView::mousePressEvent(QMouseEvent* e) {
         const int c = (m_active < 0) ? 0 : m_active;
         if (near(m_model->channel(c).mid)) m_dragHandle = "m";
     }
-    if (!m_dragHandle.isEmpty()) applyDrag(xToVal(px));
+    if (!m_dragHandle.isEmpty()) {
+        // Announce the drag BEFORE the first model change so even the initial
+        // snap defers the image render.
+        if (!m_dragNotify) { m_dragNotify = true; emit interactiveDrag(true); }
+        applyDrag(xToVal(px));
+    }
 }
 
 void HistogramView::mouseMoveEvent(QMouseEvent* e) {
@@ -501,6 +577,9 @@ void HistogramView::mouseReleaseEvent(QMouseEvent*) {
     m_dragHandle.clear();
     m_dragChannel = -1;
     if (windowEdge && m_model->fn() == StretchFn::Linear) zoomToWindow();
+    // Release AFTER any zoom-to-window: the one deferred render then sees the
+    // final state.
+    if (m_dragNotify) { m_dragNotify = false; emit interactiveDrag(false); }
 }
 
 void HistogramView::applyDrag(double v) {

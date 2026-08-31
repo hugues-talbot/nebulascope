@@ -120,13 +120,26 @@ Chaque image traverse :
 5. **Conversion 8 bits avec tramage** — supprime les bandes dans les
    dégradés doux.
 
-Le rendu est asynchrone : le déplacement d'un contrôle reste fluide, l'image
-rattrape au rythme du rendu (les positions intermédiaires sont sautées,
-jamais mises en file).
+Le rendu est asynchrone — et pendant le glissement d'une poignée
+d'histogramme ou d'un curseur, le rendu de l'image est **entièrement
+différé jusqu'au relâchement** : le retour visuel en direct vient de la
+distribution de sortie de l'histogramme (§3), qui coûte des microsecondes ;
+même une image de 60 mégapixels se manipule avec fluidité et n'est rendue
+qu'une seule fois, depuis la position finale.
 
 ## 3. Histogramme et contrôle de l'étirement
 
-Le panneau Histogramme (bascule **F3**) est le cœur de l'outil :
+Le panneau Histogramme (bascule **F3**) est le cœur de l'outil. La forme
+pleine qu'il dessine est l'**histogramme de sortie** — la distribution des
+valeurs affichées, c'est-à-dire le *résultat* de l'étirement courant,
+calculé en poussant l'histogramme des données à travers la courbe de
+transfert (aucun passage sur l'image : il suit chaque glissement en
+direct ; c'est le retour qui dit quand un étirement remplit bien la plage
+de sortie). L'histogramme d'**entrée** reste en fin pointillé — c'est
+l'axe sur lequel vivent les poignées, et où pointe le marqueur de mode. La
+courbe de transfert se superpose aux deux.
+
+Tour du panneau :
 
 ![Panneau histogramme : mode linéaire, image RVB, courbes par canal](../screenshots/histogram-linear.png)
 
