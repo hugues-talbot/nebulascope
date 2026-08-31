@@ -175,6 +175,58 @@ raw master and BXT. The product is not the sharpest image of the three; it
 is the only one whose every pixel is a stated linear functional of the
 data.
 
+## Was Hubble necessary?
+
+For the *deconvolution*: no — and noticing this is worth a section. The
+shipped product consumed only the frame's own stars (the Moffat PSF), a
+declared target, and a regularizer chosen by the delivered-PSF contract,
+itself checked on the frame's own stars. Not one HST pixel enters the
+operator. What the Hubble overlap provided is **certification** — three
+claims the deconvolution could not make about itself:
+
+1. that the star-derived PSF applies to extended structure at all (the
+   S II channel proved it: extended-structure kernel 1.92″ against a
+   stellar 1.96″ — textbook-true in principle, *measured* here);
+2. that the operator does not distort what it sharpens (the held-out
+   fidelity tie), including the negative certificate that a 1.5″ target
+   is unsupported by the data;
+3. the star-versus-nebula asymmetry of neural deconvolution, unknowable
+   without ground truth by definition.
+
+The right mental model is instrument calibration: the method was taken to
+the standard once, certified, and now transfers to any field with a few
+hundred usable stars — no HST overlap required. The certificate covers
+this optical system and processing chain; a materially changed setup
+deserves a re-issue, and the fit/validate framework for doing so is in
+the repository.
+
+## Future work: a spatially-variant PSF
+
+This field earned a single kernel per channel — stellar FWHM uniform to
+~5 % across 2°, eccentricity axis constant — but that is the exception
+among amateur optical trains, not the rule. Fast Newtonians, reduced
+refractors and imperfectly spaced flatteners show coma and astigmatism
+that grow radially: the PSF is then a *field* of kernels, typically well
+parameterized as elliptical Moffat parameters varying smoothly with
+radius (and the elongation axis rotating tangentially, coma's signature).
+The measurement side already exists: the star fitter's per-zone field map
+*is* the sampled PSF field. The natural extension of the present method:
+
+- fit the Moffat parameters as low-order functions of field position
+  (radial polynomials suffice for centred aberrations);
+- deconvolve by **overlapping tiles**, each with its locally interpolated
+  kernel through the same MCS one-filter transform, cross-faded in the
+  overlaps — the classic interpolated-PSF decomposition of Nagy &
+  O'Leary (1998), of which efficient filter flow (Hirsch et al. 2010) is
+  the modern refinement;
+- keep the contract audit per zone: the delivered stellar FWHM map of the
+  output must be flat at the declared target, which turns "the corners
+  are soft" from an aesthetic complaint into a testable claim.
+
+Nothing about the certification argument changes: the field's own stars
+supply the PSF field, and ground truth remains necessary only the first
+time, to certify the machinery.
+
 ## Lessons, collected
 
 - The unverified link in a calibration chain is where the error is; verify
