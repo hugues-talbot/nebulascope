@@ -204,6 +204,12 @@ vos données, de votre instrument, ni même de votre planète : le transport
 apparie des distributions, et ce qui reste différent après l'appariement
 relève de l'optique et de l'orbite, pas du traitement.*
 
+*Combien d'optique-et-d'orbite reste exactement est une question
+mesurable — l'appendice de l'édition anglaise, « Measuring a telescope
+against Hubble », prend cette paire précise et le mesure : la vraie PSF de
+la lunette à partir des structures étendues, sans étoiles, avec Hubble
+comme vérité terrain.*
+
 ## 4. En pratique
 
 - Boîte de dialogue : **Outils ▸ Transporter les couleurs d'une

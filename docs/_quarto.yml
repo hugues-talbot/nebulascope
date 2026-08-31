@@ -22,6 +22,7 @@ book:
     - ARCHITECTURE.md
     - DECISIONS.md
   appendices:
+    - PSF-STUDY.md
     - BUILDING-macos.md
     - BUILDING-linux.md
     - BUILDING-windows.md

@@ -182,6 +182,11 @@ The reference need not come from your data, your instrument, or even your
 planet: transport matches distributions, and what remains different after
 the match is optics and orbit, not processing.*
 
+*Exactly how much optics-and-orbit remains is a measurable question — the
+[PSF study appendix](PSF-STUDY.md) takes this very pair and measures it:
+the refractor's true PSF from the extended structure, star-free, with
+Hubble as ground truth.*
+
 ## 4. Practice
 
 - Dialog: **Tools ▸ Transport Colors from Reference…**, tick *Apply as
