@@ -428,11 +428,12 @@ div.csl-indent {
 <li><strong>Palette de couleurs</strong> (images mono) — table de fausses couleurs.</li>
 <li><strong>Conversion 8 bits avec tramage</strong> — supprime les bandes dans les dégradés doux.</li>
 </ol>
-<p>Le rendu est asynchrone : le déplacement d’un contrôle reste fluide, l’image rattrape au rythme du rendu (les positions intermédiaires sont sautées, jamais mises en file).</p>
+<p>Le rendu est asynchrone — et pendant le glissement d’une poignée d’histogramme ou d’un curseur, le rendu de l’image est <strong>entièrement différé jusqu’au relâchement</strong> : le retour visuel en direct vient de la distribution de sortie de l’histogramme (§3), qui coûte des microsecondes ; même une image de 60 mégapixels se manipule avec fluidité et n’est rendue qu’une seule fois, depuis la position finale.</p>
 </section>
 <section id="histogramme-et-contrôle-de-létirement" class="level2">
 <h2 class="anchored" data-anchor-id="histogramme-et-contrôle-de-létirement">3. Histogramme et contrôle de l’étirement</h2>
-<p>Le panneau Histogramme (bascule <strong>F3</strong>) est le cœur de l’outil :</p>
+<p>Le panneau Histogramme (bascule <strong>F3</strong>) est le cœur de l’outil. La forme pleine qu’il dessine est l’<strong>histogramme de sortie</strong> — la distribution des valeurs affichées, c’est-à-dire le <em>résultat</em> de l’étirement courant, calculé en poussant l’histogramme des données à travers la courbe de transfert (aucun passage sur l’image : il suit chaque glissement en direct ; c’est le retour qui dit quand un étirement remplit bien la plage de sortie). L’histogramme d’<strong>entrée</strong> reste en fin pointillé — c’est l’axe sur lequel vivent les poignées, et où pointe le marqueur de mode. La courbe de transfert se superpose aux deux.</p>
+<p>Tour du panneau :</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../screenshots/histogram-linear.png" class="img-fluid figure-img"></p>

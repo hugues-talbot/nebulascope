@@ -474,11 +474,12 @@ div.csl-indent {
 <li><strong>Colormap</strong> (mono images) — false-colour lookup.</li>
 <li><strong>Dithered 8-bit conversion</strong> — removes banding in smooth gradients.</li>
 </ol>
-<p>Rendering is asynchronous: dragging any control stays fluid, the image catches up at render rate (intermediate positions are skipped, never queued).</p>
+<p>Rendering is asynchronous — and during a histogram-grip or slider drag the image render is <strong>deferred entirely until release</strong>: the live feedback comes from the histogram’s output distribution (§3), which costs microseconds, so even a 60-megapixel frame drags fluidly and renders exactly once, from the final position.</p>
 </section>
 <section id="histogram-stretch-control" class="level2">
 <h2 class="anchored" data-anchor-id="histogram-stretch-control">3. Histogram &amp; stretch control</h2>
-<p>The Histogram panel (toggle <strong>F3</strong>) is the heart of the tool:</p>
+<p>The Histogram panel (toggle <strong>F3</strong>) is the heart of the tool. The filled shape it draws is the <strong>output histogram</strong> — the distribution of the displayed values, i.e.&nbsp;the <em>result</em> of the current stretch, computed by pushing the data histogram through the transfer curve (no image pass, so it tracks every drag live; this is the feedback that tells you when a stretch fills the output range well). The <strong>input</strong> histogram stays as a faint dotted outline — that is the axis the grips live on, and where the mode marker points. The transfer curve overlays both.</p>
+<p>Panel tour:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="screenshots/histogram-linear.png" class="img-fluid figure-img"></p>
