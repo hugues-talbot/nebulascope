@@ -59,7 +59,7 @@ public:
     // Annotation drawing tools: while a tool is armed, left-drag draws the
     // shape (dashed preview) instead of the zoom rectangle; Text is a single
     // click. The tool disarms itself after each shape.
-    enum class DrawTool { None, Ellipse, Line, Text, Register };
+    enum class DrawTool { None, Ellipse, Line, Text, Register, SkyPatch };
     void setDrawTool(DrawTool t);
     DrawTool drawTool() const { return m_tool; }
 
@@ -76,6 +76,9 @@ public:
 signals:
     void pixelHovered(int x, int y, double r, double g, double b, bool valid);
     void viewNavigated();                 // user zoomed/panned/fit this view
+    // Neutral-black picker: a small rectangle dragged over empty sky
+    // (image coordinates, normalized rect).
+    void skyPatchPicked(double x, double y, double w, double h);
     // Right-click without drag. x/y are image pixels; onImage says whether the
     // click landed inside the image bounds.
     void contextMenuRequested(const QPoint& globalPos, int x, int y, bool onImage);

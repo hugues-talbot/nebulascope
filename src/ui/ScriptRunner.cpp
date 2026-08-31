@@ -85,6 +85,10 @@ const CommandRef kCommands[] = {
     "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
     "standard FITS cards; annotations translate with the pixels. `view`\n"
     "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
+  {"blackpatch", {"blackpatch <x> <y> <w> <h>",
+    "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
+    "channel's black point becomes the patch median (M carried as a ratio,\n"
+    "W untouched). Menu equivalent: Stretch > Neutral Black from Sky Patch."}},
   {"rot90",      {"rot90 cw|ccw", "Lossless 90-degree rotation of the data."}},
   {"flip",       {"flip h|v", "Lossless horizontal/vertical flip of the data."}},
   {"rotate",     {"rotate <deg>",
@@ -454,6 +458,15 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         }
         else { err = "unknown adjustment"; return false; }
         m_w->m_model.setAdjust(a);
+        return true;
+    }
+    if (cmd == QLatin1String("blackpatch")) {
+        // blackpatch <x> <y> <w> <h> — the Neutral Black from Sky Patch
+        // computation on an image-coordinate rectangle (no drag needed).
+        if (t.size() < 5) { err = "blackpatch <x> <y> <w> <h>"; return false; }
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        m_w->onSkyPatchPicked(t[1].toDouble(), t[2].toDouble(),
+                              t[3].toDouble(), t[4].toDouble());
         return true;
     }
     if (cmd == QLatin1String("rot90")) {

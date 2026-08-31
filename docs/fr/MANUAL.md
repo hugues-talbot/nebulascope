@@ -176,6 +176,18 @@ Tour du panneau :
     identité** de la boîte GHS met D à zéro — une courbe identité exacte
     sur votre fenêtre linéaire, b/SP/LP/HP gardant leurs positions pour
     que remonter D reparte du même ancrage.
+  - **Noir neutre depuis une zone de ciel** (menu Étirement ; scripts :
+    `blackpatch x y w h`) : avec des piédestaux différents par filtre, le
+    risque est dans l'*estimation* — un mode automatique peut tomber sur
+    de la nébulosité — alors pointez : armez l'outil et tracez un petit
+    rectangle sur du ciel vraiment vide. Le point noir de chaque canal
+    devient la médiane de cette zone *dans ce canal* — la sémantique
+    exacte de trois glissements de B simultanés (tons moyens portés en
+    ratio, blanc intact) : non destructif, une seule étape d'annulation,
+    et les fenêtres neutralisées se transmettent à Log/Asinh *et* à GHS.
+    L'histogramme de sortie montre le résultat immédiatement, y compris la
+    part de bruit de ciel qui écrête désormais sous le noir — redescendez
+    B ensuite si cela compte pour votre cible.
   - *À la relâche, le tracé zoome sur la nouvelle fenêtre B–W* : la
     distribution d'une fenêtre étroite remplit alors la largeur et sa
     forme devient lisible (double-clic pour réajuster aux données

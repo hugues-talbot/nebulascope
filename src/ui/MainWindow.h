@@ -74,6 +74,7 @@ private slots:
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
     void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
     void onEllipseDrawn(double cx, double cy, double a, double b);
+    void onSkyPatchPicked(double x, double y, double w, double h);
     void onLineDrawn(double x1, double y1, double x2, double y2);
     void onTextPointPicked(double x, double y);
     void showRow(int row);      // decode + display the list item at row

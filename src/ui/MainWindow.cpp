@@ -922,6 +922,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         }
     });
     connect(v, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
+    connect(v, &ImageView::skyPatchPicked, this, &MainWindow::onSkyPatchPicked);
     connect(v, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(v, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
     connect(v, &ImageView::registerPointPicked, this,
@@ -1371,6 +1372,16 @@ void MainWindow::buildMenusAndToolbar() {
     });
     acts["apply_stf_all"] = stretch->addAction(tr("Apply Stretch to All"), QKeySequence("Shift+A"),
                                                this, &MainWindow::applyStretchToAllList);
+    // Neutral black from a hand-picked sky patch: with per-filter pedestals
+    // the ESTIMATE is the risky part (a mode can land on nebulosity), so the
+    // user points at truly empty sky and the patch median becomes each
+    // channel's black point — three simultaneous B-drags, M carried as a
+    // ratio, W untouched. Windows carry into every mode, GHS included.
+    acts["black_from_patch"] = stretch->addAction(tr("Neutral &Black from Sky Patch"), this, [this] {
+        if (!m_image.isValid()) return;
+        m_view->setDrawTool(ImageView::DrawTool::SkyPatch);
+        statusBar()->showMessage(tr("Drag a small rectangle over empty sky — its median becomes the black point in every channel"), 8000);
+    });
     stretch->addSeparator();
     acts["copy_stretch"] = stretch->addAction(tr("&Copy Stretch"), QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
     acts["paste_stretch_normalized"] = stretch->addAction(tr("&Paste Stretch (Normalized)"), QKeySequence("Ctrl+Alt+V"), this, [this]{ pasteStretchToSelected(true); });
@@ -4760,6 +4771,48 @@ void MainWindow::rebuildRecentMenus() {
          [this](const QString& p) { openPaths({ p }); });
     fill(m_recentJsonMenu, QStringLiteral("recentJson"),
          [this](const QString& p) { loadAnnotationsFile(p); });
+}
+
+// Sky-patch neutral black: per channel, the patch median (raw units) becomes
+// the black point — exactly the semantics of dragging B there by hand, so M
+// is carried as a ratio and W stays. Non-destructive, one undo step.
+void MainWindow::onSkyPatchPicked(double x, double y, double w, double h) {
+    if (!m_image.isValid()) return;
+    const int x0 = std::max(0, int(std::floor(x)));
+    const int y0 = std::max(0, int(std::floor(y)));
+    const int x1 = std::min(m_image.width(),  int(std::ceil(x + w)));
+    const int y1 = std::min(m_image.height(), int(std::ceil(y + h)));
+    if (x1 - x0 < 2 || y1 - y0 < 2) return;
+    const int nch = std::min(3, m_image.channels());
+    QStringList meds;
+    for (int c = 0; c < nch; ++c) {
+        const float* p = m_image.plane<float>(c);
+        std::vector<float> vals;
+        vals.reserve(std::size_t(x1 - x0) * (y1 - y0));
+        for (int yy = y0; yy < y1; ++yy)
+            for (int xx = x0; xx < x1; ++xx) {
+                const float v = p[std::size_t(yy) * m_image.width() + xx];
+                if (std::isfinite(v)) vals.push_back(v);
+            }
+        if (vals.size() < 4) continue;
+        std::nth_element(vals.begin(), vals.begin() + vals.size()/2, vals.end());
+        const double med = vals[vals.size()/2];
+        const double range = std::max(1e-12, m_model.hi(c) - m_model.lo(c));
+        const double u = (med - m_model.lo(c)) / range;      // normalized black point
+        ChannelStretch cs = m_model.channel(c);
+        if (u >= cs.white - 0.02) continue;                  // patch brighter than W: refuse
+        const double r = (cs.mid - cs.black) / std::max(1e-6, cs.white - cs.black);
+        cs.black = u;
+        cs.mid = u + r * (cs.white - u);                     // M as ratio, like a B-drag
+        m_model.setChannel(c, cs);
+        meds << QString::number(med, 'g', 6);
+    }
+    if (meds.isEmpty()) {
+        statusBar()->showMessage(tr("Sky patch unusable — brighter than the white point or too small"), 5000);
+        return;
+    }
+    statusBar()->showMessage(tr("Neutral black from sky patch — black points set to %1")
+                                 .arg(meds.join(QLatin1String(" / "))), 6000);
 }
 
 void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {

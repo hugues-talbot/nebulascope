@@ -156,6 +156,17 @@ Panel tour:
     The **Shape → identity** button in the GHS box sets D to zero — an
     exact identity curve over your Linear window, with b/SP/LP/HP keeping
     their positions so raising D resumes from the same anchor.
+  - **Neutral Black from Sky Patch** (Stretch menu; scripts:
+    `blackpatch x y w h`): with per-filter pedestals the risky part is the
+    *estimate* — an automatic mode can land on nebulosity — so you point
+    instead: arm the tool and drag a small rectangle over truly empty sky.
+    Each channel's black point becomes that patch's median *in that
+    channel* — the exact semantics of three simultaneous B-drags (midtone
+    carried as a ratio, white untouched), so it is non-destructive, one
+    undo step, and the neutralized windows carry into Log/Asinh *and* GHS.
+    The output histogram shows the result instantly, including how much
+    sky noise now clips below black — nudge B down afterwards if that
+    matters for your target.
   - *GHS* (Generalised Hyperbolic Stretch): **D** (strength) and **b** (local
     focus) sliders, plus draggable **SP** (symmetry point — where contrast is
     concentrated) and **LP/HP** (shadow/highlight protection) handles, all

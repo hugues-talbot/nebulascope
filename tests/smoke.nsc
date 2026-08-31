@@ -368,4 +368,17 @@ assert rows 4
 action reset_orientation
 split 1x1
 
+# Neutral Black from Sky Patch: each channel's black point becomes the
+# patch median (per channel!), the midtone keeps its RATIO in the new
+# window (0.5 here, so M lands midway between the new B and W), and W is
+# untouched — the semantics of three simultaneous B-drags.
+open tests/testdata/pi_f32_plain.xisf
+waitloaded
+window all 0 0.5 1
+blackpatch 20 20 40 40
+assert stretch 0 0.394173443 0.697086722 1 1e-6
+assert stretch 1 0.347260952 0.673630476 1 1e-6
+assert stretch 2 0.380063742 0.690031871 1 1e-6
+action undo
+
 quit
