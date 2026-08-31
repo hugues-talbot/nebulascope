@@ -58,6 +58,7 @@ private:
     void syncRangeBar();
     QButtonGroup* m_fnGroup = nullptr;
     QButtonGroup* m_chanGroup = nullptr;
+    QWidget* m_midBox = nullptr;           // Log/Asinh: the M -> identity row
     QWidget* m_ghsBox = nullptr;
     QSlider* m_dSlider = nullptr;
     QSlider* m_bSlider = nullptr;

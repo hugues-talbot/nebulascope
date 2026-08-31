@@ -189,10 +189,48 @@ HistogramPanel::HistogramPanel(StretchModel* model, QWidget* parent)
                               "usual anchor for a first GHS stretch. Also: double-click the SP grip."));
         connect(spPeak, &QPushButton::clicked, this, [this] { m_view->snapSpToMode(); });
         row->addWidget(spPeak);
+        // Identity restart for the COMPOSED workflow: set up the Linear
+        // window first, then neutralize this mode's curve and shape from a
+        // known state. D = 0 is the exact GHS identity; b/SP/LP/HP keep
+        // their positions so raising D resumes from the same anchor.
+        auto* ghsId = new QPushButton(tr("Shape → identity"));
+        ghsId->setCursor(Qt::PointingHandCursor);
+        ghsId->setToolTip(tr("Reset the GHS strength to zero: the curve becomes the identity\n"
+                             "over your Linear window (B/W untouched). b, SP, LP and HP keep\n"
+                             "their positions, so raising D resumes from the same anchor."));
+        connect(ghsId, &QPushButton::clicked, this, [this] {
+            GHSParams g = m_model->ghs();
+            g.D = 0.0;
+            m_model->setGhs(g);
+        });
+        row->addWidget(ghsId);
         row->addStretch();
         gl->addLayout(row);
     }
     root->addWidget(m_ghsBox);
+
+    // --- Log/Asinh: neutralize the midtones carried over from Linear -------
+    m_midBox = new QWidget();
+    {
+        auto* ml = new QHBoxLayout(m_midBox);
+        ml->setContentsMargins(0, 0, 0, 0);
+        auto* midId = new QPushButton(tr("M → identity"));
+        midId->setCursor(Qt::PointingHandCursor);
+        midId->setToolTip(tr("Reset every channel's midtone to neutral (the window midpoint):\n"
+                             "the curve becomes the pure Log/Asinh shape over your Linear\n"
+                             "window. B and W are untouched."));
+        connect(midId, &QPushButton::clicked, this, [this] {
+            for (int c = 0; c < 3; ++c) {
+                ChannelStretch cs = m_model->channel(c);
+                cs.mid = 0.5*(cs.black + cs.white);
+                m_model->setChannel(c, cs);
+            }
+        });
+        ml->addWidget(midId);
+        ml->addStretch();
+    }
+    root->addWidget(m_midBox);
+    m_midBox->setVisible(false);
 
     // --- post-stretch display adjustments (always visible, any mode) ---
     {
@@ -366,6 +404,8 @@ void HistogramPanel::syncFromModel() {
     if (auto* b = m_fnGroup->button(static_cast<int>(m_model->fn()))) b->setChecked(true);
     const bool ghs = m_model->fn() == StretchFn::GHS;
     m_ghsBox->setVisible(ghs);
+    m_midBox->setVisible(m_model->fn() == StretchFn::Log ||
+                         m_model->fn() == StretchFn::Asinh);
     m_chanGroup->button(0) && m_chanGroup->button(0);   // no-op guard
     // keep sliders in sync without re-emitting
     QSignalBlocker bd(m_dSlider), bb(m_bSlider);

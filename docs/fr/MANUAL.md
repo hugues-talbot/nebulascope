@@ -153,6 +153,23 @@ Tour du panneau :
     les trois ensemble.
   - *Log* et *Asinh* se composent avec la fenêtre linéaire ; le tracé zoome
     sur la fenêtre pour que leurs contrôles utilisent toute la largeur.
+    Les deux conservent la fenêtre **et les tons moyens par canal** : la
+    poignée M déplace les tons moyens du canal actif dans ces modes aussi.
+    Le bouton **M → identité** remet les tons moyens de chaque canal au
+    neutre (le milieu de la fenêtre) sans toucher B/W — repartez de la
+    forme Log/Asinh pure sur votre réglage linéaire.
+  - **Qui est par canal ?** *Linéaire* : B, M et W, tous par canal. *Log* /
+    *Asinh* : B/W et M par canal ; la loi de compression elle-même est
+    fixe. *GHS* : la forme (D, b, SP, LP, HP) est **unique, partagée par
+    tous les canaux**, mais exprimée en coordonnées *fenêtrées* — chaque
+    canal applique toujours sa propre fenêtre B/W en dessous, donc SP à
+    0,18 tombe à 18 % de la fenêtre *propre* à chaque canal : la forme est
+    partagée, son ancrage est par canal. Flux de travail prévu :
+    équilibrez les canaux en Linéaire (fenêtres et tons moyens), puis
+    façonnez en GHS par-dessus cet équilibre. Le bouton **Forme →
+    identité** de la boîte GHS met D à zéro — une courbe identité exacte
+    sur votre fenêtre linéaire, b/SP/LP/HP gardant leurs positions pour
+    que remonter D reparte du même ancrage.
   - *À la relâche, le tracé zoome sur la nouvelle fenêtre B–W* : la
     distribution d'une fenêtre étroite remplit alors la largeur et sa
     forme devient lisible (double-clic pour réajuster aux données

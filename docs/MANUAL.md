@@ -134,7 +134,23 @@ Panel tour:
     window it chose). Moving B or W carries the midtone M along as a ratio,
     so the window's ends are never blocked by M.
   - *Log* and *Asinh* compose with the linear window; the plot zooms into the
-    window so their controls use the full widget width.
+    window so their controls use the full widget width. Both keep the
+    **per-channel** window *and midtone*: the draggable M grip moves the
+    active channel's midtone in these modes too. The **M → identity** button
+    resets every channel's midtone to neutral (the window midpoint) without
+    touching B/W — start the mode from the pure Log/Asinh shape over your
+    Linear setup.
+  - **Who is per-channel?** *Linear*: B, M and W, all per channel. *Log* /
+    *Asinh*: B/W and M per channel; the compression law itself is fixed.
+    *GHS*: the shape (D, b, SP, LP, HP) is **one, shared by all channels**,
+    but it is expressed in *windowed* coordinates — each channel still
+    applies its own B/W window underneath, so SP at 0.18 lands 18 % of the
+    way through each channel's *own* window: the shape is shared, its
+    anchoring is per-channel. Intended workflow: balance the channels in
+    Linear (windows and midtones), then shape in GHS on top of that balance.
+    The **Shape → identity** button in the GHS box sets D to zero — an
+    exact identity curve over your Linear window, with b/SP/LP/HP keeping
+    their positions so raising D resumes from the same anchor.
   - *GHS* (Generalised Hyperbolic Stretch): **D** (strength) and **b** (local
     focus) sliders, plus draggable **SP** (symmetry point — where contrast is
     concentrated) and **LP/HP** (shadow/highlight protection) handles, all
