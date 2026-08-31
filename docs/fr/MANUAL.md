@@ -344,7 +344,10 @@ Les images RVB ignorent la palette (le sélecteur est désactivé).
 - **Survol** — la barre d'état affiche (x, y), les valeurs brutes par canal,
   et AD/Déc quand une solution astrométrique existe.
 
-Commandes de zoom : **Ajuster à la vue** et **1:1** (touche **1**) dans le
+Commandes de zoom : **Ajuster à la vue** (**F**), **Ajuster à la largeur**
+(**W** — remplit la largeur de la vue ; une image en portrait remplit
+l'écran et se fait défiler verticalement, votre position verticale étant
+conservée) et **1:1** (touche **1**) dans le
 menu Affichage et la barre d'outils — et le zoom clavier pour travailler
 sans souris : **>** / **<** par pas de 10 %, **.** / **,** par pas de 3 %
 (les deux pourcentages sont réglables dans les Préférences), centrés sur la

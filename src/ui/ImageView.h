@@ -30,6 +30,7 @@ public:
     void setMarker(int x, int y);
     void setSource(const ImageData* img) { m_src = img; }   // for pixel readout
     void zoomToFit();
+    void zoomToWidth();             // fill the viewport WIDTH (portrait images fill the screen; scroll vertically)
     void zoomActualSize();          // 1:1 — one image pixel per screen pixel, centred on the current view
     void zoomBy(double factor);     // keyboard zoom about the viewport centre
 

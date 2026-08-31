@@ -300,8 +300,10 @@ Mouse (in any view):
 - **Hover** — status bar shows (x, y), raw channel values, and RA/Dec when a
   plate solution exists.
 
-Zoom commands: **Zoom to Fit** and **1:1** (key **1**) in the View menu and
-toolbar — and keyboard zoom for mouse-free work: **>** / **<** step by 10%,
+Zoom commands: **Zoom to Fit** (**F**), **Zoom to Width** (**W** — fill the
+viewport width; a portrait image fills the screen and you scroll it
+vertically, your vertical position kept) and **1:1** (key **1**) in the
+View menu and toolbar — and keyboard zoom for mouse-free work: **>** / **<** step by 10%,
 **.** / **,** by 3% (both percentages configurable in Preferences), centred
 on the view. With the image view focused, the **arrow keys pan**; with the
 image list focused, ↑/↓ walk the list (blinking itself stays on

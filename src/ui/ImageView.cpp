@@ -9,6 +9,7 @@
 #include <QMimeData>
 #include <QDragEnterEvent>
 #include <QScrollBar>
+#include <QStyle>
 #include <cmath>
 
 namespace astro {
@@ -125,6 +126,27 @@ void ImageView::drawForeground(QPainter* p, const QRectF& rect) {
 void ImageView::zoomToFit() {
     if (m_item) fitInView(m_item->boundingRect(), Qt::KeepAspectRatio);
     if (!m_adopting) emit viewNavigated();     // scale change may not move scrollbars
+}
+
+void ImageView::zoomToWidth() {
+    if (!m_item) return;
+    const QRectF br = m_item->boundingRect();
+    const QPointF centre = mapToScene(viewport()->rect().center());
+    double avail = viewport()->width();
+    double s = avail / std::max(1.0, br.width());
+    // A portrait image at fit-width overflows vertically, which summons the
+    // vertical scrollbar and eats width — pre-subtract its extent so no
+    // horizontal scrollbar appears in turn.
+    if (s * br.height() > viewport()->height() &&
+        verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff) {
+        avail -= style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, this);
+        s = avail / std::max(1.0, br.width());
+    }
+    resetTransform();
+    scale(s, s);
+    // Full width horizontally; keep the vertical position the user was at.
+    centerOn(QPointF(br.center().x(), centre.y()));
+    if (!m_adopting) emit viewNavigated();
 }
 
 void ImageView::zoomActualSize() {

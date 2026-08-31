@@ -1110,6 +1110,8 @@ void MainWindow::buildMenusAndToolbar() {
     // built — in split views, F/1 would then always act on cell 0.
     acts["zoom_to_fit"] = view->addAction(tr("Zoom to &Fit"), QKeySequence("F"),
                                           this, [this] { m_view->zoomToFit(); });
+    acts["zoom_to_width"] = view->addAction(tr("Zoom to &Width"), QKeySequence("W"),
+                                            this, [this] { m_view->zoomToWidth(); });
     acts["zoom_actual_size"] = view->addAction(tr("Zoom &1:1"), QKeySequence("1"),
                                                this, [this] { m_view->zoomActualSize(); });
     // Keyboard zoom (no wheel needed): > / < coarse, . / , fine — step
