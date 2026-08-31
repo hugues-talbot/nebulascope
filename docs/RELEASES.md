@@ -2,6 +2,66 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.96 — 2026-08-31
+
+v0.96 — the histogram shows the result: live output distribution, sky-patch neutral black, identity restarts
+
+Highlights:
+
+- **The histogram shows the OUTPUT distribution** — the filled shape is
+  now the result of the current stretch (the input stays as a faint
+  dotted outline; the transfer curve overlays both), computed by pushing
+  the data histogram through the curve — no image pass, so it tracks
+  every drag tick live. And because that feedback is free, the image
+  render is **deferred until the control is released**: a 60-megapixel
+  master drags fluidly and renders once, from the final position.
+- **Neutral Black from Sky Patch** — neutralising the background is a
+  per-filter-pedestal problem, and the estimate is the risky part: so you
+  point. Drag a small rectangle over truly empty sky and each channel's
+  black point becomes that patch's median in that channel — exactly three
+  simultaneous B-drags (midtone as a ratio, white untouched),
+  non-destructive, one undo step. It lives in the B/W windows, so it
+  survives into Log/Asinh and GHS. Scripts: `blackpatch x y w h`.
+- **Identity restarts for the composed stretch** — set up Linear, then
+  neutralize before shaping: **M → identity** (Log/Asinh) resets every
+  channel's midtone to the window midpoint; **Shape → identity** (GHS)
+  sets D to zero with b/SP/LP/HP keeping their anchors. The manual now
+  states who is per-channel (Linear: B/M/W; Log/Asinh: window and
+  midtone; GHS: one shared shape anchored through each channel's own
+  window — and the midtone is NOT part of the GHS composition).
+- **Lossless colour transport can turn a palette** — the "as stretch"
+  fit's colour stage is now a fitted 3×3 mixer (closed-form weighted
+  least squares), alternated with the per-channel curves so the two
+  stages solve a joint problem. Starless pairs — whose transport is
+  mostly a cross-channel rotation — now match instead of washing out
+  grey. The display block gains schema 2 (optional `adjust.mix`, written
+  only when present; reference renderer and conformance case updated),
+  and both lossless options are on by default.
+- **Reset Orientation is forceful** — rotation state lives in three
+  places (data histories, calibrated-link transforms, view navigation)
+  and a calibrated Match legitimately puts rotation into the viewport;
+  Reset Orientation now vacates all of it, for every image and every
+  view, redisplaying everything as freshly read. No confirmation: the
+  result is the well-defined just-opened state.
+- **The visible region is the quad, not its bounding box** — with a
+  rotated navigation, Export Zoomed Region is now WYSIWYG (resampled
+  through the view transform; scripts: `export region <path>`), and data
+  crops and the colour-transport relevance masks use the largest
+  rectangle INSIDE what is shown — off-screen sky no longer steers a
+  transport (the "khaki wash" field report).
+- **Zoom to Width (W)** — fill the viewport width; a portrait image
+  fills the screen and scrolls vertically, keeping your position.
+- **Appendix: Measuring a telescope against Hubble** — the PSF study
+  (star-free kernels against HST ground truth, the stellar/nebulosity
+  asymmetry of neural deconvolution, and a full-frame calibrated
+  deconvolution with a stated, audited model) joins the book as an
+  appendix, with its four instruments under `tools/psf_study/`.
+
+Also: the ADJUST header says what it does (all channels — the selector
+scopes the histogram view, not the sliders), and the colour-fit stage's
+hue search domain is fixed (it was capped at one degree; a starless
+palette rotation could never be expressed).
+
 ## v0.95 — 2026-08-19
 
 v0.95 — comparison as an instrument: Match, Values in All Views, the open display format
