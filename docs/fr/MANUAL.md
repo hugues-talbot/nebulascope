@@ -164,7 +164,13 @@ Tour du panneau :
     tous les canaux**, mais exprimée en coordonnées *fenêtrées* — chaque
     canal applique toujours sa propre fenêtre B/W en dessous, donc SP à
     0,18 tombe à 18 % de la fenêtre *propre* à chaque canal : la forme est
-    partagée, son ancrage est par canal. Flux de travail prévu :
+    partagée, son ancrage est par canal. **Les tons moyens M ne font pas
+    partie de la composition GHS** — GHS est une famille de courbes
+    complète dont le rôle des tons moyens est tenu par D/b/SP (comme dans
+    le GHS de Siril et de PixInsight) : seuls B et W sont repris du mode
+    Linéaire. Conséquence pratique : un équilibre entre canaux exprimé par
+    les tons moyens ne survit *pas* au passage en GHS — l'équilibre destiné
+    à une session GHS doit vivre dans les fenêtres B/W. Flux de travail prévu :
     équilibrez les canaux en Linéaire (fenêtres et tons moyens), puis
     façonnez en GHS par-dessus cet équilibre. Le bouton **Forme →
     identité** de la boîte GHS met D à zéro — une courbe identité exacte

@@ -146,7 +146,12 @@ Panel tour:
     but it is expressed in *windowed* coordinates — each channel still
     applies its own B/W window underneath, so SP at 0.18 lands 18 % of the
     way through each channel's *own* window: the shape is shared, its
-    anchoring is per-channel. Intended workflow: balance the channels in
+    anchoring is per-channel. **The midtone M is not part of the GHS
+    composition** — GHS is a complete curve family whose midtone role is
+    played by D/b/SP (as in Siril's and PixInsight's GHS), so only B and W
+    carry over from Linear. Practical consequence: per-channel balance
+    expressed through the midtones does *not* survive into GHS — balance
+    intended for a GHS session must live in the B/W windows. Intended workflow: balance the channels in
     Linear (windows and midtones), then shape in GHS on top of that balance.
     The **Shape → identity** button in the GHS box sets D to zero — an
     exact identity curve over your Linear window, with b/SP/LP/HP keeping
