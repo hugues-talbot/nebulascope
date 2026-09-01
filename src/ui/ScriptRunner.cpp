@@ -89,6 +89,12 @@ const CommandRef kCommands[] = {
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
     "(rotated ellipses at the fitted shape; the report dialog's button).\n"
     "label: 0 none, 1 FWHM, 2 eccentricity, 3 both."}},
+  {"deconv",     {"deconv <target_fwhm_px> [lambda]",
+    "Deconvolve the current LINEAR image to a round Gaussian PSF of the\n"
+    "declared FWHM (px), using the measured stellar PSF as the kernel (runs\n"
+    "the measurement first if needed). New in-memory list entry. Omitted\n"
+    "lambda = contract-first automatic selection.\n"
+    "Menu equivalent: Tools > Deconvolve to Target PSF."}},
   {"blackpatch", {"blackpatch <x> <y> <w> <h>",
     "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
     "channel's black point becomes the patch median (M carried as a ratio,\n"
@@ -470,6 +476,18 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         m_w->annotatePsfStars(t.size() > 1 ? t[1].toInt() : 0,
                               t.size() > 2 ? t[2].toInt() : 60,
                               t.size() > 3 ? t[3].toInt() : 0);
+        return true;
+    }
+    if (cmd == QLatin1String("deconv")) {
+        // deconv <target_fwhm_px> [lambda] — deconvolve the current image to
+        // the declared circular Gaussian, measuring the PSF first if needed.
+        // No lambda (or 0) = contract-first automatic selection.
+        if (t.size() < 2) { err = "deconv <target_fwhm_px> [lambda]"; return false; }
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        bool ok = false;
+        const double f = t[1].toDouble(&ok);
+        if (!ok || f <= 0) { err = "bad target FWHM"; return false; }
+        m_w->scriptDeconvolve(f, t.size() > 2 ? t[2].toDouble() : 0.0);
         return true;
     }
     if (cmd == QLatin1String("blackpatch")) {

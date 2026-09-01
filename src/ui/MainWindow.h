@@ -72,6 +72,11 @@ private slots:
     void measurePsfAction();               // Tools > Measure PSF (Stars)
     void showPsfReport();                  // dialog over m_lastPsf
     void annotatePsfStars(int channel, int count, int labelMode = 0);
+    void deconvolveAction();               // Tools > Deconvolve to Target PSF
+    bool psfCacheValid() const;            // m_psfCache entry fresh for current image?
+    void runPsfMeasurement(std::function<void()> whenDone);  // measure + cache, then continue
+    void runDeconvolution(double targetFwhmPx, double lambda, bool protectCores); // lambda <= 0: contract-first
+    void scriptDeconvolve(double fwhmPx, double lambda);     // script `deconv` (synchronous)
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun

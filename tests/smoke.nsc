@@ -395,6 +395,11 @@ action measure_psf
 psfannotate 0 5 3
 action undo
 
+# Deconvolve guard: this fixture cannot define a kernel (too few fitted
+# stars), and the command must say so and change nothing — the delivered-PSF
+# contract itself runs in test_deconv on a synthetic field with exact truth.
+deconv 2.0
+
 # Decoded-image cache: the third visit to sample.fits in this run serves the
 # cached decode — the data must be bit-identical to a fresh read (and an
 # in-session save that OVERWRITES a cached file must never be masked: the

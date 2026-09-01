@@ -26,6 +26,7 @@
 #include "render/DisplayRenderer.h"
 #include "core/Colormap.h"
 #include "core/Transform.h"
+#include "core/Deconvolve.h"
 
 #include <QDockWidget>
 #include <QListWidget>
@@ -1401,6 +1402,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["combine_stars"] = tools->addAction(tr("Combine &Stars (screen)…"), this, &MainWindow::combineStars);
     acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
     acts["measure_psf"] = tools->addAction(tr("&Measure PSF (Stars)…"), this, &MainWindow::measurePsfAction);
+    acts["deconvolve"] = tools->addAction(tr("&Deconvolve to Target PSF…"), this, &MainWindow::deconvolveAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -4065,36 +4067,45 @@ static QString psfReportText(const std::vector<PsfChannelReport>& reps,
     return out;
 }
 
+bool MainWindow::psfCacheValid() const {
+    const auto hit = m_psfCache.constFind(m_currentPath);
+    if (hit == m_psfCache.constEnd()) return false;
+    const QFileInfo fi(splitHduBase(m_currentPath));
+    return hit->mtime == fi.lastModified() && hit->fsize == fi.size() &&
+           hit->xformOps == m_xformByPath.value(m_currentPath) &&
+           hit->debayerMode == m_debayerByPath.value(m_currentPath, 0);
+}
+
 void MainWindow::measurePsfAction() {
     if (!m_image.isValid()) return;
-    const QString path = m_currentPath;
     // Result cache: the 2 700-fit computation is redone only when the image
     // actually changed — on disk, by rotation, or by debayer mode. Otherwise
     // the menu action simply reopens the report.
-    const QFileInfo fi(splitHduBase(path));
-    const QStringList ops = m_xformByPath.value(path);
-    const int dmode = m_debayerByPath.value(path, 0);
-    auto hit = m_psfCache.constFind(path);
-    if (hit != m_psfCache.constEnd() &&
-        hit->mtime == fi.lastModified() && hit->fsize == fi.size() &&
-        hit->xformOps == ops && hit->debayerMode == dmode) {
-        m_lastPsf = hit->reports;
-        m_lastPsfPath = path;
+    auto show = [this] {
         if (m_scriptDriving) {
             fprintf(stderr, "%s", psfReportText(m_lastPsf,
                     m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0).toUtf8().constData());
+            statusBar()->showMessage(tr("PSF measured — %1 channel(s)").arg(m_lastPsf.size()), 4000);
         } else {
             showPsfReport();
         }
+    };
+    if (psfCacheValid()) {
+        m_lastPsf = m_psfCache.value(m_currentPath).reports;
+        m_lastPsfPath = m_currentPath;
+        show();
         return;
     }
+    runPsfMeasurement(show);
+}
+
+void MainWindow::runPsfMeasurement(std::function<void()> whenDone) {
+    const QString path = m_currentPath;
+    const QFileInfo fi(splitHduBase(path));
+    const QStringList ops = m_xformByPath.value(path);
+    const int dmode = m_debayerByPath.value(path, 0);
     const ImageData img = m_image;                 // deep copy for the worker
     const int nch = std::min(3, img.channels());
-    auto compute = [img, nch]() {
-        std::vector<PsfChannelReport> reps;
-        for (int c = 0; c < nch; ++c) reps.push_back(measurePsf(img, c));
-        return reps;
-    };
     auto store = [this, path, fi, ops, dmode](std::vector<PsfChannelReport> reps) {
         m_lastPsf = std::move(reps);
         m_lastPsfPath = path;
@@ -4106,11 +4117,11 @@ void MainWindow::measurePsfAction() {
         ce.debayerMode = dmode;
         m_psfCache.insert(path, std::move(ce));
     };
-    if (m_scriptDriving) {                          // synchronous, printable
-        store(compute());
-        fprintf(stderr, "%s", psfReportText(m_lastPsf,
-                m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0).toUtf8().constData());
-        statusBar()->showMessage(tr("PSF measured — %1 channel(s)").arg(m_lastPsf.size()), 4000);
+    if (m_scriptDriving) {                          // synchronous
+        std::vector<PsfChannelReport> reps;
+        for (int c = 0; c < nch; ++c) reps.push_back(measurePsf(img, c));
+        store(std::move(reps));
+        if (whenDone) whenDone();
         return;
     }
     // Live progress: the worker ticks shared atomics (stars fitted / total,
@@ -4153,7 +4164,7 @@ void MainWindow::measurePsfAction() {
     tick->start(150);
     auto* watcher = new QFutureWatcher<std::vector<PsfChannelReport>>(this);
     connect(watcher, &QFutureWatcher<std::vector<PsfChannelReport>>::finished, this,
-            [this, watcher, store, bar, tick] {
+            [this, watcher, store, bar, tick, whenDone] {
                 tick->stop();
                 tick->deleteLater();
                 statusBar()->removeWidget(bar);
@@ -4161,7 +4172,7 @@ void MainWindow::measurePsfAction() {
                 watcher->deleteLater();
                 store(watcher->result());
                 statusBar()->clearMessage();
-                showPsfReport();
+                if (whenDone) whenDone();
             });
     watcher->setFuture(QtConcurrent::run(computeP));
 }
@@ -4258,6 +4269,254 @@ void MainWindow::annotatePsfStars(int channel, int countN, int labelMode) {
     refreshAnnotations();
     pushAnnotationEdit(tr("annotate PSF stars"), m_currentPath, std::move(before));
     statusBar()->showMessage(tr("%1 fitted stars annotated (ellipse = fitted shape ×2.5)").arg(n), 5000);
+}
+
+// ---- deconvolution to a declared target PSF ---------------------------------
+//
+// The in-app port of the PSF study's full_deconv instrument (docs/PSF-STUDY.md,
+// core/Deconvolve.cpp): measured Moffat kernel in, declared circular Gaussian
+// out, via the MCS one-filter transform. Chains onto Measure PSF for the
+// kernel; verifies its own delivery by re-fitting stars on the result.
+
+void MainWindow::deconvolveAction() {
+    if (!m_image.isValid()) return;
+    if (!psfCacheValid()) {
+        // The kernel IS the measurement — run it first, then come back here.
+        statusBar()->showMessage(tr("Measuring the PSF first — it is the deconvolution kernel…"));
+        runPsfMeasurement([this] { deconvolveAction(); });
+        return;
+    }
+    m_lastPsf = m_psfCache.value(m_currentPath).reports;
+    m_lastPsfPath = m_currentPath;
+    const int nch = std::min<int>(int(m_lastPsf.size()), m_image.channels());
+    if (nch < 1 || m_lastPsf[0].nFitted < 10) {
+        statusBar()->showMessage(tr("Too few fitted stars to define a kernel"), 5000);
+        return;
+    }
+    const double asec = m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0;
+    double minGeoPx = 1e30;
+    QString measured;
+    for (int c = 0; c < nch; ++c) {
+        const PsfChannelReport& r = m_lastPsf[c];
+        if (r.nFitted >= 10) minGeoPx = std::min(minGeoPx, r.fwhmGeo);
+        measured += tr("channel %1: FWHM %2 × %3, PA %4°, β %5  (%6 stars)\n")
+            .arg(c)
+            .arg(asec > 0 ? QStringLiteral("%1″").arg(r.fwhmMaj * asec, 0, 'f', 2)
+                          : QStringLiteral("%1 px").arg(r.fwhmMaj, 0, 'f', 2))
+            .arg(asec > 0 ? QStringLiteral("%1″").arg(r.fwhmMin * asec, 0, 'f', 2)
+                          : QStringLiteral("%1 px").arg(r.fwhmMin, 0, 'f', 2))
+            .arg(r.paDeg, 0, 'f', 0).arg(r.beta, 0, 'f', 1).arg(r.nFitted);
+    }
+    if (minGeoPx > 1e29) return;
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Deconvolve to target PSF"));
+    auto* lay = new QVBoxLayout(&dlg);
+    auto* info = new QLabel(tr("Measured stellar PSF (the kernel):\n%1\n"
+        "The result is a NEW list entry — the linear data, deconvolved by the\n"
+        "measured elliptical Moffat and reconvolved to a round Gaussian of the\n"
+        "declared width (MCS single-filter transform). Meaningful on LINEAR\n"
+        "data. The delivered PSF is verified by re-fitting the result's stars.")
+        .arg(measured));
+    lay->addWidget(info);
+    auto* form = new QFormLayout();
+    auto* target = new QDoubleSpinBox();
+    target->setDecimals(2);
+    if (asec > 0) {
+        target->setRange(0.10, 30.0);
+        target->setSuffix(QStringLiteral("″"));
+        target->setValue(0.75 * minGeoPx * asec);
+    } else {
+        target->setRange(0.5, 50.0);
+        target->setSuffix(tr(" px"));
+        target->setValue(0.75 * minGeoPx);
+    }
+    target->setToolTip(tr("The declared FWHM of the result's round Gaussian PSF.\n"
+                          "About 25% below the measured width is reliably reachable;\n"
+                          "more aggressive targets need the regularization to keep up\n"
+                          "(watch the delivered figure)."));
+    form->addRow(tr("Target FWHM:"), target);
+    auto* lam = new QComboBox();
+    lam->addItem(tr("automatic (largest honouring the target ±5%)"), 0.0);
+    for (double v : { 3e-3, 1e-3, 3e-4, 1e-4, 3e-5 })
+        lam->addItem(QStringLiteral("%1").arg(v, 0, 'e', 0), v);
+    lam->setToolTip(tr("MCS regularization λ. Automatic walks a descending ladder and\n"
+                       "keeps the LARGEST λ whose delivered FWHM (measured on a central\n"
+                       "crop) honours the declaration — contract-first, per channel."));
+    form->addRow(tr("Regularization:"), lam);
+    auto* protect = new QCheckBox(tr("Protect saturated cores (keep input pixels, feathered)"));
+    protect->setChecked(true);
+    protect->setToolTip(tr("Clipped stellar cores are nonlinear — no longer truth convolved\n"
+                           "with the PSF — so deconvolving them rings. The brightest 0.005%\n"
+                           "of pixels keep their input values."));
+    lay->addLayout(form);
+    lay->addWidget(protect);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(bb);
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    const double targetPx = asec > 0 ? target->value() / asec : target->value();
+    runDeconvolution(targetPx, lam->currentData().toDouble(), protect->isChecked());
+}
+
+void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool protectCores) {
+    const QString path = m_currentPath;
+    if (m_lastPsfPath != path || m_lastPsf.empty()) return;
+    const ImageData img = m_image;                     // deep copy for the worker
+    const int nch = std::min<int>(int(m_lastPsf.size()), img.channels());
+    std::vector<DeconvChannelPsf> psfs;
+    for (int c = 0; c < nch; ++c) {
+        const PsfChannelReport& r = m_lastPsf[c];
+        DeconvChannelPsf p;
+        p.fwhmMajPx = r.fwhmMaj; p.fwhmMinPx = r.fwhmMin;
+        p.paDeg = r.paDeg; p.beta = r.beta;
+        psfs.push_back(p);
+    }
+
+    struct DeconvRun {
+        ImageData out;
+        std::vector<double> lambdas, deliveredGeo;     // per channel; 0 = unmeasurable
+    };
+    auto steps = std::make_shared<std::atomic<int>>(0);   // 4 per channel (filter pass)
+    auto chanIx = std::make_shared<std::atomic<int>>(0);
+    auto stage = std::make_shared<std::atomic<int>>(0);   // 0 calibrating λ, 1 filtering
+    auto compute = [img, psfs, nch, targetFwhmPx, lambda, protectCores,
+                    steps, chanIx, stage]() {
+        DeconvRun res;
+        res.out = img;
+        // Delivered-PSF verification on a centred crop of the result — the
+        // same audit the study ran on the full frame.
+        auto deliveredOn = [&](int c) {
+            const int cw = std::min(1536, img.width()), chh = std::min(1536, img.height());
+            const int x0 = (img.width() - cw) / 2, y0 = (img.height() - chh) / 2;
+            ImageData crop(cw, chh, 1, SampleFormat::Float32, ColorSpace::Gray);
+            const float* src = res.out.plane<float>(c);
+            float* dst = crop.plane<float>(0);
+            for (int y = 0; y < chh; ++y)
+                std::copy(src + std::size_t(y0 + y) * img.width() + x0,
+                          src + std::size_t(y0 + y) * img.width() + x0 + cw,
+                          dst + std::size_t(y) * cw);
+            const PsfChannelReport rep = measurePsf(crop, 0);
+            return rep.nFitted >= 10 ? rep.fwhmGeo : 0.0;
+        };
+        for (int c = 0; c < nch; ++c) {
+            chanIx->store(c);
+            DeconvOptions opt;
+            opt.targetFwhmPx = targetFwhmPx;
+            opt.protectCores = protectCores;
+            stage->store(0);
+            opt.lambda = lambda > 0.0
+                ? lambda
+                : selectLambda(img, c, psfs[std::size_t(c)], targetFwhmPx);
+            stage->store(1);
+            std::vector<float> plane = deconvolveChannel(
+                img.plane<float>(c), img.width(), img.height(),
+                psfs[std::size_t(c)], opt, steps.get());
+            std::copy(plane.begin(), plane.end(), res.out.plane<float>(c));
+            res.lambdas.push_back(opt.lambda);
+            res.deliveredGeo.push_back(deliveredOn(c));
+        }
+        return res;
+    };
+
+    // Everything the completion needs is captured NOW: by the time the worker
+    // finishes, the user may have moved to another image and m_header /
+    // m_lastPsf / the stretch state would belong to it.
+    const double asec = m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0;
+    const ImageHeader srcHdr = m_header;
+    const std::vector<PsfChannelReport> reports = m_lastPsf;
+    const StretchModel::State st = m_model.state();
+    const std::vector<Annotation> srcAnns = m_annByPath.value(path);
+    auto finish = [this, path, targetFwhmPx, protectCores, asec, nch,
+                   srcHdr, reports, st, srcAnns](DeconvRun res) {
+        auto fw = [asec](double px) {
+            return asec > 0 ? QStringLiteral("%1″").arg(px * asec, 0, 'f', 2)
+                            : QStringLiteral("%1 px").arg(px, 0, 'f', 2);
+        };
+        // Header: geometry (and the plate solution with it) is unchanged; the
+        // model goes on record in the structure lines — every output pixel a
+        // stated linear functional of the input.
+        ImageHeader hdr = srcHdr;
+        hdr.container = "In-memory";
+        QStringList lines;
+        lines << tr("Deconvolved to target PSF %1 (round Gaussian) · MCS single-filter transform%2")
+                     .arg(fw(targetFwhmPx))
+                     .arg(protectCores ? tr(" · saturated cores protected") : QString());
+        QString delivered;
+        for (int c = 0; c < nch; ++c) {
+            const PsfChannelReport& r = reports[std::size_t(c)];
+            lines << tr("channel %1: kernel Moffat %2 × %3 @ PA %4°, β %5 · λ %6 · delivered %7")
+                         .arg(c).arg(fw(r.fwhmMaj), fw(r.fwhmMin))
+                         .arg(r.paDeg, 0, 'f', 0).arg(r.beta, 0, 'f', 1)
+                         .arg(res.lambdas[std::size_t(c)], 0, 'e', 0)
+                         .arg(res.deliveredGeo[std::size_t(c)] > 0
+                                  ? fw(res.deliveredGeo[std::size_t(c)]) : tr("(too few stars)"));
+            if (res.deliveredGeo[std::size_t(c)] > 0)
+                delivered += (delivered.isEmpty() ? QString() : QStringLiteral(" / "))
+                           + fw(res.deliveredGeo[std::size_t(c)]);
+        }
+        hdr.structure = lines;
+        const QString key = addSyntheticImage(
+            QFileInfo(path).completeBaseName() + QStringLiteral("_deconv"),
+            std::move(res.out));
+        m_syntheticHeaders.insert(key, hdr);
+        if (!srcAnns.empty()) m_annByPath.insert(key, srcAnns);   // geometry unchanged
+        m_stfByPath.insert(key, st);
+        displayPath(key);
+        const QString msg = tr("Deconvolved to %1 — delivered %2 — Save Data As… keeps it")
+            .arg(fw(targetFwhmPx), delivered.isEmpty() ? tr("(unverified)") : delivered);
+        if (m_scriptDriving)
+            fprintf(stderr, "%s\n", msg.toUtf8().constData());
+        statusBar()->showMessage(msg, 8000);
+    };
+
+    if (m_scriptDriving) {                              // synchronous
+        finish(compute());
+        return;
+    }
+    statusBar()->showMessage(tr("Deconvolving — channel 1/%1: calibrating regularization…").arg(nch));
+    auto* bar = new QProgressBar();
+    bar->setMaximumWidth(220);
+    bar->setRange(0, nch * 4);
+    bar->setValue(0);
+    statusBar()->addPermanentWidget(bar);
+    auto* tick = new QTimer(this);
+    connect(tick, &QTimer::timeout, this, [this, bar, steps, chanIx, stage, nch] {
+        bar->setValue(steps->load());
+        const int ci = chanIx->load();
+        statusBar()->showMessage(stage->load() == 0
+            ? tr("Deconvolving — channel %1/%2: calibrating regularization…").arg(ci + 1).arg(nch)
+            : tr("Deconvolving — channel %1/%2: filtering…").arg(ci + 1).arg(nch));
+    });
+    tick->start(150);
+    auto* watcher = new QFutureWatcher<DeconvRun>(this);
+    connect(watcher, &QFutureWatcher<DeconvRun>::finished, this,
+            [this, watcher, finish, bar, tick] {
+                tick->stop();
+                tick->deleteLater();
+                statusBar()->removeWidget(bar);
+                bar->deleteLater();
+                watcher->deleteLater();
+                finish(watcher->result());
+            });
+    watcher->setFuture(QtConcurrent::run(compute));
+}
+
+void MainWindow::scriptDeconvolve(double fwhmPx, double lambda) {
+    if (!m_image.isValid()) return;
+    if (!psfCacheValid()) {
+        runPsfMeasurement({});                          // synchronous when scripted
+    } else {
+        m_lastPsf = m_psfCache.value(m_currentPath).reports;
+        m_lastPsfPath = m_currentPath;
+    }
+    if (m_lastPsf.empty() || m_lastPsf[0].nFitted < 10) {
+        fprintf(stderr, "deconv: too few fitted stars to define a kernel\n");
+        return;
+    }
+    runDeconvolution(fwhmPx, lambda, true);
 }
 
 void MainWindow::exportRegion() {

@@ -562,6 +562,42 @@ actually changed — on disk, by rotation, or by debayer mode. Best run on **lin
 (see the appendix). Scripts: `action measure_psf`, then
 `psfannotate [channel] [count]`.
 
+### Deconvolve to Target PSF (Tools ▸ Deconvolve to Target PSF…)
+
+The appendix's closing experiment as a tool: **deconvolution with a stated
+model**. The kernel is the *measured* stellar PSF — each channel's own
+elliptical Moffat from Measure PSF (run automatically first if needed) —
+and the target is a *declared* circular Gaussian of the FWHM you choose,
+so the field elongation is corrected by construction. The two are applied
+in a single linear pass (the MCS single-filter transform: deconvolve by
+the measured optical transfer function, reconvolve by the target's —
+never forming the explosive partial kernel), which makes every output
+pixel a stated linear functional of the input.
+
+Three properties carry the method's honesty:
+
+- **Contract-first regularization.** With λ left on *automatic*, each
+  channel walks a descending ladder and keeps the **largest** λ whose
+  *delivered* FWHM — the deconvolved image re-measured by the same Moffat
+  fitter — honours the declaration within 5%. More regularization is
+  safer; the first rung that keeps the promise wins.
+- **Delivered-PSF verification.** Whatever λ is used, the result's stars
+  are re-fitted and the delivered figure is reported in the status bar
+  and written into the entry's header, next to the kernel parameters, the
+  target, and λ. The declaration is checked, not assumed.
+- **Saturated-core protection** (on by default). Clipped stellar cores
+  are nonlinear — no longer truth convolved with the PSF — and
+  deconvolving them rings; the brightest ~0.005% of pixels keep their
+  input values, feathered in.
+
+The result is a **new in-memory list entry** (like Combine) carrying the
+source's plate solution, stretch, and annotations — *Save Data As…* keeps
+it. Run it on **linear** data: on stretched data neither the measured
+kernel nor the linear model is valid. A target ~25% below the measured
+width is reliably reachable; more aggressive targets are increasingly
+paid for in regularization (watch the delivered figure). Script:
+`deconv <target_fwhm_px> [lambda]`.
+
 ## 12. Split views & linked navigation
 
 **View ▸ Split View…** — one dialog with rows × columns spinners (max 5×5).

@@ -12,6 +12,7 @@ add_library(astro_core STATIC
     core/Debayer.cpp
     core/ColorTransport.cpp
     core/PsfMeasure.cpp
+    core/Deconvolve.cpp
     core/ImageCache.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
@@ -133,7 +134,7 @@ endif()
 # Framework-free unit tests for the core math and IO round-trips.
 # Run with:  ctest --test-dir build --output-on-failure
 if(BUILD_TESTING)
-    foreach(t core io wcs catalog combine colormap debayer psf)
+    foreach(t core io wcs catalog combine colormap debayer psf deconv)
         add_executable(test_${t} ${CMAKE_SOURCE_DIR}/tests/test_${t}.cpp)
         target_include_directories(test_${t} PRIVATE ${CMAKE_SOURCE_DIR}/tests)
         target_compile_definitions(test_${t} PRIVATE

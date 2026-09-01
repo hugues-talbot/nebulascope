@@ -651,6 +651,45 @@ réellement changé — sur disque, par rotation, ou par mode de dématriçage. 
 étirement élargit tous les profils. Scripts : `action measure_psf`, puis
 `psfannotate [canal] [nombre]`.
 
+### Déconvoluer vers une PSF cible (Outils ▸ Déconvoluer vers une PSF cible…)
+
+L'expérience finale de l'appendice, devenue outil : la **déconvolution à
+modèle déclaré**. Le noyau est la PSF stellaire *mesurée* — le Moffat
+elliptique propre à chaque canal, issu de Mesurer la PSF (lancée
+automatiquement au besoin) — et la cible est une gaussienne circulaire
+*déclarée* de la FWHM de votre choix : l'élongation du champ est corrigée
+par construction. Les deux s'appliquent en une seule passe linéaire (la
+transformée à filtre unique de MCS : déconvoluer par la fonction de
+transfert optique mesurée, reconvoluer par celle de la cible — sans jamais
+former l'explosif noyau partiel), de sorte que chaque pixel du résultat
+est une fonctionnelle linéaire déclarée de l'entrée.
+
+Trois propriétés portent l'honnêteté de la méthode :
+
+- **Régularisation contrat d'abord.** Avec λ laissé sur *automatique*,
+  chaque canal descend une échelle et garde le **plus grand** λ dont la
+  FWHM *livrée* — l'image déconvoluée re-mesurée par le même ajusteur de
+  Moffat — honore la déclaration à 5 % près. Plus de régularisation est
+  plus sûr ; le premier échelon qui tient la promesse gagne.
+- **Vérification de la PSF livrée.** Quel que soit λ, les étoiles du
+  résultat sont réajustées et le chiffre livré est rapporté dans la barre
+  d'état et écrit dans l'en-tête de l'entrée, à côté des paramètres du
+  noyau, de la cible et de λ. La déclaration est vérifiée, pas supposée.
+- **Protection des cœurs saturés** (activée par défaut). Les cœurs
+  stellaires écrêtés sont non linéaires — ils ne sont plus la vérité
+  convoluée par la PSF — et leur déconvolution produit des anneaux ; les
+  ~0,005 % de pixels les plus brillants gardent leurs valeurs d'entrée,
+  avec un fondu.
+
+Le résultat est une **nouvelle entrée en mémoire** dans la liste (comme
+Combiner), qui porte la solution astrométrique, l'étirement et les
+annotations de la source — *Enregistrer les données sous…* la conserve.
+À exécuter sur des données **linéaires** : sur des données étirées, ni le
+noyau mesuré ni le modèle linéaire ne sont valides. Une cible ~25 % sous
+la largeur mesurée est atteignable de façon fiable ; des cibles plus
+agressives se paient en régularisation (surveillez le chiffre livré).
+Script : `deconv <fwhm_cible_px> [lambda]`.
+
 ## 12. Vues divisées et navigation liée
 
 **Affichage ▸ Diviser la vue…** — une boîte avec compteurs lignes ×

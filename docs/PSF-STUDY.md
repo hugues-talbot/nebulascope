@@ -200,6 +200,15 @@ this optical system and processing chain; a materially changed setup
 deserves a re-issue, and the fit/validate framework for doing so is in
 the repository.
 
+That transferability is why the two certified instruments now ship inside
+NebulaScope itself, as native C++ ports validated against these scripts:
+**Tools ▸ Measure PSF** (the star fitter, field map included) and
+**Tools ▸ Deconvolve to Target PSF** (the MCS filter with contract-first
+λ, saturated-core protection, and the delivered-PSF audit) — see the
+manual, and `deconv` in the scripting reference. The delivered-PSF
+contract itself runs in the test suite on a synthetic field with exact
+truth, so the promise this section describes is enforced by CI.
+
 ## Future work: a spatially-variant PSF
 
 This field earned a single kernel per channel — stellar FWHM uniform to
