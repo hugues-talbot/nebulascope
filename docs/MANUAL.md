@@ -615,6 +615,33 @@ paid for in regularization (watch the delivered figure). Script:
 `deconv <target_fwhm_px> [lambda]`, or
 `deconv <target_fwhm_px> red [iters] [weight]` for the noise prior.
 
+### Gaia DR3 lookups (online)
+
+Two instruments over one connection to ESA's Gaia DR3 archive, both
+requiring a plate solution. Only sky coordinates ever leave the machine;
+offline, both fail softly with a status message.
+
+- **Identify Star in Gaia DR3** (right-click on or near a star). The
+  click is first refined to the star's *fitted centre* (a Moffat fit on a
+  small cutout), then cone-searched; the **nearest** catalogued source —
+  identification, not brightness — is reported in the status bar with its
+  `source_id`, G magnitude, BP−RP colour, parallax (and the implied
+  distance), and the separation from the fitted centre. A small violet
+  annotation is dropped at the source's **catalogue position** — any
+  offset from the star's centre is your plate solution speaking.
+- **Gaia DR3 Field Overlay** (Tools menu). The brightest catalogued
+  sources across the whole frame (default 500, G-magnitude labels on the
+  brightest 30), drawn at their catalogue positions as one undo step.
+  Systematic offsets reveal plate-solution distortions; close pairs can
+  be measured against the catalogue in-app. Dense galactic-plane fields
+  are handled by a bright-first magnitude ladder, so the query stays
+  fast everywhere.
+
+In both cases DR3 positions (epoch 2016.0) are **propagated by proper
+motion to the frame's `DATE-OBS`** before matching or drawing — nearby
+stars move arcseconds per decade, and an honest match must account for
+it. Scripts: `gaiastar <x> <y>`, `gaiaoverlay [count] [labelN]`.
+
 ## 12. Split views & linked navigation
 
 **View ▸ Split View…** — one dialog with rows × columns spinners (max 5×5).

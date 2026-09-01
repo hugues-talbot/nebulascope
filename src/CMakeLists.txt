@@ -13,6 +13,7 @@ add_library(astro_core STATIC
     core/ColorTransport.cpp
     core/PsfMeasure.cpp
     core/Deconvolve.cpp
+    core/GaiaQuery.cpp
     core/ImageCache.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
@@ -35,7 +36,7 @@ target_include_directories(astro_core PUBLIC
     ${XISF_INCLUDE_DIR}
 )
 target_link_libraries(astro_core PUBLIC
-    Qt6::Core Qt6::Gui
+    Qt6::Core Qt6::Gui Qt6::Network
     ${CCFITS_LIB} ${CFITSIO_LINK_LIBS}
     ${XISF_LIB}
     # ${ZLIB_LIB} ${LZ4_LIB} ${PUGIXML_LIB}   # if libXISF is static
@@ -134,7 +135,7 @@ endif()
 # Framework-free unit tests for the core math and IO round-trips.
 # Run with:  ctest --test-dir build --output-on-failure
 if(BUILD_TESTING)
-    foreach(t core io wcs catalog combine colormap debayer psf deconv)
+    foreach(t core io wcs catalog combine colormap debayer psf deconv gaia)
         add_executable(test_${t} ${CMAKE_SOURCE_DIR}/tests/test_${t}.cpp)
         target_include_directories(test_${t} PRIVATE ${CMAKE_SOURCE_DIR}/tests)
         target_compile_definitions(test_${t} PRIVATE

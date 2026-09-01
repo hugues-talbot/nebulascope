@@ -96,6 +96,16 @@ const CommandRef kCommands[] = {
     "lambda = contract-first automatic selection. 'red' adds the starlet-RED\n"
     "noise prior (default 15 iterations; omitted weight = automatic).\n"
     "Menu equivalent: Tools > Deconvolve to Target PSF."}},
+  {"gaiastar",   {"gaiastar <x> <y>",
+    "Identify the star at/near image pixel (x,y) in Gaia DR3: the click is\n"
+    "refined to the fitted stellar centre, cone-searched online (positions\n"
+    "epoch-propagated to DATE-OBS), and the nearest source is reported and\n"
+    "annotated at its catalogue position. Needs a plate solution + network."}},
+  {"gaiaoverlay",{"gaiaoverlay [count] [labelN]",
+    "Annotate the field's brightest Gaia DR3 sources (default 500, G-mag\n"
+    "labels on the brightest 30) at their catalogue positions, epoch-\n"
+    "propagated. One undo step. Needs a plate solution + network.\n"
+    "Menu equivalent: Tools > Gaia DR3 Field Overlay."}},
   {"blackpatch", {"blackpatch <x> <y> <w> <h>",
     "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
     "channel's black point becomes the patch median (M carried as a ratio,\n"
@@ -499,6 +509,24 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
             lambda = t[2].toDouble();
         }
         m_w->scriptDeconvolve(f, lambda, iters, weight);
+        return true;
+    }
+    if (cmd == QLatin1String("gaiastar")) {
+        // gaiastar <x> <y> — identify the star at/near image pixel (x,y) in
+        // Gaia DR3 (network; waits synchronously, 16 s guard).
+        if (t.size() < 3) { err = "gaiastar <x> <y>"; return false; }
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        if (!m_w->m_wcs.valid()) { err = "no astrometric solution"; return false; }
+        m_w->identifyGaiaStar(t[1].toDouble(), t[2].toDouble());
+        return true;
+    }
+    if (cmd == QLatin1String("gaiaoverlay")) {
+        // gaiaoverlay [count] [labelN] — annotate the field's brightest Gaia
+        // DR3 sources (network; waits synchronously, 16 s guard).
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        if (!m_w->m_wcs.valid()) { err = "no astrometric solution"; return false; }
+        m_w->runGaiaOverlay(t.size() > 1 ? t[1].toInt() : 500,
+                            t.size() > 2 ? t[2].toInt() : 30);
         return true;
     }
     if (cmd == QLatin1String("blackpatch")) {

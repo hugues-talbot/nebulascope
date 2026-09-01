@@ -1403,6 +1403,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
     acts["measure_psf"] = tools->addAction(tr("&Measure PSF (Stars)…"), this, &MainWindow::measurePsfAction);
     acts["deconvolve"] = tools->addAction(tr("&Deconvolve to Target PSF…"), this, &MainWindow::deconvolveAction);
+    acts["gaia_overlay"] = tools->addAction(tr("&Gaia DR3 Field Overlay…"), this, &MainWindow::gaiaOverlayAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -4581,6 +4582,220 @@ void MainWindow::scriptDeconvolve(double fwhmPx, double lambda,
     runDeconvolution(opt, autoReg);
 }
 
+// ---- Gaia DR3 lookups -------------------------------------------------------
+//
+// Two instruments over one client (core/GaiaQuery): click-to-identify (the
+// nearest catalogued source to a Moffat-refined click) and the field overlay
+// (the brightest sources across the frame as annotations — plate-solution
+// distortions become visible, separations measurable in-app). DR3 positions
+// are epoch-propagated to the frame's DATE-OBS. Only coordinates are sent.
+
+GaiaClient* MainWindow::gaia() {
+    if (!m_gaia) m_gaia = new GaiaClient(this);
+    return m_gaia;
+}
+
+namespace {
+// Blocking wait for the in-flight query — script mode only, where commands
+// are sequential by contract. The guard outlasts the ladder's worst case
+// (three 30 s rungs) so an outage cannot hang a script.
+void waitForGaia(GaiaClient* g) {
+    QEventLoop loop;
+    QObject::connect(g, &GaiaClient::finished, &loop, &QEventLoop::quit);
+    QTimer::singleShot(100000, &loop, &QEventLoop::quit);
+    loop.exec();
+}
+} // namespace
+
+void MainWindow::identifyGaiaStar(double px, double py) {
+    if (!m_wcs.valid() || !m_image.isValid()) return;
+    // Sub-pixel refinement: fit a Moffat at the click so "near a star" means
+    // "at its fitted centre"; fall back to the raw position when nothing fits.
+    const int side = 27, half = side / 2;
+    double fx = px, fy = py, fwhmPx = 0;
+    const int x0 = int(px) - half, y0 = int(py) - half;
+    if (x0 >= 0 && y0 >= 0 && x0 + side <= m_image.width() &&
+        y0 + side <= m_image.height()) {
+        std::vector<float> cut(std::size_t(side) * side, 0.0f);
+        const int nch = m_image.channels();
+        for (int c = 0; c < std::min(3, nch); ++c) {
+            const float* p = m_image.plane<float>(c);
+            for (int y = 0; y < side; ++y)
+                for (int x = 0; x < side; ++x) {
+                    const float v = p[std::size_t(y0 + y) * m_image.width() + x0 + x];
+                    float& d = cut[std::size_t(y) * side + x];
+                    if (std::isfinite(v)) d = std::max(d, v);
+                }
+        }
+        PsfStar st;
+        if (fitMoffatCutout(cut.data(), side, 1e30, st)) {
+            fx = x0 + half + st.x;
+            fy = y0 + half + st.y;
+            fwhmPx = std::sqrt(st.fwhmMaj * st.fwhmMin);
+        }
+    }
+    double ra = 0, dec = 0;
+    if (!m_wcs.pixelToSky(fx, fy, ra, dec)) return;
+    const double scale = m_wcs.pixelScaleArcsec();
+    const double radiusAsec = std::max(10.0, 2.5 * fwhmPx * scale);
+    const double epoch = GaiaClient::epochYearFromIso(
+        m_header.valueOf(QStringLiteral("DATE-OBS")));
+    const QString path = m_currentPath;
+    statusBar()->showMessage(tr("Querying Gaia DR3…"));
+    connect(gaia(), &GaiaClient::finished, this,
+        [this, path, ra, dec, epoch](bool ok, const std::vector<GaiaSource>& srcs,
+                                     const QString& error) {
+            // A script must hear about failures too — the status bar is
+            // invisible to a headless run.
+            auto report = [this](const QString& m) {
+                if (m_scriptDriving) fprintf(stderr, "%s\n", m.toUtf8().constData());
+                statusBar()->showMessage(m, 6000);
+            };
+            if (!ok) {
+                report(tr("Gaia DR3 unreachable — offline? (%1)").arg(error));
+                return;
+            }
+            if (srcs.empty()) {
+                report(tr("No Gaia DR3 source here"));
+                return;
+            }
+            // Nearest to the fitted centre, not brightest: identification.
+            const double cosd = std::cos(dec * M_PI / 180.0);
+            auto sepAsec = [&](const GaiaSource& s) {
+                const double dra = (s.raDeg - ra) * cosd, dde = s.decDeg - dec;
+                return std::sqrt(dra * dra + dde * dde) * 3600.0;
+            };
+            const GaiaSource* best = &srcs[0];
+            for (const GaiaSource& s : srcs)
+                if (sepAsec(s) < sepAsec(*best)) best = &s;
+            QString msg = tr("Gaia DR3 %1 — sep %2″").arg(best->sourceId).arg(sepAsec(*best), 0, 'f', 2);
+            if (std::isfinite(best->gMag)) msg += tr(" · G %1").arg(best->gMag, 0, 'f', 2);
+            if (std::isfinite(best->bpRp)) msg += tr(" · BP−RP %1").arg(best->bpRp, 0, 'f', 2);
+            if (std::isfinite(best->parallaxMas) && best->parallaxMas > 0)
+                msg += tr(" · plx %1 mas (≈%2 pc)").arg(best->parallaxMas, 0, 'f', 2)
+                           .arg(1000.0 / best->parallaxMas, 0, 'f', 0);
+            if (epoch > 0) msg += tr(" · epoch %1").arg(epoch, 0, 'f', 1);
+            if (srcs.size() > 1) msg += tr(" · %n source(s) in cone", nullptr, int(srcs.size()));
+            // Annotate at the CATALOGUE position — any offset from the star's
+            // centre is the plate solution speaking, worth seeing.
+            double ax = 0, ay = 0;
+            if (path == m_currentPath && m_wcs.skyToPixel(best->raDeg, best->decDeg, ax, ay)) {
+                std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+                Annotation an;
+                an.type = Annotation::Type::Ellipse;
+                an.x = ax; an.y = ay;
+                an.a = an.b = std::max(8.0, 2.0 / std::max(0.05, m_wcs.pixelScaleArcsec()));
+                an.color = QColor(186, 120, 255);          // Gaia violet
+                an.label = tr("DR3 …%1 · G %2")
+                    .arg(QString::number(best->sourceId).right(6))
+                    .arg(best->gMag, 0, 'f', 1);
+                an.textSize = 9;
+                m_annByPath[m_currentPath].push_back(an);
+                m_annDirty.insert(m_currentPath);
+                refreshAnnotations();
+                pushAnnotationEdit(tr("Gaia identify"), m_currentPath, std::move(before));
+            }
+            if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+            statusBar()->showMessage(msg, 15000);
+        }, Qt::SingleShotConnection);
+    gaia()->coneSearch(ra, dec, radiusAsec / 3600.0, 10, epoch);
+    if (m_scriptDriving) waitForGaia(gaia());
+}
+
+void MainWindow::gaiaOverlayAction() {
+    if (!m_image.isValid()) return;
+    if (!m_wcs.valid()) {
+        statusBar()->showMessage(tr("Gaia overlay needs an astrometric solution"), 6000);
+        return;
+    }
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Gaia DR3 field overlay"));
+    auto* lay = new QVBoxLayout(&dlg);
+    auto* form = new QFormLayout();
+    auto* count = new QSpinBox();
+    count->setRange(50, 2000);
+    count->setValue(500);
+    form->addRow(tr("Sources (brightest first):"), count);
+    auto* labelN = new QSpinBox();
+    labelN->setRange(0, 200);
+    labelN->setValue(30);
+    labelN->setToolTip(tr("How many of the brightest sources get a G-magnitude label\n"
+                          "(all get a marker; labels clutter fast)."));
+    form->addRow(tr("Label brightest:"), labelN);
+    lay->addLayout(form);
+    auto* note = new QLabel(tr("Sources are drawn at their catalogue positions, propagated to the\n"
+                               "frame's DATE-OBS epoch — a systematic offset against the stars is\n"
+                               "the plate solution speaking. One undo step removes the overlay."));
+    lay->addWidget(note);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(bb);
+    if (dlg.exec() != QDialog::Accepted) return;
+    runGaiaOverlay(count->value(), labelN->value());
+}
+
+void MainWindow::runGaiaOverlay(int count, int labelN) {
+    if (!m_wcs.valid() || !m_image.isValid()) return;
+    const int w = m_image.width(), h = m_image.height();
+    double ra = 0, dec = 0;
+    if (!m_wcs.pixelToSky(0.5 * w, 0.5 * h, ra, dec)) return;
+    const double scale = m_wcs.pixelScaleArcsec();
+    const double radiusDeg = 1.03 * 0.5 * std::hypot(double(w), double(h)) * scale / 3600.0;
+    const double epoch = GaiaClient::epochYearFromIso(
+        m_header.valueOf(QStringLiteral("DATE-OBS")));
+    const QString path = m_currentPath;
+    statusBar()->showMessage(tr("Querying Gaia DR3 (field cone, %1 sources)…").arg(count));
+    connect(gaia(), &GaiaClient::finished, this,
+        [this, path, labelN, epoch](bool ok, const std::vector<GaiaSource>& srcs,
+                                    const QString& error) {
+            auto report = [this](const QString& m) {
+                if (m_scriptDriving) fprintf(stderr, "%s\n", m.toUtf8().constData());
+                statusBar()->showMessage(m, 6000);
+            };
+            if (!ok) {
+                report(tr("Gaia DR3 unreachable — offline? (%1)").arg(error));
+                return;
+            }
+            if (path != m_currentPath || !m_wcs.valid()) return;
+            std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+            int drawn = 0;
+            for (const GaiaSource& s : srcs) {
+                double ax = 0, ay = 0;
+                if (!m_wcs.skyToPixel(s.raDeg, s.decDeg, ax, ay)) continue;
+                if (ax < 0 || ay < 0 || ax >= m_image.width() || ay >= m_image.height())
+                    continue;
+                Annotation an;
+                an.type = Annotation::Type::Ellipse;
+                an.x = ax; an.y = ay;
+                an.a = an.b = std::max(6.0, 2.0 / std::max(0.05, m_wcs.pixelScaleArcsec()));
+                an.color = QColor(186, 120, 255);          // Gaia violet
+                if (drawn < labelN && std::isfinite(s.gMag)) {
+                    an.label = QStringLiteral("G %1").arg(s.gMag, 0, 'f', 1);
+                    an.textSize = 8;
+                }
+                m_annByPath[m_currentPath].push_back(an);
+                ++drawn;
+            }
+            if (drawn == 0) {
+                report(tr("Gaia DR3: no sources landed inside the frame"));
+                return;
+            }
+            m_annDirty.insert(m_currentPath);
+            refreshAnnotations();
+            pushAnnotationEdit(tr("Gaia DR3 overlay"), m_currentPath, std::move(before));
+            const QString msg = tr("Gaia DR3 overlay: %1 sources in frame (%2 returned)%3")
+                .arg(drawn).arg(srcs.size())
+                .arg(epoch > 0 ? tr(", epoch %1").arg(epoch, 0, 'f', 1) : QString());
+            if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+            statusBar()->showMessage(msg, 10000);
+        }, Qt::SingleShotConnection);
+    // Bright-first magnitude ladder: a galactic-plane cone answers at the
+    // bright rung in seconds where its unfiltered ORDER BY times out.
+    gaia()->coneSearchBrightest(ra, dec, radiusDeg, count, epoch);
+    if (m_scriptDriving) waitForGaia(gaia());
+}
+
 void MainWindow::exportRegion() {
 
     if (!m_image.isValid()) return;
@@ -5672,7 +5887,9 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     QAction* aAladin = nullptr;
     QAction* aSimbad = nullptr;
     QAction* aStellarium = nullptr;
+    QAction* aGaia = nullptr;
     double alRa = 0, alDec = 0, alFovDeg = 0.25;
+    double gaiaX = 0, gaiaY = 0;
     if (m_wcs.valid() && onImage) {
         // Target the selected/hit annotation's centre, else the clicked pixel.
         double cx = x, cy = y;
@@ -5691,6 +5908,8 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             aSimbad = menu.addAction(tr("Identify in SIMBAD — %1").arg(where));
             aSimbad->setData(radiusArcmin);
             aStellarium = menu.addAction(tr("Point Stellarium Here — %1").arg(where));
+            aGaia = menu.addAction(tr("Identify Star in Gaia DR3 — %1").arg(where));
+            gaiaX = cx; gaiaY = cy;
         }
     }
 
@@ -5766,6 +5985,12 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     else if (aStellarium && chosen == aStellarium) {
         // Sky-context framing: wider than Aladin's tight cutout.
         pointStellarium(alRa, alDec, qBound(0.5, alFovDeg * 4.0, 60.0));
+    }
+    else if (aGaia && chosen == aGaia) {
+        // In-app data lookup (not a browser jump): Moffat-refined position,
+        // cone-searched against the DR3 archive, annotated at the catalogue
+        // position.
+        identifyGaiaStar(gaiaX, gaiaY);
     }
     else if (aSimbad && chosen == aSimbad) {
         // SIMBAD coordinate (cone) query around the target.

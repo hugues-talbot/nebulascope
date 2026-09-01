@@ -21,6 +21,7 @@
 #include "core/Wcs.h"
 #include "core/PsfMeasure.h"
 #include "core/Deconvolve.h"
+#include "core/GaiaQuery.h"
 #include "core/ImageCache.h"
 #include "ui/AnnotationLayer.h"
 #include "render/StretchModel.h"
@@ -79,6 +80,10 @@ private slots:
     void runDeconvolution(DeconvOptions opt, bool autoReg); // autoReg: contract-first lambda/mu per channel
     void scriptDeconvolve(double fwhmPx, double lambda,
                           int redIters, double redWeight);   // script `deconv` (synchronous)
+    void identifyGaiaStar(double px, double py); // context menu; sync when scripted
+    void gaiaOverlayAction();                    // Tools > Gaia DR3 Field Overlay (dialog)
+    void runGaiaOverlay(int count, int labelN);  // the overlay itself; sync when scripted
+    GaiaClient* gaia();                          // lazily created shared client
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
@@ -244,6 +249,7 @@ private:
         int debayerMode = 0;
     };
     QHash<QString, PsfCacheEntry> m_psfCache;
+    GaiaClient*    m_gaia = nullptr;       // created on first use
     StretchModel   m_model;
 
     AnnotationLayer* m_annotations = nullptr;

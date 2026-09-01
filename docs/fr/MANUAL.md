@@ -709,6 +709,38 @@ Script : `deconv <fwhm_cible_px> [lambda]`, ou
 `deconv <fwhm_cible_px> red [itérations] [poids]` pour l'a priori de
 bruit.
 
+### Consultations Gaia DR3 (en ligne)
+
+Deux instruments sur une même connexion à l'archive Gaia DR3 de l'ESA,
+tous deux exigeant une solution astrométrique. Seules des coordonnées
+célestes quittent la machine ; hors ligne, les deux échouent en douceur
+avec un message d'état.
+
+- **Identifier l'étoile dans Gaia DR3** (clic droit sur ou près d'une
+  étoile). Le clic est d'abord affiné vers le *centre ajusté* de l'étoile
+  (ajustement de Moffat sur un petit extrait), puis une recherche en cône
+  est lancée ; la source cataloguée **la plus proche** — identification,
+  pas brillance — est rapportée dans la barre d'état avec son
+  `source_id`, sa magnitude G, sa couleur BP−RP, sa parallaxe (et la
+  distance impliquée), et la séparation au centre ajusté. Une petite
+  annotation violette est déposée à la **position de catalogue** de la
+  source — tout écart avec le centre de l'étoile, c'est votre solution
+  astrométrique qui parle.
+- **Superposition de champ Gaia DR3** (menu Outils). Les sources
+  cataloguées les plus brillantes de tout le champ (500 par défaut,
+  étiquettes de magnitude G sur les 30 plus brillantes), tracées à leurs
+  positions de catalogue en une seule étape d'annulation. Les écarts
+  systématiques révèlent les distorsions de la solution astrométrique ;
+  les paires serrées se mesurent contre le catalogue dans l'application.
+  Les champs denses du plan galactique passent par une échelle de
+  magnitude « brillant d'abord », donc la requête reste rapide partout.
+
+Dans les deux cas, les positions DR3 (époque 2016,0) sont **propagées
+par mouvement propre vers le `DATE-OBS` de l'image** avant appariement ou
+tracé — les étoiles proches se déplacent de secondes d'arc par décennie,
+et un appariement honnête doit en tenir compte. Scripts :
+`gaiastar <x> <y>`, `gaiaoverlay [nombre] [étiquettesN]`.
+
 ## 12. Vues divisées et navigation liée
 
 **Affichage ▸ Diviser la vue…** — une boîte avec compteurs lignes ×
