@@ -572,6 +572,7 @@ window.Quarto = {
 <li>the star-versus-nebula asymmetry of neural deconvolution, unknowable without ground truth by definition.</li>
 </ol>
 <p>The right mental model is instrument calibration: the method was taken to the standard once, certified, and now transfers to any field with a few hundred usable stars — no HST overlap required. The certificate covers this optical system and processing chain; a materially changed setup deserves a re-issue, and the fit/validate framework for doing so is in the repository.</p>
+<p>That transferability is why the two certified instruments now ship inside NebulaScope itself, as native C++ ports validated against these scripts: <strong>Tools ▸ Measure PSF</strong> (the star fitter, field map included) and <strong>Tools ▸ Deconvolve to Target PSF</strong> (the MCS filter with contract-first λ, saturated-core protection, and the delivered-PSF audit) — see the manual, and <code>deconv</code> in the scripting reference. The delivered-PSF contract itself runs in the test suite on a synthetic field with exact truth, so the promise this section describes is enforced by CI.</p>
 </section>
 <section id="future-work-a-spatially-variant-psf" class="level2">
 <h2 class="anchored" data-anchor-id="future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</h2>
