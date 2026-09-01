@@ -51,10 +51,10 @@ double GaiaClient::epochYearFromIso(const QString& dateObs) {
     if (dt.isValid()) {
         // DATE-OBS is UTC by convention; reinterpret the parsed wall time as
         // UTC so the machine's own timezone cannot shift the epoch.
-        dt = QDateTime(dt.date(), dt.time(), QTimeZone::UTC);
+        dt = QDateTime(dt.date(), dt.time(), QTimeZone::utc());
         const int y = dt.date().year();
-        const QDateTime y0(QDate(y, 1, 1), QTime(0, 0), QTimeZone::UTC);
-        const QDateTime y1(QDate(y + 1, 1, 1), QTime(0, 0), QTimeZone::UTC);
+        const QDateTime y0(QDate(y, 1, 1), QTime(0, 0), QTimeZone::utc());
+        const QDateTime y1(QDate(y + 1, 1, 1), QTime(0, 0), QTimeZone::utc());
         return y + double(y0.secsTo(dt)) / double(y0.secsTo(y1));
     }
     bool ok = false;
