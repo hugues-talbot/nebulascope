@@ -819,7 +819,9 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     entrées les moins récemment vues sont évincées d'abord ; un fichier
     modifié de l'extérieur n'est jamais servi périmé (le cache vérifie
     l'horodatage à chaque accès, et le rechargement automatique évince
-    aussitôt). 0 le désactive.
+    aussitôt). 0 le désactive. Pendant que vous regardez une image, ses
+    **voisines dans la liste se préchargent** en arrière-plan — le blink est
+    instantané dès le premier passage sur un lot.
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis). Chaque entrée enregistre le réglage par défaut avec lequel

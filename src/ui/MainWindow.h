@@ -210,6 +210,21 @@ private:
     std::vector<ChannelStats> m_cachedStats;   // transient: displayPath cache hit
     ImageHeader    m_cacheInsertHdr;       // transient: pristine header for insert
     bool           m_cacheInsertPending = false;
+    // Neighbour prefetch: while an image is viewed, the next/prev list rows
+    // decode in the background into the cache — blinking becomes instant on
+    // first pass. One decode in flight; results carried via shared_ptr.
+    struct PrefetchResult {
+        QString key, base;
+        bool ok = false;
+        QDateTime mtimeBefore;
+        qint64 sizeBefore = -1;
+        ImageCache::Entry entry;
+    };
+    void schedulePrefetch();
+    void startNextPrefetch();
+    QStringList    m_prefetchQueue;
+    QString        m_prefetchInFlight;
+    QFutureWatcher<PrefetchResult>* m_prefetchWatcher = nullptr;
     std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
     QString        m_lastPsfPath;          // image the results belong to
     StretchModel   m_model;

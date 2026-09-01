@@ -739,7 +739,9 @@ name reassembles exactly, for overwriting or re-saving.
     this cache keeps. Least-recently-viewed entries are dropped first; an
     externally modified file is never served stale (the cache checks the
     file's timestamp on every hit, and the auto-reload watcher evicts
-    eagerly). 0 disables it.
+    eagerly). 0 disables it. While you view an image, its list
+    **neighbours prefetch** in the background — blinking is instant even on
+    the first pass through a batch.
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert). Each
     entry records the default it was written with (`name.default`), so

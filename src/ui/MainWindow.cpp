@@ -2156,14 +2156,16 @@ void MainWindow::requestDebayerChange(int newMode, int newMethod) {
 // Demosaic a freshly loaded mono frame according to the image's mode (auto /
 // forced pattern / off) and the global algorithm preference. Non-CFA frames
 // pass through untouched.
-ImageData MainWindow::applyDebayer(ImageData&& img, ImageHeader& hdr, const QString& key) {
+// Pure form of the debayer decision: mode/method passed as VALUES so the
+// prefetch worker can replicate the display decode off the GUI thread with
+// no shared state (and no possibility of the two drifting apart).
+static ImageData applyDebayerPure(ImageData&& img, ImageHeader& hdr, int mode, int methodIdx) {
     if (!img.isValid() || img.channels() != 1) return std::move(img);
-    const int mode = m_debayerByPath.value(key, 0);
     if (mode < 0) return std::move(img);                       // forced off
     BayerPattern p = (mode == 0) ? bayerPatternFromHeader(hdr)
                                  : static_cast<BayerPattern>(mode);
     if (p == BayerPattern::None) return std::move(img);
-    const auto method = static_cast<DebayerMethod>(qBound(0, Preferences::get().debayerMethod, 2));
+    const auto method = static_cast<DebayerMethod>(qBound(0, methodIdx, 2));
     ImageData rgb = debayer(img, p, method);
     if (!rgb.isValid()) return std::move(img);
     const char* mname = method == DebayerMethod::RCD ? "RCD"
@@ -2173,6 +2175,11 @@ ImageData MainWindow::applyDebayer(ImageData&& img, ImageHeader& hdr, const QStr
                               method == DebayerMethod::Superpixel
                                   ? QStringLiteral(" (half size)") : QString());
     return rgb;
+}
+
+ImageData MainWindow::applyDebayer(ImageData&& img, ImageHeader& hdr, const QString& key) {
+    return applyDebayerPure(std::move(img), hdr, m_debayerByPath.value(key, 0),
+                            Preferences::get().debayerMethod);
 }
 
 // Keep the Image ▸ Debayer submenu radio state in step with the shown image.
@@ -3605,6 +3612,72 @@ void MainWindow::displayPath(const QString& path) {
         .arg(name).arg(m_image.width()).arg(m_image.height()).arg(m_image.channels())
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count())
         .arg(debayerNote), 4000);
+
+    schedulePrefetch();
+}
+
+// While the user looks at this image, decode its list neighbours into the
+// cache — the direction of the next blink is unknown, so both. The worker
+// touches no GUI state: the debayer decision is captured as values and
+// replayed through the same pure function the display decode uses.
+void MainWindow::schedulePrefetch() {
+    if (m_imgCache.budgetBytes() <= 0) return;
+    const int n = m_fileList->count();
+    const int row = m_fileList->currentRow();
+    if (n < 2 || row < 0) return;
+    m_prefetchQueue.clear();
+    for (int d : { 1, -1 }) {
+        const int r = (row + d + n) % n;
+        if (r == row) continue;
+        const QString key = m_fileList->item(r)->data(Qt::UserRole).toString();
+        if (key.isEmpty() || key.startsWith(QLatin1String("mem://"))) continue;
+        if (m_imgCache.contains(key) || key == m_prefetchInFlight) continue;
+        if (!m_prefetchQueue.contains(key)) m_prefetchQueue << key;
+    }
+    startNextPrefetch();
+}
+
+void MainWindow::startNextPrefetch() {
+    if (!m_prefetchInFlight.isEmpty() || m_prefetchQueue.isEmpty()) return;
+    const QString key = m_prefetchQueue.takeFirst();
+    int hduReq = -1;
+    const QString base = splitHduKey(key, hduReq);
+    const int mode = m_debayerByPath.value(key, 0);
+    const int method = Preferences::get().debayerMethod;
+    m_prefetchInFlight = key;
+    if (!m_prefetchWatcher) {
+        m_prefetchWatcher = new QFutureWatcher<PrefetchResult>(this);
+        connect(m_prefetchWatcher, &QFutureWatcher<PrefetchResult>::finished, this, [this] {
+            const PrefetchResult r = m_prefetchWatcher->result();
+            m_prefetchInFlight.clear();
+            // Insert only if the file is still exactly what was decoded — a
+            // write that landed mid-decode must not be masked.
+            const QFileInfo fi(r.base);
+            if (r.ok && fi.exists() && fi.lastModified() == r.mtimeBefore &&
+                fi.size() == r.sizeBefore && !m_imgCache.contains(r.key))
+                m_imgCache.insert(r.key, r.base, ImageCache::Entry(r.entry));
+            startNextPrefetch();
+        });
+    }
+    m_prefetchWatcher->setFuture(QtConcurrent::run([key, base, hduReq, mode, method]() {
+        PrefetchResult r;
+        r.key = key;
+        r.base = base;
+        const QFileInfo fi(base);
+        if (!fi.exists()) return r;
+        r.mtimeBefore = fi.lastModified();
+        r.sizeBefore = fi.size();
+        io::LoadOptions lopts;
+        lopts.fitsHdu = hduReq;
+        io::LoadResult res = io::loadImage(base, lopts);
+        if (!res.ok) return r;
+        ImageData img = applyDebayerPure(std::move(res.image), res.header, mode, method);
+        r.entry.stats = computeStats(img);
+        r.entry.header = std::move(res.header);
+        r.entry.image = std::make_shared<const ImageData>(std::move(img));
+        r.ok = true;
+        return r;
+    }));
 }
 
 // ---- save dialogs with INLINE format options --------------------------------

@@ -46,7 +46,10 @@ public:
 
     // Budget in bytes; evicts down immediately. 0 disables caching.
     void setBudgetBytes(qint64 b);
+    qint64 budgetBytes() const { return m_budget; }
     qint64 usedBytes() const { return m_used; }
+    // Presence check without touching the LRU order or the filesystem.
+    bool contains(const QString& key) const { return m_map.contains(key); }
 
 private:
     struct Node {
