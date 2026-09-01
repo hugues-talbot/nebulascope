@@ -167,7 +167,10 @@ Panel tour:
     undo step, and the neutralized windows carry into Log/Asinh *and* GHS.
     The output histogram shows the result instantly, including how much
     sky noise now clips below black — nudge B down afterwards if that
-    matters for your target.
+    matters for your target. Best applied **late in a session**, once the
+    stretch is settled: in astro images the midtone sits close to the
+    black point, so cutting the pedestal steepens the shadow response —
+    doing it last keeps that from interacting with further tone work.
   - *GHS* (Generalised Hyperbolic Stretch): **D** (strength) and **b** (local
     focus) sliders, plus draggable **SP** (symmetry point — where contrast is
     concentrated) and **LP/HP** (shadow/highlight protection) handles, all

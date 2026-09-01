@@ -189,7 +189,11 @@ Tour du panneau :
     transmettent à Log/Asinh *et* à GHS.
     L'histogramme de sortie montre le résultat immédiatement, y compris la
     part de bruit de ciel qui écrête désormais sous le noir — redescendez
-    B ensuite si cela compte pour votre cible.
+    B ensuite si cela compte pour votre cible. À appliquer de préférence
+    **en fin de session**, une fois l'étirement stabilisé : dans les images
+    astro, les tons moyens sont proches du point noir, et couper le
+    piédestal raidit la réponse des ombres — le faire en dernier évite
+    que cela interagisse avec le reste du travail sur les tons.
   - *À la relâche, le tracé zoome sur la nouvelle fenêtre B–W* : la
     distribution d'une fenêtre étroite remplit alors la largeur et sa
     forme devient lisible (double-clic pour réajuster aux données
