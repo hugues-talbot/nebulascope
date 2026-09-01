@@ -629,7 +629,12 @@ dépose des annotations en ellipses tournées sur les étoiles ajustées les
 plus brillantes — axes proportionnels à la FWHM ajustée, angle = l'angle
 ajusté — rendant le motif d'élongation visible sur l'image même ; une
 seule étape d'annulation, sauvegardées dans le fichier annexe comme toute
-annotation. À exécuter de préférence sur des données **linéaires** : un
+annotation. Le sélecteur d'étiquette ajoute les nombres de chaque étoile
+à côté de son ellipse : FWHM (en secondes d'arc quand une solution
+astrométrique existe), excentricité, ou les deux. Les résultats sont
+**mis en cache par image** : réinvoquer le menu rouvre le rapport
+instantanément, et les ajustements ne sont refaits que si l'image a
+réellement changé — sur disque, par rotation, ou par mode de dématriçage. À exécuter de préférence sur des données **linéaires** : un
 étirement élargit tous les profils. Scripts : `action measure_psf`, puis
 `psfannotate [canal] [nombre]`.
 

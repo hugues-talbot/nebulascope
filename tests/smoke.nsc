@@ -389,6 +389,9 @@ waitloaded
 action measure_psf
 psfannotate 0 10
 action undo
+action measure_psf
+psfannotate 0 5 3
+action undo
 
 # Decoded-image cache: the third visit to sample.fits in this run serves the
 # cached decode — the data must be bit-identical to a fresh read (and an

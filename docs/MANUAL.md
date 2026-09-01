@@ -543,7 +543,11 @@ polar alignment); an axis that *rotates toward the corners* is optics
 annotations on the brightest fitted stars — axes proportional to the
 fitted FWHM, angle the fitted PA — so the elongation pattern is visible
 on the image itself; one undo step, and they save to the sidecar like any
-annotation. Best run on **linear** data: a stretch widens every profile
+annotation. The label selector adds each star's numbers next to its
+ellipse: FWHM (arcseconds when a plate solution exists), eccentricity, or
+both. Results are **cached per image**: re-invoking the menu item reopens
+the report instantly, and the fits are redone only when the image
+actually changed — on disk, by rotation, or by debayer mode. Best run on **linear** data: a stretch widens every profile
 (see the appendix). Scripts: `action measure_psf`, then
 `psfannotate [channel] [count]`.
 

@@ -85,9 +85,10 @@ const CommandRef kCommands[] = {
     "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
     "standard FITS cards; annotations translate with the pixels. `view`\n"
     "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
-  {"psfannotate",{"psfannotate [channel] [count]",
+  {"psfannotate",{"psfannotate [channel] [count] [label]",
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
-    "(rotated ellipses at the fitted shape; the report dialog's button)."}},
+    "(rotated ellipses at the fitted shape; the report dialog's button).\n"
+    "label: 0 none, 1 FWHM, 2 eccentricity, 3 both."}},
   {"blackpatch", {"blackpatch <x> <y> <w> <h>",
     "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
     "channel's black point becomes the patch median (M carried as a ratio,\n"
@@ -467,7 +468,8 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         // psfannotate [channel] [count] — annotate the brightest fitted stars
         // from the last `action measure_psf` run (same as the dialog button).
         m_w->annotatePsfStars(t.size() > 1 ? t[1].toInt() : 0,
-                              t.size() > 2 ? t[2].toInt() : 60);
+                              t.size() > 2 ? t[2].toInt() : 60,
+                              t.size() > 3 ? t[3].toInt() : 0);
         return true;
     }
     if (cmd == QLatin1String("blackpatch")) {

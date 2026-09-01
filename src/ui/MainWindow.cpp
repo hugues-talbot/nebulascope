@@ -4066,17 +4066,47 @@ static QString psfReportText(const std::vector<PsfChannelReport>& reps,
 
 void MainWindow::measurePsfAction() {
     if (!m_image.isValid()) return;
-    const ImageData img = m_image;                 // deep copy for the worker
     const QString path = m_currentPath;
+    // Result cache: the 2 700-fit computation is redone only when the image
+    // actually changed — on disk, by rotation, or by debayer mode. Otherwise
+    // the menu action simply reopens the report.
+    const QFileInfo fi(splitHduBase(path));
+    const QStringList ops = m_xformByPath.value(path);
+    const int dmode = m_debayerByPath.value(path, 0);
+    auto hit = m_psfCache.constFind(path);
+    if (hit != m_psfCache.constEnd() &&
+        hit->mtime == fi.lastModified() && hit->fsize == fi.size() &&
+        hit->xformOps == ops && hit->debayerMode == dmode) {
+        m_lastPsf = hit->reports;
+        m_lastPsfPath = path;
+        if (m_scriptDriving) {
+            fprintf(stderr, "%s", psfReportText(m_lastPsf,
+                    m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0).toUtf8().constData());
+        } else {
+            showPsfReport();
+        }
+        return;
+    }
+    const ImageData img = m_image;                 // deep copy for the worker
     const int nch = std::min(3, img.channels());
     auto compute = [img, nch]() {
         std::vector<PsfChannelReport> reps;
         for (int c = 0; c < nch; ++c) reps.push_back(measurePsf(img, c));
         return reps;
     };
-    if (m_scriptDriving) {                          // synchronous, printable
-        m_lastPsf = compute();
+    auto store = [this, path, fi, ops, dmode](std::vector<PsfChannelReport> reps) {
+        m_lastPsf = std::move(reps);
         m_lastPsfPath = path;
+        PsfCacheEntry ce;
+        ce.reports = m_lastPsf;
+        ce.mtime = fi.lastModified();
+        ce.fsize = fi.size();
+        ce.xformOps = ops;
+        ce.debayerMode = dmode;
+        m_psfCache.insert(path, std::move(ce));
+    };
+    if (m_scriptDriving) {                          // synchronous, printable
+        store(compute());
         fprintf(stderr, "%s", psfReportText(m_lastPsf,
                 m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0).toUtf8().constData());
         statusBar()->showMessage(tr("PSF measured — %1 channel(s)").arg(m_lastPsf.size()), 4000);
@@ -4085,10 +4115,9 @@ void MainWindow::measurePsfAction() {
     statusBar()->showMessage(tr("Measuring PSF…"));
     auto* watcher = new QFutureWatcher<std::vector<PsfChannelReport>>(this);
     connect(watcher, &QFutureWatcher<std::vector<PsfChannelReport>>::finished, this,
-            [this, watcher, path] {
+            [this, watcher, store] {
                 watcher->deleteLater();
-                m_lastPsf = watcher->result();
-                m_lastPsfPath = path;
+                store(watcher->result());
                 statusBar()->clearMessage();
                 showPsfReport();
             });
@@ -4124,12 +4153,20 @@ void MainWindow::showPsfReport() {
     count->setValue(60);
     row->addWidget(new QLabel(tr("stars:")));
     row->addWidget(count);
+    auto* labelMode = new QComboBox();
+    labelMode->addItem(tr("no label"));
+    labelMode->addItem(tr("FWHM"));
+    labelMode->addItem(tr("eccentricity"));
+    labelMode->addItem(tr("FWHM + ecc"));
+    row->addWidget(labelMode);
     auto* annBtn = new QPushButton(tr("Annotate stars"));
     annBtn->setToolTip(tr("Drop rotated-ellipse annotations on the brightest fitted stars\n"
                           "(axes proportional to the fitted FWHM, angle = the fitted PA) —\n"
-                          "the elongation pattern becomes visible on the image. One undo step."));
-    connect(annBtn, &QPushButton::clicked, this, [this, chan, count] {
-        annotatePsfStars(chan ? chan->currentIndex() : 0, count->value());
+                          "the elongation pattern becomes visible on the image, optionally\n"
+                          "with each star's numbers. One undo step."));
+    connect(annBtn, &QPushButton::clicked, this, [this, chan, count, labelMode] {
+        annotatePsfStars(chan ? chan->currentIndex() : 0, count->value(),
+                         labelMode->currentIndex());
     });
     row->addWidget(annBtn);
     row->addStretch();
@@ -4140,7 +4177,7 @@ void MainWindow::showPsfReport() {
     dlg->show();
 }
 
-void MainWindow::annotatePsfStars(int channel, int countN) {
+void MainWindow::annotatePsfStars(int channel, int countN, int labelMode) {
     if (m_lastPsfPath != m_currentPath || m_lastPsf.empty()) {
         statusBar()->showMessage(tr("PSF results belong to another image — measure again"), 5000);
         return;
@@ -4159,6 +4196,20 @@ void MainWindow::annotatePsfStars(int channel, int countN) {
         an.b = 2.5 * st.fwhmMin;               // the maj:min RATIO is preserved
         an.angleDeg = st.paDeg;
         an.color = QColor(255, 209, 102);      // warm gold — not a channel colour
+        // Optional per-star numbers: FWHM (geometric mean, arcsec when a
+        // plate solution exists) and/or eccentricity.
+        if (labelMode > 0) {
+            const double geo = std::sqrt(st.fwhmMaj * st.fwhmMin);
+            const double asec = m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0;
+            const QString fw = asec > 0
+                ? QStringLiteral("%1\u2033").arg(geo * asec, 0, 'f', 2)
+                : QStringLiteral("%1 px").arg(geo, 0, 'f', 2);
+            const QString ec = QStringLiteral("e%1").arg(st.ecc, 0, 'f', 2);
+            an.label = labelMode == 1 ? fw
+                     : labelMode == 2 ? ec
+                     : fw + QStringLiteral(" \u00b7 ") + ec;
+            an.textSize = 9;
+        }
         m_annByPath[m_currentPath].push_back(an);
     }
     m_annDirty.insert(m_currentPath);

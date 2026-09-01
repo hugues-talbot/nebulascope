@@ -71,7 +71,7 @@ private slots:
     void exportRegion();
     void measurePsfAction();               // Tools > Measure PSF (Stars)
     void showPsfReport();                  // dialog over m_lastPsf
-    void annotatePsfStars(int channel, int count);
+    void annotatePsfStars(int channel, int count, int labelMode = 0);
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
@@ -227,6 +227,16 @@ private:
     QFutureWatcher<PrefetchResult>* m_prefetchWatcher = nullptr;
     std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
     QString        m_lastPsfPath;          // image the results belong to
+    // Per-image PSF result cache: re-opening the report is free unless the
+    // image changed — on disk (mtime/size), by rotation, or by debayer mode.
+    struct PsfCacheEntry {
+        std::vector<PsfChannelReport> reports;
+        QDateTime mtime;
+        qint64 fsize = -1;
+        QStringList xformOps;
+        int debayerMode = 0;
+    };
+    QHash<QString, PsfCacheEntry> m_psfCache;
     StretchModel   m_model;
 
     AnnotationLayer* m_annotations = nullptr;
