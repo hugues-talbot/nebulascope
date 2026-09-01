@@ -156,15 +156,22 @@ Panel tour:
     The **Shape → identity** button in the GHS box sets D to zero — an
     exact identity curve over your Linear window, with b/SP/LP/HP keeping
     their positions so raising D resumes from the same anchor.
-  - **Neutral Black from Sky Patch** (Stretch menu; scripts:
+  - **Neutralize Background from Sky Patch** (Stretch menu; scripts:
     `blackpatch x y w h`): with per-filter pedestals the risky part is the
     *estimate* — an automatic mode can land on nebulosity — so you point
     instead: arm the tool and drag a small rectangle over truly empty sky.
-    Each channel's black point becomes that patch's median *in that
-    channel* — and **nothing else moves**: midtone and white keep their
-    absolute positions, so everything above the background renders exactly
-    as before and the sole change is the pedestal cut. Non-destructive, one
-    undo step, and the neutralized windows carry into Log/Asinh *and* GHS.
+    The three channel backgrounds are **equalized to a common output
+    grey** — the mean of their current levels — by solving each channel's
+    black point numerically, with midtone and white held at their absolute
+    positions. The background keeps its brightness (a barely visible dark
+    grey, deliberately *not* true black: black hides faint nebulosity,
+    grey lets it stand out) and loses only its colour cast; the movement
+    per channel is the minimum neutrality requires — a dimmer channel's
+    black may go *below* the data floor to lift its background up to the
+    common grey. Non-destructive, one undo step, and the neutralized
+    windows carry into Log/Asinh *and* GHS. Note: neutrality is
+    established in the stretched values, before the colour adjustments —
+    an active temperature/tint deliberately re-tints it.
     The output histogram shows the result instantly, including how much
     sky noise now clips below black — nudge B down afterwards if that
     matters for your target. Best applied **late in a session**, once the

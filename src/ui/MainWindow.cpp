@@ -1383,10 +1383,10 @@ void MainWindow::buildMenusAndToolbar() {
     // user points at truly empty sky and the patch median becomes each
     // channel's black point — three simultaneous B-drags, M carried as a
     // ratio, W untouched. Windows carry into every mode, GHS included.
-    acts["black_from_patch"] = stretch->addAction(tr("Neutral &Black from Sky Patch"), this, [this] {
+    acts["black_from_patch"] = stretch->addAction(tr("Neutralize &Background from Sky Patch"), this, [this] {
         if (!m_image.isValid()) return;
         m_view->setDrawTool(ImageView::DrawTool::SkyPatch);
-        statusBar()->showMessage(tr("Drag a small rectangle over empty sky — its median becomes the black point in every channel"), 8000);
+        statusBar()->showMessage(tr("Drag a small rectangle over empty sky — the background becomes a neutral grey at its current brightness"), 8000);
     });
     stretch->addSeparator();
     acts["copy_stretch"] = stretch->addAction(tr("&Copy Stretch"), QKeySequence("Ctrl+Alt+C"), this, &MainWindow::copyStretch);
@@ -5130,9 +5130,13 @@ void MainWindow::rebuildRecentMenus() {
          [this](const QString& p) { loadAnnotationsFile(p); });
 }
 
-// Sky-patch neutral black: per channel, the patch median (raw units) becomes
-// the black point — exactly the semantics of dragging B there by hand, so M
-// is carried as a ratio and W stays. Non-destructive, one undo step.
+// Sky-patch background NEUTRALIZATION: the patch's per-channel medians are
+// equalized to a COMMON output level — the mean of their current outputs —
+// by solving each channel's black point numerically, with midtone and white
+// held at their absolute positions. The background keeps its brightness (a
+// barely visible dark grey, per the field call: true black hides faint
+// nebulosity; grey lets it stand out) and loses only its colour cast; the
+// movement per channel is the minimum needed for neutrality.
 void MainWindow::onSkyPatchPicked(double x, double y, double w, double h) {
     if (!m_image.isValid()) return;
     const int x0 = std::max(0, int(std::floor(x)));
@@ -5141,7 +5145,8 @@ void MainWindow::onSkyPatchPicked(double x, double y, double w, double h) {
     const int y1 = std::min(m_image.height(), int(std::ceil(y + h)));
     if (x1 - x0 < 2 || y1 - y0 < 2) return;
     const int nch = std::min(3, m_image.channels());
-    QStringList meds;
+    // 1. Per-channel patch medians, in normalized [lo,hi] coordinates.
+    std::vector<double> uMed(nch, std::nan(""));
     for (int c = 0; c < nch; ++c) {
         const float* p = m_image.plane<float>(c);
         std::vector<float> vals;
@@ -5153,26 +5158,66 @@ void MainWindow::onSkyPatchPicked(double x, double y, double w, double h) {
             }
         if (vals.size() < 4) continue;
         std::nth_element(vals.begin(), vals.begin() + vals.size()/2, vals.end());
-        const double med = vals[vals.size()/2];
         const double range = std::max(1e-12, m_model.hi(c) - m_model.lo(c));
-        const double u = (med - m_model.lo(c)) / range;      // normalized black point
-        ChannelStretch cs = m_model.channel(c);
-        if (u >= cs.white - 0.02) continue;                  // patch brighter than W: refuse
-        // Only the BLACK point moves. Midtone and white keep their absolute
-        // positions (field call: carrying M as a ratio, like a B-drag,
-        // re-rendered the whole image — this tool must neutralize the dark
-        // background and touch nothing else).
-        cs.black = u;
-        cs.mid = std::max(cs.mid, u + 0.01);                 // keep M above the new B
-        m_model.setChannel(c, cs);
-        meds << QString::number(med, 'g', 6);
+        uMed[c] = (double(vals[vals.size()/2]) - m_model.lo(c)) / range;
     }
-    if (meds.isEmpty()) {
+    // 2. Current background output per channel (before the tone/colour
+    //    adjustments, which are channel-identical for tone — equality
+    //    survives them) and the common target: their mean.
+    auto outAt = [&](int c, const ChannelStretch& cs) {
+        return transferAt(uMed[c], m_model.fn(), cs, m_model.ghs());
+    };
+    double ySum = 0; int nOk = 0;
+    for (int c = 0; c < nch; ++c) {
+        if (std::isnan(uMed[c])) continue;
+        ySum += outAt(c, m_model.channel(c));
+        ++nOk;
+    }
+    if (nOk == 0) {
+        statusBar()->showMessage(tr("Sky patch unusable — too small or not finite"), 5000);
+        return;
+    }
+    const double yStar = ySum / nOk;
+    // 3. Solve each channel's black point so its background hits yStar,
+    //    midtone and white fixed. The output is not monotone in B in every
+    //    mode (raising B darkens the coordinate but brightens the implied
+    //    midtone ratio), so sample the feasible interval densely and refine.
+    int nSet = 0;
+    for (int c = 0; c < nch; ++c) {
+        if (std::isnan(uMed[c])) continue;
+        ChannelStretch cs = m_model.channel(c);
+        if (uMed[c] >= cs.white - 0.02) continue;            // patch brighter than W
+        const double bLo = -1.0;
+        const double bHi = std::min(cs.mid - 0.02, uMed[c] - 1e-4);
+        if (bHi <= bLo) continue;
+        auto yAt = [&](double b) {
+            ChannelStretch t = cs;
+            t.black = b;
+            return outAt(c, t);
+        };
+        double best = cs.black, bestErr = std::fabs(outAt(c, cs) - yStar);
+        const int N1 = 256;
+        for (int i = 0; i <= N1; ++i) {
+            const double b = bLo + (bHi - bLo) * i / N1;
+            const double e = std::fabs(yAt(b) - yStar);
+            if (e < bestErr) { bestErr = e; best = b; }
+        }
+        const double step = (bHi - bLo) / N1;
+        for (int i = 0; i <= 64; ++i) {                      // refine around the best
+            const double b = std::max(bLo, std::min(bHi, best - step + 2.0 * step * i / 64));
+            const double e = std::fabs(yAt(b) - yStar);
+            if (e < bestErr) { bestErr = e; best = b; }
+        }
+        cs.black = best;
+        m_model.setChannel(c, cs);
+        ++nSet;
+    }
+    if (nSet == 0) {
         statusBar()->showMessage(tr("Sky patch unusable — brighter than the white point or too small"), 5000);
         return;
     }
-    statusBar()->showMessage(tr("Neutral black from sky patch — black points set to %1")
-                                 .arg(meds.join(QLatin1String(" / "))), 6000);
+    statusBar()->showMessage(tr("Background neutralized — %1 channel(s) equalized at output %2")
+                                 .arg(nSet).arg(yStar, 0, 'f', 4), 6000);
 }
 
 void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {

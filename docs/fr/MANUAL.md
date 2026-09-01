@@ -176,17 +176,24 @@ Tour du panneau :
     identité** de la boîte GHS met D à zéro — une courbe identité exacte
     sur votre fenêtre linéaire, b/SP/LP/HP gardant leurs positions pour
     que remonter D reparte du même ancrage.
-  - **Noir neutre depuis une zone de ciel** (menu Étirement ; scripts :
-    `blackpatch x y w h`) : avec des piédestaux différents par filtre, le
-    risque est dans l'*estimation* — un mode automatique peut tomber sur
-    de la nébulosité — alors pointez : armez l'outil et tracez un petit
-    rectangle sur du ciel vraiment vide. Le point noir de chaque canal
-    devient la médiane de cette zone *dans ce canal* — et **rien d'autre
-    ne bouge** : tons moyens et blanc gardent leurs positions absolues,
-    tout ce qui est au-dessus du fond se rend exactement comme avant, et
-    le seul changement est la coupe du piédestal. Non destructif, une
-    seule étape d'annulation, et les fenêtres neutralisées se
-    transmettent à Log/Asinh *et* à GHS.
+  - **Neutraliser le fond depuis une zone de ciel** (menu Étirement ;
+    scripts : `blackpatch x y w h`) : avec des piédestaux différents par
+    filtre, le risque est dans l'*estimation* — un mode automatique peut
+    tomber sur de la nébulosité — alors pointez : armez l'outil et tracez
+    un petit rectangle sur du ciel vraiment vide. Les fonds des trois
+    canaux sont **égalisés à un gris de sortie commun** — la moyenne de
+    leurs niveaux actuels — en résolvant numériquement le point noir de
+    chaque canal, tons moyens et blanc gardant leurs positions absolues.
+    Le fond conserve sa luminosité (un gris sombre à peine visible,
+    délibérément *pas* un noir pur : le noir cache la nébulosité faible,
+    le gris la laisse ressortir) et ne perd que sa dominante colorée ; le
+    mouvement par canal est le minimum qu'exige la neutralité — le noir
+    d'un canal plus faible peut passer *sous* le plancher des données pour
+    remonter son fond jusqu'au gris commun. Non destructif, une seule
+    étape d'annulation, et les fenêtres neutralisées se transmettent à
+    Log/Asinh *et* à GHS. Note : la neutralité s'établit dans les valeurs
+    étirées, avant les ajustements de couleur — une température/teinte
+    active la re-teinte délibérément.
     L'histogramme de sortie montre le résultat immédiatement, y compris la
     part de bruit de ciel qui écrête désormais sous le noir — redescendez
     B ensuite si cela compte pour votre cible. À appliquer de préférence

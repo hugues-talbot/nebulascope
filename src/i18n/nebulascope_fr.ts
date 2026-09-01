@@ -1101,16 +1101,6 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         <translation>Appliquer l&apos;étirement à tout</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1386"/>
-        <source>Neutral &amp;Black from Sky Patch</source>
-        <translation>Noir neutre depuis une &amp;zone de ciel</translation>
-    </message>
-    <message>
-        <location filename="../ui/MainWindow.cpp" line="1389"/>
-        <source>Drag a small rectangle over empty sky — its median becomes the black point in every channel</source>
-        <translation>Tracez un petit rectangle sur du ciel vide — sa médiane devient le point noir de chaque canal</translation>
-    </message>
-    <message>
         <location filename="../ui/MainWindow.cpp" line="1392"/>
         <source>&amp;Copy Stretch</source>
         <translation>&amp;Copier l&apos;étirement</translation>
@@ -1862,17 +1852,17 @@ pas de solution astrométrique — pixels seulement</translation>
         <translation>Exporter la région zoomée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5168"/>
+        <location filename="../ui/MainWindow.cpp" line="5177"/>
+        <source>Sky patch unusable — too small or not finite</source>
+        <translation>Zone de ciel inutilisable — trop petite ou non finie</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="5216"/>
         <source>Sky patch unusable — brighter than the white point or too small</source>
         <translation>Zone de ciel inutilisable — plus brillante que le point blanc ou trop petite</translation>
     </message>
-    <message>
-        <location filename="../ui/MainWindow.cpp" line="5171"/>
-        <source>Neutral black from sky patch — black points set to %1</source>
-        <translation>Noir neutre depuis la zone de ciel — points noirs réglés à %1</translation>
-    </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="5592"/>
+        <location filename="../ui/MainWindow.cpp" line="5640"/>
         <source>Match from WCS: the two fields barely overlap on the sky (%n common sample(s))</source>
         <translation>
             <numerusform>Appariement WCS : les deux champs se recouvrent à peine sur le ciel (%n échantillon commun)</numerusform>
@@ -1880,7 +1870,7 @@ pas de solution astrométrique — pixels seulement</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="5602"/>
+        <location filename="../ui/MainWindow.cpp" line="5650"/>
         <source>Views matched from their plate solutions — scale ×%1, rotation %2°, %n overlap sample(s), affine residual %3 px rms</source>
         <translation>
             <numerusform>Vues appariées d&apos;après leurs solutions astrométriques — échelle ×%1, rotation %2°, %n échantillon de recouvrement, résidu affine %3 px rms</numerusform>
@@ -1888,57 +1878,57 @@ pas de solution astrométrique — pixels seulement</translation>
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5614"/>
+        <location filename="../ui/MainWindow.cpp" line="5662"/>
         <source>Match needs two views with images — split the view first</source>
         <translation>L&apos;appariement demande deux vues avec images — divisez d&apos;abord la vue</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5633"/>
+        <location filename="../ui/MainWindow.cpp" line="5681"/>
         <source>No first pair yet — M picks the first feature pair</source>
         <translation>Pas encore de première paire — M pointe la première paire de détails</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5643"/>
+        <location filename="../ui/MainWindow.cpp" line="5691"/>
         <source>Match (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels</source>
         <translation>Appariement (2e paire) : cliquez un détail DIFFÉRENT dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5644"/>
+        <location filename="../ui/MainWindow.cpp" line="5692"/>
         <source>Match: click a feature (star) in one view, then the same feature in the other — Esc cancels</source>
         <translation>Appariement : cliquez un détail (étoile) dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5654"/>
+        <location filename="../ui/MainWindow.cpp" line="5702"/>
         <source>Match cancelled</source>
         <translation>Appariement annulé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5694"/>
+        <location filename="../ui/MainWindow.cpp" line="5742"/>
         <source>Second pair must use the same two views as the first — match restarted</source>
         <translation>La seconde paire doit utiliser les deux mêmes vues que la première — appariement relancé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5731"/>
+        <location filename="../ui/MainWindow.cpp" line="5779"/>
         <source>translation snapped (scale/rotation as aligned by eye) — Shift+M adds a second pair for scale+rotation</source>
         <translation>translation calée (échelle/rotation telles qu&apos;alignées à l&apos;œil) — Maj+M ajoute une seconde paire pour échelle+rotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5740"/>
+        <location filename="../ui/MainWindow.cpp" line="5788"/>
         <source>Views matched — %1</source>
         <translation>Vues appariées — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5668"/>
+        <location filename="../ui/MainWindow.cpp" line="5716"/>
         <source>First feature marked — now click the SAME feature in another view (Esc cancels)</source>
         <translation>Premier détail marqué — cliquez maintenant le MÊME détail dans une autre vue (Échap annule)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5702"/>
+        <location filename="../ui/MainWindow.cpp" line="5750"/>
         <source>Second feature is the same point as the first — pick a different one</source>
         <translation>Le second détail est le même point que le premier — choisissez-en un autre</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5714"/>
+        <location filename="../ui/MainWindow.cpp" line="5762"/>
         <source>scale ×%1, rotation %2°, translation snapped</source>
         <translation>échelle ×%1, rotation %2°, translation calée</translation>
     </message>
@@ -2013,6 +2003,16 @@ pas de solution astrométrique — pixels seulement</translation>
         <location filename="../ui/MainWindow.cpp" line="1195"/>
         <source>Match: Add Second Pair (scale+rotation)</source>
         <translation>Appariement : ajouter une seconde paire (échelle+rotation)</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="1386"/>
+        <source>Neutralize &amp;Background from Sky Patch</source>
+        <translation>Neutraliser le &amp;fond depuis une zone de ciel</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="1389"/>
+        <source>Drag a small rectangle over empty sky — the background becomes a neutral grey at its current brightness</source>
+        <translation>Tracez un petit rectangle sur du ciel vide — le fond devient un gris neutre à sa luminosité actuelle</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2796"/>
@@ -2109,20 +2109,20 @@ avec les nombres de chaque étoile si demandé. Une seule annulation.</translati
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="4741"/>
-        <location filename="../ui/MainWindow.cpp" line="5263"/>
-        <location filename="../ui/MainWindow.cpp" line="5276"/>
+        <location filename="../ui/MainWindow.cpp" line="5311"/>
+        <location filename="../ui/MainWindow.cpp" line="5324"/>
         <source>annotation</source>
         <translation>annotation</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="4758"/>
-        <location filename="../ui/MainWindow.cpp" line="5428"/>
+        <location filename="../ui/MainWindow.cpp" line="5476"/>
         <source>paste annotation</source>
         <translation>coller l&apos;annotation</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="4773"/>
-        <location filename="../ui/MainWindow.cpp" line="5385"/>
+        <location filename="../ui/MainWindow.cpp" line="5433"/>
         <source>delete annotation</source>
         <translation>supprimer l&apos;annotation</translation>
     </message>
@@ -2133,14 +2133,14 @@ avec les nombres de chaque étoile si demandé. Une seule annulation.</translati
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="4795"/>
-        <location filename="../ui/MainWindow.cpp" line="5370"/>
+        <location filename="../ui/MainWindow.cpp" line="5418"/>
         <source>Annotation colour</source>
         <translation>Couleur de l&apos;annotation</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="4799"/>
-        <location filename="../ui/MainWindow.cpp" line="5215"/>
-        <location filename="../ui/MainWindow.cpp" line="5359"/>
+        <location filename="../ui/MainWindow.cpp" line="5263"/>
+        <location filename="../ui/MainWindow.cpp" line="5407"/>
         <source>Text:</source>
         <translation>Texte :</translation>
     </message>
@@ -2303,190 +2303,195 @@ Quitter quand même ?</translation>
         <translation>Vider la liste</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5178"/>
+        <location filename="../ui/MainWindow.cpp" line="5219"/>
+        <source>Background neutralized — %1 channel(s) equalized at output %2</source>
+        <translation>Fond neutralisé — %1 canal(aux) égalisé(s) au niveau %2</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="5226"/>
         <source>Ellipse annotation</source>
         <translation>Annotation ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5179"/>
-        <location filename="../ui/MainWindow.cpp" line="5197"/>
+        <location filename="../ui/MainWindow.cpp" line="5227"/>
+        <location filename="../ui/MainWindow.cpp" line="5245"/>
         <source>Label (optional):</source>
         <translation>Étiquette (facultative) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5190"/>
+        <location filename="../ui/MainWindow.cpp" line="5238"/>
         <source>add ellipse</source>
         <translation>ajouter une ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5196"/>
+        <location filename="../ui/MainWindow.cpp" line="5244"/>
         <source>Line annotation</source>
         <translation>Annotation segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5208"/>
+        <location filename="../ui/MainWindow.cpp" line="5256"/>
         <source>add line</source>
         <translation>ajouter un segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5214"/>
+        <location filename="../ui/MainWindow.cpp" line="5262"/>
         <source>Text annotation</source>
         <translation>Annotation texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5227"/>
+        <location filename="../ui/MainWindow.cpp" line="5275"/>
         <source>add text</source>
         <translation>ajouter un texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5237"/>
+        <location filename="../ui/MainWindow.cpp" line="5285"/>
         <source>Copy RA/Dec — %1 %2</source>
         <translation>Copier AD/Déc — %1 %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5238"/>
+        <location filename="../ui/MainWindow.cpp" line="5286"/>
         <source>Copy RA/Dec (no astrometric solution)</source>
         <translation>Copier AD/Déc (pas de solution astrométrique)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5253"/>
+        <location filename="../ui/MainWindow.cpp" line="5301"/>
         <source>Copy Pixel Value</source>
         <translation>Copier la valeur du pixel</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5264"/>
-        <location filename="../ui/MainWindow.cpp" line="5277"/>
+        <location filename="../ui/MainWindow.cpp" line="5312"/>
+        <location filename="../ui/MainWindow.cpp" line="5325"/>
         <source>“%1”</source>
         <translation>« %1 »</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5265"/>
+        <location filename="../ui/MainWindow.cpp" line="5313"/>
         <source>Edit Text of %1…</source>
         <translation>Modifier le texte de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5266"/>
+        <location filename="../ui/MainWindow.cpp" line="5314"/>
         <source>Change Colour of %1…</source>
         <translation>Changer la couleur de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5267"/>
+        <location filename="../ui/MainWindow.cpp" line="5315"/>
         <source>Delete %1</source>
         <translation>Supprimer %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5278"/>
+        <location filename="../ui/MainWindow.cpp" line="5326"/>
         <source>Copy %1</source>
         <translation>Copier %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5280"/>
+        <location filename="../ui/MainWindow.cpp" line="5328"/>
         <source>Annotate Here…</source>
         <translation>Annoter ici…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5282"/>
+        <location filename="../ui/MainWindow.cpp" line="5330"/>
         <source>Paste Annotation Here</source>
         <translation>Coller l&apos;annotation ici</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5290"/>
+        <location filename="../ui/MainWindow.cpp" line="5338"/>
         <source>Clear Annotations</source>
         <translation>Effacer les annotations</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="2543"/>
-        <location filename="../ui/MainWindow.cpp" line="5292"/>
+        <location filename="../ui/MainWindow.cpp" line="5340"/>
         <source>Save Annotations</source>
         <translation>Enregistrer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5294"/>
+        <location filename="../ui/MainWindow.cpp" line="5342"/>
         <source>Save Annotations As…</source>
         <translation>Enregistrer les annotations sous…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5296"/>
+        <location filename="../ui/MainWindow.cpp" line="5344"/>
         <source>Load Annotations…</source>
         <translation>Charger des annotations…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5297"/>
+        <location filename="../ui/MainWindow.cpp" line="5345"/>
         <source>Invert Annotation Contrast</source>
         <translation>Inverser le contraste des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5321"/>
+        <location filename="../ui/MainWindow.cpp" line="5369"/>
         <source>Look up in Aladin — %1</source>
         <translation>Consulter dans Aladin — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5322"/>
+        <location filename="../ui/MainWindow.cpp" line="5370"/>
         <source>Identify in SIMBAD — %1</source>
         <translation>Identifier dans SIMBAD — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5324"/>
+        <location filename="../ui/MainWindow.cpp" line="5372"/>
         <source>Point Stellarium Here — %1</source>
         <translation>Pointer Stellarium ici — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5329"/>
+        <location filename="../ui/MainWindow.cpp" line="5377"/>
         <source>Zoom to Fit</source>
         <translation>Ajuster à la vue</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5330"/>
+        <location filename="../ui/MainWindow.cpp" line="5378"/>
         <source>Zoom 1:1</source>
         <translation>Zoom 1:1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5338"/>
+        <location filename="../ui/MainWindow.cpp" line="5386"/>
         <source>Annotate</source>
         <translation>Annoter</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5339"/>
+        <location filename="../ui/MainWindow.cpp" line="5387"/>
         <source>Label for %1 %2:</source>
         <translation>Étiquette pour %1 %2 :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5340"/>
+        <location filename="../ui/MainWindow.cpp" line="5388"/>
         <source>Label for pixel (%1, %2):</source>
         <translation>Étiquette pour le pixel (%1, %2) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5352"/>
+        <location filename="../ui/MainWindow.cpp" line="5400"/>
         <source>add annotation</source>
         <translation>ajouter une annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5358"/>
+        <location filename="../ui/MainWindow.cpp" line="5406"/>
         <source>Edit annotation text</source>
         <translation>Modifier le texte de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5365"/>
+        <location filename="../ui/MainWindow.cpp" line="5413"/>
         <source>edit annotation text</source>
         <translation>modifier le texte de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5376"/>
+        <location filename="../ui/MainWindow.cpp" line="5424"/>
         <source>change annotation colour</source>
         <translation>changer la couleur de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5435"/>
+        <location filename="../ui/MainWindow.cpp" line="5483"/>
         <source>clear annotations</source>
         <translation>effacer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5454"/>
+        <location filename="../ui/MainWindow.cpp" line="5502"/>
         <source>(%1, %2)   R %3  G %4  B %5</source>
         <translation>(%1, %2)   R %3  V %4  B %5</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5457"/>
+        <location filename="../ui/MainWindow.cpp" line="5505"/>
         <source>(%1, %2)   %3</source>
         <translation>(%1, %2)   %3</translation>
     </message>

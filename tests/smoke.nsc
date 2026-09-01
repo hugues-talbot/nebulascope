@@ -368,17 +368,19 @@ assert rows 4
 action reset_orientation
 split 1x1
 
-# Neutral Black from Sky Patch: each channel's black point becomes the
-# patch median (per channel!) and NOTHING else moves — midtone and white
-# keep their absolute positions, so everything above the background
-# renders exactly as before; the sole change is the pedestal cut.
+# Neutralize Background from Sky Patch: the three channel backgrounds are
+# EQUALIZED to a common output grey (the mean of their current levels) by
+# solving each black point numerically — midtone and white stay absolute.
+# Note ch1's black goes NEGATIVE: its dimmer background is lifted UP to
+# the common grey (the extended handle domain at work) — minimum movement,
+# both directions, colour cast removed, brightness kept.
 open tests/testdata/pi_f32_plain.xisf
 waitloaded
 window all 0 0.5 1
 blackpatch 20 20 40 40
-assert stretch 0 0.394173443 0.5 1 1e-6
-assert stretch 1 0.347260952 0.5 1 1e-6
-assert stretch 2 0.380063742 0.5 1 1e-6
+assert stretch 0 0.117384903 0.5 1 5e-4
+assert stretch 1 -0.192463505 0.5 1 5e-4
+assert stretch 2 0.0385118501 0.5 1 5e-4
 action undo
 
 # Measure PSF end to end (script mode prints the report; the 128px fixture
