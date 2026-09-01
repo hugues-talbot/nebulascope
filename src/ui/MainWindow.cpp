@@ -4116,27 +4116,39 @@ void MainWindow::measurePsfAction() {
     // Live progress: the worker ticks shared atomics (stars fitted / total,
     // cumulative over channels); a timer paints them into a status-bar
     // progress bar. Indeterminate while detection runs (total still 0).
+    // The bar spans the WHOLE job: each channel owns an equal slice, filled
+    // by that channel's own fit count — (channel + done/total) / nch is
+    // monotone by construction (a per-run cumulative total made the bar
+    // complete and rewind once per channel, since a channel's total is only
+    // known after its detection).
     auto done = std::make_shared<std::atomic<int>>(0);
     auto total = std::make_shared<std::atomic<int>>(0);
-    auto computeP = [img, nch, done, total]() {
+    auto chanIx = std::make_shared<std::atomic<int>>(0);
+    auto computeP = [img, nch, done, total, chanIx]() {
         std::vector<PsfChannelReport> reps;
-        for (int c = 0; c < nch; ++c)
+        for (int c = 0; c < nch; ++c) {
+            chanIx->store(c);
+            total->store(0);
+            done->store(0);
             reps.push_back(measurePsf(img, c, done.get(), total.get()));
+        }
         return reps;
     };
-    statusBar()->showMessage(tr("Measuring PSF — detecting stars…"));
+    statusBar()->showMessage(tr("Measuring PSF — channel 1/%1: detecting stars…").arg(nch));
     auto* bar = new QProgressBar();
     bar->setMaximumWidth(220);
-    bar->setRange(0, 0);                          // indeterminate until total known
+    bar->setRange(0, 1000);
+    bar->setValue(0);
     statusBar()->addPermanentWidget(bar);
     auto* tick = new QTimer(this);
-    connect(tick, &QTimer::timeout, this, [this, bar, done, total] {
+    connect(tick, &QTimer::timeout, this, [this, bar, done, total, chanIx, nch] {
+        const int ci = chanIx->load();
         const int t = total->load(), d = done->load();
-        if (t > 0) {
-            bar->setRange(0, t);
-            bar->setValue(d);
-            statusBar()->showMessage(tr("Measuring PSF — %1 / %2 stars").arg(d).arg(t));
-        }
+        const double frac = (ci + (t > 0 ? double(d) / t : 0.0)) / nch;
+        bar->setValue(int(frac * 1000));
+        statusBar()->showMessage(t > 0
+            ? tr("Measuring PSF — channel %1/%2: %3 / %4 stars").arg(ci + 1).arg(nch).arg(d).arg(t)
+            : tr("Measuring PSF — channel %1/%2: detecting stars…").arg(ci + 1).arg(nch));
     });
     tick->start(150);
     auto* watcher = new QFutureWatcher<std::vector<PsfChannelReport>>(this);
