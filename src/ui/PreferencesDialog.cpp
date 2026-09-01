@@ -102,6 +102,17 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                              "Takes effect when overlay mode is next entered (O twice)."));
     form->addRow(tr("Overlay panel opacity:"), overlayOp);
 
+    auto* cacheMB = new QSpinBox();
+    cacheMB->setRange(0, 262144);
+    cacheMB->setSingleStep(512);
+    cacheMB->setSuffix(QStringLiteral(" MB"));
+    cacheMB->setValue(p.imageCacheMB);
+    cacheMB->setToolTip(tr("Decoded images kept in memory so switching back is instant\n"
+                           "(the OS only caches the file bytes — the decode is the slow\n"
+                           "part). Least-recently-viewed images are dropped first.\n"
+                           "0 disables the cache."));
+    form->addRow(tr("Image cache:"), cacheMB);
+
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
     recentImg->setValue(p.recentImagesMax);
@@ -207,6 +218,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.recentImagesMax = recentImg->value();
         p.recentJsonMax   = recentJson->value();
         p.overlayOpacity  = overlayOp->value() / 100.0;
+        p.imageCacheMB = cacheMB->value();
         p.debayerMethod   = debayerMeth->currentIndex();
         p.zoomStepCoarse  = zoomCoarse->value();
         p.zoomStepFine    = zoomFine->value();

@@ -390,4 +390,19 @@ action measure_psf
 psfannotate 0 10
 action undo
 
+# Decoded-image cache: the third visit to sample.fits in this run serves the
+# cached decode — the data must be bit-identical to a fresh read (and an
+# in-session save that OVERWRITES a cached file must never be masked: the
+# xisf reopen below re-reads because the mtime moved).
+open tests/testdata/cfa_asiair_rggb.fits
+waitloaded
+open tests/testdata/sample.fits
+waitloaded
+assert size 128 128
+assert range 50.4 1339.9 5
+save smoke_data.xisf
+open smoke_data.xisf
+waitloaded
+assert range 0.0 1.0 0.01
+
 quit

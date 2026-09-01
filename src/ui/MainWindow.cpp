@@ -287,6 +287,7 @@ void MainWindow::buildUi() {
     m_pixelLabel = new QLabel("—");
     statusBar()->addPermanentWidget(m_pixelLabel);
 
+    m_imgCache.setBudgetBytes(qint64(Preferences::get().imageCacheMB) * 1024 * 1024);
     connect(&m_model, &StretchModel::changed, this, &MainWindow::updateDisplay);
     m_renderWatcher = new QFutureWatcher<QImage>(this);
     connect(m_renderWatcher, &QFutureWatcher<QImage>::finished, this, &MainWindow::onRenderDone);
@@ -1411,6 +1412,7 @@ void MainWindow::buildMenusAndToolbar() {
         if (dlg.exec() == QDialog::Accepted) {
             m_annColor = Preferences::get().annColor;   // new-annotation default
             refreshAnnotations();                       // grid density, stroke width
+            m_imgCache.setBudgetBytes(qint64(Preferences::get().imageCacheMB) * 1024 * 1024);
             const int newDebayer = Preferences::get().debayerMethod;
             if (newDebayer != oldDebayer) {
                 // Route through the undo stack: rewind the pref the dialog
@@ -1549,6 +1551,7 @@ void MainWindow::buildMenusAndToolbar() {
 }
 
 static QString splitHduKey(const QString& key, int& hdu);   // defined below
+static QString splitHduBase(const QString& key);            // defined below
 
 // Where the Open/Append dialogs start. An empty dir means Qt falls back to
 // the process working directory — "/" when Finder launched the app, which is
@@ -1597,6 +1600,11 @@ void MainWindow::openPaths(const QStringList& paths) {
 static QString makeHduKey(const QString& base, int hdu) {
     return base + QStringLiteral("||hdu=%1").arg(hdu);
 }
+static QString splitHduBase(const QString& key) {
+    int hdu = -1;
+    return splitHduKey(key, hdu);
+}
+
 static QString splitHduKey(const QString& key, int& hdu) {
     hdu = -1;
     const int at = key.lastIndexOf(QLatin1String("||hdu="));
@@ -2081,9 +2089,11 @@ void MainWindow::applyStretchState(const StretchModel::State& st) {
 
 void MainWindow::applyDebayerChange(const QString& path, int mode, int method) {
     m_debayerByPath[path] = mode;
+    m_imgCache.removeFile(splitHduBase(path));    // cached entries are POST-debayer
     if (method >= 0 && method != Preferences::get().debayerMethod) {
         Preferences::get().debayerMethod = method;
         Preferences::get().save();
+        m_imgCache.clear();                       // global algorithm: everything stale
     }
     syncDebayerMenu();
     if (path == m_currentPath) displayPath(m_currentPath);
@@ -2096,6 +2106,7 @@ void MainWindow::applyDebayerChange(const QString& path, int mode, int method) {
 void MainWindow::applyDebayerToAll() {
     if (m_currentPath.isEmpty()) return;
     const int mode = m_debayerByPath.value(m_currentPath, 0);
+    m_imgCache.clear();                           // bulk debayer change
     int n = 0;
     for (int i = 0; i < m_fileList->count(); ++i) {
         const QString key = m_fileList->item(i)->data(Qt::UserRole).toString();
@@ -2201,6 +2212,9 @@ void MainWindow::syncFileWatcher() {
 }
 
 void MainWindow::onWatchedFileChanged(const QString& path) {
+    // The decoded-image cache must never mask an external overwrite: evict
+    // eagerly (the per-hit mtime check is the backstop).
+    m_imgCache.removeFile(path);
     // Write-then-rename replaces the inode and silently drops the watch;
     // re-arm as soon as the new file exists.
     if (QFileInfo::exists(path) && !m_fileWatcher->files().contains(path))
@@ -3264,6 +3278,14 @@ void MainWindow::displayPath(const QString& path) {
             hdr.structure  = QStringList{ QString("RGB combine · %1×%2 · 3 channels")
                                             .arg(loaded.width()).arg(loaded.height()) };
         }
+    } else if (auto cached = m_imgCache.get(path, splitHduBase(path))) {
+        // Decoded-image cache hit: the multi-second decode (inflate, unshuffle,
+        // float promotion, debayer, stats) collapses to a memcpy. The entry is
+        // the DISK-FRAME decode — the rotation replay below applies on top,
+        // exactly as it would on a fresh read.
+        loaded = *cached->image;
+        hdr = cached->header;
+        m_cachedStats = cached->stats;
     } else {
         int hduReq = -1;
         const QString base = splitHduKey(path, hduReq);
@@ -3285,6 +3307,8 @@ void MainWindow::displayPath(const QString& path) {
         loaded = std::move(res.image);
         hdr    = std::move(res.header);
         loaded = applyDebayer(std::move(loaded), hdr, path);
+        m_cacheInsertHdr = hdr;                          // pristine, pre-append
+        m_cacheInsertPending = true;
     }
     m_image = std::move(loaded);
     m_header = std::move(hdr);
@@ -3327,8 +3351,20 @@ void MainWindow::displayPath(const QString& path) {
     }
 
     m_model.setChannelCount(m_image.channels());
-    const std::vector<ChannelStats> stats = computeStats(m_image);
+    // Disk-frame statistics: reused from the cache on a hit (they were
+    // computed from these very pixels), recomputed and stored on a miss.
+    const std::vector<ChannelStats> stats =
+        !m_cachedStats.empty() ? m_cachedStats : computeStats(m_image);
     m_curStats = stats;                                  // cache for Copy/Paste Stretch anchors
+    if (m_cacheInsertPending) {
+        m_cacheInsertPending = false;
+        ImageCache::Entry e;
+        e.image = std::make_shared<const ImageData>(m_image);   // disk frame (replay is later)
+        e.header = std::move(m_cacheInsertHdr);
+        e.stats = stats;
+        m_imgCache.insert(path, splitHduBase(path), std::move(e));
+    }
+    m_cachedStats.clear();
 
     // Per-image STF memory: restore this file's last stretch, or auto-stretch on
     // first visit. Set m_currentPath first so the change handler saves correctly.

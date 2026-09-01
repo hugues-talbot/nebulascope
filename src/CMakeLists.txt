@@ -12,6 +12,7 @@ add_library(astro_core STATIC
     core/Debayer.cpp
     core/ColorTransport.cpp
     core/PsfMeasure.cpp
+    core/ImageCache.cpp
     core/Transform.cpp
     core/ChannelCombine.cpp
     core/Wcs.cpp

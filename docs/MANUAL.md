@@ -731,7 +731,15 @@ name reassembles exactly, for overwriting or re-saving.
     applied at the next launch; the `.nsc` script language and CLI output
     stay English, as a locale-independent API); default annotation colour,
     text size, line thickness; RA/Dec grid density; sidecar auto-load;
-    overlay panel opacity; recent files list sizes.
+    overlay panel opacity; recent files list sizes; **image cache** size —
+    decoded images kept in memory (default 4096 MB) so switching back to a
+    recently viewed image is instant. The operating system only caches the
+    file *bytes*; the slow part of a large master is the decode
+    (decompression, float promotion, debayer, statistics), and that is what
+    this cache keeps. Least-recently-viewed entries are dropped first; an
+    externally modified file is never served stale (the cache checks the
+    file's timestamp on every hit, and the auto-reload watcher evicts
+    eagerly). 0 disables it.
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert). Each
     entry records the default it was written with (`name.default`), so

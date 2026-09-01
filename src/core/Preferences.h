@@ -30,6 +30,7 @@ struct Preferences {
     int    zoomStepCoarse  = 10;               // keyboard zoom > / < step, percent
     int    zoomStepFine    = 3;                // keyboard zoom . / , step, percent
     bool   commonAxis      = true;             // histogram: RGB channels on one pooled axis
+    int    imageCacheMB    = 4096;             // decoded-image cache budget (0 = off)
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

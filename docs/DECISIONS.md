@@ -276,3 +276,20 @@ initial guess zeroes the rotation gradient, and an LM solver that treats
 the resulting singular system as fatal (rather than damping through it)
 fails on every star — the second silently-pinned-parameter bug of this
 project, found the same way (ground truth or it did not happen).
+
+## Cache the decode, not the bytes (2026-09-01)
+
+The user asked the right question precisely: app-level cache, or trust the
+OS? The OS page cache spares only the disk read, and for a compressed
+500 MB XISF the read is the cheap half — zlib inflation, byte-unshuffle,
+Float32 promotion, debayer and statistics dominate, and they repeat on
+every list switch. The decoded-image LRU (core/ImageCache) keeps the
+POST-DEBAYER, DISK-FRAME decode plus its statistics; rotation replay and
+per-image stretch memory sit on top exactly as on a fresh read, so cache
+hits are semantically invisible. Correctness over speed at the boundary:
+every hit re-checks the file's mtime+size (an external overwrite is never
+masked), the auto-reload watcher evicts eagerly, and debayer changes —
+per-image or global-algorithm — invalidate, because entries are
+post-debayer. Measured: reopening a 495 MB master costs 0.3 s against a
+13 s cold decode. The budget is a preference (default 4096 MB, 0 = off) —
+the eviction boundary is honest and visible, unlike the page cache's.

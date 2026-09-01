@@ -2,6 +2,7 @@
 // These catch format-interop regressions (sample scaling, layout, headers) —
 // e.g. the XISF float-normalization requirement is asserted here.
 #include "nstest.h"
+#include "core/ImageCache.h"
 #include "core/ImageData.h"
 #include "io/ImageReader.h"
 #include "io/ImageWriter.h"
@@ -267,6 +268,55 @@ NS_TEST(tiff_roundtrip_16bit) {
     QTemporaryDir tmp;
     ImageData img = makePattern(64, 48, 1, 0.0f, 1.0f);
     NS_CHECK(roundTripError(tmp.path(), "tiff", img, true) < 2.0 / 65535.0);
+}
+
+NS_TEST(image_cache_lru_staleness_and_budget) {
+    // The decoded-image cache: hits return the inserted entry; a rewritten
+    // file is NEVER served (mtime/size staleness); the byte budget evicts
+    // least-recently-used first; budget 0 disables insertion.
+    auto makeImg = [](int w, float fill) {
+        ImageData img(w, w, 1, SampleFormat::Float32, ColorSpace::Gray);
+        float* p = img.plane<float>(0);
+        for (std::size_t i = 0; i < img.samplesPerChannel(); ++i) p[i] = fill;
+        return img;
+    };
+    auto writeFile = [](const char* path, int n) {
+        FILE* f = fopen(path, "wb");
+        for (int i = 0; i < n; ++i) fputc('x', f);
+        fclose(f);
+    };
+    writeFile("cachetest_a.bin", 100);
+    writeFile("cachetest_b.bin", 100);
+
+    ImageCache cache;
+    const qint64 one = qint64(64) * 64 * sizeof(float);   // bytes of a 64x64 mono
+    cache.setBudgetBytes(one + one / 2);                  // room for ONE entry
+
+    ImageCache::Entry ea; ea.image = std::make_shared<const ImageData>(makeImg(64, 1.0f));
+    ImageCache::Entry eb; eb.image = std::make_shared<const ImageData>(makeImg(64, 2.0f));
+    cache.insert("A", "cachetest_a.bin", std::move(ea));
+    NS_CHECK(cache.usedBytes() == one);
+    auto hit = cache.get("A", "cachetest_a.bin");
+    NS_CHECK(hit && hit->image->plane<float>(0)[0] == 1.0f);
+
+    // B evicts A (budget fits one).
+    cache.insert("B", "cachetest_b.bin", std::move(eb));
+    NS_CHECK(cache.get("A", "cachetest_a.bin") == nullptr);
+    hit = cache.get("B", "cachetest_b.bin");
+    NS_CHECK(hit && hit->image->plane<float>(0)[0] == 2.0f);
+
+    // Rewriting the file (different size) invalidates the entry.
+    writeFile("cachetest_b.bin", 101);
+    NS_CHECK(cache.get("B", "cachetest_b.bin") == nullptr);
+    NS_CHECK(cache.usedBytes() == 0);
+
+    // Budget 0: inserts are no-ops.
+    cache.setBudgetBytes(0);
+    ImageCache::Entry ec; ec.image = std::make_shared<const ImageData>(makeImg(64, 3.0f));
+    cache.insert("C", "cachetest_a.bin", std::move(ec));
+    NS_CHECK(cache.get("C", "cachetest_a.bin") == nullptr);
+    remove("cachetest_a.bin");
+    remove("cachetest_b.bin");
 }
 
 int main() { return nstest::runAll(); }

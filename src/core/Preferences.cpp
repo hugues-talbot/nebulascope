@@ -33,6 +33,7 @@ void Preferences::load() {
     zoomStepCoarse  = s.value(QStringLiteral("zoom_step_coarse"), zoomStepCoarse).toInt();
     zoomStepFine    = s.value(QStringLiteral("zoom_step_fine"), zoomStepFine).toInt();
     commonAxis      = s.value(QStringLiteral("histogram_common_axis"), commonAxis).toBool();
+    imageCacheMB    = s.value(QStringLiteral("image_cache_mb"), imageCacheMB).toInt();
     s.endGroup();
     if (language != QLatin1String("en") && language != QLatin1String("fr"))
         language.clear();                      // anything else = follow the system
@@ -44,6 +45,7 @@ void Preferences::load() {
     recentJsonMax   = qBound(0, recentJsonMax, 50);
     debayerMethod   = qBound(0, debayerMethod, 2);
     zoomStepCoarse  = qBound(1, zoomStepCoarse, 100);
+    imageCacheMB    = qBound(0, imageCacheMB, 262144);
     zoomStepFine    = qBound(1, zoomStepFine, 50);
     overlayOpacity  = qBound(0.5, overlayOpacity, 1.0);
 }
@@ -63,6 +65,7 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("recent_json_max"), recentJsonMax);
     s.setValue(QStringLiteral("debayer_method"), debayerMethod);
     s.setValue(QStringLiteral("zoom_step_coarse"), zoomStepCoarse);
+    s.setValue(QStringLiteral("image_cache_mb"), imageCacheMB);
     s.setValue(QStringLiteral("zoom_step_fine"), zoomStepFine);
     s.setValue(QStringLiteral("histogram_common_axis"), commonAxis);
     s.endGroup();

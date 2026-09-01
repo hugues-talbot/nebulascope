@@ -810,7 +810,16 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     couleur, taille de texte et épaisseur de trait par défaut des
     annotations ; densité de la grille AD/Déc ; chargement automatique des
     fichiers annexes ; opacité des panneaux en surimpression ; tailles des
-    listes de fichiers récents.
+    listes de fichiers récents ; taille du **cache d'images** — les images
+    décodées gardées en mémoire (4096 Mo par défaut) pour que revenir à une
+    image récemment vue soit instantané. Le système d'exploitation ne met
+    en cache que les *octets* du fichier ; la partie lente d'un grand
+    master est le décodage (décompression, promotion en flottant,
+    dématriçage, statistiques), et c'est cela que ce cache conserve. Les
+    entrées les moins récemment vues sont évincées d'abord ; un fichier
+    modifié de l'extérieur n'est jamais servi périmé (le cache vérifie
+    l'horodatage à chaque accès, et le rechargement automatique évince
+    aussitôt). 0 le désactive.
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis). Chaque entrée enregistre le réglage par défaut avec lequel

@@ -20,6 +20,7 @@
 #include "core/ImageHeader.h"
 #include "core/Wcs.h"
 #include "core/PsfMeasure.h"
+#include "core/ImageCache.h"
 #include "ui/AnnotationLayer.h"
 #include "render/StretchModel.h"
 
@@ -205,6 +206,10 @@ private:
     ImageData      m_image;
     ImageHeader    m_header;
     Wcs            m_wcs;                 // astrometric solution of the shown image
+    ImageCache     m_imgCache;             // decoded-image LRU (budget in Preferences)
+    std::vector<ChannelStats> m_cachedStats;   // transient: displayPath cache hit
+    ImageHeader    m_cacheInsertHdr;       // transient: pristine header for insert
+    bool           m_cacheInsertPending = false;
     std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
     QString        m_lastPsfPath;          // image the results belong to
     StretchModel   m_model;
