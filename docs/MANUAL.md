@@ -161,8 +161,9 @@ Panel tour:
     *estimate* — an automatic mode can land on nebulosity — so you point
     instead: arm the tool and drag a small rectangle over truly empty sky.
     Each channel's black point becomes that patch's median *in that
-    channel* — the exact semantics of three simultaneous B-drags (midtone
-    carried as a ratio, white untouched), so it is non-destructive, one
+    channel* — and **nothing else moves**: midtone and white keep their
+    absolute positions, so everything above the background renders exactly
+    as before and the sole change is the pedestal cut. Non-destructive, one
     undo step, and the neutralized windows carry into Log/Asinh *and* GHS.
     The output histogram shows the result instantly, including how much
     sky noise now clips below black — nudge B down afterwards if that

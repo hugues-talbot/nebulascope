@@ -5158,9 +5158,12 @@ void MainWindow::onSkyPatchPicked(double x, double y, double w, double h) {
         const double u = (med - m_model.lo(c)) / range;      // normalized black point
         ChannelStretch cs = m_model.channel(c);
         if (u >= cs.white - 0.02) continue;                  // patch brighter than W: refuse
-        const double r = (cs.mid - cs.black) / std::max(1e-6, cs.white - cs.black);
+        // Only the BLACK point moves. Midtone and white keep their absolute
+        // positions (field call: carrying M as a ratio, like a B-drag,
+        // re-rendered the whole image — this tool must neutralize the dark
+        // background and touch nothing else).
         cs.black = u;
-        cs.mid = u + r * (cs.white - u);                     // M as ratio, like a B-drag
+        cs.mid = std::max(cs.mid, u + 0.01);                 // keep M above the new B
         m_model.setChannel(c, cs);
         meds << QString::number(med, 'g', 6);
     }

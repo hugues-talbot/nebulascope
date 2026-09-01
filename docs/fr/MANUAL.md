@@ -181,10 +181,12 @@ Tour du panneau :
     risque est dans l'*estimation* — un mode automatique peut tomber sur
     de la nébulosité — alors pointez : armez l'outil et tracez un petit
     rectangle sur du ciel vraiment vide. Le point noir de chaque canal
-    devient la médiane de cette zone *dans ce canal* — la sémantique
-    exacte de trois glissements de B simultanés (tons moyens portés en
-    ratio, blanc intact) : non destructif, une seule étape d'annulation,
-    et les fenêtres neutralisées se transmettent à Log/Asinh *et* à GHS.
+    devient la médiane de cette zone *dans ce canal* — et **rien d'autre
+    ne bouge** : tons moyens et blanc gardent leurs positions absolues,
+    tout ce qui est au-dessus du fond se rend exactement comme avant, et
+    le seul changement est la coupe du piédestal. Non destructif, une
+    seule étape d'annulation, et les fenêtres neutralisées se
+    transmettent à Log/Asinh *et* à GHS.
     L'histogramme de sortie montre le résultat immédiatement, y compris la
     part de bruit de ciel qui écrête désormais sous le noir — redescendez
     B ensuite si cela compte pour votre cible.
