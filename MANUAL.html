@@ -709,7 +709,8 @@ div.csl-indent {
 <li><strong>Delivered-PSF verification.</strong> Whatever λ is used, the result’s stars are re-fitted and the delivered figure is reported in the status bar and written into the entry’s header, next to the kernel parameters, the target, and λ. The declaration is checked, not assumed.</li>
 <li><strong>Saturated-core protection</strong> (on by default). Clipped stellar cores are nonlinear — no longer truth convolved with the PSF — and deconvolving them rings; the brightest ~0.005% of pixels keep their input values, feathered in.</li>
 </ul>
-<p>The result is a <strong>new in-memory list entry</strong> (like Combine) carrying the source’s plate solution, stretch, and annotations — <em>Save Data As…</em> keeps it. Run it on <strong>linear</strong> data: on stretched data neither the measured kernel nor the linear model is valid. A target ~25% below the measured width is reliably reachable; more aggressive targets are increasingly paid for in regularization (watch the delivered figure). Script: <code>deconv &lt;target_fwhm_px&gt; [lambda]</code>.</p>
+<p><strong>Noise prior (starlet-RED).</strong> The pure filter is honest about noise: it amplifies signal and grain alike by a known factor, and λ is precisely the knob that caps it. When the grain is unwelcome, the <em>Noise prior</em> option runs the same inversion with a denoiser <strong>inside</strong> it — <em>Regularization by Denoising</em> (RED): each iteration denoises the current estimate with a starlet (à-trous wavelet) soft-threshold — the astronomical sparsity prior, a declared assumption rather than learned weights — then re-solves the data-consistency filter with the denoised image as prior mean. The prior weight μ plays λ’s role, obeys the same contract-first ladder, and the delivered PSF is verified on the result exactly as before; what changes is that the background stays quiet at the same delivered width (a property the test suite asserts). The pure filter remains the default — it alone has the “every output pixel is a stated linear functional” property; the RED result’s header states the full variational model instead (kernel, target, prior, μ, iterations).</p>
+<p>The result is a <strong>new in-memory list entry</strong> (like Combine) carrying the source’s plate solution, stretch, and annotations — <em>Save Data As…</em> keeps it. Run it on <strong>linear</strong> data: on stretched data neither the measured kernel nor the linear model is valid. A target ~25% below the measured width is reliably reachable; more aggressive targets are increasingly paid for in regularization (watch the delivered figure). Script: <code>deconv &lt;target_fwhm_px&gt; [lambda]</code>, or <code>deconv &lt;target_fwhm_px&gt; red [iters] [weight]</code> for the noise prior.</p>
 </section>
 </section>
 <section id="split-views-linked-navigation" class="level2">
@@ -872,11 +873,20 @@ Pitié, François, Anil C. Kokaram, and Rozenn Dahyot. 2007. <span>“Automated 
 <div id="ref-rabin2012" class="csl-entry" role="listitem">
 Rabin, Julien, Gabriel Peyré, Julie Delon, and Marc Bernot. 2012. <span>“Wasserstein Barycenter and Its Application to Texture Mixing.”</span> <em>Scale Space and Variational Methods in Computer Vision (SSVM), LNCS</em> 6667: 435–46. <a href="https://doi.org/10.1007/978-3-642-24785-9_37">https://doi.org/10.1007/978-3-642-24785-9_37</a>.
 </div>
+<div id="ref-reehorst2019" class="csl-entry" role="listitem">
+Reehorst, Edward T., and Philip Schniter. 2019. <span>“Regularization by Denoising: Clarifications and New Interpretations.”</span> <em>IEEE Transactions on Computational Imaging</em> 5 (1): 52–67. <a href="https://doi.org/10.1109/TCI.2018.2880326">https://doi.org/10.1109/TCI.2018.2880326</a>.
+</div>
 <div id="ref-richardson1972" class="csl-entry" role="listitem">
 Richardson, William Hadley. 1972. <span>“Bayesian-Based Iterative Method of Image Restoration.”</span> <em>Journal of the Optical Society of America</em> 62: 55–59. <a href="https://doi.org/10.1364/JOSA.62.000055">https://doi.org/10.1364/JOSA.62.000055</a>.
 </div>
+<div id="ref-romano2017" class="csl-entry" role="listitem">
+Romano, Yaniv, Michael Elad, and Peyman Milanfar. 2017. <span>“The Little Engine That Could: Regularization by Denoising (<span>RED</span>).”</span> <em>SIAM Journal on Imaging Sciences</em> 10 (4): 1804–44. <a href="https://doi.org/10.1137/16M1102884">https://doi.org/10.1137/16M1102884</a>.
+</div>
 <div id="ref-starck2002" class="csl-entry" role="listitem">
 Starck, J.-L., E. Pantin, and F. Murtagh. 2002. <span>“Deconvolution in Astronomy: A Review.”</span> <em>Publications of the Astronomical Society of the Pacific</em> 114: 1051–69. <a href="https://doi.org/10.1086/342606">https://doi.org/10.1086/342606</a>.
+</div>
+<div id="ref-venkatakrishnan2013" class="csl-entry" role="listitem">
+Venkatakrishnan, Singanallur V., Charles A. Bouman, and Brendt Wohlberg. 2013. <span>“Plug-and-Play Priors for Model Based Reconstruction.”</span> <em>IEEE Global Conference on Signal and Information Processing (GlobalSIP)</em>, 945–48. <a href="https://doi.org/10.1109/GlobalSIP.2013.6737048">https://doi.org/10.1109/GlobalSIP.2013.6737048</a>.
 </div>
 </div>
 </section>
