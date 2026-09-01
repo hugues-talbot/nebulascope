@@ -40,6 +40,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
+#include <QProgressBar>
 #include <QTextEdit>
 #include <QFontDatabase>
 #include <QFormLayout>
@@ -4112,16 +4113,45 @@ void MainWindow::measurePsfAction() {
         statusBar()->showMessage(tr("PSF measured — %1 channel(s)").arg(m_lastPsf.size()), 4000);
         return;
     }
-    statusBar()->showMessage(tr("Measuring PSF…"));
+    // Live progress: the worker ticks shared atomics (stars fitted / total,
+    // cumulative over channels); a timer paints them into a status-bar
+    // progress bar. Indeterminate while detection runs (total still 0).
+    auto done = std::make_shared<std::atomic<int>>(0);
+    auto total = std::make_shared<std::atomic<int>>(0);
+    auto computeP = [img, nch, done, total]() {
+        std::vector<PsfChannelReport> reps;
+        for (int c = 0; c < nch; ++c)
+            reps.push_back(measurePsf(img, c, done.get(), total.get()));
+        return reps;
+    };
+    statusBar()->showMessage(tr("Measuring PSF — detecting stars…"));
+    auto* bar = new QProgressBar();
+    bar->setMaximumWidth(220);
+    bar->setRange(0, 0);                          // indeterminate until total known
+    statusBar()->addPermanentWidget(bar);
+    auto* tick = new QTimer(this);
+    connect(tick, &QTimer::timeout, this, [this, bar, done, total] {
+        const int t = total->load(), d = done->load();
+        if (t > 0) {
+            bar->setRange(0, t);
+            bar->setValue(d);
+            statusBar()->showMessage(tr("Measuring PSF — %1 / %2 stars").arg(d).arg(t));
+        }
+    });
+    tick->start(150);
     auto* watcher = new QFutureWatcher<std::vector<PsfChannelReport>>(this);
     connect(watcher, &QFutureWatcher<std::vector<PsfChannelReport>>::finished, this,
-            [this, watcher, store] {
+            [this, watcher, store, bar, tick] {
+                tick->stop();
+                tick->deleteLater();
+                statusBar()->removeWidget(bar);
+                bar->deleteLater();
                 watcher->deleteLater();
                 store(watcher->result());
                 statusBar()->clearMessage();
                 showPsfReport();
             });
-    watcher->setFuture(QtConcurrent::run(compute));
+    watcher->setFuture(QtConcurrent::run(computeP));
 }
 
 void MainWindow::showPsfReport() {

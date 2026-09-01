@@ -14,6 +14,7 @@
 // FWHMEccentricity on ~2 700 stars.
 //
 #include "core/ImageData.h"
+#include <atomic>
 #include <vector>
 
 namespace astro {
@@ -42,8 +43,14 @@ struct PsfChannelReport {
 };
 
 // Measure one channel. Deterministic; runs at full resolution. Safe to call
-// from a worker thread (touches only the given plane).
-PsfChannelReport measurePsf(const ImageData& img, int channel);
+// from a worker thread (touches only the given plane). The optional atomic
+// counters report progress across threads: `total` is increased by the
+// number of stars this call will fit (known once detection finishes),
+// `done` ticks up as each fit completes — both cumulative, so one pair can
+// aggregate several channels.
+PsfChannelReport measurePsf(const ImageData& img, int channel,
+                            std::atomic<int>* done = nullptr,
+                            std::atomic<int>* total = nullptr);
 
 // Fit a single 2N+1-square cutout (row-major, side `side`) with an elliptical
 // Moffat; returns false when the fit fails the quality gate. Exposed for

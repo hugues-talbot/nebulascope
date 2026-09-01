@@ -218,7 +218,8 @@ bool fitMoffatCutout(const float* cut, int side, double satLevel, PsfStar& out) 
     return true;
 }
 
-PsfChannelReport measurePsf(const ImageData& img, int channel) {
+PsfChannelReport measurePsf(const ImageData& img, int channel,
+                            std::atomic<int>* done, std::atomic<int>* total) {
     PsfChannelReport rep;
     if (!img.isValid() || channel < 0 || channel >= img.channels()) return rep;
     const int w = img.width(), h = img.height();
@@ -291,6 +292,14 @@ PsfChannelReport measurePsf(const ImageData& img, int channel) {
         }
     }
     rep.nDetected = 0;
+    if (total) {
+        int willFit = 0;
+        for (std::size_t i = 0; i < cands.size(); ++i)
+            if (keep[i] && cands[i].x - kCutHalf >= 0 && cands[i].y - kCutHalf >= 0 &&
+                cands[i].x + kCutHalf < w && cands[i].y + kCutHalf < h)
+                ++willFit;
+        total->fetch_add(willFit);
+    }
     const int side = 2 * kCutHalf + 1;
     std::vector<float> cut(std::size_t(side) * side);
     for (std::size_t i = 0; i < cands.size(); ++i) {
@@ -307,10 +316,12 @@ PsfChannelReport measurePsf(const ImageData& img, int channel) {
                 cut[std::size_t(yy) * side + xx] = v;
             }
         }
-        if (!finite) continue;
+        if (!finite) { if (done) done->fetch_add(1); continue; }
         ++rep.nDetected;
         PsfStar st;
-        if (!fitMoffatCutout(cut.data(), side, satLevel, st)) continue;
+        const bool ok = fitMoffatCutout(cut.data(), side, satLevel, st);
+        if (done) done->fetch_add(1);
+        if (!ok) continue;
         st.x += cx;
         st.y += cy;
         rep.stars.push_back(st);

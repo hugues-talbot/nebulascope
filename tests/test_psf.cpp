@@ -4,6 +4,7 @@
 #include "nstest.h"
 #include "core/PsfMeasure.h"
 #include "core/ImageData.h"
+#include <atomic>
 #include <cmath>
 
 using namespace astro;
@@ -47,7 +48,9 @@ NS_TEST(psf_measure_recovers_elliptical_moffat) {
         }
     NS_CHECK(placed > 100);
 
-    const PsfChannelReport rep = measurePsf(img, 0);
+    std::atomic<int> done{0}, total{0};
+    const PsfChannelReport rep = measurePsf(img, 0, &done, &total);
+    NS_CHECK(total.load() > 60 && done.load() == total.load());
     NS_CHECK(rep.nFitted > 60);
     NS_CHECK(std::fabs(rep.fwhmMaj - fmaj) < 0.15);
     NS_CHECK(std::fabs(rep.fwhmMin - fmin) < 0.15);
