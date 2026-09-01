@@ -351,6 +351,7 @@ div.csl-indent {
   <li><a href="#combiner-les-canaux-outils-combiner-les-canaux" id="toc-combiner-les-canaux-outils-combiner-les-canaux" class="nav-link" data-scroll-target="#combiner-les-canaux-outils-combiner-les-canaux">Combiner les canaux (Outils ▸ Combiner les canaux…)</a></li>
   <li><a href="#combiner-les-étoiles-outils-combiner-les-étoiles-screen" id="toc-combiner-les-étoiles-outils-combiner-les-étoiles-screen" class="nav-link" data-scroll-target="#combiner-les-étoiles-outils-combiner-les-étoiles-screen">Combiner les étoiles (Outils ▸ Combiner les étoiles (screen)…)</a></li>
   <li><a href="#transport-de-couleurs-outils-transporter-les-couleurs-dune-référence" id="toc-transport-de-couleurs-outils-transporter-les-couleurs-dune-référence" class="nav-link" data-scroll-target="#transport-de-couleurs-outils-transporter-les-couleurs-dune-référence">Transport de couleurs (Outils ▸ Transporter les couleurs d’une référence…)</a></li>
+  <li><a href="#mesurer-la-psf-outils-mesurer-la-psf-étoiles" id="toc-mesurer-la-psf-outils-mesurer-la-psf-étoiles" class="nav-link" data-scroll-target="#mesurer-la-psf-outils-mesurer-la-psf-étoiles">Mesurer la PSF (Outils ▸ Mesurer la PSF (étoiles)…)</a></li>
   </ul></li>
   <li><a href="#vues-divisées-et-navigation-liée" id="toc-vues-divisées-et-navigation-liée" class="nav-link" data-scroll-target="#vues-divisées-et-navigation-liée">12. Vues divisées et navigation liée</a></li>
   <li><a href="#ligne-de-commande" id="toc-ligne-de-commande" class="nav-link" data-scroll-target="#ligne-de-commande">13. Ligne de commande</a></li>
@@ -648,6 +649,10 @@ div.csl-indent {
 <figcaption>Transport de couleurs en division 1×3 : source, référence, résultat transporté</figcaption>
 </figure>
 </div>
+</section>
+<section id="mesurer-la-psf-outils-mesurer-la-psf-étoiles" class="level3">
+<h3 class="anchored" data-anchor-id="mesurer-la-psf-outils-mesurer-la-psf-étoiles">Mesurer la PSF (Outils ▸ Mesurer la PSF (étoiles)…)</h3>
+<p>L’instrument stellaire de l’appendice anglais <em>Measuring a telescope against Hubble</em>, intégré : les étoiles isolées sont détectées et chacune est ajustée par un profil de <strong>Moffat elliptique</strong> (Moffat parce que les profils de seeing réels portent des ailes qu’une gaussienne ajuste mal, biaisant la FWHM vers le bas). Le rapport donne, par canal : le nombre d’étoiles utilisées, la FWHM médiane selon les axes majeur et mineur (en pixels, et en secondes d’arc quand l’image porte une solution astrométrique), l’excentricité et son angle de position, le β de Moffat, et une <strong>carte de champ 3×4</strong>. La carte est le diagnostic : un axe d’élongation <em>uniforme</em> sur tout le champ est une dérive selon un axe (guidage, flexion, mise en station) ; un axe qui <em>tourne vers les coins</em> relève de l’optique (bascule, coma, collimation). <strong>Annoter les étoiles</strong> dépose des annotations en ellipses tournées sur les étoiles ajustées les plus brillantes — axes proportionnels à la FWHM ajustée, angle = l’angle ajusté — rendant le motif d’élongation visible sur l’image même ; une seule étape d’annulation, sauvegardées dans le fichier annexe comme toute annotation. À exécuter de préférence sur des données <strong>linéaires</strong> : un étirement élargit tous les profils. Scripts : <code>action measure_psf</code>, puis <code>psfannotate [canal] [nombre]</code>.</p>
 </section>
 </section>
 <section id="vues-divisées-et-navigation-liée" class="level2">

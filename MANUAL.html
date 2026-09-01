@@ -397,6 +397,7 @@ div.csl-indent {
   <li><a href="#combine-channels-tools-combine-channels" id="toc-combine-channels-tools-combine-channels" class="nav-link" data-scroll-target="#combine-channels-tools-combine-channels">Combine Channels (Tools ▸ Combine Channels…)</a></li>
   <li><a href="#combine-stars-tools-combine-stars-screen" id="toc-combine-stars-tools-combine-stars-screen" class="nav-link" data-scroll-target="#combine-stars-tools-combine-stars-screen">Combine Stars (Tools ▸ Combine Stars (screen)…)</a></li>
   <li><a href="#transport-colors-tools-transport-colors-from-reference" id="toc-transport-colors-tools-transport-colors-from-reference" class="nav-link" data-scroll-target="#transport-colors-tools-transport-colors-from-reference">Transport Colors (Tools ▸ Transport Colors from Reference…)</a></li>
+  <li><a href="#measure-psf-tools-measure-psf-stars" id="toc-measure-psf-tools-measure-psf-stars" class="nav-link" data-scroll-target="#measure-psf-tools-measure-psf-stars">Measure PSF (Tools ▸ Measure PSF (Stars)…)</a></li>
   </ul></li>
   <li><a href="#split-views-linked-navigation" id="toc-split-views-linked-navigation" class="nav-link" data-scroll-target="#split-views-linked-navigation">12. Split views &amp; linked navigation</a></li>
   <li><a href="#command-line" id="toc-command-line" class="nav-link" data-scroll-target="#command-line">13. Command line</a></li>
@@ -693,6 +694,10 @@ div.csl-indent {
 <figcaption>Colour transport in a 1×3 split: source, reference, transported result</figcaption>
 </figure>
 </div>
+</section>
+<section id="measure-psf-tools-measure-psf-stars" class="level3">
+<h3 class="anchored" data-anchor-id="measure-psf-tools-measure-psf-stars">Measure PSF (Tools ▸ Measure PSF (Stars)…)</h3>
+<p>The stellar instrument from the <em>Measuring a telescope against Hubble</em> appendix, in-app: isolated stars are detected and each is fitted with an <strong>elliptical Moffat</strong> profile (Moffat because real seeing profiles carry wings a Gaussian misfits, biasing FWHM low). The report gives, per channel: the number of stars used, median FWHM along the major and minor axes (in pixels, and in arcseconds when the image carries a plate solution), the eccentricity and its position angle, the Moffat β, and a <strong>3×4 field map</strong>. The field map is the diagnostic: a <em>uniform</em> elongation axis across the frame is one-axis drift (guiding, flexure, polar alignment); an axis that <em>rotates toward the corners</em> is optics (tilt, coma, collimation). <strong>Annotate stars</strong> drops rotated-ellipse annotations on the brightest fitted stars — axes proportional to the fitted FWHM, angle the fitted PA — so the elongation pattern is visible on the image itself; one undo step, and they save to the sidecar like any annotation. Best run on <strong>linear</strong> data: a stretch widens every profile (see the appendix). Scripts: <code>action measure_psf</code>, then <code>psfannotate [channel] [count]</code>.</p>
 </section>
 </section>
 <section id="split-views-linked-navigation" class="level2">
