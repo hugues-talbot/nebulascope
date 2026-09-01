@@ -381,4 +381,13 @@ assert stretch 1 0.347260952 0.673630476 1 1e-6
 assert stretch 2 0.380063742 0.690031871 1 1e-6
 action undo
 
+# Measure PSF end to end (script mode prints the report; the 128px fixture
+# yields too few isolated stars for a measurement, which the report says
+# honestly) and the annotate path with its stale-results guard.
+open tests/testdata/sample.fits
+waitloaded
+action measure_psf
+psfannotate 0 10
+action undo
+
 quit

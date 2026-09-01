@@ -256,3 +256,23 @@ Lesson: when live feedback is demanded of something expensive, look for a
 cheap statistic that answers the same question — the user was never
 watching individual pixels during a drag; they were watching the
 distribution.
+
+## The PSF study comes home (2026-09-01)
+
+The star_fwhm instrument — the linear stellar PSF measurement validated
+against PixInsight in the Hubble study — is now Tools > Measure PSF, in
+C++ inside astro_core. The user's design call shaped it twice. First, the
+language: not a Julia (or any) sidecar runtime, whose "menu items if
+available" would mean features existing on some machines and not others —
+the numerics are 500 lines of C++ once the app's own detection, WCS and
+annotation machinery is counted, and a native feature is testable in
+ctest (an exact synthetic-Moffat recovery test, plus a field-recovery
+test with ground truth). Second, the reporting: numbers alone do not show
+a drift axis, so the report dialog drops ROTATED-ELLIPSE annotations on a
+sample of fitted stars — the annotation model already had angleDeg
+waiting — making the elongation pattern a visible overlay rather than a
+table. One implementation lesson for the ages: a circularly-symmetric
+initial guess zeroes the rotation gradient, and an LM solver that treats
+the resulting singular system as fatal (rather than damping through it)
+fails on every star — the second silently-pinned-parameter bug of this
+project, found the same way (ground truth or it did not happen).

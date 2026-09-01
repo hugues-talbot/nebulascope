@@ -527,6 +527,26 @@ data purity.
 
 ![Colour transport in a 1×3 split: source, reference, transported result](screenshots/transport.png)
 
+### Measure PSF (Tools ▸ Measure PSF (Stars)…)
+
+The stellar instrument from the *Measuring a telescope against Hubble*
+appendix, in-app: isolated stars are detected and each is fitted with an
+**elliptical Moffat** profile (Moffat because real seeing profiles carry
+wings a Gaussian misfits, biasing FWHM low). The report gives, per
+channel: the number of stars used, median FWHM along the major and minor
+axes (in pixels, and in arcseconds when the image carries a plate
+solution), the eccentricity and its position angle, the Moffat β, and a
+**3×4 field map**. The field map is the diagnostic: a *uniform*
+elongation axis across the frame is one-axis drift (guiding, flexure,
+polar alignment); an axis that *rotates toward the corners* is optics
+(tilt, coma, collimation). **Annotate stars** drops rotated-ellipse
+annotations on the brightest fitted stars — axes proportional to the
+fitted FWHM, angle the fitted PA — so the elongation pattern is visible
+on the image itself; one undo step, and they save to the sidecar like any
+annotation. Best run on **linear** data: a stretch widens every profile
+(see the appendix). Scripts: `action measure_psf`, then
+`psfannotate [channel] [count]`.
+
 ## 12. Split views & linked navigation
 
 **View ▸ Split View…** — one dialog with rows × columns spinners (max 5×5).

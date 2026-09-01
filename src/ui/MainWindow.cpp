@@ -40,6 +40,8 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
+#include <QTextEdit>
+#include <QFontDatabase>
 #include <QFormLayout>
 #include <QComboBox>
 #include <QCheckBox>
@@ -1396,6 +1398,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["combine_channels"] = tools->addAction(tr("&Combine Channels…"), this, &MainWindow::combineChannels);
     acts["combine_stars"] = tools->addAction(tr("Combine &Stars (screen)…"), this, &MainWindow::combineStars);
     acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
+    acts["measure_psf"] = tools->addAction(tr("&Measure PSF (Stars)…"), this, &MainWindow::measurePsfAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -3906,7 +3909,157 @@ void MainWindow::exportView() {
         });
 }
 
+// ---- Tools > Measure PSF (Stars) -------------------------------------------
+// The PSF study's stellar instrument (docs/PSF-STUDY.md), in-app: elliptical
+// Moffat fits over the frame's isolated stars, per channel, reported with a
+// 3x4 field map. A uniform elongation axis across the map is one-axis drift
+// (guiding/flexure); an axis rotating toward the corners is optics. Runs in a
+// worker; the report dialog can drop ellipse annotations on a sample of the
+// fitted stars so the numbers can be seen on the image.
+
+static QString psfReportText(const std::vector<PsfChannelReport>& reps,
+                             double asecPerPx) {
+    QString out;
+    const char* chName[3] = { "ch0", "ch1", "ch2" };
+    for (std::size_t c = 0; c < reps.size(); ++c) {
+        const PsfChannelReport& r = reps[c];
+        out += QStringLiteral("[%1] ").arg(QLatin1String(chName[std::min<std::size_t>(c, 2)]));
+        if (r.nFitted < 5) {
+            out += QObject::tr("only %1 usable stars — no measurement\n").arg(r.nFitted);
+            continue;
+        }
+        auto px = [&](double v) {
+            return asecPerPx > 0
+                ? QStringLiteral("%1 px = %2\"").arg(v, 0, 'f', 2).arg(v * asecPerPx, 0, 'f', 2)
+                : QStringLiteral("%1 px").arg(v, 0, 'f', 2);
+        };
+        out += QObject::tr("%1 stars | FWHM maj %2, min %3 (geo %4) | ecc %5 @ PA %6° | beta %7\n")
+                   .arg(r.nFitted)
+                   .arg(px(r.fwhmMaj), px(r.fwhmMin), px(r.fwhmGeo))
+                   .arg(r.ecc, 0, 'f', 2)
+                   .arg(r.paDeg, 0, 'f', 0)
+                   .arg(r.beta, 0, 'f', 2);
+        out += QObject::tr("    field map (FWHM px / ecc / PA):\n");
+        for (int zr = 0; zr < 3; ++zr) {
+            out += QStringLiteral("    ");
+            for (int zc = 0; zc < 4; ++zc) {
+                const PsfZone& z = r.zone[zr][zc];
+                out += z.nStars >= 5
+                    ? QStringLiteral("%1/%2/%3  ")
+                          .arg(z.fwhmGeo, 5, 'f', 2).arg(z.ecc, 4, 'f', 2).arg(z.paDeg, 4, 'f', 0)
+                    : QStringLiteral("     --        ");
+            }
+            out += QLatin1Char('\n');
+        }
+    }
+    return out;
+}
+
+void MainWindow::measurePsfAction() {
+    if (!m_image.isValid()) return;
+    const ImageData img = m_image;                 // deep copy for the worker
+    const QString path = m_currentPath;
+    const int nch = std::min(3, img.channels());
+    auto compute = [img, nch]() {
+        std::vector<PsfChannelReport> reps;
+        for (int c = 0; c < nch; ++c) reps.push_back(measurePsf(img, c));
+        return reps;
+    };
+    if (m_scriptDriving) {                          // synchronous, printable
+        m_lastPsf = compute();
+        m_lastPsfPath = path;
+        fprintf(stderr, "%s", psfReportText(m_lastPsf,
+                m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0).toUtf8().constData());
+        statusBar()->showMessage(tr("PSF measured — %1 channel(s)").arg(m_lastPsf.size()), 4000);
+        return;
+    }
+    statusBar()->showMessage(tr("Measuring PSF…"));
+    auto* watcher = new QFutureWatcher<std::vector<PsfChannelReport>>(this);
+    connect(watcher, &QFutureWatcher<std::vector<PsfChannelReport>>::finished, this,
+            [this, watcher, path] {
+                watcher->deleteLater();
+                m_lastPsf = watcher->result();
+                m_lastPsfPath = path;
+                statusBar()->clearMessage();
+                showPsfReport();
+            });
+    watcher->setFuture(QtConcurrent::run(compute));
+}
+
+void MainWindow::showPsfReport() {
+    auto* dlg = new QDialog(this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setWindowTitle(tr("PSF measurement"));
+    auto* lay = new QVBoxLayout(dlg);
+    auto* text = new QTextEdit();
+    text->setReadOnly(true);
+    QFont mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    mono.setPointSizeF(mono.pointSizeF() - 1);
+    text->setFont(mono);
+    const double asec = m_wcs.valid() ? m_wcs.pixelScaleArcsec() : 0.0;
+    text->setPlainText(psfReportText(m_lastPsf, asec)
+        + (asec > 0 ? tr("\nplate scale %1\"/px (from the plate solution)").arg(asec, 0, 'f', 4)
+                    : tr("\nno plate solution — pixels only")));
+    text->setMinimumSize(560, 300);
+    lay->addWidget(text);
+    auto* row = new QHBoxLayout();
+    QComboBox* chan = nullptr;
+    if (m_lastPsf.size() > 1) {
+        chan = new QComboBox();
+        for (std::size_t c = 0; c < m_lastPsf.size(); ++c)
+            chan->addItem(tr("channel %1").arg(c));
+        row->addWidget(chan);
+    }
+    auto* count = new QSpinBox();
+    count->setRange(5, 500);
+    count->setValue(60);
+    row->addWidget(new QLabel(tr("stars:")));
+    row->addWidget(count);
+    auto* annBtn = new QPushButton(tr("Annotate stars"));
+    annBtn->setToolTip(tr("Drop rotated-ellipse annotations on the brightest fitted stars\n"
+                          "(axes proportional to the fitted FWHM, angle = the fitted PA) —\n"
+                          "the elongation pattern becomes visible on the image. One undo step."));
+    connect(annBtn, &QPushButton::clicked, this, [this, chan, count] {
+        annotatePsfStars(chan ? chan->currentIndex() : 0, count->value());
+    });
+    row->addWidget(annBtn);
+    row->addStretch();
+    auto* closeBtn = new QPushButton(tr("Close"));
+    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::close);
+    row->addWidget(closeBtn);
+    lay->addLayout(row);
+    dlg->show();
+}
+
+void MainWindow::annotatePsfStars(int channel, int countN) {
+    if (m_lastPsfPath != m_currentPath || m_lastPsf.empty()) {
+        statusBar()->showMessage(tr("PSF results belong to another image — measure again"), 5000);
+        return;
+    }
+    channel = std::min<int>(channel, int(m_lastPsf.size()) - 1);
+    const auto& stars = m_lastPsf[channel].stars;
+    if (stars.empty()) return;
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    const int n = std::min<int>(countN, int(stars.size()));
+    for (int i = 0; i < n; ++i) {
+        const PsfStar& st = stars[i];
+        Annotation an;
+        an.type = Annotation::Type::Ellipse;
+        an.x = st.x; an.y = st.y;
+        an.a = 2.5 * st.fwhmMaj;               // semi-axes scaled for visibility;
+        an.b = 2.5 * st.fwhmMin;               // the maj:min RATIO is preserved
+        an.angleDeg = st.paDeg;
+        an.color = QColor(255, 209, 102);      // warm gold — not a channel colour
+        m_annByPath[m_currentPath].push_back(an);
+    }
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(tr("annotate PSF stars"), m_currentPath, std::move(before));
+    statusBar()->showMessage(tr("%1 fitted stars annotated (ellipse = fitted shape ×2.5)").arg(n), 5000);
+}
+
 void MainWindow::exportRegion() {
+
     if (!m_image.isValid()) return;
     const QRect roi = m_view->visibleImageRect();
     if (roi.isEmpty()) {

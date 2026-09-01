@@ -19,6 +19,7 @@
 #include "core/ImageData.h"
 #include "core/ImageHeader.h"
 #include "core/Wcs.h"
+#include "core/PsfMeasure.h"
 #include "ui/AnnotationLayer.h"
 #include "render/StretchModel.h"
 
@@ -67,6 +68,9 @@ private slots:
     void saveStretched();   // bake the current stretch into Float32 data, save
     void exportView();
     void exportRegion();
+    void measurePsfAction();               // Tools > Measure PSF (Stars)
+    void showPsfReport();                  // dialog over m_lastPsf
+    void annotatePsfStars(int channel, int count);
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
@@ -201,6 +205,8 @@ private:
     ImageData      m_image;
     ImageHeader    m_header;
     Wcs            m_wcs;                 // astrometric solution of the shown image
+    std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
+    QString        m_lastPsfPath;          // image the results belong to
     StretchModel   m_model;
 
     AnnotationLayer* m_annotations = nullptr;

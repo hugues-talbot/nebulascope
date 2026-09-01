@@ -611,6 +611,28 @@ la pureté des données.
 
 ![Transport de couleurs en division 1×3 : source, référence, résultat transporté](../screenshots/transport.png)
 
+### Mesurer la PSF (Outils ▸ Mesurer la PSF (étoiles)…)
+
+L'instrument stellaire de l'appendice anglais *Measuring a telescope
+against Hubble*, intégré : les étoiles isolées sont détectées et chacune
+est ajustée par un profil de **Moffat elliptique** (Moffat parce que les
+profils de seeing réels portent des ailes qu'une gaussienne ajuste mal,
+biaisant la FWHM vers le bas). Le rapport donne, par canal : le nombre
+d'étoiles utilisées, la FWHM médiane selon les axes majeur et mineur (en
+pixels, et en secondes d'arc quand l'image porte une solution
+astrométrique), l'excentricité et son angle de position, le β de Moffat,
+et une **carte de champ 3×4**. La carte est le diagnostic : un axe
+d'élongation *uniforme* sur tout le champ est une dérive selon un axe
+(guidage, flexion, mise en station) ; un axe qui *tourne vers les coins*
+relève de l'optique (bascule, coma, collimation). **Annoter les étoiles**
+dépose des annotations en ellipses tournées sur les étoiles ajustées les
+plus brillantes — axes proportionnels à la FWHM ajustée, angle = l'angle
+ajusté — rendant le motif d'élongation visible sur l'image même ; une
+seule étape d'annulation, sauvegardées dans le fichier annexe comme toute
+annotation. À exécuter de préférence sur des données **linéaires** : un
+étirement élargit tous les profils. Scripts : `action measure_psf`, puis
+`psfannotate [canal] [nombre]`.
+
 ## 12. Vues divisées et navigation liée
 
 **Affichage ▸ Diviser la vue…** — une boîte avec compteurs lignes ×
