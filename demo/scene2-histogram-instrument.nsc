@@ -1,0 +1,27 @@
+# Scene 2 — "The histogram is an instrument" (~70 s)
+# Beats: output distribution live while dragging; the image renders once, on
+# release; sky-patch neutral black; GHS with SP on the mode.
+# MANUAL moments (presenter): drag the D slider in GHS; press M -> identity
+# in Asinh; hover the ADJUST - ALL CHANNELS header.
+open cygnus-dentelles-TS80.xisf
+waitloaded
+sleep 2000
+autostf
+sleep 3000
+# drag the white point: the OUTPUT histogram tracks live, the frame renders
+# on release (say it: sixty megapixels, one render, from the final position)
+histdrag w -220
+sleep 2500
+histdrag b 60
+sleep 2500
+action undo
+sleep 1500
+# neutral black from a sky patch (bottom-left corner is empty sky here):
+# three black points jump to the three channel medians in one gesture
+blackpatch 40 1800 120 120
+sleep 3500
+# GHS on top of the balanced windows, symmetry point snapped to the mode
+fn ghs
+sleep 1500
+axis peak
+sleep 3000

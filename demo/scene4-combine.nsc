@@ -1,0 +1,27 @@
+# Scene 4 — "Narrowband to colour" (~35 s)
+# Beats: three narrowband masters into an SHO palette, roles by header,
+# "As displayed" bake through interpolated LUTs — no posterization.
+action clear_list
+open SIINB_small.xisf
+waitloaded
+autostf
+open HaNB_small.xisf
+waitloaded
+autostf
+open OIIINB_small.xisf
+waitloaded
+autostf
+sleep 1500
+dialog combine
+sleep 2000
+dlgcombo 0 S
+dlgcombo 1 H
+dlgcombo 2 O
+sleep 1000
+dlgclick SHO
+sleep 2500
+dlgclick Create Image
+sleep 500
+waitloaded
+autostf
+sleep 4000

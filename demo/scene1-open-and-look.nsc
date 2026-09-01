@@ -1,0 +1,29 @@
+# Scene 1 — "Open and look" (~40 s)
+# Run from the image data folder:
+#   NebulaScope --run <repo>/demo/scene1-open-and-look.nsc
+# Beats: instant open with the producer's screen stretch honoured; blink;
+# the CFA sniffer catching a raw solar mosaic dumped into a plain PNG.
+open M81_LRGBHa_small_01.xisf
+waitloaded
+sleep 3500
+open cygnus-dentelles-TS80.xisf
+waitloaded
+sleep 2500
+open Crescent_reference.xisf
+waitloaded
+sleep 2000
+# blink through the list
+prev
+sleep 1200
+prev
+sleep 1200
+next
+sleep 1200
+# the eclipse capture stream: a Bayer mosaic in an anonymous grayscale PNG —
+# the status bar names the candidate patterns; forcing BGGR decodes the Sun
+open 2026-08-12-1747_2-Sun_0000.PNG
+waitloaded
+sleep 4000
+debayer bggr rcd
+waitloaded
+sleep 4000

@@ -1,0 +1,26 @@
+# Scene 3 — "Comparison as an instrument" (~60 s)
+# Beats: two telescopes, one field — 5 h Vixen 102 vs 1 h TS80; Values in
+# All Views fans the pointer out to every cell through the link transforms.
+# MANUAL moment (presenter): press M, click a star in each view — one pair
+# snaps the translation; Shift+M and a second star solve rotation + scale.
+open NGC_6992_PI_GIMPR.jpg
+waitloaded
+open cygnus-dentelles-TS80.xisf
+waitloaded
+split 1x2
+sleep 2500
+activate 1
+action values_everywhere
+hover 400 300
+sleep 900
+hover 700 450
+sleep 900
+hover 950 380
+sleep 900
+hover 620 700
+sleep 900
+hover 500 520
+sleep 1200
+hover off
+sleep 1000
+# leave the stage set for the live Match clicks

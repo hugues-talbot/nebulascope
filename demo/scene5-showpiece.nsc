@@ -1,0 +1,25 @@
+# Scene 5 — "Against Hubble" (~90 s)
+# Beats: the user's TEC 140 pillars beside the Hubble Heritage rendition;
+# lossless colour transport (a fitted stretch + colour mixer — the data
+# untouched); Measure PSF with star annotations.
+# MANUAL moments (presenter): click "Annotate stars" in the PSF report;
+# zoom into the gold ellipses.
+# NOTE: uses the BXT5 master (fast open). For the full 768 MB master,
+# pre-open it before recording starts.
+action clear_list
+open pillars_of_creation_Hubble.webp
+waitloaded
+open PSF_comparison/M16_cropped_SHO_combination_SHO_stars_BXT5.xisf
+waitloaded
+autostf
+sleep 2000
+split 1x2
+sleep 3000
+# lossless colour transport toward Hubble: per-channel curves + a fitted
+# 3x3 colour mixer, alternated — no pixel is written
+activate 2
+transport 1 100 stretch colour
+sleep 5000
+# the PSF, measured from the image's own stars (report dialog appears;
+# presenter clicks "Annotate stars" and zooms into the ellipses)
+action measure_psf
