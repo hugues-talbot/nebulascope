@@ -66,7 +66,68 @@ void sepFilter(std::vector<float>& img, int w, int h, int half, bool isMax) {
 
 void tick(std::atomic<int>* p) { if (p) p->fetch_add(1); }
 
+// À-trous smoothing with the B3-spline mask [1 4 6 4 1]/16 dilated by
+// `step`, separable, mirrored edges.
+void atrousSmooth(const std::vector<float>& in, std::vector<float>& scratch,
+                  std::vector<float>& out, int w, int h, int step) {
+    static const float h5[5] = { 1.f/16, 4.f/16, 6.f/16, 4.f/16, 1.f/16 };
+    auto mirror = [](int i, int n) {
+        if (i < 0) i = -i;
+        if (i >= n) i = 2 * n - 2 - i;
+        return std::min(std::max(i, 0), n - 1);
+    };
+    scratch.resize(in.size());
+    out.resize(in.size());
+    for (int y = 0; y < h; ++y) {
+        const float* row = in.data() + std::size_t(y) * w;
+        float* srow = scratch.data() + std::size_t(y) * w;
+        for (int x = 0; x < w; ++x) {
+            double acc = 0.0;
+            for (int t = -2; t <= 2; ++t)
+                acc += h5[t + 2] * row[mirror(x + t * step, w)];
+            srow[x] = float(acc);
+        }
+    }
+    for (int x = 0; x < w; ++x)
+        for (int y = 0; y < h; ++y) {
+            double acc = 0.0;
+            for (int t = -2; t <= 2; ++t)
+                acc += h5[t + 2] * scratch[std::size_t(mirror(y + t * step, h)) * w + x];
+            out[std::size_t(y) * w + x] = float(acc);
+        }
+}
+
+// Per-level noise sigma: MAD of a strided sample of the detail plane.
+double madSigma(const std::vector<float>& d) {
+    const std::size_t stride = std::max<std::size_t>(1, d.size() / 500000);
+    std::vector<float> s;
+    s.reserve(d.size() / stride + 1);
+    for (std::size_t i = 0; i < d.size(); i += stride) s.push_back(std::fabs(d[i]));
+    if (s.empty()) return 0.0;
+    const std::size_t m = s.size() / 2;
+    std::nth_element(s.begin(), s.begin() + m, s.end());
+    return double(s[m]) / 0.6745;
+}
+
 } // namespace
+
+std::vector<float> starletDenoise(const float* plane, int w, int h,
+                                  int levels, double k) {
+    const std::size_t n = std::size_t(w) * h;
+    std::vector<float> cur(plane, plane + n), next, scratch, out(n, 0.0f);
+    for (int j = 0; j < levels; ++j) {
+        atrousSmooth(cur, scratch, next, w, h, 1 << j);
+        for (std::size_t i = 0; i < n; ++i) cur[i] -= next[i];   // detail_j
+        const float thr = float(k * madSigma(cur));
+        for (std::size_t i = 0; i < n; ++i) {
+            const float d = cur[i];
+            out[i] += d > thr ? d - thr : (d < -thr ? d + thr : 0.0f);
+        }
+        cur.swap(next);
+    }
+    for (std::size_t i = 0; i < n; ++i) out[i] += cur[i];        // coarse
+    return out;
+}
 
 std::vector<float> moffatKernel(const DeconvChannelPsf& psf, int& sideOut) {
     const double beta = std::max(1.2, psf.beta);
@@ -147,9 +208,36 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
     }
     tick(stepsDone);
 
-    // X = Y . OTF_t . conj(OTF_k) / (|OTF_k|^2 + lambda) — K is reused for
-    // the target OTF to keep peak memory at two complex planes.
-    {
+    if (opt.redIterations > 0) {
+        // RED fixed point (Romano, Elad & Milanfar 2017): denoise the
+        // current estimate, re-solve the Fourier-diagonal data-consistency
+        // filter with the denoised image as prior mean,
+        //   X = (conj(OTF_k)·Y + beta·FFT(D(x))) / (|OTF_k|^2 + beta),
+        // warm-started at the pure-MCS solution (zero prior mean). The
+        // declared target is applied at the end by ONE convolution of the
+        // sharp estimate — the partial kernel is still never formed.
+        const float beta = float(opt.redPriorWeight);
+        std::vector<std::complex<float>> X(Y.size()), Df(Y.size());
+        for (std::size_t i = 0; i < Y.size(); ++i)
+            X[i] = Y[i] * std::conj(K[i]) / (std::norm(K[i]) + beta);
+        std::vector<float> x(n), d;
+        c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
+        for (int it = 0; it < opt.redIterations; ++it) {
+            d = starletDenoise(x.data(), w, h, opt.redLevels, opt.redThresholdK);
+            r2c(shape, rs, cs, axes, FORWARD, d.data(), Df.data(), 1.0f, nth);
+            for (std::size_t i = 0; i < Y.size(); ++i)
+                X[i] = (Y[i] * std::conj(K[i]) + beta * Df[i])
+                     / (std::norm(K[i]) + beta);
+            c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
+            tick(stepsDone);
+        }
+        std::vector<float> tf = embed(kTarg);
+        r2c(shape, rs, cs, axes, FORWARD, tf.data(), K.data(), 1.0f, nth);
+        for (std::size_t i = 0; i < Y.size(); ++i) X[i] *= K[i];
+        c2r(shape, cs, rs, axes, BACKWARD, X.data(), work.data(), 1.0f / float(n), nth);
+    } else {
+        // X = Y . OTF_t . conj(OTF_k) / (|OTF_k|^2 + lambda) — K is reused
+        // for the target OTF to keep peak memory at two complex planes.
         for (std::size_t i = 0; i < Y.size(); ++i) {
             const std::complex<float> k = K[i];
             const float denom = std::norm(k) + float(opt.lambda);
@@ -158,8 +246,8 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         std::vector<float> tf = embed(kTarg);
         r2c(shape, rs, cs, axes, FORWARD, tf.data(), K.data(), 1.0f, nth);
         for (std::size_t i = 0; i < Y.size(); ++i) Y[i] *= K[i];
+        c2r(shape, cs, rs, axes, BACKWARD, Y.data(), work.data(), 1.0f / float(n), nth);
     }
-    c2r(shape, cs, rs, axes, BACKWARD, Y.data(), work.data(), 1.0f / float(n), nth);
     tick(stepsDone);
 
     // Saturated-core protection: brightest cores are nonlinear — never
@@ -186,12 +274,10 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
     return out;
 }
 
-double selectLambda(const ImageData& img, int channel,
-                    const DeconvChannelPsf& psf, double targetFwhmPx,
-                    double tolFrac, int cropSize) {
-    if (!img.isValid() || img.format() != SampleFormat::Float32 ||
-        channel < 0 || channel >= img.channels())
-        return 1e-3;
+namespace {
+
+// Centred single-channel crop for the ladder measurements.
+ImageData centerCrop(const ImageData& img, int channel, int cropSize) {
     const int w = img.width(), h = img.height();
     const int cw = std::min(cropSize, w), ch = std::min(cropSize, h);
     const int x0 = (w - cw) / 2, y0 = (h - ch) / 2;
@@ -202,23 +288,62 @@ double selectLambda(const ImageData& img, int channel,
         std::copy(src + std::size_t(y0 + y) * w + x0,
                   src + std::size_t(y0 + y) * w + x0 + cw,
                   dst + std::size_t(y) * cw);
+    return crop;
+}
 
+// Walk a descending regularization ladder over `setReg` and return the
+// first (i.e. largest / strongest) value whose delivered FWHM on the crop
+// honours the target; fall back to `fallback` when stars run out, and to
+// the last rung when none passes.
+template <typename SetReg>
+double walkLadder(const ImageData& crop, const DeconvChannelPsf& psf,
+                  DeconvOptions opt, const double* ladder, int nLadder,
+                  double tolFrac, double fallback, SetReg setReg) {
+    double last = ladder[0];
+    for (int i = 0; i < nLadder; ++i) {
+        last = ladder[i];
+        setReg(opt, ladder[i]);
+        const ImageData dec = deconvolveToTarget(crop, {psf}, opt);
+        const PsfChannelReport rep = measurePsf(dec, 0);
+        if (rep.nFitted < 10) return fallback;
+        if (std::fabs(rep.fwhmGeo - opt.targetFwhmPx) <= tolFrac * opt.targetFwhmPx)
+            return ladder[i];
+    }
+    return last;
+}
+
+} // namespace
+
+double selectLambda(const ImageData& img, int channel,
+                    const DeconvChannelPsf& psf, double targetFwhmPx,
+                    double tolFrac, int cropSize) {
+    if (!img.isValid() || img.format() != SampleFormat::Float32 ||
+        channel < 0 || channel >= img.channels())
+        return 1e-3;
     static const double kLadder[] = { 3e-3, 1e-3, 3e-4, 1e-4, 3e-5 };
     DeconvOptions opt;
     opt.targetFwhmPx = targetFwhmPx;
     opt.protectCores = false;      // measurement crop; the fitter's own
                                    // saturation gate rejects hot cores
-    double last = kLadder[0];
-    for (double lam : kLadder) {
-        last = lam;
-        opt.lambda = lam;
-        const ImageData dec = deconvolveToTarget(crop, {psf}, opt);
-        const PsfChannelReport rep = measurePsf(dec, 0);
-        if (rep.nFitted < 10) return 1e-3;
-        if (std::fabs(rep.fwhmGeo - targetFwhmPx) <= tolFrac * targetFwhmPx)
-            return lam;
-    }
-    return last;
+    return walkLadder(centerCrop(img, channel, cropSize), psf, opt,
+                      kLadder, 5, tolFrac, 1e-3,
+                      [](DeconvOptions& o, double v) { o.lambda = v; });
+}
+
+double selectRedWeight(const ImageData& img, int channel,
+                       const DeconvChannelPsf& psf, double targetFwhmPx,
+                       int iterations, double tolFrac, int cropSize) {
+    if (!img.isValid() || img.format() != SampleFormat::Float32 ||
+        channel < 0 || channel >= img.channels() || iterations < 1)
+        return 1e-2;
+    static const double kLadder[] = { 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4 };
+    DeconvOptions opt;
+    opt.targetFwhmPx = targetFwhmPx;
+    opt.protectCores = false;
+    opt.redIterations = iterations;
+    return walkLadder(centerCrop(img, channel, cropSize), psf, opt,
+                      kLadder, 6, tolFrac, 1e-2,
+                      [](DeconvOptions& o, double v) { o.redPriorWeight = v; });
 }
 
 ImageData deconvolveToTarget(const ImageData& img,

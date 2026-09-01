@@ -4344,6 +4344,36 @@ void MainWindow::deconvolveAction() {
                        "keeps the LARGEST λ whose delivered FWHM (measured on a central\n"
                        "crop) honours the declaration — contract-first, per channel."));
     form->addRow(tr("Regularization:"), lam);
+    auto* prior = new QComboBox();
+    prior->addItem(tr("none (pure MCS filter)"));
+    prior->addItem(tr("starlet (RED)"));
+    prior->setToolTip(tr("Noise prior. The pure filter amplifies signal and noise alike by a\n"
+                         "known factor; the starlet-RED option iterates a sparse-wavelet\n"
+                         "denoiser INSIDE the inversion (Regularization by Denoising) so the\n"
+                         "background stays quiet at the same delivered PSF. The prior is a\n"
+                         "declared assumption — sparsity in the starlet frame — not learned\n"
+                         "weights, and the delivered PSF is still verified on the result."));
+    form->addRow(tr("Noise prior:"), prior);
+    auto* redIters = new QSpinBox();
+    redIters->setRange(5, 50);
+    redIters->setValue(15);
+    form->addRow(tr("RED iterations:"), redIters);
+    auto* redWeight = new QComboBox();
+    redWeight->addItem(tr("automatic (strongest honouring the target ±5%)"), 0.0);
+    for (double v : { 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4 })
+        redWeight->addItem(QStringLiteral("%1").arg(v, 0, 'e', 0), v);
+    redWeight->setToolTip(tr("RED prior weight μ — plays λ's role: stronger is quieter and\n"
+                             "safer, weaker is sharper. Automatic keeps the STRONGEST μ whose\n"
+                             "delivered FWHM honours the declaration, per channel."));
+    form->addRow(tr("Prior weight:"), redWeight);
+    auto syncEnables = [lam, prior, redIters, redWeight] {
+        const bool red = prior->currentIndex() == 1;
+        lam->setEnabled(!red);
+        redIters->setEnabled(red);
+        redWeight->setEnabled(red);
+    };
+    connect(prior, &QComboBox::currentIndexChanged, &dlg, syncEnables);
+    syncEnables();
     auto* protect = new QCheckBox(tr("Protect saturated cores (keep input pixels, feathered)"));
     protect->setChecked(true);
     protect->setToolTip(tr("Clipped stellar cores are nonlinear — no longer truth convolved\n"
@@ -4357,11 +4387,22 @@ void MainWindow::deconvolveAction() {
     lay->addWidget(bb);
     if (dlg.exec() != QDialog::Accepted) return;
 
-    const double targetPx = asec > 0 ? target->value() / asec : target->value();
-    runDeconvolution(targetPx, lam->currentData().toDouble(), protect->isChecked());
+    DeconvOptions opt;
+    opt.targetFwhmPx = asec > 0 ? target->value() / asec : target->value();
+    opt.protectCores = protect->isChecked();
+    bool autoReg = true;
+    if (prior->currentIndex() == 1) {
+        opt.redIterations = redIters->value();
+        const double mu = redWeight->currentData().toDouble();
+        if (mu > 0) { opt.redPriorWeight = mu; autoReg = false; }
+    } else {
+        const double l = lam->currentData().toDouble();
+        if (l > 0) { opt.lambda = l; autoReg = false; }
+    }
+    runDeconvolution(opt, autoReg);
 }
 
-void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool protectCores) {
+void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg) {
     const QString path = m_currentPath;
     if (m_lastPsfPath != path || m_lastPsf.empty()) return;
     const ImageData img = m_image;                     // deep copy for the worker
@@ -4377,13 +4418,12 @@ void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool prote
 
     struct DeconvRun {
         ImageData out;
-        std::vector<double> lambdas, deliveredGeo;     // per channel; 0 = unmeasurable
+        std::vector<double> regs, deliveredGeo;        // per channel; 0 = unmeasurable
     };
-    auto steps = std::make_shared<std::atomic<int>>(0);   // 4 per channel (filter pass)
+    auto steps = std::make_shared<std::atomic<int>>(0);   // deconvSteps(opt) per channel
     auto chanIx = std::make_shared<std::atomic<int>>(0);
-    auto stage = std::make_shared<std::atomic<int>>(0);   // 0 calibrating λ, 1 filtering
-    auto compute = [img, psfs, nch, targetFwhmPx, lambda, protectCores,
-                    steps, chanIx, stage]() {
+    auto stage = std::make_shared<std::atomic<int>>(0);   // 0 calibrating reg, 1 filtering
+    auto compute = [img, psfs, nch, opt, autoReg, steps, chanIx, stage]() {
         DeconvRun res;
         res.out = img;
         // Delivered-PSF verification on a centred crop of the result — the
@@ -4403,19 +4443,24 @@ void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool prote
         };
         for (int c = 0; c < nch; ++c) {
             chanIx->store(c);
-            DeconvOptions opt;
-            opt.targetFwhmPx = targetFwhmPx;
-            opt.protectCores = protectCores;
+            DeconvOptions chOpt = opt;
             stage->store(0);
-            opt.lambda = lambda > 0.0
-                ? lambda
-                : selectLambda(img, c, psfs[std::size_t(c)], targetFwhmPx);
+            if (autoReg) {
+                if (chOpt.redIterations > 0)
+                    chOpt.redPriorWeight = selectRedWeight(
+                        img, c, psfs[std::size_t(c)], chOpt.targetFwhmPx,
+                        chOpt.redIterations);
+                else
+                    chOpt.lambda = selectLambda(img, c, psfs[std::size_t(c)],
+                                                chOpt.targetFwhmPx);
+            }
             stage->store(1);
             std::vector<float> plane = deconvolveChannel(
                 img.plane<float>(c), img.width(), img.height(),
-                psfs[std::size_t(c)], opt, steps.get());
+                psfs[std::size_t(c)], chOpt, steps.get());
             std::copy(plane.begin(), plane.end(), res.out.plane<float>(c));
-            res.lambdas.push_back(opt.lambda);
+            res.regs.push_back(chOpt.redIterations > 0 ? chOpt.redPriorWeight
+                                                       : chOpt.lambda);
             res.deliveredGeo.push_back(deliveredOn(c));
         }
         return res;
@@ -4429,28 +4474,34 @@ void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool prote
     const std::vector<PsfChannelReport> reports = m_lastPsf;
     const StretchModel::State st = m_model.state();
     const std::vector<Annotation> srcAnns = m_annByPath.value(path);
-    auto finish = [this, path, targetFwhmPx, protectCores, asec, nch,
+    auto finish = [this, path, opt, asec, nch,
                    srcHdr, reports, st, srcAnns](DeconvRun res) {
+        const double targetFwhmPx = opt.targetFwhmPx;
+        const bool red = opt.redIterations > 0;
         auto fw = [asec](double px) {
             return asec > 0 ? QStringLiteral("%1″").arg(px * asec, 0, 'f', 2)
                             : QStringLiteral("%1 px").arg(px, 0, 'f', 2);
         };
         // Header: geometry (and the plate solution with it) is unchanged; the
-        // model goes on record in the structure lines — every output pixel a
-        // stated linear functional of the input.
+        // model goes on record in the structure lines. Pure MCS: every output
+        // pixel a stated linear functional of the input. RED: the stated
+        // variational model — kernel, target, prior, mu, iterations.
         ImageHeader hdr = srcHdr;
         hdr.container = "In-memory";
         QStringList lines;
-        lines << tr("Deconvolved to target PSF %1 (round Gaussian) · MCS single-filter transform%2")
+        lines << tr("Deconvolved to target PSF %1 (round Gaussian) · %2%3")
                      .arg(fw(targetFwhmPx))
-                     .arg(protectCores ? tr(" · saturated cores protected") : QString());
+                     .arg(red ? tr("MCS + starlet-RED prior (%1 iterations)").arg(opt.redIterations)
+                              : tr("MCS single-filter transform"))
+                     .arg(opt.protectCores ? tr(" · saturated cores protected") : QString());
         QString delivered;
         for (int c = 0; c < nch; ++c) {
             const PsfChannelReport& r = reports[std::size_t(c)];
-            lines << tr("channel %1: kernel Moffat %2 × %3 @ PA %4°, β %5 · λ %6 · delivered %7")
+            lines << tr("channel %1: kernel Moffat %2 × %3 @ PA %4°, β %5 · %6 %7 · delivered %8")
                          .arg(c).arg(fw(r.fwhmMaj), fw(r.fwhmMin))
                          .arg(r.paDeg, 0, 'f', 0).arg(r.beta, 0, 'f', 1)
-                         .arg(res.lambdas[std::size_t(c)], 0, 'e', 0)
+                         .arg(red ? QStringLiteral("μ") : QStringLiteral("λ"))
+                         .arg(res.regs[std::size_t(c)], 0, 'e', 0)
                          .arg(res.deliveredGeo[std::size_t(c)] > 0
                                   ? fw(res.deliveredGeo[std::size_t(c)]) : tr("(too few stars)"));
             if (res.deliveredGeo[std::size_t(c)] > 0)
@@ -4479,7 +4530,7 @@ void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool prote
     statusBar()->showMessage(tr("Deconvolving — channel 1/%1: calibrating regularization…").arg(nch));
     auto* bar = new QProgressBar();
     bar->setMaximumWidth(220);
-    bar->setRange(0, nch * 4);
+    bar->setRange(0, nch * deconvSteps(opt));
     bar->setValue(0);
     statusBar()->addPermanentWidget(bar);
     auto* tick = new QTimer(this);
@@ -4504,7 +4555,8 @@ void MainWindow::runDeconvolution(double targetFwhmPx, double lambda, bool prote
     watcher->setFuture(QtConcurrent::run(compute));
 }
 
-void MainWindow::scriptDeconvolve(double fwhmPx, double lambda) {
+void MainWindow::scriptDeconvolve(double fwhmPx, double lambda,
+                                  int redIters, double redWeight) {
     if (!m_image.isValid()) return;
     if (!psfCacheValid()) {
         runPsfMeasurement({});                          // synchronous when scripted
@@ -4516,7 +4568,17 @@ void MainWindow::scriptDeconvolve(double fwhmPx, double lambda) {
         fprintf(stderr, "deconv: too few fitted stars to define a kernel\n");
         return;
     }
-    runDeconvolution(fwhmPx, lambda, true);
+    DeconvOptions opt;
+    opt.targetFwhmPx = fwhmPx;
+    bool autoReg = true;
+    if (redIters > 0) {
+        opt.redIterations = redIters;
+        if (redWeight > 0) { opt.redPriorWeight = redWeight; autoReg = false; }
+    } else if (lambda > 0) {
+        opt.lambda = lambda;
+        autoReg = false;
+    }
+    runDeconvolution(opt, autoReg);
 }
 
 void MainWindow::exportRegion() {

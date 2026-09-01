@@ -590,13 +590,30 @@ Three properties carry the method's honesty:
   deconvolving them rings; the brightest ~0.005% of pixels keep their
   input values, feathered in.
 
+**Noise prior (starlet-RED).** The pure filter is honest about noise: it
+amplifies signal and grain alike by a known factor, and λ is precisely
+the knob that caps it. When the grain is unwelcome, the *Noise prior*
+option runs the same inversion with a denoiser **inside** it —
+*Regularization by Denoising* (RED): each iteration denoises the current
+estimate with a starlet (à-trous wavelet) soft-threshold — the
+astronomical sparsity prior, a declared assumption rather than learned
+weights — then re-solves the data-consistency filter with the denoised
+image as prior mean. The prior weight μ plays λ's role, obeys the same
+contract-first ladder, and the delivered PSF is verified on the result
+exactly as before; what changes is that the background stays quiet at
+the same delivered width (a property the test suite asserts). The pure
+filter remains the default — it alone has the "every output pixel is a
+stated linear functional" property; the RED result's header states the
+full variational model instead (kernel, target, prior, μ, iterations).
+
 The result is a **new in-memory list entry** (like Combine) carrying the
 source's plate solution, stretch, and annotations — *Save Data As…* keeps
 it. Run it on **linear** data: on stretched data neither the measured
 kernel nor the linear model is valid. A target ~25% below the measured
 width is reliably reachable; more aggressive targets are increasingly
 paid for in regularization (watch the delivered figure). Script:
-`deconv <target_fwhm_px> [lambda]`.
+`deconv <target_fwhm_px> [lambda]`, or
+`deconv <target_fwhm_px> red [iters] [weight]` for the noise prior.
 
 ## 12. Split views & linked navigation
 

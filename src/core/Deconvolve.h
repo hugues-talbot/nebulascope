@@ -38,17 +38,37 @@ struct DeconvOptions {
     double lambda = 1e-3;                  // MCS regularization (kernels unit-sum)
     bool   protectCores = true;            // saturated cores keep input pixels
     double protectPercentile = 99.995;     // per-channel core threshold
+    // Starlet-RED noise prior (Regularization by Denoising, Romano, Elad &
+    // Milanfar 2017, fixed-point variant). 0 iterations = pure MCS. With
+    // iterations > 0, each step denoises the estimate with a starlet
+    // (à-trous B3-spline) soft-threshold and re-solves the Fourier-diagonal
+    // data-consistency filter with the denoised image as prior mean:
+    //   X = (conj(OTF_k)·Y + beta·FFT(D(x))) / (|OTF_k|^2 + beta)
+    // The declared target is applied by one final convolution — the partial
+    // kernel is still never formed, and the delivered-PSF audit still runs
+    // on the product. beta plays lambda's role and obeys the same
+    // contract-first ladder (selectRedWeight).
+    int    redIterations = 0;
+    double redPriorWeight = 1e-2;          // beta; resolve 'auto' before calling
+    int    redLevels = 5;                  // starlet detail scales
+    double redThresholdK = 3.0;            // soft threshold, in noise sigmas
 };
 
+// Progress steps deconvolveChannel will tick for these options (4 for pure
+// MCS; 4 + one per RED iteration otherwise).
+inline int deconvSteps(const DeconvOptions& opt) {
+    return 4 + std::max(0, opt.redIterations);
+}
+
 // Deconvolve one channel plane in place-shape (returns a new plane). NaNs
-// pass through untouched. `stepsDone` ticks 4 coarse steps when given.
+// pass through untouched. `stepsDone` ticks deconvSteps(opt) coarse steps.
 std::vector<float> deconvolveChannel(const float* plane, int w, int h,
                                      const DeconvChannelPsf& psf,
                                      const DeconvOptions& opt,
                                      std::atomic<int>* stepsDone = nullptr);
 
 // Whole image (Float32 planes, like measurePsf), per-channel PSFs (the last
-// entry is reused beyond psfs.size()). Progress: 4 steps per channel.
+// entry is reused beyond psfs.size()). Progress: deconvSteps(opt) per channel.
 ImageData deconvolveToTarget(const ImageData& img,
                              const std::vector<DeconvChannelPsf>& psfs,
                              const DeconvOptions& opt,
@@ -69,5 +89,21 @@ std::vector<float> moffatKernel(const DeconvChannelPsf& psf, int& sideOut);
 double selectLambda(const ImageData& img, int channel,
                     const DeconvChannelPsf& psf, double targetFwhmPx,
                     double tolFrac = 0.05, int cropSize = 1536);
+
+// Contract-first prior weight for the starlet-RED mode: same descending
+// ladder discipline as selectLambda, but the delivered FWHM is measured on
+// a RED run (with `iterations` steps) and the winner is the STRONGEST prior
+// honouring the target. Smaller crop: RED runs cost iterations x FFTs.
+double selectRedWeight(const ImageData& img, int channel,
+                       const DeconvChannelPsf& psf, double targetFwhmPx,
+                       int iterations, double tolFrac = 0.05,
+                       int cropSize = 1024);
+
+// Starlet (undecimated à-trous, B3-spline) soft-threshold denoiser — the
+// RED prior, exposed for tests. Thresholds are k x the per-level noise
+// sigma, estimated per detail scale by MAD. k = 0 reproduces the input
+// exactly (the transform is a tight partition). Finite input only.
+std::vector<float> starletDenoise(const float* plane, int w, int h,
+                                  int levels, double k);
 
 } // namespace astro

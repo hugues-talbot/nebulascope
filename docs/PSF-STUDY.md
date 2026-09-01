@@ -209,6 +209,61 @@ manual, and `deconv` in the scripting reference. The delivered-PSF
 contract itself runs in the test suite on a synthetic field with exact
 truth, so the promise this section describes is enforced by CI.
 
+**A postscript in Gaia's hand.** The delivered PSF can also be checked
+against an external astrometric standard. The pair Gaia DR3
+4146599613565336064 / 4146599613565335808 is separated by 2.08″ — a
+ratio of 1.06 to the delivered 1.96″ FWHM. Two equal round Gaussians
+first show a saddle between their peaks at a separation of
+$2\sigma \approx 0.85\,\mathrm{FWHM}$, so theory predicts a shallow
+notch, made shallower by the pair's unequal flux; the deconvolved frame
+shows exactly that marginal split, where the raw frame — 2″-class and
+elongated besides — blends the pair into one oval. A resolution
+certificate signed by a spacecraft that never saw the image.
+
+## The noise, and a denoiser inside the inversion
+
+The linear filter's noise behaviour is a stated property: wherever
+$|\mathrm{OTF}_k|$ has fallen below the target's, the quotient amplifies
+that band — signal and photon noise alike — by a known factor, and λ is
+exactly the knob that caps it (this is also why an honest 1.5″ target is
+unsupported by these data). Side-by-side with a neural product, the
+difference shows as grain: the network's smoothness is its prior acting
+as a denoiser, a judgment baked invisibly into the pixels.
+
+The wrong fix is denoising *before* deconvolving. A linear denoiser
+commutes with the filter and merely re-derives λ — the Wiener quotient
+already **is** the jointly optimal linear denoise-and-deconvolve. A
+nonlinear denoiser is worse than redundant: it replaces well-characterized
+photon noise with signal-correlated residual error of unknown statistics,
+which the inversion then amplifies into structured artifacts, while
+anything the denoiser smoothed away becomes unrecoverable.
+
+The principled construction puts the denoiser *inside* the inversion:
+plug-and-play priors (Venkatakrishnan, Bouman & Wohlberg 2013) and, in
+the form shipped here, **Regularization by Denoising** (Romano, Elad &
+Milanfar 2017). The RED fixed-point iteration alternates a denoising step
+with a Fourier-diagonal data-consistency solve,
+
+$$X^{(k+1)} = \frac{\overline{\mathrm{OTF}_k}\,Y
+  + \mu\,\mathcal{F}\!\left[D(x^{(k)})\right]}
+  {|\mathrm{OTF}_k|^2 + \mu},$$
+
+warm-started at the pure-MCS solution; the declared target is applied by
+one final convolution, so the partial kernel is still never formed. The
+denoiser $D$ is a starlet (à-trous B3-spline) soft-threshold with
+per-scale MAD noise estimates — the classical astronomical sparsity
+prior, a *declared assumption* rather than learned weights. The prior
+weight μ plays λ's role and obeys the same contract-first ladder, and the
+delivered-PSF audit is untouched: it measures the product and does not
+care how the product was made. What is honestly surrendered is the
+"stated linear functional" property — the header records the full
+variational model instead — plus a footnote of rigour: the RED gradient
+identity does not strictly hold for real denoisers (Reehorst & Schniter
+2019), so the iteration is best read as a well-behaved algorithm in its
+own right; with a nonexpansive threshold it converges in practice, and
+the test suite asserts the claim that matters — at equal delivered PSF,
+the RED background variance comes in well under the pure filter's.
+
 ## Future work: a spatially-variant PSF
 
 This field earned a single kernel per channel — stellar FWHM uniform to

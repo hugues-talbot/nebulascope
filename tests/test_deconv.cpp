@@ -98,6 +98,81 @@ NS_TEST(deconv_core_protection_and_nan) {
     NS_CHECK(finite == 256 * 256 - 1);
 }
 
+NS_TEST(starlet_partition_and_denoise) {
+    // k = 0: the a-trous starlet is a tight partition — exact reconstruction.
+    const int W = 128, H = 96;
+    std::vector<float> img(W * H);
+    for (int i = 0; i < W * H; ++i)
+        img[i] = float(0.2 + 0.1 * std::sin(0.05 * i) + 0.02 * (urand() - 0.5));
+    std::vector<float> same = starletDenoise(img.data(), W, H, 4, 0.0);
+    double worst = 0.0;
+    for (int i = 0; i < W * H; ++i)
+        worst = std::max(worst, std::fabs(double(same[i] - img[i])));
+    NS_CHECK(worst < 1e-5);
+
+    // k = 3: variance of a flat noisy field drops sharply, mean preserved.
+    std::vector<float> flat(W * H);
+    for (int i = 0; i < W * H; ++i) flat[i] = float(0.5 + 0.02 * (urand() - 0.5));
+    std::vector<float> den = starletDenoise(flat.data(), W, H, 4, 3.0);
+    auto stats = [&](const std::vector<float>& v) {
+        double m = 0, s = 0;
+        for (float x : v) m += x;
+        m /= v.size();
+        for (float x : v) s += (x - m) * (x - m);
+        return std::pair<double, double>(m, s / v.size());
+    };
+    const auto [m0, v0] = stats(flat);
+    const auto [m1, v1] = stats(den);
+    NS_CHECK(std::fabs(m1 - m0) < 1e-3);
+    NS_CHECK(v1 < 0.25 * v0);
+}
+
+NS_TEST(deconv_red_quieter_at_equal_delivery) {
+    // The RED claim, testable: at a delivered PSF honouring the same
+    // declaration, the starlet-RED result's background is quieter than pure
+    // MCS. Field with a deliberate star-free hole for measuring it.
+    const int W = 512, H = 512;
+    ImageData img = makeField(W, H, 4.2, 3.4, 30.0, 2.5);
+    float* p = img.plane<float>(0);
+    for (int y = 180; y < 330; ++y)          // carve the quiet hole, then
+        for (int x = 180; x < 330; ++x)      // re-lay bg + noise only
+            p[y * W + x] = float(0.001 + 2e-4 * (urand() - 0.5));
+
+    DeconvChannelPsf psf;
+    psf.fwhmMajPx = 4.2; psf.fwhmMinPx = 3.4; psf.paDeg = 30.0; psf.beta = 2.5;
+
+    DeconvOptions mcs;
+    mcs.targetFwhmPx = 2.6; mcs.protectCores = false;
+    mcs.lambda = selectLambda(img, 0, psf, mcs.targetFwhmPx);
+    const ImageData outM = deconvolveToTarget(img, {psf}, mcs);
+
+    DeconvOptions red = mcs;
+    red.redIterations = 10;
+    red.redPriorWeight = selectRedWeight(img, 0, psf, red.targetFwhmPx, 10);
+    std::atomic<int> steps{0};
+    const ImageData outR = deconvolveToTarget(img, {psf}, red, &steps);
+    NS_CHECK(steps.load() == deconvSteps(red));
+
+    const PsfChannelReport repR = measurePsf(outR, 0);
+    NS_CHECK(repR.nFitted > 50);
+    NS_CHECK(std::fabs(repR.fwhmGeo - red.targetFwhmPx) < 0.08 * red.targetFwhmPx);
+
+    auto holeVar = [&](const ImageData& im) {
+        const float* q = im.plane<float>(0);
+        double m = 0, s = 0; int cnt = 0;
+        for (int y = 210; y < 300; ++y)
+            for (int x = 210; x < 300; ++x) { m += q[y * W + x]; ++cnt; }
+        m /= cnt;
+        for (int y = 210; y < 300; ++y)
+            for (int x = 210; x < 300; ++x) {
+                const double d = q[y * W + x] - m;
+                s += d * d;
+            }
+        return s / cnt;
+    };
+    NS_CHECK(holeVar(outR) < 0.6 * holeVar(outM));
+}
+
 NS_TEST(deconv_moffat_kernel_shape) {
     DeconvChannelPsf psf;
     psf.fwhmMajPx = 5.0; psf.fwhmMinPx = 4.0; psf.paDeg = 25.0; psf.beta = 2.2;

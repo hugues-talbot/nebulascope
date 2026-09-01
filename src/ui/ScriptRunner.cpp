@@ -89,11 +89,12 @@ const CommandRef kCommands[] = {
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
     "(rotated ellipses at the fitted shape; the report dialog's button).\n"
     "label: 0 none, 1 FWHM, 2 eccentricity, 3 both."}},
-  {"deconv",     {"deconv <target_fwhm_px> [lambda]",
+  {"deconv",     {"deconv <target_fwhm_px> [lambda | red [iters] [weight]]",
     "Deconvolve the current LINEAR image to a round Gaussian PSF of the\n"
     "declared FWHM (px), using the measured stellar PSF as the kernel (runs\n"
     "the measurement first if needed). New in-memory list entry. Omitted\n"
-    "lambda = contract-first automatic selection.\n"
+    "lambda = contract-first automatic selection. 'red' adds the starlet-RED\n"
+    "noise prior (default 15 iterations; omitted weight = automatic).\n"
     "Menu equivalent: Tools > Deconvolve to Target PSF."}},
   {"blackpatch", {"blackpatch <x> <y> <w> <h>",
     "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
@@ -479,15 +480,25 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         return true;
     }
     if (cmd == QLatin1String("deconv")) {
-        // deconv <target_fwhm_px> [lambda] — deconvolve the current image to
-        // the declared circular Gaussian, measuring the PSF first if needed.
-        // No lambda (or 0) = contract-first automatic selection.
-        if (t.size() < 2) { err = "deconv <target_fwhm_px> [lambda]"; return false; }
+        // deconv <target_fwhm_px> [lambda]       — pure MCS
+        // deconv <target_fwhm_px> red [iters] [weight] — starlet-RED prior
+        // Measures the PSF first if needed. Omitted lambda/weight (or 0) =
+        // contract-first automatic selection.
+        if (t.size() < 2) { err = "deconv <target_fwhm_px> [lambda] | deconv <target_fwhm_px> red [iters] [weight]"; return false; }
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         bool ok = false;
         const double f = t[1].toDouble(&ok);
         if (!ok || f <= 0) { err = "bad target FWHM"; return false; }
-        m_w->scriptDeconvolve(f, t.size() > 2 ? t[2].toDouble() : 0.0);
+        double lambda = 0.0, weight = 0.0;
+        int iters = 0;
+        if (t.size() > 2 && t[2].toLower() == QLatin1String("red")) {
+            iters = t.size() > 3 ? t[3].toInt() : 15;
+            if (iters < 1) { err = "bad RED iteration count"; return false; }
+            weight = t.size() > 4 ? t[4].toDouble() : 0.0;
+        } else if (t.size() > 2) {
+            lambda = t[2].toDouble();
+        }
+        m_w->scriptDeconvolve(f, lambda, iters, weight);
         return true;
     }
     if (cmd == QLatin1String("blackpatch")) {

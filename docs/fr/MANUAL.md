@@ -681,6 +681,23 @@ Trois propriétés portent l'honnêteté de la méthode :
   ~0,005 % de pixels les plus brillants gardent leurs valeurs d'entrée,
   avec un fondu.
 
+**A priori de bruit (starlet-RED).** Le filtre pur est honnête sur le
+bruit : il amplifie le signal et le grain du même facteur connu, et λ est
+précisément le bouton qui le plafonne. Quand le grain est indésirable,
+l'option *A priori de bruit* exécute la même inversion avec un débruiteur
+**à l'intérieur** — la *régularisation par débruitage* (RED) : chaque
+itération débruite l'estimée courante par un seuillage doux en starlet
+(ondelette à trous) — l'a priori de parcimonie astronomique, une
+hypothèse déclarée plutôt que des poids appris — puis résout à nouveau le
+filtre de cohérence aux données avec l'image débruitée comme moyenne a
+priori. Le poids μ joue le rôle de λ, obéit à la même échelle « contrat
+d'abord », et la PSF livrée est vérifiée sur le résultat exactement comme
+avant ; ce qui change, c'est que le fond reste calme à largeur livrée
+égale (propriété que la suite de tests vérifie). Le filtre pur reste le
+défaut — lui seul garde la propriété « chaque pixel est une fonctionnelle
+linéaire déclarée » ; l'en-tête du résultat RED déclare à la place le
+modèle variationnel complet (noyau, cible, a priori, μ, itérations).
+
 Le résultat est une **nouvelle entrée en mémoire** dans la liste (comme
 Combiner), qui porte la solution astrométrique, l'étirement et les
 annotations de la source — *Enregistrer les données sous…* la conserve.
@@ -688,7 +705,9 @@ annotations de la source — *Enregistrer les données sous…* la conserve.
 noyau mesuré ni le modèle linéaire ne sont valides. Une cible ~25 % sous
 la largeur mesurée est atteignable de façon fiable ; des cibles plus
 agressives se paient en régularisation (surveillez le chiffre livré).
-Script : `deconv <fwhm_cible_px> [lambda]`.
+Script : `deconv <fwhm_cible_px> [lambda]`, ou
+`deconv <fwhm_cible_px> red [itérations] [poids]` pour l'a priori de
+bruit.
 
 ## 12. Vues divisées et navigation liée
 

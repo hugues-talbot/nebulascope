@@ -20,6 +20,7 @@
 #include "core/ImageHeader.h"
 #include "core/Wcs.h"
 #include "core/PsfMeasure.h"
+#include "core/Deconvolve.h"
 #include "core/ImageCache.h"
 #include "ui/AnnotationLayer.h"
 #include "render/StretchModel.h"
@@ -75,8 +76,9 @@ private slots:
     void deconvolveAction();               // Tools > Deconvolve to Target PSF
     bool psfCacheValid() const;            // m_psfCache entry fresh for current image?
     void runPsfMeasurement(std::function<void()> whenDone);  // measure + cache, then continue
-    void runDeconvolution(double targetFwhmPx, double lambda, bool protectCores); // lambda <= 0: contract-first
-    void scriptDeconvolve(double fwhmPx, double lambda);     // script `deconv` (synchronous)
+    void runDeconvolution(DeconvOptions opt, bool autoReg); // autoReg: contract-first lambda/mu per channel
+    void scriptDeconvolve(double fwhmPx, double lambda,
+                          int redIters, double redWeight);   // script `deconv` (synchronous)
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
