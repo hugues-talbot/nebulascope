@@ -68,9 +68,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-3686e73f2b10d5e0866cac69e1e072da.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-1186ef8162c3c73f68abd6432a9e86e2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -546,7 +546,8 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Three physical findings fell out. The <strong>optics are diffraction-limited</strong>: 0.99″ diffraction for 140 mm at Hα, field-uniform FWHM to ~5 % across a 2° field, and BXT able to reach within ~20 % of the diffraction limit — none of which a deficient objective could produce. The <strong>eccentricity (0.35–0.56) is one-axis drift, not optics</strong>: its position angle is uniform across the entire field in every channel (tilt or collimation would rotate toward the corners), indicting guiding/flexure along a single axis — worth ~0.2″ of real resolution, the cheapest gain in the system. And <strong>sub selection buys little</strong> once the stacker’s quality weighting has already suppressed poor frames: hard-culling 85 % of subs improved the stack by only ~0.15″.</p>
+<p>A caveat the study only sharpened later belongs up front: <strong>stellar analysis is measurement only on raw linear data and after calibrated deconvolution.</strong> A neural model’s stellar profiles are largely drawn from its prior — ML5’s defaults deliver 0.97–1.04″ against a 0.99″ diffraction limit, which no measurement of this atmosphere could yield — so the BXT rows above describe a <em>rendering</em> of stars, essentially cosmetic, and are kept for completeness rather than inference. The rows that carry physics are the raw ones; the deconvolution’s stars carry a different kind of meaning — a <em>declared</em> PSF whose delivery is re-measured (the audit later in this appendix).</p>
+<p>Three physical findings fell out — all from the <strong>raw</strong> rows. The <strong>optics are diffraction-limited</strong>: 0.99″ diffraction for 140 mm at Hα, and field-uniform FWHM to ~5 % across a 2° field — not something a deficient objective could produce. (An earlier draft also cited BXT reaching near the limit as corroboration; by the caveat above, that argument is retracted — a prior-drawn star proves nothing about the glass.) The <strong>eccentricity (0.35–0.56) is one-axis drift, not optics</strong>: its position angle is uniform across the entire field in every channel (tilt or collimation would rotate toward the corners), indicting guiding/flexure along a single axis — worth ~0.2″ of real resolution, the cheapest gain in the system. And <strong>sub selection buys little</strong> once the stacker’s quality weighting has already suppressed poor frames: hard-culling 85 % of subs improved the stack by only ~0.15″.</p>
 </section>
 <section id="what-bxt-does-to-nebulosity" class="level2">
 <h2 class="anchored" data-anchor-id="what-bxt-does-to-nebulosity">What BXT does to nebulosity</h2>
@@ -642,6 +643,7 @@ window.Quarto = {
 <li>A fit that silently returns “no improvement” for a whole parameter looks identical to a hard problem (this study found two such bugs — a search domain and a kernel quotient — each masquerading as physics).</li>
 <li>Registration failures under large unknown transforms are best solved by exhaustive search over the group, not by better correspondence heuristics; and parity is part of the group.</li>
 <li>Iterative deconvolution cannot promise a PSF; a linear filter can, and the promise can be <em>audited</em> by re-measuring stars on the product.</li>
+<li>Stellar analysis is measurement only where the stars are physics: raw linear data, and a calibrated deconvolution whose delivered PSF is declared and re-checked. A neural model’s stars are prior-drawn — essentially cosmetic — and can neither certify optics nor arbitrate a model revision.</li>
 <li>Ground truth changes the epistemics: with a held-out half of a Hubble overlap, every processing claim — including a neural network’s — becomes a measurement.</li>
 </ul>
 
