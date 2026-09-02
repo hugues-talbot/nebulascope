@@ -217,6 +217,14 @@ Panel tour:
 - **Auto STF** (**U**) — per-channel automatic stretch (background → ~0.25).
 - **Auto STF (linked)** (**Shift+U**) — one shared stretch from pooled statistics;
   preserves colour balance (use for colour-calibrated data).
+- **Auto STF (PixInsight)** (**P**) — PixInsight's STFAutoStretch, exactly
+  (equations by Juan Conejero: shadows clipped at median − 2.8σ with
+  σ = 1.4826×MAD, midtone solved so the clipped background displays at
+  0.25, no safety floors). The right first look for **narrowband linear
+  masters**, whose background sits so close to zero that the classic Auto
+  STF's guardrails leave the frame dark. Same statistics-only recipe as
+  PixInsight, so the same data gets the same first view in both programs.
+  Script: `autostf pi`.
 - **Reset** (**R**) — back to the plain linear window (also clears adjustments).
 - **Reload Original** (**⌘⇧R**, View menu) — fresh decode from disk with the
   first-view rules re-run (saved display function if the file carries one,
@@ -320,7 +328,7 @@ on the view. With the image view focused, the **arrow keys pan**; with the
 image list focused, ↑/↓ walk the list (blinking itself stays on
 **Space**/**Shift+Space**).
 
-The **Info panel** (**P** or F4) shows dimensions, pixel format, per-channel
+The **Info panel** (**F4**) shows dimensions, pixel format, per-channel
 min / max / median / MAD, the FITS HDU structure, and the full header (FITS
 cards or XISF properties) in a filterable, copyable table.
 

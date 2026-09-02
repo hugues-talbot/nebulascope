@@ -76,6 +76,36 @@ void StretchModel::autoStretchLinked(const std::vector<ChannelStats>& stats) {
     emit changed();
 }
 
+void StretchModel::autoStretchPI(const std::vector<ChannelStats>& stats) {
+    m_fn = StretchFn::Linear;
+    const int n = std::min<int>(int(stats.size()), 3);
+    double pmn = 0, pmx = 1;
+    if (n > 0 && m_commonAxis) pooledRange(stats, n, pmn, pmx);
+    for (int c = 0; c < n; ++c) {
+        const double mn = m_commonAxis ? pmn : stats[c].min;
+        const double mx = m_commonAxis ? pmx : stats[c].max;
+        const double span = std::max(1e-6, mx - mn);
+        m_lo[c] = mn;
+        m_hi[c] = mx;
+        // PixInsight STF (Conejero): c = clip01(med - 2.8 * 1.4826 * mad);
+        // balance = mtf(0.25, med - c) — the MTF parameter identity
+        // mtf(mtf(B, b), b) = B makes this the exact solve for
+        // "clipped background displays at B". No floors: the honest
+        // midtone on a narrowband master sits ~2e-4 above black, and any
+        // cosmetic minimum turns the frame black.
+        const double nMed = (stats[c].median - mn) / span;
+        const double nMad = std::max(1e-9, double(stats[c].mad) / span);
+        ChannelStretch cs;
+        cs.black = std::min(1.0, std::max(0.0, nMed - 2.8 * 1.4826 * nMad));
+        cs.white = 1.0;
+        // NB: PixelMath's mtf(m, x) is balance-first; ours is mtf(x, m).
+        const double m = mtf(std::max(1e-9, nMed - cs.black), 0.25);
+        cs.mid = cs.black + m * (cs.white - cs.black);
+        m_chan[c] = cs;
+    }
+    emit changed();
+}
+
 // Shared STF solver: shadows clipped just below the background, midtone chosen
 // so the background displays at ~0.25.
 ChannelStretch StretchModel::stfFor(double median, double mad, double mn, double span) {

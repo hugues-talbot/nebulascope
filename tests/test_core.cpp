@@ -54,6 +54,43 @@ NS_TEST(mtf_fixed_points) {
     NS_CHECK_NEAR(mtf(0.3, 0.3), 0.5, 1e-12);   // midtone maps to half
 }
 
+NS_TEST(autostf_pi_background_lands_on_quarter) {
+    // The PixInsight-STF contract: whatever the data's scale, the clipped
+    // BACKGROUND (median) displays at 0.25. The case this pins: a
+    // narrowband linear master (background ~1e-3, MAD ~2e-5, a saturated
+    // star making max = 1) puts the normalized background at ~5e-5 — where
+    // the classic Auto STF's cosmetic floors (x >= 0.02, mid >= black+1e-3,
+    // LUT m >= 1e-3) all overrode the solve and rendered near-black. The
+    // PI variant has no floors, and the LUT floor is now numeric only.
+    auto check = [](double mn, double mx, double median, double mad) {
+        std::vector<ChannelStats> st(1);
+        st[0].min = float(mn); st[0].max = float(mx);
+        st[0].median = float(median); st[0].mad = float(mad);
+        StretchModel m;
+        m.autoStretchPI(st);
+        const ChannelStretch cs = m.channel(0);
+        const double u = (median - m.lo(0)) / (m.hi(0) - m.lo(0));
+        const double y = transferAt(u, StretchFn::Linear, cs, GHSParams());
+        NS_CHECK_NEAR(y, 0.25, 0.02);
+    };
+    check(0.000953, 1.0, 0.0011483, 2.02e-5);   // the narrowband master, stars in
+    check(0.0009, 0.02, 0.0011, 2.0e-5);        // its starless sibling
+    check(0.0, 1.0, 0.25, 0.05);                // bright processed data
+    check(0.0, 1.0, 0.08, 0.01);                // typical broadband linear
+}
+
+NS_TEST(mtf_parameter_identity) {
+    // mtf(mtf(x, B), ...) — the identity behind the STF solve: the balance
+    // that maps b to B is itself MTF_B(b), i.e. our mtf(b, B). And the two
+    // argument orders are complementary, not equal.
+    for (double b : { 0.001, 0.05, 0.3 })
+        for (double B : { 0.2, 0.25, 0.5 }) {
+            const double m = mtf(b, B);
+            NS_CHECK_NEAR(mtf(b, m), B, 1e-9);
+        }
+    NS_CHECK_NEAR(mtf(0.3, 0.1) + mtf(0.1, 0.3), 1.0, 1e-9);
+}
+
 NS_TEST(ghs_symmetry_point_max_slope) {
     // ghsSlope must peak at SP.
     const double D = 2.0, b = 6.0, SP = 0.25;

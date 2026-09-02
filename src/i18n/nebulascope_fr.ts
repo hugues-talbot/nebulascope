@@ -192,7 +192,7 @@ montre la part de l&apos;axe étendu affichée à l&apos;écran.</translation>
         <location filename="../ui/HistogramPanel.cpp" line="137"/>
         <location filename="../ui/HistogramPanel.cpp" line="481"/>
         <source>Mid</source>
-        <translation>Médian</translation>
+        <translation>Médium</translation>
     </message>
     <message>
         <location filename="../ui/HistogramPanel.cpp" line="137"/>
@@ -557,7 +557,7 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
     <name>astro::MainWindow</name>
     <message>
         <location filename="../ui/MainWindow.cpp" line="104"/>
-        <location filename="../ui/MainWindow.cpp" line="2613"/>
+        <location filename="../ui/MainWindow.cpp" line="2616"/>
         <source>NebulaScope — Inspector</source>
         <translation>NebulaScope — Inspecteur</translation>
     </message>
@@ -1092,212 +1092,217 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
     </message>
     <message>
         <location filename="../ui/MainWindow.cpp" line="1376"/>
+        <source>Auto STF (&amp;PixInsight)</source>
+        <translation>Auto STF (&amp;PixInsight)</translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.cpp" line="1379"/>
         <source>&amp;Reset Stretch</source>
         <translation>&amp;Réinitialiser l&apos;étirement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1380"/>
+        <location filename="../ui/MainWindow.cpp" line="1383"/>
         <source>Apply Stretch to All</source>
         <translation>Appliquer l&apos;étirement à tout</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1393"/>
+        <location filename="../ui/MainWindow.cpp" line="1396"/>
         <source>&amp;Copy Stretch</source>
         <translation>&amp;Copier l&apos;étirement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1394"/>
+        <location filename="../ui/MainWindow.cpp" line="1397"/>
         <source>&amp;Paste Stretch (Normalized)</source>
         <translation>Coller l&apos;étirement (&amp;normalisé)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1395"/>
+        <location filename="../ui/MainWindow.cpp" line="1398"/>
         <source>Paste Stretch (&amp;Absolute)</source>
         <translation>Coller l&apos;étirement (&amp;absolu)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1397"/>
+        <location filename="../ui/MainWindow.cpp" line="1400"/>
         <source>Paste Stretch to &amp;All</source>
         <translation>Coller l&apos;étirement à &amp;tout</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1400"/>
+        <location filename="../ui/MainWindow.cpp" line="1403"/>
         <source>&amp;Tools</source>
         <translation>&amp;Outils</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1401"/>
+        <location filename="../ui/MainWindow.cpp" line="1404"/>
         <source>&amp;Combine Channels…</source>
         <translation>&amp;Combiner les canaux…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1402"/>
+        <location filename="../ui/MainWindow.cpp" line="1405"/>
         <source>Combine &amp;Stars (screen)…</source>
         <translation>Combiner les étoile&amp;s (screen)…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1403"/>
+        <location filename="../ui/MainWindow.cpp" line="1406"/>
         <source>&amp;Transport Colors from Reference…</source>
         <translation>&amp;Transporter les couleurs d&apos;une référence…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1404"/>
+        <location filename="../ui/MainWindow.cpp" line="1407"/>
         <source>&amp;Measure PSF (Stars)…</source>
         <translation>&amp;Mesurer la PSF (étoiles)…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1405"/>
+        <location filename="../ui/MainWindow.cpp" line="1408"/>
         <source>&amp;Deconvolve to Target PSF…</source>
         <translation>&amp;Déconvoluer vers une PSF cible…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1406"/>
+        <location filename="../ui/MainWindow.cpp" line="1409"/>
         <source>Import &amp;SExtractor Catalog…</source>
         <translation>Importer un catalogue &amp;SExtractor…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1410"/>
+        <location filename="../ui/MainWindow.cpp" line="1413"/>
         <source>&amp;Help</source>
         <translation>Ai&amp;de</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1411"/>
+        <location filename="../ui/MainWindow.cpp" line="1414"/>
         <source>Configure &amp;Shortcuts…</source>
         <translation>Configurer les &amp;raccourcis…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1412"/>
+        <location filename="../ui/MainWindow.cpp" line="1415"/>
         <source>&amp;Preferences…</source>
         <translation>&amp;Préférences…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1430"/>
+        <location filename="../ui/MainWindow.cpp" line="1433"/>
         <source>&amp;About NebulaScope</source>
         <translation>À propos de Nebul&amp;aScope</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1432"/>
+        <location filename="../ui/MainWindow.cpp" line="1435"/>
         <source>About &amp;Qt</source>
         <translation>À propos de &amp;Qt</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1466"/>
+        <location filename="../ui/MainWindow.cpp" line="1469"/>
         <source>Main</source>
         <translation>Principale</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1469"/>
+        <location filename="../ui/MainWindow.cpp" line="1472"/>
         <source>Open</source>
         <translation>Ouvrir</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1470"/>
+        <location filename="../ui/MainWindow.cpp" line="1473"/>
         <source>Save</source>
         <translation>Enregistrer</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1471"/>
+        <location filename="../ui/MainWindow.cpp" line="1474"/>
         <source>Export</source>
         <translation>Exporter</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1473"/>
+        <location filename="../ui/MainWindow.cpp" line="1476"/>
         <source>Fit</source>
         <translation>Ajuster</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1476"/>
+        <location filename="../ui/MainWindow.cpp" line="1479"/>
         <source>Rotate 90° clockwise ( ] )</source>
         <translation>Rotation 90° horaire ( ] )</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1477"/>
+        <location filename="../ui/MainWindow.cpp" line="1480"/>
         <source>Rotate 90° counter-clockwise ( [ )</source>
         <translation>Rotation 90° antihoraire ( [ )</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1478"/>
+        <location filename="../ui/MainWindow.cpp" line="1481"/>
         <source>Flip horizontal (Ctrl+H)</source>
         <translation>Miroir horizontal (Ctrl+H)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1479"/>
+        <location filename="../ui/MainWindow.cpp" line="1482"/>
         <source>Flip vertical (Ctrl+J)</source>
         <translation>Miroir vertical (Ctrl+J)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1483"/>
+        <location filename="../ui/MainWindow.cpp" line="1486"/>
         <source> Colormap </source>
         <translation> Palette </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1496"/>
+        <location filename="../ui/MainWindow.cpp" line="1499"/>
         <source>Inv</source>
         <translation>Inv</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1497"/>
+        <location filename="../ui/MainWindow.cpp" line="1500"/>
         <source>Invert the colormap (reverse the ramp)</source>
         <translation>Inverse la palette (rampe renversée)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1503"/>
+        <location filename="../ui/MainWindow.cpp" line="1506"/>
         <source>Split</source>
         <translation>Split</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1504"/>
+        <location filename="../ui/MainWindow.cpp" line="1507"/>
         <source>Fold the ramp at a threshold: inverted below, normal above</source>
         <translation>Plie la rampe à un seuil : inversée dessous, normale dessus</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1515"/>
+        <location filename="../ui/MainWindow.cpp" line="1518"/>
         <source> break </source>
         <translation> seuil </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1535"/>
+        <location filename="../ui/MainWindow.cpp" line="1538"/>
         <source>◯ Ellipse</source>
         <translation>◯ Ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1536"/>
+        <location filename="../ui/MainWindow.cpp" line="1539"/>
         <source>Draw an ellipse annotation — drag outward from the centre</source>
         <translation>Dessiner une annotation ellipse — glisser depuis le centre</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1537"/>
+        <location filename="../ui/MainWindow.cpp" line="1540"/>
         <source>╱ Line</source>
         <translation>╱ Segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1538"/>
+        <location filename="../ui/MainWindow.cpp" line="1541"/>
         <source>Draw a line annotation — drag from start to end</source>
         <translation>Dessiner une annotation segment — glisser du début à la fin</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1539"/>
+        <location filename="../ui/MainWindow.cpp" line="1542"/>
         <source>T Text</source>
         <translation>T Texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1540"/>
+        <location filename="../ui/MainWindow.cpp" line="1543"/>
         <source>Place a text annotation — click the anchor point</source>
         <translation>Placer une annotation texte — cliquer le point d&apos;ancrage</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1587"/>
+        <location filename="../ui/MainWindow.cpp" line="1590"/>
         <source>Open image(s)</source>
         <translation>Ouvrir des images</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1588"/>
-        <location filename="../ui/MainWindow.cpp" line="2499"/>
+        <location filename="../ui/MainWindow.cpp" line="1591"/>
+        <location filename="../ui/MainWindow.cpp" line="2502"/>
         <source>Astronomy &amp; images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;All files (*)</source>
         <translation>Astronomie et images (*.fits *.fit *.fts *.fz *.xisf *.jpg *.jpeg *.png *.tif *.tiff *.webp);;Tous les fichiers (*)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="1597"/>
+        <location filename="../ui/MainWindow.cpp" line="1600"/>
         <source>Opened %n file(s)</source>
         <translation>
             <numerusform>%n fichier ouvert</numerusform>
@@ -1305,12 +1310,12 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1663"/>
+        <location filename="../ui/MainWindow.cpp" line="1666"/>
         <source>%1 [HDU %2]</source>
         <translation>%1 [HDU %2]</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="1725"/>
+        <location filename="../ui/MainWindow.cpp" line="1728"/>
         <source>%n image(s) already in the list — not added again</source>
         <translation>
             <numerusform>%n image déjà dans la liste — pas ajoutée de nouveau</numerusform>
@@ -1318,111 +1323,111 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1742"/>
+        <location filename="../ui/MainWindow.cpp" line="1745"/>
         <source>  ▾ %1 HDUs</source>
         <translation>  ▾ %1 HDU</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1746"/>
+        <location filename="../ui/MainWindow.cpp" line="1749"/>
         <source>    ⤷ HDU %1 · %2</source>
         <translation>    ⤷ HDU %1 · %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1748"/>
+        <location filename="../ui/MainWindow.cpp" line="1751"/>
         <source>%1 — HDU %2</source>
         <translation>%1 — HDU %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1783"/>
+        <location filename="../ui/MainWindow.cpp" line="1786"/>
         <source>Stretch shared with %1 other image(s) — applies as each loads</source>
         <translation>Étirement partagé avec %1 autre(s) image(s) — appliqué au chargement de chacune</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1802"/>
+        <location filename="../ui/MainWindow.cpp" line="1805"/>
         <source>Crop region is empty</source>
         <translation>La région de recadrage est vide</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1854"/>
+        <location filename="../ui/MainWindow.cpp" line="1857"/>
         <source>Cropped %1×%2 at (%3, %4)%5 — Save Data As… keeps it</source>
         <translation>Recadré %1×%2 en (%3, %4)%5 — Enregistrer les données sous… le conserve</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1856"/>
+        <location filename="../ui/MainWindow.cpp" line="1859"/>
         <source>, plate solution rebased</source>
         <translation>, solution astrométrique recalée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1885"/>
-        <location filename="../ui/MainWindow.cpp" line="5658"/>
+        <location filename="../ui/MainWindow.cpp" line="1888"/>
+        <location filename="../ui/MainWindow.cpp" line="5661"/>
         <source>%1 — %2</source>
         <translation>%1 — %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1887"/>
+        <location filename="../ui/MainWindow.cpp" line="1890"/>
         <source>checked (keep)</source>
         <translation>cochées (à garder)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1887"/>
-        <location filename="../ui/MainWindow.cpp" line="1960"/>
-        <location filename="../ui/MainWindow.cpp" line="1967"/>
+        <location filename="../ui/MainWindow.cpp" line="1890"/>
+        <location filename="../ui/MainWindow.cpp" line="1963"/>
+        <location filename="../ui/MainWindow.cpp" line="1970"/>
         <source>unchecked</source>
         <translation>décochées</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1959"/>
+        <location filename="../ui/MainWindow.cpp" line="1962"/>
         <source>Move Frames</source>
         <translation>Déplacer les images</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1960"/>
+        <location filename="../ui/MainWindow.cpp" line="1963"/>
         <source>No %1 files to move.</source>
         <translation>Aucun fichier « %1 » à déplacer.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1960"/>
-        <location filename="../ui/MainWindow.cpp" line="1967"/>
+        <location filename="../ui/MainWindow.cpp" line="1963"/>
+        <location filename="../ui/MainWindow.cpp" line="1970"/>
         <source>checked</source>
         <translation>cochées</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1966"/>
+        <location filename="../ui/MainWindow.cpp" line="1969"/>
         <source>Move %1 %2 frame(s) to…</source>
         <translation>Déplacer %1 image(s) %2 vers…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1976"/>
+        <location filename="../ui/MainWindow.cpp" line="1979"/>
         <source> (exists)</source>
         <translation> (existe déjà)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2008"/>
+        <location filename="../ui/MainWindow.cpp" line="2011"/>
         <source>Moved %1 file(s) to %2</source>
         <translation>%1 fichier(s) déplacé(s) vers %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2010"/>
+        <location filename="../ui/MainWindow.cpp" line="2013"/>
         <source> — FAILED: %1</source>
         <translation> — ÉCHEC : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2083"/>
+        <location filename="../ui/MainWindow.cpp" line="2086"/>
         <source>stretch edit</source>
         <translation>modification d&apos;étirement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2141"/>
+        <location filename="../ui/MainWindow.cpp" line="2144"/>
         <source>auto</source>
         <translation>auto</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2142"/>
+        <location filename="../ui/MainWindow.cpp" line="2145"/>
         <source>off</source>
         <translation>désactivé</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="2144"/>
+        <location filename="../ui/MainWindow.cpp" line="2147"/>
         <source>Debayer “%1” applied to %n other list image(s)</source>
         <translation>
             <numerusform>Dématriçage « %1 » appliqué à %n autre image de la liste</numerusform>
@@ -1430,43 +1435,43 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2268"/>
+        <location filename="../ui/MainWindow.cpp" line="2271"/>
         <source>Reloaded (changed on disk): %1</source>
         <translation>Rechargé (modifié sur le disque) : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2281"/>
-        <location filename="../ui/MainWindow.cpp" line="2309"/>
+        <location filename="../ui/MainWindow.cpp" line="2284"/>
+        <location filename="../ui/MainWindow.cpp" line="2312"/>
         <source>  (in-memory combine — use Save Data As… to keep)</source>
         <translation>  (combinaison en mémoire — Enregistrer les données sous… pour la conserver)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2402"/>
+        <location filename="../ui/MainWindow.cpp" line="2405"/>
         <source>Load at least two single-channel (mono) images into the list first.</source>
         <translation>Chargez d&apos;abord au moins deux images monocanal (mono) dans la liste.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2413"/>
+        <location filename="../ui/MainWindow.cpp" line="2416"/>
         <source>Combine Channels</source>
         <translation>Combiner les canaux</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2477"/>
+        <location filename="../ui/MainWindow.cpp" line="2480"/>
         <source>Combine Stars</source>
         <translation>Combiner les étoiles</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2478"/>
+        <location filename="../ui/MainWindow.cpp" line="2481"/>
         <source>Load the starless and the stars-only image into the list first.</source>
         <translation>Chargez d&apos;abord l&apos;image sans étoiles et l&apos;image étoiles seules dans la liste.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2498"/>
+        <location filename="../ui/MainWindow.cpp" line="2501"/>
         <source>Append image(s)</source>
         <translation>Ajouter des images</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="2542"/>
+        <location filename="../ui/MainWindow.cpp" line="2545"/>
         <source>%n image(s) being closed have unsaved annotations.</source>
         <translation>
             <numerusform>%n image en cours de fermeture a des annotations non enregistrées.</numerusform>
@@ -1474,12 +1479,12 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2547"/>
+        <location filename="../ui/MainWindow.cpp" line="2550"/>
         <source>Ignore and Close</source>
         <translation>Ignorer et fermer</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="2561"/>
+        <location filename="../ui/MainWindow.cpp" line="2564"/>
         <source>%n image(s) had no sidecar to save to (in-memory or write failure)</source>
         <translation>
             <numerusform>%n image sans fichier annexe où enregistrer (en mémoire ou échec d&apos;écriture)</numerusform>
@@ -1487,7 +1492,7 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="2597"/>
+        <location filename="../ui/MainWindow.cpp" line="2600"/>
         <source>%n closed image(s) had unsaved annotations (discarded)</source>
         <translation>
             <numerusform>%n image fermée avait des annotations non enregistrées (perdues)</numerusform>
@@ -1495,119 +1500,119 @@ L&apos;équilibre par canal vit dans les poignées de l&apos;histogramme (B/M/W)
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2634"/>
+        <location filename="../ui/MainWindow.cpp" line="2637"/>
         <source>In-memory image — nothing on disk to reload</source>
         <translation>Image en mémoire — rien à recharger depuis le disque</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2643"/>
+        <location filename="../ui/MainWindow.cpp" line="2646"/>
         <source>reload original</source>
         <translation>recharger l&apos;original</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2644"/>
+        <location filename="../ui/MainWindow.cpp" line="2647"/>
         <source>Reloaded from disk — display as freshly opened</source>
         <translation>Rechargée depuis le disque — affichage comme à l&apos;ouverture</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2651"/>
+        <location filename="../ui/MainWindow.cpp" line="2654"/>
         <source>List cleared — all images closed</source>
         <translation>Liste vidée — toutes les images fermées</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2657"/>
+        <location filename="../ui/MainWindow.cpp" line="2660"/>
         <source>Export image list</source>
         <translation>Exporter la liste d&apos;images</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2657"/>
-        <location filename="../ui/MainWindow.cpp" line="2672"/>
+        <location filename="../ui/MainWindow.cpp" line="2660"/>
+        <location filename="../ui/MainWindow.cpp" line="2675"/>
         <source>Text file (*.txt);;All files (*)</source>
         <translation>Fichier texte (*.txt);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2661"/>
-        <location filename="../ui/MainWindow.cpp" line="4852"/>
-        <location filename="../ui/MainWindow.cpp" line="4856"/>
+        <location filename="../ui/MainWindow.cpp" line="2664"/>
+        <location filename="../ui/MainWindow.cpp" line="4855"/>
+        <location filename="../ui/MainWindow.cpp" line="4859"/>
         <source>Export failed</source>
         <translation>Échec de l&apos;export</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2661"/>
-        <location filename="../ui/MainWindow.cpp" line="4857"/>
-        <location filename="../ui/MainWindow.cpp" line="5547"/>
+        <location filename="../ui/MainWindow.cpp" line="2664"/>
+        <location filename="../ui/MainWindow.cpp" line="4860"/>
+        <location filename="../ui/MainWindow.cpp" line="5550"/>
         <source>Could not write %1</source>
         <translation>Impossible d&apos;écrire %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2667"/>
+        <location filename="../ui/MainWindow.cpp" line="2670"/>
         <source>Exported list of %1 file(s)</source>
         <translation>Liste de %1 fichier(s) exportée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2672"/>
+        <location filename="../ui/MainWindow.cpp" line="2675"/>
         <source>Import image list</source>
         <translation>Importer une liste d&apos;images</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2697"/>
-        <location filename="../ui/MainWindow.cpp" line="5393"/>
-        <location filename="../ui/MainWindow.cpp" line="5395"/>
+        <location filename="../ui/MainWindow.cpp" line="2700"/>
+        <location filename="../ui/MainWindow.cpp" line="5396"/>
+        <location filename="../ui/MainWindow.cpp" line="5398"/>
         <source>Import failed</source>
         <translation>Échec de l&apos;import</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2697"/>
-        <location filename="../ui/MainWindow.cpp" line="5592"/>
+        <location filename="../ui/MainWindow.cpp" line="2700"/>
+        <location filename="../ui/MainWindow.cpp" line="5595"/>
         <source>Could not read %1</source>
         <translation>Impossible de lire %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2710"/>
+        <location filename="../ui/MainWindow.cpp" line="2713"/>
         <source>List file had no entries</source>
         <translation>Le fichier de liste ne contient aucune entrée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2714"/>
+        <location filename="../ui/MainWindow.cpp" line="2717"/>
         <source>Imported %1 file(s)</source>
         <translation>%1 fichier(s) importé(s)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2759"/>
-        <location filename="../ui/MainWindow.cpp" line="2766"/>
-        <location filename="../ui/MainWindow.cpp" line="2821"/>
+        <location filename="../ui/MainWindow.cpp" line="2762"/>
+        <location filename="../ui/MainWindow.cpp" line="2769"/>
+        <location filename="../ui/MainWindow.cpp" line="2824"/>
         <source>Transport Colors</source>
         <translation>Transporter les couleurs</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2760"/>
+        <location filename="../ui/MainWindow.cpp" line="2763"/>
         <source>Load a second image to use as the colour reference.</source>
         <translation>Chargez une seconde image à utiliser comme référence de couleurs.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2770"/>
+        <location filename="../ui/MainWindow.cpp" line="2773"/>
         <source>Reference (colours to adopt):</source>
         <translation>Référence (couleurs à adopter) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2782"/>
+        <location filename="../ui/MainWindow.cpp" line="2785"/>
         <source>Strength:</source>
         <translation>Force :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2783"/>
+        <location filename="../ui/MainWindow.cpp" line="2786"/>
         <source>100% = full palette adoption; lower values blend
 the transported colours with the original.</source>
         <translation>100 % = adoption complète de la palette ; en dessous,
 les couleurs transportées se mélangent à l&apos;original.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2791"/>
+        <location filename="../ui/MainWindow.cpp" line="2794"/>
         <source>Apply as stretch fit (non-destructive)</source>
         <translation>Appliquer comme ajustement d&apos;étirement (non destructif)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2792"/>
+        <location filename="../ui/MainWindow.cpp" line="2795"/>
         <source>Instead of writing new pixels, fit per-channel B/M/W so the
 display matches the transported colours — the data is untouched,
 so nothing can posterize. Colour match is close, not exact
@@ -1618,252 +1623,252 @@ sont intactes : rien ne peut postériser. La correspondance est proche,
 non exacte (les rotations inter-canaux échappent à la famille des étirements).</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2829"/>
+        <location filename="../ui/MainWindow.cpp" line="2832"/>
         <source>no image displayed</source>
         <translation>aucune image affichée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2922"/>
+        <location filename="../ui/MainWindow.cpp" line="2925"/>
         <source> · reference not displayed — matched over its full image</source>
         <translation> · référence non affichée — appariement sur son image entière</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3017"/>
+        <location filename="../ui/MainWindow.cpp" line="3020"/>
         <source> · with colour fit: %1</source>
         <translation> · avec ajustement couleur : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3025"/>
+        <location filename="../ui/MainWindow.cpp" line="3028"/>
         <source>colour-match stretch</source>
         <translation>étirement d&apos;appariement des couleurs</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3027"/>
+        <location filename="../ui/MainWindow.cpp" line="3030"/>
         <source>Colour match fitted as stretch (non-destructive) — RMSE %1%2</source>
         <translation>Correspondance de couleurs ajustée en étirement (non destructif) — RMSE %1%2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3050"/>
+        <location filename="../ui/MainWindow.cpp" line="3053"/>
         <source>Colours transported from %1</source>
         <translation>Couleurs transportées depuis %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3129"/>
+        <location filename="../ui/MainWindow.cpp" line="3132"/>
         <source>No saved orientation for this image</source>
         <translation>Aucune orientation enregistrée pour cette image</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3138"/>
+        <location filename="../ui/MainWindow.cpp" line="3141"/>
         <source>Saved orientation applied (%1×%2)</source>
         <translation>Orientation enregistrée appliquée (%1×%2)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3313"/>
+        <location filename="../ui/MainWindow.cpp" line="3316"/>
         <source>Open failed</source>
         <translation>Échec de l&apos;ouverture</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3339"/>
+        <location filename="../ui/MainWindow.cpp" line="3342"/>
         <source>Looks like an undecoded colour mosaic — try Image ▸ Debayer ▸ %1 or %2</source>
         <translation>Ressemble à une mosaïque couleur non décodée — essayez Image ▸ Dématriçage ▸ %1 ou %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3431"/>
+        <location filename="../ui/MainWindow.cpp" line="3434"/>
         <source>Loaded %1 annotation(s) from %2%3</source>
         <translation>%1 annotation(s) chargée(s) depuis %2%3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3434"/>
+        <location filename="../ui/MainWindow.cpp" line="3437"/>
         <source> — saved orientation available (Image ▸ Apply Saved Orientation)</source>
         <translation> — orientation enregistrée disponible (Image ▸ Appliquer l&apos;orientation enregistrée)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3606"/>
+        <location filename="../ui/MainWindow.cpp" line="3609"/>
         <source>NebulaScope — %1</source>
         <translation>NebulaScope — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3611"/>
+        <location filename="../ui/MainWindow.cpp" line="3614"/>
         <source>   · debayered %1</source>
         <translation>   · dématricé %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3614"/>
+        <location filename="../ui/MainWindow.cpp" line="3617"/>
         <source>%1   %2×%3   %4 ch   [%5/%6]%7</source>
         <translation>%1   %2×%3   %4 can.   [%5/%6]%7</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3761"/>
-        <location filename="../ui/MainWindow.cpp" line="3857"/>
+        <location filename="../ui/MainWindow.cpp" line="3764"/>
+        <location filename="../ui/MainWindow.cpp" line="3860"/>
         <source>Format:</source>
         <translation>Format :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3862"/>
+        <location filename="../ui/MainWindow.cpp" line="3865"/>
         <source>TIFF 16-bit</source>
         <translation>TIFF 16 bits</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3886"/>
+        <location filename="../ui/MainWindow.cpp" line="3889"/>
         <source>FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16-bit (*.tiff *.tif)</source>
         <translation>FITS (*.fits *.fit *.fts);;XISF (*.xisf);;TIFF 16 bits (*.tiff *.tif)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3933"/>
+        <location filename="../ui/MainWindow.cpp" line="3936"/>
         <source>Save stretched image</source>
         <translation>Enregistrer l&apos;image étirée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3936"/>
-        <location filename="../ui/MainWindow.cpp" line="3941"/>
-        <location filename="../ui/MainWindow.cpp" line="3954"/>
-        <location filename="../ui/MainWindow.cpp" line="5547"/>
+        <location filename="../ui/MainWindow.cpp" line="3939"/>
+        <location filename="../ui/MainWindow.cpp" line="3944"/>
+        <location filename="../ui/MainWindow.cpp" line="3957"/>
+        <location filename="../ui/MainWindow.cpp" line="5550"/>
         <source>Save failed</source>
         <translation>Échec de l&apos;enregistrement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3936"/>
+        <location filename="../ui/MainWindow.cpp" line="3939"/>
         <source>Could not bake the stretch.</source>
         <translation>Impossible de graver l&apos;étirement.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3942"/>
+        <location filename="../ui/MainWindow.cpp" line="3945"/>
         <source>Saved stretched %1</source>
         <translation>Image étirée enregistrée : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3951"/>
+        <location filename="../ui/MainWindow.cpp" line="3954"/>
         <source>Save image</source>
         <translation>Enregistrer l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3955"/>
+        <location filename="../ui/MainWindow.cpp" line="3958"/>
         <source>Saved %1</source>
         <translation>Enregistré : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4015"/>
+        <location filename="../ui/MainWindow.cpp" line="4018"/>
         <source>Export view (full frame)</source>
         <translation>Exporter la vue (image entière)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4088"/>
+        <location filename="../ui/MainWindow.cpp" line="4091"/>
         <source>PSF measured — %1 channel(s)</source>
         <translation>PSF mesurée — %1 canal(aux)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4148"/>
+        <location filename="../ui/MainWindow.cpp" line="4151"/>
         <source>Measuring PSF — channel 1/%1: detecting stars…</source>
         <translation>Mesure de la PSF — canal 1/%1 : détection des étoiles…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4161"/>
+        <location filename="../ui/MainWindow.cpp" line="4164"/>
         <source>Measuring PSF — channel %1/%2: %3 / %4 stars</source>
         <translation>Mesure de la PSF — canal %1/%2 : %3 / %4 étoiles</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4162"/>
+        <location filename="../ui/MainWindow.cpp" line="4165"/>
         <source>Measuring PSF — channel %1/%2: detecting stars…</source>
         <translation>Mesure de la PSF — canal %1/%2 : détection des étoiles…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4183"/>
+        <location filename="../ui/MainWindow.cpp" line="4186"/>
         <source>PSF measurement</source>
         <translation>Mesure de la PSF</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4192"/>
+        <location filename="../ui/MainWindow.cpp" line="4195"/>
         <source>
 plate scale %1&quot;/px (from the plate solution)</source>
         <translation>
 échelle %1&quot;/px (de la solution astrométrique)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4193"/>
+        <location filename="../ui/MainWindow.cpp" line="4196"/>
         <source>
 no plate solution — pixels only</source>
         <translation>
 pas de solution astrométrique — pixels seulement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4201"/>
+        <location filename="../ui/MainWindow.cpp" line="4204"/>
         <source>channel %1</source>
         <translation>canal %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4207"/>
+        <location filename="../ui/MainWindow.cpp" line="4210"/>
         <source>stars:</source>
         <translation>étoiles :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4210"/>
+        <location filename="../ui/MainWindow.cpp" line="4213"/>
         <source>no label</source>
         <translation>sans étiquette</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4211"/>
+        <location filename="../ui/MainWindow.cpp" line="4214"/>
         <source>FWHM</source>
         <translation>FWHM</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4212"/>
+        <location filename="../ui/MainWindow.cpp" line="4215"/>
         <source>eccentricity</source>
         <translation>excentricité</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4213"/>
+        <location filename="../ui/MainWindow.cpp" line="4216"/>
         <source>FWHM + ecc</source>
         <translation>FWHM + exc</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4215"/>
+        <location filename="../ui/MainWindow.cpp" line="4218"/>
         <source>Annotate stars</source>
         <translation>Annoter les étoiles</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4226"/>
+        <location filename="../ui/MainWindow.cpp" line="4229"/>
         <source>Close</source>
         <translation>Fermer</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4235"/>
+        <location filename="../ui/MainWindow.cpp" line="4238"/>
         <source>PSF results belong to another image — measure again</source>
         <translation>Les résultats PSF appartiennent à une autre image — mesurez à nouveau</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4270"/>
+        <location filename="../ui/MainWindow.cpp" line="4273"/>
         <source>annotate PSF stars</source>
         <translation>annoter les étoiles PSF</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4271"/>
+        <location filename="../ui/MainWindow.cpp" line="4274"/>
         <source>%1 fitted stars annotated (ellipse = fitted shape ×2.5)</source>
         <translation>%1 étoiles ajustées annotées (ellipse = forme ajustée ×2,5)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4285"/>
+        <location filename="../ui/MainWindow.cpp" line="4288"/>
         <source>Measuring the PSF first — it is the deconvolution kernel…</source>
         <translation>Mesure de la PSF d&apos;abord — c&apos;est le noyau de déconvolution…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4293"/>
+        <location filename="../ui/MainWindow.cpp" line="4296"/>
         <source>Too few fitted stars to define a kernel</source>
         <translation>Trop peu d&apos;étoiles ajustées pour définir un noyau</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4302"/>
+        <location filename="../ui/MainWindow.cpp" line="4305"/>
         <source>channel %1: FWHM %2 × %3, PA %4°, β %5  (%6 stars)
 </source>
         <translation>canal %1 : FWHM %2 × %3, AP %4°, β %5  (%6 étoiles)
 </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4313"/>
+        <location filename="../ui/MainWindow.cpp" line="4316"/>
         <source>Deconvolve to target PSF</source>
         <translation>Déconvoluer vers une PSF cible</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4315"/>
+        <location filename="../ui/MainWindow.cpp" line="4318"/>
         <source>Measured stellar PSF (the kernel):
 %1
 The result is a NEW list entry — the linear data, deconvolved by the
@@ -1879,12 +1884,12 @@ de MCS). Pertinent sur des données LINÉAIRES. La PSF livrée est vérifiée
 en réajustant les étoiles du résultat.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4331"/>
+        <location filename="../ui/MainWindow.cpp" line="4334"/>
         <source> px</source>
         <translation> px</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4334"/>
+        <location filename="../ui/MainWindow.cpp" line="4337"/>
         <source>The declared FWHM of the result&apos;s round Gaussian PSF.
 About 25% below the measured width is reliably reachable;
 more aggressive targets need the regularization to keep up
@@ -1895,17 +1900,17 @@ des cibles plus agressives exigent que la régularisation suive
 (surveillez le chiffre livré).</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4338"/>
+        <location filename="../ui/MainWindow.cpp" line="4341"/>
         <source>Target FWHM:</source>
         <translation>FWHM cible :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4340"/>
+        <location filename="../ui/MainWindow.cpp" line="4343"/>
         <source>automatic (largest honouring the target ±5%)</source>
         <translation>automatique (le plus grand honorant la cible à ±5 %)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4343"/>
+        <location filename="../ui/MainWindow.cpp" line="4346"/>
         <source>MCS regularization λ. Automatic walks a descending ladder and
 keeps the LARGEST λ whose delivered FWHM (measured on a central
 crop) honours the declaration — contract-first, per channel.</source>
@@ -1914,22 +1919,22 @@ le PLUS GRAND λ dont la FWHM livrée (mesurée sur un recadrage central)
 honore la déclaration — contrat d&apos;abord, par canal.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4346"/>
+        <location filename="../ui/MainWindow.cpp" line="4349"/>
         <source>Regularization:</source>
         <translation>Régularisation :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4348"/>
+        <location filename="../ui/MainWindow.cpp" line="4351"/>
         <source>none (pure MCS filter)</source>
         <translation>aucun (filtre MCS pur)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4349"/>
+        <location filename="../ui/MainWindow.cpp" line="4352"/>
         <source>starlet (RED)</source>
         <translation>starlet (RED)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4350"/>
+        <location filename="../ui/MainWindow.cpp" line="4353"/>
         <source>Noise prior. The pure filter amplifies signal and noise alike by a
 known factor; the starlet-RED option iterates a sparse-wavelet
 denoiser INSIDE the inversion (Regularization by Denoising) so the
@@ -1944,22 +1949,22 @@ une hypothèse déclarée — parcimonie dans le repère starlet — pas des
 poids appris, et la PSF livrée reste vérifiée sur le résultat.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4356"/>
+        <location filename="../ui/MainWindow.cpp" line="4359"/>
         <source>Noise prior:</source>
         <translation>A priori de bruit :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4360"/>
+        <location filename="../ui/MainWindow.cpp" line="4363"/>
         <source>RED iterations:</source>
         <translation>Itérations RED :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4362"/>
+        <location filename="../ui/MainWindow.cpp" line="4365"/>
         <source>automatic (strongest honouring the target ±5%)</source>
         <translation>automatique (le plus fort honorant la cible à ±5 %)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4365"/>
+        <location filename="../ui/MainWindow.cpp" line="4368"/>
         <source>RED prior weight μ — plays λ&apos;s role: stronger is quieter and
 safer, weaker is sharper. Automatic keeps the STRONGEST μ whose
 delivered FWHM honours the declaration, per channel.</source>
@@ -1968,17 +1973,17 @@ et plus sûr, plus faible = plus net. « Automatique » garde le PLUS
 FORT μ dont la FWHM livrée honore la déclaration, par canal.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4368"/>
+        <location filename="../ui/MainWindow.cpp" line="4371"/>
         <source>Prior weight:</source>
         <translation>Poids a priori :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4377"/>
+        <location filename="../ui/MainWindow.cpp" line="4380"/>
         <source>Protect saturated cores (keep input pixels, feathered)</source>
         <translation>Protéger les cœurs saturés (pixels d&apos;entrée conservés, avec fondu)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4379"/>
+        <location filename="../ui/MainWindow.cpp" line="4382"/>
         <source>Clipped stellar cores are nonlinear — no longer truth convolved
 with the PSF — so deconvolving them rings. The brightest 0.005%
 of pixels keep their input values.</source>
@@ -1987,83 +1992,83 @@ convoluée par la PSF — et leur déconvolution produit des anneaux.
 Les 0,005 % de pixels les plus brillants gardent leurs valeurs d&apos;entrée.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4496"/>
+        <location filename="../ui/MainWindow.cpp" line="4499"/>
         <source> · saturated cores protected</source>
         <translation> · cœurs saturés protégés</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4506"/>
+        <location filename="../ui/MainWindow.cpp" line="4509"/>
         <source>(too few stars)</source>
         <translation>(trop peu d&apos;étoiles)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4519"/>
+        <location filename="../ui/MainWindow.cpp" line="4522"/>
         <source>Deconvolved to %1 — delivered %2 — Save Data As… keeps it</source>
         <translation>Déconvolué vers %1 — livré %2 — Enregistrer les données sous… le conserve</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4520"/>
+        <location filename="../ui/MainWindow.cpp" line="4523"/>
         <source>(unverified)</source>
         <translation>(non vérifié)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4530"/>
+        <location filename="../ui/MainWindow.cpp" line="4533"/>
         <source>Deconvolving — channel 1/%1: calibrating regularization…</source>
         <translation>Déconvolution — canal 1/%1 : calibration de la régularisation…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4541"/>
+        <location filename="../ui/MainWindow.cpp" line="4544"/>
         <source>Deconvolving — channel %1/%2: calibrating regularization…</source>
         <translation>Déconvolution — canal %1/%2 : calibration de la régularisation…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4542"/>
+        <location filename="../ui/MainWindow.cpp" line="4545"/>
         <source>Deconvolving — channel %1/%2: filtering…</source>
         <translation>Déconvolution — canal %1/%2 : filtrage…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4643"/>
+        <location filename="../ui/MainWindow.cpp" line="4646"/>
         <source>Querying Gaia DR3…</source>
         <translation>Interrogation de Gaia DR3…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4654"/>
-        <location filename="../ui/MainWindow.cpp" line="4767"/>
+        <location filename="../ui/MainWindow.cpp" line="4657"/>
+        <location filename="../ui/MainWindow.cpp" line="4770"/>
         <source>Gaia DR3 unreachable — offline? (%1)</source>
         <translation>Gaia DR3 injoignable — hors ligne ? (%1)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4658"/>
+        <location filename="../ui/MainWindow.cpp" line="4661"/>
         <source>No Gaia DR3 source here</source>
         <translation>Aucune source Gaia DR3 ici</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4670"/>
+        <location filename="../ui/MainWindow.cpp" line="4673"/>
         <source>Gaia DR3 %1 — sep %2″</source>
         <translation>Gaia DR3 %1 — sép. %2″</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4671"/>
+        <location filename="../ui/MainWindow.cpp" line="4674"/>
         <source> · G %1</source>
         <translation> · G %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4672"/>
+        <location filename="../ui/MainWindow.cpp" line="4675"/>
         <source> · BP−RP %1</source>
         <translation> · BP−RP %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4674"/>
+        <location filename="../ui/MainWindow.cpp" line="4677"/>
         <source> · plx %1 mas (≈%2 pc)</source>
         <translation> · plx %1 mas (≈%2 pc)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4676"/>
+        <location filename="../ui/MainWindow.cpp" line="4679"/>
         <source> · epoch %1</source>
         <translation> · époque %1</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="4677"/>
+        <location filename="../ui/MainWindow.cpp" line="4680"/>
         <source> · %n source(s) in cone</source>
         <translation>
             <numerusform> · %n source dans le cône</numerusform>
@@ -2071,85 +2076,85 @@ Les 0,005 % de pixels les plus brillants gardent leurs valeurs d&apos;entrée.</
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4688"/>
+        <location filename="../ui/MainWindow.cpp" line="4691"/>
         <source>DR3 …%1 · G %2</source>
         <translation>DR3 …%1 · G %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4695"/>
+        <location filename="../ui/MainWindow.cpp" line="4698"/>
         <source>Gaia identify</source>
         <translation>identification Gaia</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4707"/>
+        <location filename="../ui/MainWindow.cpp" line="4710"/>
         <source>Gaia overlay needs an astrometric solution</source>
         <translation>La superposition Gaia exige une solution astrométrique</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4717"/>
+        <location filename="../ui/MainWindow.cpp" line="4720"/>
         <source>Sources (brightest first):</source>
         <translation>Sources (les plus brillantes d&apos;abord) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4721"/>
+        <location filename="../ui/MainWindow.cpp" line="4724"/>
         <source>How many of the brightest sources get a G-magnitude label
 (all get a marker; labels clutter fast).</source>
         <translation>Combien des sources les plus brillantes reçoivent une étiquette de
 magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4723"/>
+        <location filename="../ui/MainWindow.cpp" line="4726"/>
         <source>Label brightest:</source>
         <translation>Étiqueter les plus brillantes :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4758"/>
+        <location filename="../ui/MainWindow.cpp" line="4761"/>
         <source>Querying Gaia DR3 (field cone, %1 sources)…</source>
         <translation>Interrogation de Gaia DR3 (cône de champ, %1 sources)…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4797"/>
+        <location filename="../ui/MainWindow.cpp" line="4800"/>
         <source>Gaia DR3 overlay</source>
         <translation>superposition Gaia DR3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4800"/>
+        <location filename="../ui/MainWindow.cpp" line="4803"/>
         <source>, epoch %1</source>
         <translation>, époque %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4815"/>
+        <location filename="../ui/MainWindow.cpp" line="4818"/>
         <source>Export region</source>
         <translation>Exporter la région</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4815"/>
+        <location filename="../ui/MainWindow.cpp" line="4818"/>
         <source>Nothing is visible to export.</source>
         <translation>Rien de visible à exporter.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4825"/>
-        <location filename="../ui/MainWindow.cpp" line="4834"/>
+        <location filename="../ui/MainWindow.cpp" line="4828"/>
+        <location filename="../ui/MainWindow.cpp" line="4837"/>
         <source>Export zoomed region</source>
         <translation>Exporter la région zoomée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5724"/>
+        <location filename="../ui/MainWindow.cpp" line="5727"/>
         <source>Sky patch unusable — too small or not finite</source>
         <translation>Zone de ciel inutilisable — trop petite ou non finie</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5763"/>
+        <location filename="../ui/MainWindow.cpp" line="5766"/>
         <source>Sky patch unusable — brighter than the white point or too small</source>
         <translation>Zone de ciel inutilisable — plus brillante que le point blanc ou trop petite</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5923"/>
+        <location filename="../ui/MainWindow.cpp" line="5926"/>
         <source>Identify Star in Gaia DR3 — %1</source>
         <translation>Identifier l&apos;étoile dans Gaia DR3 — %1</translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="6202"/>
+        <location filename="../ui/MainWindow.cpp" line="6205"/>
         <source>Match from WCS: the two fields barely overlap on the sky (%n common sample(s))</source>
         <translation>
             <numerusform>Appariement WCS : les deux champs se recouvrent à peine sur le ciel (%n échantillon commun)</numerusform>
@@ -2157,7 +2162,7 @@ magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../ui/MainWindow.cpp" line="6212"/>
+        <location filename="../ui/MainWindow.cpp" line="6215"/>
         <source>Views matched from their plate solutions — scale ×%1, rotation %2°, %n overlap sample(s), affine residual %3 px rms</source>
         <translation>
             <numerusform>Vues appariées d&apos;après leurs solutions astrométriques — échelle ×%1, rotation %2°, %n échantillon de recouvrement, résidu affine %3 px rms</numerusform>
@@ -2165,86 +2170,86 @@ magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</
         </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6224"/>
+        <location filename="../ui/MainWindow.cpp" line="6227"/>
         <source>Match needs two views with images — split the view first</source>
         <translation>L&apos;appariement demande deux vues avec images — divisez d&apos;abord la vue</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6243"/>
+        <location filename="../ui/MainWindow.cpp" line="6246"/>
         <source>No first pair yet — M picks the first feature pair</source>
         <translation>Pas encore de première paire — M pointe la première paire de détails</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6253"/>
+        <location filename="../ui/MainWindow.cpp" line="6256"/>
         <source>Match (2nd pair): click a DIFFERENT feature in one view, then the same feature in the other — Esc cancels</source>
         <translation>Appariement (2e paire) : cliquez un détail DIFFÉRENT dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6254"/>
+        <location filename="../ui/MainWindow.cpp" line="6257"/>
         <source>Match: click a feature (star) in one view, then the same feature in the other — Esc cancels</source>
         <translation>Appariement : cliquez un détail (étoile) dans une vue, puis le même dans l&apos;autre — Échap annule</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6264"/>
+        <location filename="../ui/MainWindow.cpp" line="6267"/>
         <source>Match cancelled</source>
         <translation>Appariement annulé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6304"/>
+        <location filename="../ui/MainWindow.cpp" line="6307"/>
         <source>Second pair must use the same two views as the first — match restarted</source>
         <translation>La seconde paire doit utiliser les deux mêmes vues que la première — appariement relancé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6341"/>
+        <location filename="../ui/MainWindow.cpp" line="6344"/>
         <source>translation snapped (scale/rotation as aligned by eye) — Shift+M adds a second pair for scale+rotation</source>
         <translation>translation calée (échelle/rotation telles qu&apos;alignées à l&apos;œil) — Maj+M ajoute une seconde paire pour échelle+rotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6350"/>
+        <location filename="../ui/MainWindow.cpp" line="6353"/>
         <source>Views matched — %1</source>
         <translation>Vues appariées — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6278"/>
+        <location filename="../ui/MainWindow.cpp" line="6281"/>
         <source>First feature marked — now click the SAME feature in another view (Esc cancels)</source>
         <translation>Premier détail marqué — cliquez maintenant le MÊME détail dans une autre vue (Échap annule)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6312"/>
+        <location filename="../ui/MainWindow.cpp" line="6315"/>
         <source>Second feature is the same point as the first — pick a different one</source>
         <translation>Le second détail est le même point que le premier — choisissez-en un autre</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6324"/>
+        <location filename="../ui/MainWindow.cpp" line="6327"/>
         <source>scale ×%1, rotation %2°, translation snapped</source>
         <translation>échelle ×%1, rotation %2°, translation calée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3796"/>
+        <location filename="../ui/MainWindow.cpp" line="3799"/>
         <source>PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)</source>
         <translation>PNG (*.png);;JPEG (*.jpg);;TIFF (*.tiff);;WebP (*.webp)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3774"/>
-        <location filename="../ui/MainWindow.cpp" line="3807"/>
+        <location filename="../ui/MainWindow.cpp" line="3777"/>
+        <location filename="../ui/MainWindow.cpp" line="3810"/>
         <source>Quality (1–100):</source>
         <translation>Qualité (1–100) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3772"/>
-        <location filename="../ui/MainWindow.cpp" line="3805"/>
+        <location filename="../ui/MainWindow.cpp" line="3775"/>
+        <location filename="../ui/MainWindow.cpp" line="3808"/>
         <source>8-bit per channel</source>
         <translation>8 bits par canal</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3772"/>
-        <location filename="../ui/MainWindow.cpp" line="3805"/>
+        <location filename="../ui/MainWindow.cpp" line="3775"/>
+        <location filename="../ui/MainWindow.cpp" line="3808"/>
         <source>16-bit per channel</source>
         <translation>16 bits par canal</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3771"/>
-        <location filename="../ui/MainWindow.cpp" line="3803"/>
+        <location filename="../ui/MainWindow.cpp" line="3774"/>
+        <location filename="../ui/MainWindow.cpp" line="3806"/>
         <source>Pixel depth:</source>
         <translation>Profondeur des pixels :</translation>
     </message>
@@ -2255,7 +2260,7 @@ magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</
     </message>
     <message numerus="yes">
         <location filename="../ui/MainWindow.cpp" line="223"/>
-        <location filename="../ui/MainWindow.cpp" line="1890"/>
+        <location filename="../ui/MainWindow.cpp" line="1893"/>
         <source>%n image(s) checked (keep)</source>
         <translation>
             <numerusform>%n image cochée (à garder)</numerusform>
@@ -2264,7 +2269,7 @@ magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</
     </message>
     <message numerus="yes">
         <location filename="../ui/MainWindow.cpp" line="224"/>
-        <location filename="../ui/MainWindow.cpp" line="1891"/>
+        <location filename="../ui/MainWindow.cpp" line="1894"/>
         <source>%n image(s) unchecked</source>
         <translation>
             <numerusform>%n image décochée</numerusform>
@@ -2292,22 +2297,22 @@ magnitude G (toutes reçoivent un marqueur ; les étiquettes encombrent vite).</
         <translation>Appariement : ajouter une seconde paire (échelle+rotation)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1387"/>
+        <location filename="../ui/MainWindow.cpp" line="1390"/>
         <source>Neutralize &amp;Background from Sky Patch</source>
         <translation>Neutraliser le &amp;fond depuis une zone de ciel</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="1390"/>
+        <location filename="../ui/MainWindow.cpp" line="1393"/>
         <source>Drag a small rectangle over empty sky — the background becomes a neutral grey at its current brightness</source>
         <translation>Tracez un petit rectangle sur du ciel vide — le fond devient un gris neutre à sa luminosité actuelle</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2798"/>
+        <location filename="../ui/MainWindow.cpp" line="2801"/>
         <source>Also fit the cross-channel colour mix</source>
         <translation>Ajuster aussi le mélange couleur inter-canaux</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2799"/>
+        <location filename="../ui/MainWindow.cpp" line="2802"/>
         <source>A second stage fitting a full 3×3 colour mixer, alternated
 with the curves — the cross-channel part per-channel curves
 cannot express (a starless pair&apos;s transport is mostly exactly
@@ -2319,37 +2324,37 @@ par canal ne peuvent pas exprimer (le transport d&apos;une paire sans
 les deux ne sont qu&apos;à un Annuler l&apos;un de l&apos;autre.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3118"/>
+        <location filename="../ui/MainWindow.cpp" line="3121"/>
         <source>Orientation reset everywhere — data, view links and navigation as freshly read</source>
         <translation>Orientation réinitialisée partout — données, liaisons de vues et navigation comme à une première lecture</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3310"/>
+        <location filename="../ui/MainWindow.cpp" line="3313"/>
         <source>Open failed: %1</source>
         <translation>Échec de l&apos;ouverture : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3537"/>
+        <location filename="../ui/MainWindow.cpp" line="3540"/>
         <source>PixInsight display function applied (rebased to the data range)</source>
         <translation>Fonction d&apos;affichage PixInsight appliquée (recalée sur la plage des données)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3538"/>
+        <location filename="../ui/MainWindow.cpp" line="3541"/>
         <source>PixInsight display function applied</source>
         <translation>Fonction d&apos;affichage PixInsight appliquée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3540"/>
+        <location filename="../ui/MainWindow.cpp" line="3543"/>
         <source> — unlinked STF: Shift+U preserves calibrated colour</source>
         <translation> — STF non liée : Maj+U préserve la couleur étalonnée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="3541"/>
+        <location filename="../ui/MainWindow.cpp" line="3544"/>
         <source> — Reset (R) for the plain ramp</source>
         <translation> — Réinitialiser (R) pour la rampe simple</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4216"/>
+        <location filename="../ui/MainWindow.cpp" line="4219"/>
         <source>Drop rotated-ellipse annotations on the brightest fitted stars
 (axes proportional to the fitted FWHM, angle = the fitted PA) —
 the elongation pattern becomes visible on the image, optionally
@@ -2360,32 +2365,32 @@ l&apos;angle ajusté) — le motif d&apos;élongation devient visible sur l&apos
 avec les nombres de chaque étoile si demandé. Une seule annulation.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4492"/>
+        <location filename="../ui/MainWindow.cpp" line="4495"/>
         <source>Deconvolved to target PSF %1 (round Gaussian) · %2%3</source>
         <translation>Déconvolué vers la PSF cible %1 (gaussienne circulaire) · %2%3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4494"/>
+        <location filename="../ui/MainWindow.cpp" line="4497"/>
         <source>MCS + starlet-RED prior (%1 iterations)</source>
         <translation>MCS + a priori starlet-RED (%1 itérations)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4495"/>
+        <location filename="../ui/MainWindow.cpp" line="4498"/>
         <source>MCS single-filter transform</source>
         <translation>transformée à filtre unique de MCS</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4500"/>
+        <location filename="../ui/MainWindow.cpp" line="4503"/>
         <source>channel %1: kernel Moffat %2 × %3 @ PA %4°, β %5 · %6 %7 · delivered %8</source>
         <translation>canal %1 : noyau Moffat %2 × %3 @ AP %4°, β %5 · %6 %7 · livré %8</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4711"/>
+        <location filename="../ui/MainWindow.cpp" line="4714"/>
         <source>Gaia DR3 overlay — visible region</source>
         <translation>Superposition Gaia DR3 — région visible</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4725"/>
+        <location filename="../ui/MainWindow.cpp" line="4728"/>
         <source>Covers the region currently on screen — zoom out first to cover
 the whole frame. Sources are drawn at their catalogue positions,
 propagated to the frame&apos;s DATE-OBS epoch — a systematic offset
@@ -2398,166 +2403,166 @@ systématique avec les étoiles, c&apos;est la solution astrométrique qui
 parle. Une étape d&apos;annulation retire la superposition.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4792"/>
+        <location filename="../ui/MainWindow.cpp" line="4795"/>
         <source>Gaia DR3: no sources landed inside the visible region</source>
         <translation>Gaia DR3 : aucune source ne tombe dans la région visible</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4798"/>
+        <location filename="../ui/MainWindow.cpp" line="4801"/>
         <source>Gaia DR3 overlay: %1 sources in view (%2 returned)%3</source>
         <translation>Superposition Gaia DR3 : %1 sources à l&apos;écran (%2 renvoyées)%3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4852"/>
+        <location filename="../ui/MainWindow.cpp" line="4855"/>
         <source>16-bit render failed.</source>
         <translation>Échec du rendu 16 bits.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4860"/>
+        <location filename="../ui/MainWindow.cpp" line="4863"/>
         <source>Exported %1 (%2×%3%4)</source>
         <translation>Exporté %1 (%2×%3%4)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4862"/>
+        <location filename="../ui/MainWindow.cpp" line="4865"/>
         <source> · 16-bit</source>
         <translation> · 16 bits</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4892"/>
+        <location filename="../ui/MainWindow.cpp" line="4895"/>
         <source>Stellarium not reachable — enable its Remote Control plugin (port 8090)</source>
         <translation>Stellarium injoignable — activez son greffon Remote Control (port 8090)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4902"/>
+        <location filename="../ui/MainWindow.cpp" line="4905"/>
         <source>Stellarium pointed at the target</source>
         <translation>Stellarium pointé sur la cible</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5280"/>
+        <location filename="../ui/MainWindow.cpp" line="5283"/>
         <source>Click an annotation first to copy it</source>
         <translation>Cliquez d&apos;abord une annotation pour la copier</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5287"/>
+        <location filename="../ui/MainWindow.cpp" line="5290"/>
         <source>Copied %1</source>
         <translation>%1 copiée</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5288"/>
-        <location filename="../ui/MainWindow.cpp" line="5858"/>
-        <location filename="../ui/MainWindow.cpp" line="5871"/>
+        <location filename="../ui/MainWindow.cpp" line="5291"/>
+        <location filename="../ui/MainWindow.cpp" line="5861"/>
+        <location filename="../ui/MainWindow.cpp" line="5874"/>
         <source>annotation</source>
         <translation>annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5305"/>
-        <location filename="../ui/MainWindow.cpp" line="6038"/>
+        <location filename="../ui/MainWindow.cpp" line="5308"/>
+        <location filename="../ui/MainWindow.cpp" line="6041"/>
         <source>paste annotation</source>
         <translation>coller l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5320"/>
-        <location filename="../ui/MainWindow.cpp" line="5986"/>
+        <location filename="../ui/MainWindow.cpp" line="5323"/>
+        <location filename="../ui/MainWindow.cpp" line="5989"/>
         <source>delete annotation</source>
         <translation>supprimer l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5330"/>
+        <location filename="../ui/MainWindow.cpp" line="5333"/>
         <source>Edit annotation</source>
         <translation>Modifier l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5342"/>
-        <location filename="../ui/MainWindow.cpp" line="5971"/>
+        <location filename="../ui/MainWindow.cpp" line="5345"/>
+        <location filename="../ui/MainWindow.cpp" line="5974"/>
         <source>Annotation colour</source>
         <translation>Couleur de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5346"/>
-        <location filename="../ui/MainWindow.cpp" line="5810"/>
-        <location filename="../ui/MainWindow.cpp" line="5960"/>
+        <location filename="../ui/MainWindow.cpp" line="5349"/>
+        <location filename="../ui/MainWindow.cpp" line="5813"/>
+        <location filename="../ui/MainWindow.cpp" line="5963"/>
         <source>Text:</source>
         <translation>Texte :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5349"/>
+        <location filename="../ui/MainWindow.cpp" line="5352"/>
         <source>Colour:</source>
         <translation>Couleur :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5367"/>
+        <location filename="../ui/MainWindow.cpp" line="5370"/>
         <source>edit annotation</source>
         <translation>modifier l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5387"/>
-        <location filename="../ui/MainWindow.cpp" line="5402"/>
+        <location filename="../ui/MainWindow.cpp" line="5390"/>
+        <location filename="../ui/MainWindow.cpp" line="5405"/>
         <source>Import SExtractor catalog</source>
         <translation>Importer un catalogue SExtractor</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5388"/>
+        <location filename="../ui/MainWindow.cpp" line="5391"/>
         <source>SExtractor catalogs (*.cat *.txt);;All files (*)</source>
         <translation>Catalogues SExtractor (*.cat *.txt);;Tous les fichiers (*)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5396"/>
+        <location filename="../ui/MainWindow.cpp" line="5399"/>
         <source>Catalog has no X_IMAGE/Y_IMAGE columns — add them to default.param.</source>
         <translation>Le catalogue n&apos;a pas de colonnes X_IMAGE/Y_IMAGE — ajoutez-les à default.param.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5404"/>
+        <location filename="../ui/MainWindow.cpp" line="5407"/>
         <source>%1 source(s), %2</source>
         <translation>%1 source(s), %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5407"/>
+        <location filename="../ui/MainWindow.cpp" line="5410"/>
         <source>Ellipse scale × A/B_IMAGE:</source>
         <translation>Échelle des ellipses × A/B_IMAGE :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5413"/>
+        <location filename="../ui/MainWindow.cpp" line="5416"/>
         <source>Label with:</source>
         <translation>Étiqueter avec :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5415"/>
+        <location filename="../ui/MainWindow.cpp" line="5418"/>
         <source>None</source>
         <translation>Aucun</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5420"/>
+        <location filename="../ui/MainWindow.cpp" line="5423"/>
         <source>Skip flagged sources (FLAGS ≠ 0)</source>
         <translation>Ignorer les sources marquées (FLAGS ≠ 0)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5423"/>
+        <location filename="../ui/MainWindow.cpp" line="5426"/>
         <source>Colour stars gold (CLASS_STAR &gt; 0.9)</source>
         <translation>Colorer les étoiles en or (CLASS_STAR &gt; 0,9)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5465"/>
+        <location filename="../ui/MainWindow.cpp" line="5468"/>
         <source>import SExtractor catalog</source>
         <translation>importer un catalogue SExtractor</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5466"/>
+        <location filename="../ui/MainWindow.cpp" line="5469"/>
         <source>Imported %1 source(s)%2</source>
         <translation>%1 source(s) importée(s)%2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5467"/>
+        <location filename="../ui/MainWindow.cpp" line="5470"/>
         <source>, skipped %1 flagged</source>
         <translation>, %1 marquée(s) ignorée(s)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2541"/>
-        <location filename="../ui/MainWindow.cpp" line="5473"/>
+        <location filename="../ui/MainWindow.cpp" line="2544"/>
+        <location filename="../ui/MainWindow.cpp" line="5476"/>
         <source>Unsaved annotations</source>
         <translation>Annotations non enregistrées</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5474"/>
+        <location filename="../ui/MainWindow.cpp" line="5477"/>
         <source>Annotations on %1 image(s) have not been saved.
 Use Save Annotations… (right-click the image) to keep them.
 
@@ -2568,270 +2573,270 @@ Utilisez Enregistrer les annotations… (clic droit sur l&apos;image) pour les c
 Quitter quand même ?</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5550"/>
+        <location filename="../ui/MainWindow.cpp" line="5553"/>
         <source>Saved %1 annotation(s)%2 to %3</source>
         <translation>%1 annotation(s)%2 enregistrée(s) dans %3</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5552"/>
-        <location filename="../ui/MainWindow.cpp" line="5632"/>
+        <location filename="../ui/MainWindow.cpp" line="5555"/>
+        <location filename="../ui/MainWindow.cpp" line="5635"/>
         <source> + adjustments</source>
         <translation> + ajustements</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5573"/>
         <location filename="../ui/MainWindow.cpp" line="5576"/>
+        <location filename="../ui/MainWindow.cpp" line="5579"/>
         <source>Save annotations as</source>
         <translation>Enregistrer les annotations sous</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5573"/>
-        <location filename="../ui/MainWindow.cpp" line="5584"/>
+        <location filename="../ui/MainWindow.cpp" line="5576"/>
+        <location filename="../ui/MainWindow.cpp" line="5587"/>
         <source>Annotations (*_annotation.json *.json)</source>
         <translation>Annotations (*_annotation.json *.json)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5577"/>
+        <location filename="../ui/MainWindow.cpp" line="5580"/>
         <source>That is the image&apos;s default sidecar — plain Save Annotations writes it directly.</source>
         <translation>C&apos;est le fichier annexe par défaut de l&apos;image — Enregistrer les annotations l&apos;écrit directement.</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5584"/>
+        <location filename="../ui/MainWindow.cpp" line="5587"/>
         <source>Load annotations</source>
         <translation>Charger des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5592"/>
-        <location filename="../ui/MainWindow.cpp" line="5598"/>
-        <location filename="../ui/MainWindow.cpp" line="5612"/>
+        <location filename="../ui/MainWindow.cpp" line="5595"/>
+        <location filename="../ui/MainWindow.cpp" line="5601"/>
+        <location filename="../ui/MainWindow.cpp" line="5615"/>
         <source>Load failed</source>
         <translation>Échec du chargement</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5598"/>
+        <location filename="../ui/MainWindow.cpp" line="5601"/>
         <source>JSON error: %1</source>
         <translation>Erreur JSON : %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5609"/>
+        <location filename="../ui/MainWindow.cpp" line="5612"/>
         <source>Loaded display adjustments (no annotations in file)</source>
         <translation>Ajustements d&apos;affichage chargés (aucune annotation dans le fichier)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5612"/>
+        <location filename="../ui/MainWindow.cpp" line="5615"/>
         <source>No annotations in file</source>
         <translation>Aucune annotation dans le fichier</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5628"/>
+        <location filename="../ui/MainWindow.cpp" line="5631"/>
         <source>load annotations</source>
         <translation>charger des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5630"/>
+        <location filename="../ui/MainWindow.cpp" line="5633"/>
         <source>Loaded %1 annotation(s)%2</source>
         <translation>%1 annotation(s) chargée(s)%2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5665"/>
+        <location filename="../ui/MainWindow.cpp" line="5668"/>
         <source>Clear List</source>
         <translation>Vider la liste</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5766"/>
+        <location filename="../ui/MainWindow.cpp" line="5769"/>
         <source>Background neutralized — %1 channel(s) equalized at output %2</source>
         <translation>Fond neutralisé — %1 canal(aux) égalisé(s) au niveau %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5773"/>
+        <location filename="../ui/MainWindow.cpp" line="5776"/>
         <source>Ellipse annotation</source>
         <translation>Annotation ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5774"/>
-        <location filename="../ui/MainWindow.cpp" line="5792"/>
+        <location filename="../ui/MainWindow.cpp" line="5777"/>
+        <location filename="../ui/MainWindow.cpp" line="5795"/>
         <source>Label (optional):</source>
         <translation>Étiquette (facultative) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5785"/>
+        <location filename="../ui/MainWindow.cpp" line="5788"/>
         <source>add ellipse</source>
         <translation>ajouter une ellipse</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5791"/>
+        <location filename="../ui/MainWindow.cpp" line="5794"/>
         <source>Line annotation</source>
         <translation>Annotation segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5803"/>
+        <location filename="../ui/MainWindow.cpp" line="5806"/>
         <source>add line</source>
         <translation>ajouter un segment</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5809"/>
+        <location filename="../ui/MainWindow.cpp" line="5812"/>
         <source>Text annotation</source>
         <translation>Annotation texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5822"/>
+        <location filename="../ui/MainWindow.cpp" line="5825"/>
         <source>add text</source>
         <translation>ajouter un texte</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5832"/>
+        <location filename="../ui/MainWindow.cpp" line="5835"/>
         <source>Copy RA/Dec — %1 %2</source>
         <translation>Copier AD/Déc — %1 %2</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5833"/>
+        <location filename="../ui/MainWindow.cpp" line="5836"/>
         <source>Copy RA/Dec (no astrometric solution)</source>
         <translation>Copier AD/Déc (pas de solution astrométrique)</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5848"/>
+        <location filename="../ui/MainWindow.cpp" line="5851"/>
         <source>Copy Pixel Value</source>
         <translation>Copier la valeur du pixel</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5859"/>
-        <location filename="../ui/MainWindow.cpp" line="5872"/>
+        <location filename="../ui/MainWindow.cpp" line="5862"/>
+        <location filename="../ui/MainWindow.cpp" line="5875"/>
         <source>“%1”</source>
         <translation>« %1 »</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5860"/>
+        <location filename="../ui/MainWindow.cpp" line="5863"/>
         <source>Edit Text of %1…</source>
         <translation>Modifier le texte de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5861"/>
+        <location filename="../ui/MainWindow.cpp" line="5864"/>
         <source>Change Colour of %1…</source>
         <translation>Changer la couleur de %1…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5862"/>
+        <location filename="../ui/MainWindow.cpp" line="5865"/>
         <source>Delete %1</source>
         <translation>Supprimer %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5873"/>
+        <location filename="../ui/MainWindow.cpp" line="5876"/>
         <source>Copy %1</source>
         <translation>Copier %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5875"/>
+        <location filename="../ui/MainWindow.cpp" line="5878"/>
         <source>Annotate Here…</source>
         <translation>Annoter ici…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5877"/>
+        <location filename="../ui/MainWindow.cpp" line="5880"/>
         <source>Paste Annotation Here</source>
         <translation>Coller l&apos;annotation ici</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5885"/>
+        <location filename="../ui/MainWindow.cpp" line="5888"/>
         <source>Clear Annotations</source>
         <translation>Effacer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2545"/>
-        <location filename="../ui/MainWindow.cpp" line="5887"/>
+        <location filename="../ui/MainWindow.cpp" line="2548"/>
+        <location filename="../ui/MainWindow.cpp" line="5890"/>
         <source>Save Annotations</source>
         <translation>Enregistrer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5889"/>
+        <location filename="../ui/MainWindow.cpp" line="5892"/>
         <source>Save Annotations As…</source>
         <translation>Enregistrer les annotations sous…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5891"/>
+        <location filename="../ui/MainWindow.cpp" line="5894"/>
         <source>Load Annotations…</source>
         <translation>Charger des annotations…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5892"/>
+        <location filename="../ui/MainWindow.cpp" line="5895"/>
         <source>Invert Annotation Contrast</source>
         <translation>Inverser le contraste des annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5919"/>
+        <location filename="../ui/MainWindow.cpp" line="5922"/>
         <source>Look up in Aladin — %1</source>
         <translation>Consulter dans Aladin — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5920"/>
+        <location filename="../ui/MainWindow.cpp" line="5923"/>
         <source>Identify in SIMBAD — %1</source>
         <translation>Identifier dans SIMBAD — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5922"/>
+        <location filename="../ui/MainWindow.cpp" line="5925"/>
         <source>Point Stellarium Here — %1</source>
         <translation>Pointer Stellarium ici — %1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5925"/>
+        <location filename="../ui/MainWindow.cpp" line="5928"/>
         <source>Gaia DR3 Overlay of Visible Region…</source>
         <translation>Superposition Gaia DR3 de la région visible…</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5930"/>
+        <location filename="../ui/MainWindow.cpp" line="5933"/>
         <source>Zoom to Fit</source>
         <translation>Ajuster à la vue</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5931"/>
+        <location filename="../ui/MainWindow.cpp" line="5934"/>
         <source>Zoom 1:1</source>
         <translation>Zoom 1:1</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5939"/>
+        <location filename="../ui/MainWindow.cpp" line="5942"/>
         <source>Annotate</source>
         <translation>Annoter</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5940"/>
+        <location filename="../ui/MainWindow.cpp" line="5943"/>
         <source>Label for %1 %2:</source>
         <translation>Étiquette pour %1 %2 :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5941"/>
+        <location filename="../ui/MainWindow.cpp" line="5944"/>
         <source>Label for pixel (%1, %2):</source>
         <translation>Étiquette pour le pixel (%1, %2) :</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5953"/>
+        <location filename="../ui/MainWindow.cpp" line="5956"/>
         <source>add annotation</source>
         <translation>ajouter une annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5959"/>
+        <location filename="../ui/MainWindow.cpp" line="5962"/>
         <source>Edit annotation text</source>
         <translation>Modifier le texte de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5966"/>
+        <location filename="../ui/MainWindow.cpp" line="5969"/>
         <source>edit annotation text</source>
         <translation>modifier le texte de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="5977"/>
+        <location filename="../ui/MainWindow.cpp" line="5980"/>
         <source>change annotation colour</source>
         <translation>changer la couleur de l&apos;annotation</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6045"/>
+        <location filename="../ui/MainWindow.cpp" line="6048"/>
         <source>clear annotations</source>
         <translation>effacer les annotations</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6064"/>
+        <location filename="../ui/MainWindow.cpp" line="6067"/>
         <source>(%1, %2)   R %3  G %4  B %5</source>
         <translation>(%1, %2)   R %3  V %4  B %5</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="6067"/>
+        <location filename="../ui/MainWindow.cpp" line="6070"/>
         <source>(%1, %2)   %3</source>
         <translation>(%1, %2)   %3</translation>
     </message>
@@ -3044,21 +3049,21 @@ Modifiable aussi par session dans Image ▸ Dématriçage.</translation>
 <context>
     <name>astro::QObject</name>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4040"/>
+        <location filename="../ui/MainWindow.cpp" line="4043"/>
         <source>only %1 usable stars — no measurement
 </source>
         <translation>seulement %1 étoiles utilisables — pas de mesure
 </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4048"/>
+        <location filename="../ui/MainWindow.cpp" line="4051"/>
         <source>%1 stars | FWHM maj %2, min %3 (geo %4) | ecc %5 @ PA %6° | beta %7
 </source>
         <translation>%1 étoiles | FWHM maj %2, min %3 (géo %4) | ecc %5 @ PA %6° | bêta %7
 </translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="4054"/>
+        <location filename="../ui/MainWindow.cpp" line="4057"/>
         <source>    field map (FWHM px / ecc / PA):
 </source>
         <translation>    carte de champ (FWHM px / ecc / PA) :
@@ -3215,17 +3220,17 @@ puis cochez ⇄ ici pour les lier par calibration à cet alignement.</translatio
         <translation>transformer l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2053"/>
+        <location filename="../ui/MainWindow.cpp" line="2056"/>
         <source>debayer</source>
         <translation>dématriçage</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2055"/>
+        <location filename="../ui/MainWindow.cpp" line="2058"/>
         <source>off</source>
         <translation>désactivé</translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.cpp" line="2056"/>
+        <location filename="../ui/MainWindow.cpp" line="2059"/>
         <source>auto</source>
         <translation>auto</translation>
     </message>

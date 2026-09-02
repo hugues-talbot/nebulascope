@@ -68,10 +68,12 @@ const CommandRef kCommands[] = {
     "Split the view into R rows x C columns (max 5x5) and assign the first\n"
     "R*C list images to the cells in raster order."}},
   {"fn",         {"fn linear|log|asinh|ghs", "Set the stretch transfer function."}},
-  {"autostf",    {"autostf [linked]",
+  {"autostf",    {"autostf [linked|pi]",
     "Automatic stretch from image statistics; 'linked' pools all channels\n"
-    "(preserves colour balance). Use only on LINEAR data - processed masters\n"
-    "look right with 'reset'."}},
+    "(preserves colour balance); 'pi' is PixInsight's STFAutoStretch exactly\n"
+    "(clip at median - 2.8 x 1.4826 x MAD, background to 0.25, no floors) -\n"
+    "the right choice for narrowband LINEAR masters. Use only on LINEAR\n"
+    "data - processed masters look right with 'reset'."}},
   {"reset",      {"reset", "Plain min-max linear window; clears adjustments."}},
   {"stfall",     {"stfall",
     "Share the displayed stretch (+adjustments) with every image in the\n"
@@ -452,6 +454,8 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         if (m_w->m_curStats.empty()) { err = "no image shown"; return false; }
         if (t.size() > 1 && t[1] == QLatin1String("linked"))
             m_w->m_model.autoStretchLinked(m_w->m_curStats);
+        else if (t.size() > 1 && t[1] == QLatin1String("pi"))
+            m_w->m_model.autoStretchPI(m_w->m_curStats);
         else
             m_w->m_model.autoStretch(m_w->m_curStats);
         return true;

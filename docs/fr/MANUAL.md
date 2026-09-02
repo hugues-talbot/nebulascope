@@ -252,6 +252,15 @@ Tour du panneau :
 - **Auto STF (lié)** (**Maj+U**) — un étirement partagé issu des
   statistiques regroupées ; préserve la balance des couleurs (à utiliser sur
   des données étalonnées en couleur).
+- **Auto STF (PixInsight)** (**P**) — le STFAutoStretch de PixInsight, à
+  l'identique (équations de Juan Conejero : ombres écrêtées à
+  médiane − 2,8σ avec σ = 1,4826×MAD, médium résolu pour que le fond
+  écrêté s'affiche à 0,25, sans garde-fous). Le bon premier regard pour
+  les **masters linéaires à bande étroite**, dont le fond est si proche de
+  zéro que les garde-fous de l'Auto STF classique laissent l'image
+  sombre. Même recette purement statistique que PixInsight : les mêmes
+  données donnent la même première vue dans les deux logiciels.
+  Script : `autostf pi`.
 - **Réinitialiser** (**R**) — retour à la fenêtre linéaire simple (efface
   aussi les ajustements).
 - **Recharger l'original** (**⌘⇧R**, menu Affichage) — redécodage depuis le
@@ -368,7 +377,7 @@ vue. Quand la vue image a le focus, les **flèches font un panoramique** ;
 quand la liste d'images a le focus, ↑/↓ parcourent la liste (le blink
 lui-même reste sur **Espace**/**Maj+Espace**).
 
-Le **panneau Infos** (**P** ou F4) montre les dimensions, le format des
+Le **panneau Infos** (**F4**) montre les dimensions, le format des
 pixels, min / max / médiane / MAD par canal, la structure des HDU FITS, et
 l'en-tête complet (cartes FITS ou propriétés XISF) dans un tableau filtrable
 et copiable.

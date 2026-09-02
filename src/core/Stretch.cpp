@@ -320,7 +320,10 @@ std::vector<float> buildLut(StretchFn fn, const ChannelStretch& cs,
     }
 
     const double denom = std::max(1e-6, cs.white - cs.black);
-    const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+    // Numeric guard only: a PixInsight-style STF on a narrowband linear
+    // master legitimately needs m ~ 2e-4, and the old 0.001 floor silently
+    // rendered such stretches darker than their parameters say.
+    const double m = std::min(0.999, std::max(1e-6, (cs.mid - cs.black) / denom));
     std::vector<float> lut(N);
     for (int i = 0; i < N; ++i) {
         const double t = double(i) / (N - 1);
@@ -337,7 +340,7 @@ double transferAt(double x, StretchFn fn, const ChannelStretch& cs, const GHSPar
         const double t = clamp01((x - cs.black) / denom);
         return l[int(t * (N - 1))];
     }
-    const double m = std::min(0.999, std::max(0.001, (cs.mid - cs.black) / denom));
+    const double m = std::min(0.999, std::max(1e-6, (cs.mid - cs.black) / denom));
     return mtf(baseShape(clamp01((x - cs.black) / denom), fn), m);
 }
 

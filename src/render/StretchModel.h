@@ -129,6 +129,13 @@ public:
     // Linked auto stretch: ONE transfer computed from the pooled statistics and
     // applied identically to all channels, preserving the R:G:B colour balance.
     void autoStretchLinked(const std::vector<ChannelStats>& stats);
+    // PixInsight's STFAutoStretch, exactly (equations by Juan Conejero):
+    // shadows clipped at median - 2.8 sigma with sigma = 1.4826 x MAD, the
+    // midtone the closed-form MTF balance putting the clipped background at
+    // 0.25 — with NO cosmetic floors, so a narrowband linear master
+    // (background ~1e-3, MAD ~2e-5, a star pinning max at 1) gets the same
+    // bright first look as in PixInsight. Per-channel (unlinked).
+    void autoStretchPI(const std::vector<ChannelStats>& stats);
 
     // Gentle default applied when an image is first opened: a plain linear
     // window from the data minimum up to the 99th percentile — no black-point

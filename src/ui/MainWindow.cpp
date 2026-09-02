@@ -1091,7 +1091,7 @@ void MainWindow::buildMenusAndToolbar() {
     QAction* aRight = m_rightDock->toggleViewAction();
     aRight->setShortcut(QKeySequence("F3"));
     QAction* aInfo = m_infoDock->toggleViewAction();
-    aInfo->setShortcuts({ QKeySequence("F4"), QKeySequence("P") });
+    aInfo->setShortcuts({ QKeySequence("F4") });   // P now belongs to Auto STF (PixInsight)
     view->addAction(aLeft);
     view->addAction(aInfo);
     view->addAction(aRight);
@@ -1372,6 +1372,9 @@ void MainWindow::buildMenusAndToolbar() {
     });
     acts["auto_stf_linked"] = stretch->addAction(tr("Auto STF (&Linked)"), QKeySequence("Shift+U"), this, [this] {
         if (!m_curStats.empty()) m_model.autoStretchLinked(m_curStats);
+    });
+    acts["auto_stf_pi"] = stretch->addAction(tr("Auto STF (&PixInsight)"), QKeySequence("P"), this, [this] {
+        if (!m_curStats.empty()) m_model.autoStretchPI(m_curStats);
     });
     acts["reset_stretch"] = stretch->addAction(tr("&Reset Stretch"), QKeySequence("R"), this, [this] {
         m_model.reset();                                   // fn, GHS, adjustments
