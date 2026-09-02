@@ -165,11 +165,11 @@ held-out star-masked nebula NRMSE against Hubble at a common 1.3″:
 | Full stack, raw | 1.92″ / 0.78 | 3.08″ / 0.31 | 2.49″ / 0.57 |
 | Full + ML4 | 1.55″ / 0.51 | 2.61″ / 0.21 | 1.40″ / 0.29 |
 | Full + ML5 | 1.58″ / **0.27** | 2.66″ / 0.20 | 1.60″ / **0.23** |
-| Full + deconv (1.8″ RED) | 1.96″ / 0.73 | 2.75″ / 0.30 | 2.01″ / 0.51 |
+| Full + deconv (1.8″ RED) | 1.96″ / 0.73 | 2.75″ / 0.31 | 2.01″ / 0.53 |
 | Lucky, raw | 1.92″ / 0.57 | 3.05″ / 0.23 | 1.74″ / 0.37 |
 | Lucky + ML4 | 1.74″ / 0.39 | 2.54″ / 0.20 | 1.57″ / 0.34 |
 | Lucky + ML5 | 1.82″ / 0.36 | 2.52″ / 0.20 | 1.71″ / 0.33 |
-| Lucky + deconv (1.8″ RED) | 2.10″ / 0.50 | 2.81″ / 0.23 | 1.93″ / 0.31 |
+| Lucky + deconv (1.8″ RED) | 2.10″ / 0.50 | 2.81″ / 0.23 | 1.94″ / 0.34 |
 
 The deconvolution rows are the calibrated MCS+RED products (declared
 1.8″, stellar delivery verified in contract), and at first sight they
