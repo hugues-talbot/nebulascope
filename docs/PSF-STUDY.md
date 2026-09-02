@@ -155,28 +155,43 @@ the nebula covered by Hubble**: stars are exactly what neural models
 handle by prior, so a model revision is judged here on extended
 structure alone (the stellar reference table earlier in this appendix
 remains the four-way full/lucky × raw/ML4 design). `ml5_audit.py` runs
-the same registrations and the same fit/validate rectangles for three
-renders side by side; the ML5 render uses reduced star sharpening.
-Extended-structure kernel FWHM and held-out star-masked nebula NRMSE
-against Hubble at a common 1.3″:
+the same registrations and the same fit/validate rectangles for every
+render; the ML5 renders use reduced star sharpening. The full design —
+both stacks, three renders each; extended-structure kernel FWHM and
+held-out star-masked nebula NRMSE against Hubble at a common 1.3″:
 
-| Channel | raw | BXT ML4 | BXT ML5 |
+| Variant | S II | Hα | O III |
 | --- | --- | --- | --- |
-| S II | 1.92″ / 0.78 | 1.55″ / 0.51 | 1.58″ / **0.27** |
-| Hα | 3.08″ / 0.31 | 2.61″ / 0.21 | 2.66″ / **0.20** |
-| O III | 2.49″ / 0.57 | 1.40″ / 0.29 | 1.60″ / **0.23** |
+| Full stack, raw | 1.92″ / 0.78 | 3.08″ / 0.31 | 2.49″ / 0.57 |
+| Full + ML4 | 1.55″ / 0.51 | 2.61″ / 0.21 | 1.40″ / 0.29 |
+| Full + ML5 | 1.58″ / **0.27** | 2.66″ / 0.20 | 1.60″ / **0.23** |
+| Lucky, raw | 1.92″ / 0.57 | 3.05″ / 0.23 | 1.74″ / 0.37 |
+| Lucky + ML4 | 1.74″ / 0.39 | 2.54″ / 0.20 | 1.57″ / 0.34 |
+| Lucky + ML5 | 1.82″ / 0.36 | 2.52″ / 0.20 | 1.71″ / 0.33 |
 
-The pattern is consistent and interesting: **ML5 sharpens extended
-structure slightly *less* than ML4** (markedly so in O III, 1.60″ vs
-1.40″) **while being substantially more faithful to it** — the S II
-fidelity nearly halves. The new model traded nebular aggression for
-nebular truth, exactly the direction the held-out framework was built to
-detect; a star-based comparison of the two models would have seen almost
-none of this. One measured caveat carried from the audit: the
-extended-structure kernel is render-sensitive at the ±0.2″ level
-(faint-star leakage into the "starless" statistics), so the fidelity
-score — star-masked by construction — is the sturdier of the two
-instruments.
+Four findings, none visible to a star-based comparison:
+
+1. **ML5 sharpens extended structure slightly *less* than ML4 on both
+   stacks** (markedly so in O III) **while being more faithful to it** —
+   on the full stack the S II fidelity nearly halves. The revision
+   traded nebular aggression for nebular truth.
+2. **The model revision's gains materialize on the deep stack.** On the
+   lucky selection ML4→ML5 is nearly a wash (S 0.39→0.36); on the full
+   stack it is transformative (0.51→0.27). Recovering faint structure
+   faithfully needs the photons the culling threw away.
+3. **Sub-selection helps the raw render, not the ceiling.** Raw-lucky
+   beats raw-full in fidelity everywhere, and O III's kernel gains a
+   real 0.75″ — but every lucky variant loses to ML5-on-full in S II
+   and O III. The contrarian moral: *keep the frames, upgrade the
+   model.*
+4. The S II raw kernels are **identical (1.92″) between stacks** — on
+   seeing-limited extended structure, culling 85 % of the subs changed
+   nothing, echoing the stellar finding.
+
+One measured caveat carried from the audit: the extended-structure
+kernel is render-sensitive at the ±0.2″ level (faint-star leakage into
+the "starless" statistics), so the fidelity score — star-masked by
+construction — is the sturdier of the two instruments.
 
 ## Calibrated deconvolution with a stated model
 

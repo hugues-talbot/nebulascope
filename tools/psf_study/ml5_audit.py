@@ -23,9 +23,17 @@ from linear_deconv import (load_hst, regprep, warp_to, wiener_kernel_lin, fwhm_a
 
 def main():
     S = os.path.dirname(os.path.abspath(__file__))
-    masters = { 'raw':  read_fits_f32(os.path.join(S, 'm16_full_raw.fits'))[0],
-                'BXT4': read_fits_f32(os.path.join(S, 'm16_full_BXT.fits'))[0],
-                'BXT5': read_fits_f32(os.path.join(S, 'm16_full_BXT5.fits'))[0] }
+    if len(sys.argv) > 1:
+        # ml5_audit.py name=path [name=path ...] — any set of renders of the
+        # same field (e.g. the lucky-stack trio), same protocol.
+        masters = {}
+        for a in sys.argv[1:]:
+            name, path = a.split('=', 1)
+            masters[name] = read_fits_f32(path)[0]
+    else:
+        masters = { 'raw':  read_fits_f32(os.path.join(S, 'm16_full_raw.fits'))[0],
+                    'BXT4': read_fits_f32(os.path.join(S, 'm16_full_BXT.fits'))[0],
+                    'BXT5': read_fits_f32(os.path.join(S, 'm16_full_BXT5.fits'))[0] }
     x0, x1 = ROI_CX - ROI_R, ROI_CX + ROI_R
     y0, y1 = ROI_CY - ROI_R, ROI_CY + ROI_R
     n2 = 4*ROI_R
@@ -38,10 +46,20 @@ def main():
         for name, cube in masters.items():
             m = ndimage.zoom(np.nan_to_num(cube[c][y0:y1, x0:x1].astype(np.float64)), 2, order=3)
             m_reg = regprep(m)
+            # Seed with the known full-master window; a different stack (e.g.
+            # the lucky selection) may be oriented differently, so fall back
+            # to the exhaustive search when the refinement looks unseeded.
             A0, score, s0, r0 = bruteforce_similarity(regprep(hst8), m_reg,
                                     np.geomspace(0.80, 0.88, 5), np.arange(-67.0, -60.5, 1.0), n=2048)
             Sm = detect_stars(m_reg, maxn=600)
             A8, npairs, med = refine_affine(A0, Sh, Sm, tol0=4.0)
+            if npairs < 20 or med > 1.0:
+                A0, score, s0, r0 = bruteforce_similarity(regprep(hst8), m_reg,
+                                        np.geomspace(0.70, 1.00, 10), range(0, 360, 4), n=2048)
+                A0, score, s0, r0 = bruteforce_similarity(regprep(hst8), m_reg,
+                                        np.geomspace(s0*0.94, s0*1.06, 7),
+                                        np.arange(r0-3, r0+3.5, 1.0), n=2048)
+                A8, npairs, med = refine_affine(A0, Sh, Sm, tol0=5.0)
             Ahalf = np.zeros((3, 2)); Ahalf[0, 0] = Ahalf[1, 1] = 0.5
             A = compose(Ahalf, A8)
             hst_w = warp_to(hst, A, m.shape)
