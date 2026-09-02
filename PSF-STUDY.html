@@ -68,9 +68,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-1186ef8162c3c73f68abd6432a9e86e2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-3686e73f2b10d5e0866cac69e1e072da.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -554,7 +554,7 @@ window.Quarto = {
 <p>Results (extended-structure kernel FWHM, raw → BXT): S II 1.92″ → 1.55″, Hα 3.08″ → 2.62″, O III 2.49″ → 1.39″. The S II raw kernel matching the stellar 1.96″ validates the method; the Hα kernel is inflated by [N II] emission present in F657N but excluded by the narrow Hα filter — a spectral, not optical, mismatch. The headline: <strong>in the clean channels BXT sharpens extended structure by 15–19 %, versus 30–33 % on stars</strong> — the star-based figure of merit roughly doubles the real gain on the astrophysically interesting content. On <em>fidelity</em>, however, BXT is honest at these scales: scored against Hubble degraded to a common 1.3″ on the held-out half (star profiles masked), its nebulosity moves toward the truth in S II and Hα and is neutral in O III — no evidence of hallucination at 1.3″ scales, merely conservatism.</p>
 <section id="the-ml5-revision-audited" class="level3">
 <h3 class="anchored" data-anchor-id="the-ml5-revision-audited">The ML5 revision, audited</h3>
-<p>When RC Astro released the ML5 model, the framework above turned a release note into a measurement (<code>ml5_audit.py</code>: the same registrations, the same fit/validate rectangles, three renders side by side; the ML5 render uses reduced star sharpening — at ML5’s <em>defaults</em> the stars come out at 0.97–1.04″, below the 0.99″ diffraction limit, which only a prior can claim). Extended-structure kernel FWHM and held-out star-masked nebula NRMSE against Hubble at a common 1.3″:</p>
+<p>When RC Astro released the ML5 model, the framework above turned a release note into a measurement — deliberately confined to <strong>the part of the nebula covered by Hubble</strong>: stars are exactly what neural models handle by prior, so a model revision is judged here on extended structure alone (the stellar reference table earlier in this appendix remains the four-way full/lucky × raw/ML4 design). <code>ml5_audit.py</code> runs the same registrations and the same fit/validate rectangles for three renders side by side; the ML5 render uses reduced star sharpening. Extended-structure kernel FWHM and held-out star-masked nebula NRMSE against Hubble at a common 1.3″:</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -585,7 +585,7 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>The stellar side of the same render measures 1.33″/1.29″/1.32″ — ML4-class and physical, confirming that the model’s stellar and nonstellar paths are decoupled (the reduced star-sharpening setting changed the stars, not the nebulosity scores). The pattern in the table is consistent and interesting: <strong>ML5 sharpens extended structure slightly <em>less</em> than ML4</strong> (markedly so in O III, 1.60″ vs 1.40″) <strong>while being substantially more faithful to it</strong> — the S II fidelity nearly halves. The new model traded nebular aggression for nebular truth, exactly the direction the held-out framework was built to detect; a star-based comparison of the two models would have seen almost none of this. One measured caveat carried from the audit: the extended-structure kernel is render-sensitive at the ±0.2″ level (faint-star leakage into the “starless” statistics), so the fidelity score — star-masked by construction — is the sturdier of the two instruments.</p>
+<p>The pattern is consistent and interesting: <strong>ML5 sharpens extended structure slightly <em>less</em> than ML4</strong> (markedly so in O III, 1.60″ vs 1.40″) <strong>while being substantially more faithful to it</strong> — the S II fidelity nearly halves. The new model traded nebular aggression for nebular truth, exactly the direction the held-out framework was built to detect; a star-based comparison of the two models would have seen almost none of this. One measured caveat carried from the audit: the extended-structure kernel is render-sensitive at the ±0.2″ level (faint-star leakage into the “starless” statistics), so the fidelity score — star-masked by construction — is the sturdier of the two instruments.</p>
 </section>
 </section>
 <section id="calibrated-deconvolution-with-a-stated-model" class="level2">
