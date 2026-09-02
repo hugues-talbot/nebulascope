@@ -726,14 +726,16 @@ avec un message d'état.
   annotation violette est déposée à la **position de catalogue** de la
   source — tout écart avec le centre de l'étoile, c'est votre solution
   astrométrique qui parle.
-- **Superposition de champ Gaia DR3** (menu Outils). Les sources
-  cataloguées les plus brillantes de tout le champ (500 par défaut,
-  étiquettes de magnitude G sur les 30 plus brillantes), tracées à leurs
-  positions de catalogue en une seule étape d'annulation. Les écarts
-  systématiques révèlent les distorsions de la solution astrométrique ;
-  les paires serrées se mesurent contre le catalogue dans l'application.
-  Les champs denses du plan galactique passent par une échelle de
-  magnitude « brillant d'abord », donc la requête reste rapide partout.
+- **Superposition Gaia DR3 de la région visible** (clic droit). Les
+  sources cataloguées les plus brillantes de la région **actuellement à
+  l'écran** (500 par défaut, étiquettes de magnitude G sur les 30 plus
+  brillantes), tracées à leurs positions de catalogue en une seule étape
+  d'annulation — l'inspection locale est l'usage naturel, et dézoomer
+  d'abord couvre l'image entière. Les écarts systématiques révèlent les
+  distorsions de la solution astrométrique ; les paires serrées se
+  mesurent contre le catalogue dans l'application. Les champs denses du
+  plan galactique passent par une échelle de magnitude « brillant
+  d'abord », donc la requête reste rapide partout.
 
 Dans les deux cas, les positions DR3 (époque 2016,0) sont **propagées
 par mouvement propre vers le `DATE-OBS` de l'image** avant appariement ou

@@ -102,10 +102,11 @@ const CommandRef kCommands[] = {
     "epoch-propagated to DATE-OBS), and the nearest source is reported and\n"
     "annotated at its catalogue position. Needs a plate solution + network."}},
   {"gaiaoverlay",{"gaiaoverlay [count] [labelN]",
-    "Annotate the field's brightest Gaia DR3 sources (default 500, G-mag\n"
-    "labels on the brightest 30) at their catalogue positions, epoch-\n"
-    "propagated. One undo step. Needs a plate solution + network.\n"
-    "Menu equivalent: Tools > Gaia DR3 Field Overlay."}},
+    "Annotate the VISIBLE REGION's brightest Gaia DR3 sources (default 500,\n"
+    "G-mag labels on the brightest 30) at their catalogue positions, epoch-\n"
+    "propagated; zoom out first (F) to cover the whole frame. One undo\n"
+    "step. Needs a plate solution + network. Menu equivalent: right-click >\n"
+    "Gaia DR3 Overlay of Visible Region."}},
   {"blackpatch", {"blackpatch <x> <y> <w> <h>",
     "Neutral Black from Sky Patch on an image-coordinate rectangle: each\n"
     "channel's black point becomes the patch median (M carried as a ratio,\n"

@@ -629,13 +629,14 @@ offline, both fail softly with a status message.
   distance), and the separation from the fitted centre. A small violet
   annotation is dropped at the source's **catalogue position** — any
   offset from the star's centre is your plate solution speaking.
-- **Gaia DR3 Field Overlay** (Tools menu). The brightest catalogued
-  sources across the whole frame (default 500, G-magnitude labels on the
-  brightest 30), drawn at their catalogue positions as one undo step.
-  Systematic offsets reveal plate-solution distortions; close pairs can
-  be measured against the catalogue in-app. Dense galactic-plane fields
-  are handled by a bright-first magnitude ladder, so the query stays
-  fast everywhere.
+- **Gaia DR3 Overlay of Visible Region** (right-click). The brightest
+  catalogued sources in the region **currently on screen** (default 500,
+  G-magnitude labels on the brightest 30), drawn at their catalogue
+  positions as one undo step — local inspection is the natural grain,
+  and zooming out first covers the whole frame. Systematic offsets
+  reveal plate-solution distortions; close pairs can be measured against
+  the catalogue in-app. Dense galactic-plane fields are handled by a
+  bright-first magnitude ladder, so the query stays fast everywhere.
 
 In both cases DR3 positions (epoch 2016.0) are **propagated by proper
 motion to the frame's `DATE-OBS`** before matching or drawing — nearby

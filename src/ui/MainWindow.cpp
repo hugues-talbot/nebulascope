@@ -1403,7 +1403,6 @@ void MainWindow::buildMenusAndToolbar() {
     acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
     acts["measure_psf"] = tools->addAction(tr("&Measure PSF (Stars)…"), this, &MainWindow::measurePsfAction);
     acts["deconvolve"] = tools->addAction(tr("&Deconvolve to Target PSF…"), this, &MainWindow::deconvolveAction);
-    acts["gaia_overlay"] = tools->addAction(tr("&Gaia DR3 Field Overlay…"), this, &MainWindow::gaiaOverlayAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -4709,7 +4708,7 @@ void MainWindow::gaiaOverlayAction() {
         return;
     }
     QDialog dlg(this);
-    dlg.setWindowTitle(tr("Gaia DR3 field overlay"));
+    dlg.setWindowTitle(tr("Gaia DR3 overlay — visible region"));
     auto* lay = new QVBoxLayout(&dlg);
     auto* form = new QFormLayout();
     auto* count = new QSpinBox();
@@ -4723,9 +4722,11 @@ void MainWindow::gaiaOverlayAction() {
                           "(all get a marker; labels clutter fast)."));
     form->addRow(tr("Label brightest:"), labelN);
     lay->addLayout(form);
-    auto* note = new QLabel(tr("Sources are drawn at their catalogue positions, propagated to the\n"
-                               "frame's DATE-OBS epoch — a systematic offset against the stars is\n"
-                               "the plate solution speaking. One undo step removes the overlay."));
+    auto* note = new QLabel(tr("Covers the region currently on screen — zoom out first to cover\n"
+                               "the whole frame. Sources are drawn at their catalogue positions,\n"
+                               "propagated to the frame's DATE-OBS epoch — a systematic offset\n"
+                               "against the stars is the plate solution speaking. One undo step\n"
+                               "removes the overlay."));
     lay->addWidget(note);
     auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
@@ -4737,18 +4738,27 @@ void MainWindow::gaiaOverlayAction() {
 
 void MainWindow::runGaiaOverlay(int count, int labelN) {
     if (!m_wcs.valid() || !m_image.isValid()) return;
-    const int w = m_image.width(), h = m_image.height();
+    // Scope: the region being DISPLAYED, not the whole frame — local
+    // inspection is the natural use, and zooming out already says "all".
+    // Under a rotated navigation this is the bounding box, which errs on
+    // showing slightly more sky than the screen does — harmless here.
+    const QRect vis = m_view->visibleImageRect()
+                          .intersected(QRect(0, 0, m_image.width(), m_image.height()));
+    if (vis.isEmpty()) return;
     double ra = 0, dec = 0;
-    if (!m_wcs.pixelToSky(0.5 * w, 0.5 * h, ra, dec)) return;
+    if (!m_wcs.pixelToSky(vis.x() + 0.5 * vis.width(),
+                          vis.y() + 0.5 * vis.height(), ra, dec))
+        return;
     const double scale = m_wcs.pixelScaleArcsec();
-    const double radiusDeg = 1.03 * 0.5 * std::hypot(double(w), double(h)) * scale / 3600.0;
+    const double radiusDeg =
+        1.03 * 0.5 * std::hypot(double(vis.width()), double(vis.height())) * scale / 3600.0;
     const double epoch = GaiaClient::epochYearFromIso(
         m_header.valueOf(QStringLiteral("DATE-OBS")));
     const QString path = m_currentPath;
     statusBar()->showMessage(tr("Querying Gaia DR3 (field cone, %1 sources)…").arg(count));
     connect(gaia(), &GaiaClient::finished, this,
-        [this, path, labelN, epoch](bool ok, const std::vector<GaiaSource>& srcs,
-                                    const QString& error) {
+        [this, path, labelN, epoch, vis](bool ok, const std::vector<GaiaSource>& srcs,
+                                         const QString& error) {
             auto report = [this](const QString& m) {
                 if (m_scriptDriving) fprintf(stderr, "%s\n", m.toUtf8().constData());
                 statusBar()->showMessage(m, 6000);
@@ -4763,7 +4773,8 @@ void MainWindow::runGaiaOverlay(int count, int labelN) {
             for (const GaiaSource& s : srcs) {
                 double ax = 0, ay = 0;
                 if (!m_wcs.skyToPixel(s.raDeg, s.decDeg, ax, ay)) continue;
-                if (ax < 0 || ay < 0 || ax >= m_image.width() || ay >= m_image.height())
+                if (ax < vis.x() || ay < vis.y() ||
+                    ax >= vis.x() + vis.width() || ay >= vis.y() + vis.height())
                     continue;
                 Annotation an;
                 an.type = Annotation::Type::Ellipse;
@@ -4778,13 +4789,13 @@ void MainWindow::runGaiaOverlay(int count, int labelN) {
                 ++drawn;
             }
             if (drawn == 0) {
-                report(tr("Gaia DR3: no sources landed inside the frame"));
+                report(tr("Gaia DR3: no sources landed inside the visible region"));
                 return;
             }
             m_annDirty.insert(m_currentPath);
             refreshAnnotations();
             pushAnnotationEdit(tr("Gaia DR3 overlay"), m_currentPath, std::move(before));
-            const QString msg = tr("Gaia DR3 overlay: %1 sources in frame (%2 returned)%3")
+            const QString msg = tr("Gaia DR3 overlay: %1 sources in view (%2 returned)%3")
                 .arg(drawn).arg(srcs.size())
                 .arg(epoch > 0 ? tr(", epoch %1").arg(epoch, 0, 'f', 1) : QString());
             if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
@@ -5888,6 +5899,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     QAction* aSimbad = nullptr;
     QAction* aStellarium = nullptr;
     QAction* aGaia = nullptr;
+    QAction* aGaiaOverlay = nullptr;
     double alRa = 0, alDec = 0, alFovDeg = 0.25;
     double gaiaX = 0, gaiaY = 0;
     if (m_wcs.valid() && onImage) {
@@ -5910,6 +5922,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             aStellarium = menu.addAction(tr("Point Stellarium Here — %1").arg(where));
             aGaia = menu.addAction(tr("Identify Star in Gaia DR3 — %1").arg(where));
             gaiaX = cx; gaiaY = cy;
+            aGaiaOverlay = menu.addAction(tr("Gaia DR3 Overlay of Visible Region…"));
         }
     }
 
@@ -5991,6 +6004,9 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         // cone-searched against the DR3 archive, annotated at the catalogue
         // position.
         identifyGaiaStar(gaiaX, gaiaY);
+    }
+    else if (aGaiaOverlay && chosen == aGaiaOverlay) {
+        gaiaOverlayAction();
     }
     else if (aSimbad && chosen == aSimbad) {
         // SIMBAD coordinate (cone) query around the target.
