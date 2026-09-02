@@ -125,16 +125,23 @@ std::vector<float> coreProtectionMask(const std::vector<std::pair<int, int>>& ho
 }
 
 std::vector<float> starletDenoise(const float* plane, int w, int h,
-                                  int levels, double k) {
+                                  int levels, double k, int threshLevels) {
     const std::size_t n = std::size_t(w) * h;
+    if (threshLevels < 0) threshLevels = levels;
     std::vector<float> cur(plane, plane + n), next, scratch, out(n, 0.0f);
     for (int j = 0; j < levels; ++j) {
         atrousSmooth(cur, scratch, next, w, h, 1 << j);
         for (std::size_t i = 0; i < n; ++i) cur[i] -= next[i];   // detail_j
-        const float thr = float(k * madSigma(cur));
-        for (std::size_t i = 0; i < n; ++i) {
-            const float d = cur[i];
-            out[i] += d > thr ? d - thr : (d < -thr ? d + thr : 0.0f);
+        if (j < threshLevels) {
+            const float thr = float(k * madSigma(cur));
+            for (std::size_t i = 0; i < n; ++i) {
+                const float d = cur[i];
+                out[i] += d > thr ? d - thr : (d < -thr ? d + thr : 0.0f);
+            }
+        } else {
+            // Coarse detail passes through whole: shrinking it prints the
+            // square support edge of the B3 tensor kernel around stars.
+            for (std::size_t i = 0; i < n; ++i) out[i] += cur[i];
         }
         cur.swap(next);
     }
@@ -147,10 +154,17 @@ std::vector<float> moffatKernel(const DeconvChannelPsf& psf, int& sideOut) {
     const double conv = 2.0 * std::sqrt(std::pow(2.0, 1.0 / beta) - 1.0);
     const double sx = std::max(0.3, psf.fwhmMajPx / conv);
     const double sy = std::max(0.3, psf.fwhmMinPx / conv);
-    int side = int(std::ceil(8.0 * std::max(psf.fwhmMajPx, 2.0)));
-    side = std::max(33, side | 1);
+    // Canvas and apodization: a Moffat's power-law wings are still ~1e-5 of
+    // the peak 16 px out, and a saturated star sits ~1e6 over the sky — a
+    // hard truncation at the canvas edge printed a faint SQUARE ring around
+    // every bright core (the filter's impulse response carries the cut).
+    // Large canvas + radial cosine taper to a true zero on a CIRCLE: no
+    // discontinuity, no geometry to print.
+    int side = int(std::ceil(16.0 * std::max(psf.fwhmMajPx, 2.0)));
+    side = std::max(65, side | 1);
     sideOut = side;
     const int half = side / 2;
+    const double R = half, Ri = 0.75 * half;
     const double th = psf.paDeg * M_PI / 180.0;
     const double ct = std::cos(th), st = std::sin(th);
     std::vector<float> k(std::size_t(side) * side);
@@ -160,7 +174,11 @@ std::vector<float> moffatKernel(const DeconvChannelPsf& psf, int& sideOut) {
             const double dx = x - half, dy = y - half;
             const double u = std::pow((dx * ct + dy * st) / sx, 2.0)
                            + std::pow((-dx * st + dy * ct) / sy, 2.0);
-            const double v = std::pow(1.0 + u, -beta);
+            const double d = std::hypot(dx, dy);
+            double w = 1.0;
+            if (d >= R) w = 0.0;
+            else if (d > Ri) w = 0.5 + 0.5 * std::cos(M_PI * (d - Ri) / (R - Ri));
+            const double v = w * std::pow(1.0 + u, -beta);
             k[std::size_t(y) * side + x] = float(v);
             sum += v;
         }
@@ -262,7 +280,11 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         std::vector<float> x(n), d;
         c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
         for (int it = 0; it < opt.redIterations; ++it) {
-            d = starletDenoise(x.data(), w, h, opt.redLevels, opt.redThresholdK);
+            // Threshold the fine scales only (noise lives there); coarse
+            // scales pass whole so the frame cannot print its support
+            // geometry around bright stars.
+            d = starletDenoise(x.data(), w, h, opt.redLevels,
+                               opt.redThresholdK, 3);
             for (std::size_t i = 0; i < n; ++i)
                 d[i] = starMask[i] * x[i] + (1.0f - starMask[i]) * d[i];
             r2c(shape, rs, cs, axes, FORWARD, d.data(), Df.data(), 1.0f, nth);

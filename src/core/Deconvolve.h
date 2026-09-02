@@ -74,8 +74,9 @@ ImageData deconvolveToTarget(const ImageData& img,
                              const DeconvOptions& opt,
                              std::atomic<int>* stepsDone = nullptr);
 
-// The elliptical Moffat kernel itself (unit sum, side = odd(max(33, 8*fwhmMaj))),
-// exposed for tests.
+// The elliptical Moffat kernel itself (unit sum, side = odd(max(65,
+// 16*fwhmMaj)), radially cosine-apodized to a true zero — a hard square
+// truncation prints a ring around saturated stars). Exposed for tests.
 std::vector<float> moffatKernel(const DeconvChannelPsf& psf, int& sideOut);
 
 // Contract-first regularization: walk a descending lambda ladder
@@ -101,10 +102,15 @@ double selectRedWeight(const ImageData& img, int channel,
 
 // Starlet (undecimated à-trous, B3-spline) soft-threshold denoiser — the
 // RED prior, exposed for tests. Thresholds are k x the per-level noise
-// sigma, estimated per detail scale by MAD. k = 0 reproduces the input
-// exactly (the transform is a tight partition). Finite input only.
+// sigma, estimated per detail scale by MAD; only the first threshLevels
+// detail scales are thresholded (< 0: all) — white noise concentrates in
+// the finest scales, and shrinking a COARSE level prints the sharp edge
+// of the tensor-product kernel's square support around bright stars (the
+// "squircle" halo). k = 0 reproduces the input exactly (the transform is
+// a tight partition). Finite input only.
 std::vector<float> starletDenoise(const float* plane, int w, int h,
-                                  int levels, double k);
+                                  int levels, double k,
+                                  int threshLevels = -1);
 
 // Saturated-core protection mask: each hot pixel stamps a ROUND radial
 // profile (flat to r0, cosine ramp to 0 at r1), max-blended. Round
