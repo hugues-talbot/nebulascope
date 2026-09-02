@@ -17,6 +17,7 @@ them for another field.
 | `star_fwhm.py <master.fits> [<solved.xisf>]` | Linear stellar PSF: elliptical Moffat fits over thousands of stars; median FWHM/eccentricity/PA + a field map (drift vs optics diagnosis). |
 | `linear_deconv.py [target_asec] [dump_dir]` | Linear extended-structure kernels vs the HST Heritage M16 mosaics, with a held-out fit/validate split — the honest BXT-on-nebulosity measurement. |
 | `full_deconv.py [target_asec] [dump_dir]` | Full-frame calibrated deconvolution: measured elliptical-Moffat PSF in, declared circular Gaussian out, MCS one-filter transform, contract-first regularization, saturated-core protection, delivered-PSF verification. |
+| `ml5_audit.py` | The linear_deconv protocol condensed to one comparative question: raw vs BXT ML4 vs BXT ML5, per channel — extended-structure kernel FWHM and held-out star-masked nebula fidelity, same registration and rectangles for all three. |
 
 Set `PSF_DATA` to the folder holding the data (reference images, and a
 `PSF_comparison/` subfolder with the linear masters and the HST mosaics);
