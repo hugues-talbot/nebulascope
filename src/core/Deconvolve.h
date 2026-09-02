@@ -107,11 +107,12 @@ std::vector<float> starletDenoise(const float* plane, int w, int h,
                                   int levels, double k);
 
 // Saturated-core protection mask: each hot pixel stamps a ROUND radial
-// profile (flat to radius 5, cosine ramp to 0 at radius 12), max-blended.
-// Round matters: a square (separable-morphology) footprint reads as a
-// visible square of foreign texture once the surroundings are denoised.
-// Exposed for tests.
+// profile (flat to r0, cosine ramp to 0 at r1), max-blended. Round
+// matters: a square (separable-morphology) footprint reads as a visible
+// square of foreign texture once the surroundings are denoised. Exposed
+// for tests.
 std::vector<float> coreProtectionMask(const std::vector<std::pair<int, int>>& hot,
-                                      int w, int h);
+                                      int w, int h,
+                                      double r0 = 5.0, double r1 = 12.0);
 
 } // namespace astro

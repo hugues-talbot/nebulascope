@@ -165,11 +165,38 @@ held-out star-masked nebula NRMSE against Hubble at a common 1.3″:
 | Full stack, raw | 1.92″ / 0.78 | 3.08″ / 0.31 | 2.49″ / 0.57 |
 | Full + ML4 | 1.55″ / 0.51 | 2.61″ / 0.21 | 1.40″ / 0.29 |
 | Full + ML5 | 1.58″ / **0.27** | 2.66″ / 0.20 | 1.60″ / **0.23** |
+| Full + deconv (1.8″ RED) | 1.96″ / 0.73 | 2.75″ / 0.30 | 2.01″ / 0.51 |
 | Lucky, raw | 1.92″ / 0.57 | 3.05″ / 0.23 | 1.74″ / 0.37 |
 | Lucky + ML4 | 1.74″ / 0.39 | 2.54″ / 0.20 | 1.57″ / 0.34 |
 | Lucky + ML5 | 1.82″ / 0.36 | 2.52″ / 0.20 | 1.71″ / 0.33 |
+| Lucky + deconv (1.8″ RED) | 2.10″ / 0.50 | 2.81″ / 0.23 | 1.93″ / 0.31 |
 
-Four findings, none visible to a star-based comparison:
+The deconvolution rows are the calibrated MCS+RED products (declared
+1.8″, stellar delivery verified in contract), and at first sight they
+look alarming: the S II extended kernel does not tighten at all. The
+alarm dissolves under quadrature arithmetic, and the dissolution is
+itself the finding. The S II transfer takes the stellar 1.96″ to 1.80″,
+so its effect on extended structure already at 1.92″ is
+$\sqrt{1.92^2 - 1.96^2 + 1.80^2} = 1.75″$ — and with the pure-MCS
+control at a 1.9″ declaration the predicted gain is a bare 0.06″,
+invisible inside the kernel estimator's ±0.2″. Where the raw extended
+kernel *exceeded* the stellar one, the predicted gains duly appear
+(pure-MCS control, 1.9″ declaration: O III 2.49″ → 2.07″ measured
+against 2.16″ predicted; Hα 3.08″ → 2.84″). **The calibrated
+deconvolution changes extended structure by exactly the amount it
+declares — which at a conservative target is small.** Neural models
+show large kernel changes precisely because they are not bound by a
+declaration. On fidelity the deconvolution rows sit modestly above raw
+(no harm, honest gain) but far from the neural rows: at this metric the
+truth is at 1.3″, and a declared 1.8″ product simply cannot approach it
+the way an unbound model that also denoises can. One measurable cost of
+the RED prior surfaced here: the pure-MCS control scores better on S II
+nebulosity (0.64 vs 0.73) — the starlet prior buys its quiet background
+with a little nebular fidelity, a milder cousin of the asymmetry this
+appendix documents for BXT (the prior is star-neutral, so stars get the
+full inversion while nebulosity gets inversion-plus-smoothing).
+
+Five findings, none visible to a star-based comparison:
 
 1. **ML5 sharpens extended structure slightly *less* than ML4 on both
    stacks** (markedly so in O III) **while being more faithful to it** —
@@ -187,6 +214,12 @@ Four findings, none visible to a star-based comparison:
 4. The S II raw kernels are **identical (1.92″) between stacks** — on
    seeing-limited extended structure, culling 85 % of the subs changed
    nothing, echoing the stellar finding.
+5. **A declared method scores as it declares.** The deconvolution rows
+   change the extended-structure kernel by their stated (small) amount
+   and buy fidelity honestly but modestly; the neural rows change it by
+   whatever their prior deems right and score accordingly. The table
+   does not say which philosophy to prefer — it says, for the first
+   time, exactly what each one costs.
 
 One measured caveat carried from the audit: the extended-structure
 kernel is render-sensitive at the ±0.2″ level (faint-star leakage into

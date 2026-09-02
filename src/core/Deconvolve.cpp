@@ -96,8 +96,7 @@ double madSigma(const std::vector<float>& d) {
 } // namespace
 
 std::vector<float> coreProtectionMask(const std::vector<std::pair<int, int>>& hot,
-                                      int w, int h) {
-    constexpr double r0 = 5.0, r1 = 12.0;
+                                      int w, int h, double r0, double r1) {
     const int R = int(r1) + 1;
     const int side = 2 * R + 1;
     // Precomputed radial stamp: 1 inside r0, cosine ramp to 0 at r1.
@@ -237,10 +236,25 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         // there the data term and the delivered-PSF contract govern alone.
         // Threshold well below saturation: any star strong enough to leave
         // frame-shaped residuals is excluded from the prior.
+        // TIERED radii: a fixed exclusion radius fails for the brightest
+        // stars, whose halo wings extend far beyond it — their surviving
+        // coefficients imprint the frame's ~4*2^j px tensor geometry as
+        // faint squares once the target is aggressive. Brighter star,
+        // wider neutral zone (pure-MCS treatment there is cheap: photon-
+        // rich neighbourhoods hide MCS noise anyway).
         std::vector<float> starMask;
         {
-            const double thrStar = percentileOf(finiteVals, 99.9);
-            starMask = coreProtectionMask(hotPixels(in.data(), w, h, thrStar), w, h);
+            starMask = coreProtectionMask(
+                hotPixels(in.data(), w, h, percentileOf(finiteVals, 99.9)),
+                w, h, 6.0, 14.0);
+            const std::vector<float> mid = coreProtectionMask(
+                hotPixels(in.data(), w, h, percentileOf(finiteVals, 99.99)),
+                w, h, 14.0, 32.0);
+            const std::vector<float> big = coreProtectionMask(
+                hotPixels(in.data(), w, h, percentileOf(finiteVals, 99.999)),
+                w, h, 28.0, 64.0);
+            for (std::size_t i = 0; i < n; ++i)
+                starMask[i] = std::max(starMask[i], std::max(mid[i], big[i]));
         }
         std::vector<std::complex<float>> X(Y.size()), Df(Y.size());
         for (std::size_t i = 0; i < Y.size(); ++i)
