@@ -136,12 +136,15 @@ hallucination at 1.3″ scales, merely conservatism.
 ### The ML5 revision, audited
 
 When RC Astro released the ML5 model, the framework above turned a
-release note into a measurement (`ml5_audit.py`: the same registrations,
-the same fit/validate rectangles, three renders side by side; the ML5
-render uses reduced star sharpening — at ML5's *defaults* the stars come
-out at 0.97–1.04″, below the 0.99″ diffraction limit, which only a prior
-can claim). Extended-structure kernel FWHM and held-out star-masked
-nebula NRMSE against Hubble at a common 1.3″:
+release note into a measurement — deliberately confined to **the part of
+the nebula covered by Hubble**: stars are exactly what neural models
+handle by prior, so a model revision is judged here on extended
+structure alone (the stellar reference table earlier in this appendix
+remains the four-way full/lucky × raw/ML4 design). `ml5_audit.py` runs
+the same registrations and the same fit/validate rectangles for three
+renders side by side; the ML5 render uses reduced star sharpening.
+Extended-structure kernel FWHM and held-out star-masked nebula NRMSE
+against Hubble at a common 1.3″:
 
 | Channel | raw | BXT ML4 | BXT ML5 |
 | --- | --- | --- | --- |
@@ -149,14 +152,10 @@ nebula NRMSE against Hubble at a common 1.3″:
 | Hα | 3.08″ / 0.31 | 2.61″ / 0.21 | 2.66″ / **0.20** |
 | O III | 2.49″ / 0.57 | 1.40″ / 0.29 | 1.60″ / **0.23** |
 
-The stellar side of the same render measures 1.33″/1.29″/1.32″ —
-ML4-class and physical, confirming that the model's stellar and
-nonstellar paths are decoupled (the reduced star-sharpening setting
-changed the stars, not the nebulosity scores). The pattern in the table
-is consistent and interesting: **ML5 sharpens extended structure
-slightly *less* than ML4** (markedly so in O III, 1.60″ vs 1.40″)
-**while being substantially more faithful to it** — the S II fidelity
-nearly halves. The new model traded nebular aggression for
+The pattern is consistent and interesting: **ML5 sharpens extended
+structure slightly *less* than ML4** (markedly so in O III, 1.60″ vs
+1.40″) **while being substantially more faithful to it** — the S II
+fidelity nearly halves. The new model traded nebular aggression for
 nebular truth, exactly the direction the held-out framework was built to
 detect; a star-based comparison of the two models would have seen almost
 none of this. One measured caveat carried from the audit: the
