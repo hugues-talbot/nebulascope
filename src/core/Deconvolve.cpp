@@ -36,35 +36,19 @@ std::vector<float> gaussianKernel(double fwhm, int side) {
     return k;
 }
 
-// Separable running-max (binary dilation when fed 0/1) and running-mean
-// (feathering) — small local copies; the frame-scale versions live in
-// PsfMeasure and are not exposed.
-void sepFilter(std::vector<float>& img, int w, int h, int half, bool isMax) {
-    std::vector<float> tmp(img.size());
-    for (int y = 0; y < h; ++y) {
-        const float* row = img.data() + std::size_t(y) * w;
-        float* trow = tmp.data() + std::size_t(y) * w;
-        for (int x = 0; x < w; ++x) {
-            double acc = isMax ? -1e30 : 0.0;
-            for (int i = -half; i <= half; ++i) {
-                const float v = row[std::min(std::max(x + i, 0), w - 1)];
-                if (isMax) acc = std::max(acc, double(v)); else acc += v;
-            }
-            trow[x] = float(isMax ? acc : acc / (2 * half + 1));
-        }
-    }
-    for (int x = 0; x < w; ++x)
-        for (int y = 0; y < h; ++y) {
-            double acc = isMax ? -1e30 : 0.0;
-            for (int i = -half; i <= half; ++i) {
-                const float v = tmp[std::size_t(std::min(std::max(y + i, 0), h - 1)) * w + x];
-                if (isMax) acc = std::max(acc, double(v)); else acc += v;
-            }
-            img[std::size_t(y) * w + x] = float(isMax ? acc : acc / (2 * half + 1));
-        }
-}
-
 void tick(std::atomic<int>* p) { if (p) p->fetch_add(1); }
+
+// Hot pixels above a percentile of the finite values, as stamp seeds.
+std::vector<std::pair<int, int>> hotPixels(const float* in, int w, int h,
+                                           double thr) {
+    std::vector<std::pair<int, int>> hot;
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const float v = in[std::size_t(y) * w + x];
+            if (std::isfinite(v) && v > thr) hot.emplace_back(x, y);
+        }
+    return hot;
+}
 
 // À-trous smoothing with the B3-spline mask [1 4 6 4 1]/16 dilated by
 // `step`, separable, mirrored edges.
@@ -110,6 +94,36 @@ double madSigma(const std::vector<float>& d) {
 }
 
 } // namespace
+
+std::vector<float> coreProtectionMask(const std::vector<std::pair<int, int>>& hot,
+                                      int w, int h) {
+    constexpr double r0 = 5.0, r1 = 12.0;
+    const int R = int(r1) + 1;
+    const int side = 2 * R + 1;
+    // Precomputed radial stamp: 1 inside r0, cosine ramp to 0 at r1.
+    std::vector<float> stamp(std::size_t(side) * side, 0.0f);
+    for (int dy = -R; dy <= R; ++dy)
+        for (int dx = -R; dx <= R; ++dx) {
+            const double d = std::hypot(double(dx), double(dy));
+            double m = 0.0;
+            if (d <= r0) m = 1.0;
+            else if (d < r1) m = 0.5 + 0.5 * std::cos(M_PI * (d - r0) / (r1 - r0));
+            stamp[std::size_t(dy + R) * side + (dx + R)] = float(m);
+        }
+    std::vector<float> mask(std::size_t(w) * h, 0.0f);
+    for (const auto& [hx, hy] : hot)
+        for (int dy = -R; dy <= R; ++dy) {
+            const int y = hy + dy;
+            if (y < 0 || y >= h) continue;
+            for (int dx = -R; dx <= R; ++dx) {
+                const int x = hx + dx;
+                if (x < 0 || x >= w) continue;
+                float& m = mask[std::size_t(y) * w + x];
+                m = std::max(m, stamp[std::size_t(dy + R) * side + (dx + R)]);
+            }
+        }
+    return mask;
+}
 
 std::vector<float> starletDenoise(const float* plane, int w, int h,
                                   int levels, double k) {
@@ -217,6 +231,17 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         // declared target is applied at the end by ONE convolution of the
         // sharp estimate — the partial kernel is still never formed.
         const float beta = float(opt.redPriorWeight);
+        // Star-neutral prior: near bright stars the denoiser is blended back
+        // to the identity (round feathered mask), so the separable wavelet
+        // frame cannot imprint its tensor-product geometry around stars —
+        // there the data term and the delivered-PSF contract govern alone.
+        // Threshold well below saturation: any star strong enough to leave
+        // frame-shaped residuals is excluded from the prior.
+        std::vector<float> starMask;
+        {
+            const double thrStar = percentileOf(finiteVals, 99.9);
+            starMask = coreProtectionMask(hotPixels(in.data(), w, h, thrStar), w, h);
+        }
         std::vector<std::complex<float>> X(Y.size()), Df(Y.size());
         for (std::size_t i = 0; i < Y.size(); ++i)
             X[i] = Y[i] * std::conj(K[i]) / (std::norm(K[i]) + beta);
@@ -224,6 +249,8 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
         for (int it = 0; it < opt.redIterations; ++it) {
             d = starletDenoise(x.data(), w, h, opt.redLevels, opt.redThresholdK);
+            for (std::size_t i = 0; i < n; ++i)
+                d[i] = starMask[i] * x[i] + (1.0f - starMask[i]) * d[i];
             r2c(shape, rs, cs, axes, FORWARD, d.data(), Df.data(), 1.0f, nth);
             for (std::size_t i = 0; i < Y.size(); ++i)
                 X[i] = (Y[i] * std::conj(K[i]) + beta * Df[i])
@@ -255,14 +282,10 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
     std::vector<float> out(n);
     if (opt.protectCores && !finiteVals.empty()) {
         const double thr = percentileOf(finiteVals, opt.protectPercentile);
-        std::vector<float> mask(n, 0.0f);
-        for (std::size_t i = 0; i < n; ++i)
-            if (std::isfinite(in[i]) && in[i] > thr) mask[i] = 1.0f;
-        sepFilter(mask, w, h, 5, true);    // dilate r=5
-        sepFilter(mask, w, h, 3, false);   // feather (two mean passes)
-        sepFilter(mask, w, h, 3, false);
+        const std::vector<float> mask =
+            coreProtectionMask(hotPixels(in.data(), w, h, thr), w, h);
         for (std::size_t i = 0; i < n; ++i) {
-            const float m = std::min(1.0f, std::max(0.0f, mask[i]));
+            const float m = mask[i];
             out[i] = m * in[i] + (1.0f - m) * (work[i] + float(bg));
         }
     } else {

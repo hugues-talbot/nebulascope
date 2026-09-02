@@ -173,6 +173,24 @@ NS_TEST(deconv_red_quieter_at_equal_delivery) {
     NS_CHECK(holeVar(outR) < 0.6 * holeVar(outM));
 }
 
+NS_TEST(deconv_protection_mask_is_round) {
+    // The regression that motivated this: square (separable-morphology)
+    // protection reads as a visible square of foreign texture once RED
+    // denoises the surroundings. The mask must be radially symmetric:
+    // equal radius, equal weight — on-axis and diagonal alike.
+    const std::vector<float> m = coreProtectionMask({{32, 32}}, 64, 64);
+    auto at = [&](int dx, int dy) { return m[std::size_t(32 + dy) * 64 + 32 + dx]; };
+    NS_CHECK(at(0, 0) == 1.0f && at(5, 0) == 1.0f);        // flat core
+    NS_CHECK(at(13, 0) == 0.0f && at(10, 10) == 0.0f);     // beyond r1
+    // d ~ 8.49 diagonal vs d ~ 8.49 would need irrationals; compare the
+    // diagonal (6,6) with the nearest on-axis radii instead: its weight
+    // must sit BETWEEN theirs (square morphology gives ~full weight there).
+    NS_CHECK(at(6, 6) < at(8, 0) && at(6, 6) > at(9, 0));
+    // Two seeds max-blend, never sum.
+    const std::vector<float> m2 = coreProtectionMask({{32, 32}, {33, 32}}, 64, 64);
+    NS_CHECK(m2[std::size_t(32) * 64 + 32] == 1.0f);
+}
+
 NS_TEST(deconv_moffat_kernel_shape) {
     DeconvChannelPsf psf;
     psf.fwhmMajPx = 5.0; psf.fwhmMinPx = 4.0; psf.paDeg = 25.0; psf.beta = 2.2;

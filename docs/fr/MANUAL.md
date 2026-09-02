@@ -693,7 +693,12 @@ filtre de cohérence aux données avec l'image débruitée comme moyenne a
 priori. Le poids μ joue le rôle de λ, obéit à la même échelle « contrat
 d'abord », et la PSF livrée est vérifiée sur le résultat exactement comme
 avant ; ce qui change, c'est que le fond reste calme à largeur livrée
-égale (propriété que la suite de tests vérifie). Le filtre pur reste le
+égale (propriété que la suite de tests vérifie). Près des étoiles
+brillantes, l'a priori s'efface en fondu (et la protection des cœurs
+saturés emploie des empreintes rondes, adoucies), de sorte que ni la
+géométrie du repère d'ondelettes ni celle de la protection ne peuvent
+s'imprimer autour des étoiles — l'a priori ne gouverne que le fond et
+les nébulosités. Le filtre pur reste le
 défaut — lui seul garde la propriété « chaque pixel est une fonctionnelle
 linéaire déclarée » ; l'en-tête du résultat RED déclare à la place le
 modèle variationnel complet (noyau, cible, a priori, μ, itérations).

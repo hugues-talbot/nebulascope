@@ -601,7 +601,11 @@ weights — then re-solves the data-consistency filter with the denoised
 image as prior mean. The prior weight μ plays λ's role, obeys the same
 contract-first ladder, and the delivered PSF is verified on the result
 exactly as before; what changes is that the background stays quiet at
-the same delivered width (a property the test suite asserts). The pure
+the same delivered width (a property the test suite asserts). Near
+bright stars the prior is feathered out entirely (and saturated-core
+protection uses round, smoothly feathered footprints), so neither the
+wavelet frame's geometry nor the protection's can imprint itself around
+stars — the prior governs background and nebulosity only. The pure
 filter remains the default — it alone has the "every output pixel is a
 stated linear functional" property; the RED result's header states the
 full variational model instead (kernel, target, prior, μ, iterations).
