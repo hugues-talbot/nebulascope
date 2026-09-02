@@ -96,10 +96,24 @@ best-15 % "lucky" selection, before and after BXT:
 | Lucky, raw | 1.82″ | 1.77″ | 1.92″ |
 | Lucky + BXT | 1.25″ | 1.18″ | 1.19″ |
 
-Three physical findings fell out. The **optics are diffraction-limited**:
-0.99″ diffraction for 140 mm at Hα, field-uniform FWHM to ~5 % across a
-2° field, and BXT able to reach within ~20 % of the diffraction limit —
-none of which a deficient objective could produce. The **eccentricity
+A caveat the study only sharpened later belongs up front: **stellar
+analysis is measurement only on raw linear data and after calibrated
+deconvolution.** A neural model's stellar profiles are largely drawn
+from its prior — ML5's defaults deliver 0.97–1.04″ against a 0.99″
+diffraction limit, which no measurement of this atmosphere could yield —
+so the BXT rows above describe a *rendering* of stars, essentially
+cosmetic, and are kept for completeness rather than inference. The rows
+that carry physics are the raw ones; the deconvolution's stars carry a
+different kind of meaning — a *declared* PSF whose delivery is
+re-measured (the audit later in this appendix).
+
+Three physical findings fell out — all from the **raw** rows. The
+**optics are diffraction-limited**: 0.99″ diffraction for 140 mm at Hα,
+and field-uniform FWHM to ~5 % across a 2° field — not something a
+deficient objective could produce. (An earlier draft also cited BXT
+reaching near the limit as corroboration; by the caveat above, that
+argument is retracted — a prior-drawn star proves nothing about the
+glass.) The **eccentricity
 (0.35–0.56) is one-axis drift, not optics**: its position angle is uniform
 across the entire field in every channel (tilt or collimation would rotate
 toward the corners), indicting guiding/flexure along a single axis — worth
@@ -336,6 +350,11 @@ time, to certify the machinery.
   heuristics; and parity is part of the group.
 - Iterative deconvolution cannot promise a PSF; a linear filter can, and
   the promise can be *audited* by re-measuring stars on the product.
+- Stellar analysis is measurement only where the stars are physics: raw
+  linear data, and a calibrated deconvolution whose delivered PSF is
+  declared and re-checked. A neural model's stars are prior-drawn —
+  essentially cosmetic — and can neither certify optics nor arbitrate a
+  model revision.
 - Ground truth changes the epistemics: with a held-out half of a Hubble
   overlap, every processing claim — including a neural network's — becomes
   a measurement.
