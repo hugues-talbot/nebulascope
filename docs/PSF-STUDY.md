@@ -357,6 +357,74 @@ own right; with a nonexpansive threshold it converges in practice, and
 the test suite asserts the claim that matters — at equal delivered PSF,
 the RED background variance comes in well under the pure filter's.
 
+## The ninth row: proper coaddition
+
+Finding 2 of the eight-way audit said the model's gains need the deep
+stack; finding 3 said sub-selection helps the raw render but caps the
+ceiling. Together they hint that *the stacking itself* was the weak
+link — and that the full-versus-lucky dilemma is a false choice. The
+classical resolution is **proper coaddition** (Zackay & Ofek 2017):
+with registered subs $y_i = f_i\,(k_i \ast x) + n_i$, each carrying its
+*own* PSF, the joint least-squares estimate is closed-form in Fourier,
+
+$$\hat{X}_t \;=\; \mathrm{OTF}_t \cdot
+  \frac{\sum_i (f_i/\sigma_i^2)\, \overline{K_i}\, Y_i}
+       {\sum_i (f_i^2/\sigma_i^2)\, |K_i|^2 \;+\; \lambda}.$$
+
+Each sub is weighted *frequency by frequency* by its own OTF:
+good-seeing frames govern the high frequencies, poor ones still donate
+every photon at low frequencies — lucky imaging without discarding
+anything. The declared target and the delivered-PSF audit carry over
+unchanged.
+
+The implementation (`patch_extract.py`, `proper_coadd.py`,
+`patch_audit.py`) measures a per-sub elliptical Moffat (the residual
+registration offset entering $K_i$ as a phase), weights by noise and
+transparency, and accumulates two Fourier planes — streaming, constant
+memory. A synthetic self-test (40 subs, seeing 2.4–5.0 px, blind
+per-sub measurement) has the estimator halving the error of
+stack-then-deconvolve at the same declared target. The real experiment
+ran on a 1024-px patch of the Hubble overlap cut from **all 201
+registered subs** of a full-frame re-registration (105 Hα, 51 S II,
+45 O III; nothing culled); patch numbers compare fairly only within the
+patch, so every row below shares its rectangles. Kernel FWHM /
+star-masked nebula NRMSE against Hubble at 1.3″:
+
+| Patch render | Hα (105) | S II (51) | O III (45) |
+| --- | --- | --- | --- |
+| Proper coadd, all subs | **2.53″ / 0.39** | 1.98″ / 0.89 | **1.81″ / 0.53** |
+| Plain mean, same subs | 2.93″ / 0.61 | **2.01″ / 0.69** | 1.96″ / 0.69 |
+| Integrated master (crop) | 2.86″ / 0.60 | 1.94″ / 0.69 | 2.35″ / 0.68 |
+| BXT ML5 master (crop) | 2.40″ / **0.35** | 1.62″ / **0.58** | 1.55″ / **0.46** |
+
+Four findings:
+
+1. **Where there is diversity and signal, the estimator delivers.** In
+   Hα it beats the plain mean of the identical frames by 0.4″ of
+   extended-structure resolution and 36 % of fidelity; in O III it is
+   sharper *and* truer than both baselines. No frame discarded, no
+   prior consulted.
+2. **A closed-form linear estimator lands within ~12 % of the best
+   neural model** on the photon-rich channel (0.39 vs 0.35) — with
+   every output pixel a stated functional of the data.
+3. **S II is an honest negative.** The faintest channel's extended
+   structure already sat at the stellar resolution (no [N II] cushion),
+   so the matched filter had nothing to harvest; its amplification
+   bought only noise, and the referee promptly said so. The estimator
+   degrades gracefully toward "use the mean" — and the framework
+   detects *per channel* which regime the data is in.
+4. **The residual gap to ML5 — and the whole S II deficit — is
+   denoising, not structure.** The neural model's remaining advantage
+   is its prior acting as a noise model. The principled response is
+   already built earlier in this appendix: the starlet-RED prior,
+   moved *inside* the coaddition's inversion. That unification is the
+   method's natural next version.
+
+Two sanity checks kept the experiment honest: the plain mean of the
+patch cube reproduces the integrated master's behaviour (pipeline
+sound end to end), and the per-sub measurement succeeded blind on all
+201 frames.
+
 ## Future work: a spatially-variant PSF
 
 This field earned a single kernel per channel — stellar FWHM uniform to
