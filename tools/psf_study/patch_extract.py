@@ -119,7 +119,12 @@ def extract(subs_dir, out_path, rect):
         raise SystemExit(f'no subs in {subs_dir}')
     cubes, manifest = [], []
     for i, fp in enumerate(files):
-        a = read_any(fp)
+        try:
+            a = read_any(fp)
+        except Exception as ex:
+            # A mid-write disconnect leaves truncated files; skip loudly.
+            print(f'  skip (unreadable: {ex}): {os.path.basename(fp)}')
+            continue
         plane = a[0] if a.ndim == 3 else a
         crop = plane[y:y+h, x:x+w]
         if crop.shape != (h, w):
