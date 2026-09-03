@@ -122,6 +122,49 @@ def gauss_otf(fwhm, shape):
     k = np.exp(-0.5*(xx**2 + yy**2)/s**2)
     return embed_otf(k/k.sum(), shape)
 
+# ----------------------------------------------------- RED prior (v2) -----
+# The multi-frame RED fixed point over the coadd accumulators:
+#     X = (Num + mu.F[D(x)]) / (Den + mu),   target OTF applied at the end.
+# Ported lessons from the in-app starlet-RED (NebulaScope core/Deconvolve):
+# threshold only the FINE starlet scales (coarse shrinkage prints the B3
+# tensor support around stars) and hold the prior NEUTRAL near bright stars
+# (round, brightness-tiered zones — here via distance transforms).
+
+def atrous_smooth(x, step):
+    n = 4*step + 1
+    w = np.zeros(n)
+    w[::step] = [1/16, 4/16, 6/16, 4/16, 1/16]
+    x = ndimage.convolve1d(x, w, axis=0, mode='mirror')
+    return ndimage.convolve1d(x, w, axis=1, mode='mirror')
+
+def starlet_denoise(x, levels=5, k=3.0, thresh_levels=3):
+    cur, out = x, np.zeros_like(x)
+    for j in range(levels):
+        sm = atrous_smooth(cur, 1 << j)
+        d = cur - sm
+        if j < thresh_levels:
+            thr = k*np.median(np.abs(d))/0.6745
+            out += np.sign(d)*np.maximum(np.abs(d) - thr, 0)
+        else:
+            out += d
+        cur = sm
+    return out + cur
+
+def star_neutral_mask(img):
+    fin = img[np.isfinite(img)]
+    mask = np.zeros(img.shape)
+    for pct, r0, r1 in ((99.9, 6, 14), (99.99, 14, 32), (99.999, 28, 64)):
+        thr = np.percentile(fin, pct)
+        seeds = img > thr
+        if not seeds.any():
+            continue
+        d = ndimage.distance_transform_edt(~seeds)
+        m = np.clip(0.5 + 0.5*np.cos(np.pi*(d - r0)/(r1 - r0)), 0, 1)
+        m[d <= r0] = 1.0
+        m[d >= r1] = 0.0
+        mask = np.maximum(mask, m)
+    return mask
+
 # ------------------------------------------------------------ coadd -------
 
 def edge_window(shape, margin=32):
@@ -132,9 +175,12 @@ def edge_window(shape, margin=32):
     wx[:margin] = ramp; wx[-margin:] = ramp[::-1]
     return np.outer(wy, wx)
 
-def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True):
+def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True,
+                 red_iters=0, red_mu=1e-2):
     """cube [N,h,w] background-subtracted; psfs: list of measure_sub dicts
-    (None entries are skipped). Returns (proper, mean, report)."""
+    (None entries are skipped). red_iters > 0 runs the multi-frame RED
+    fixed point over the accumulators (starlet prior, fine scales only,
+    star-neutral near bright stars). Returns (proper, mean, report)."""
     shape = cube.shape[1:]
     win = edge_window(shape)
     num = np.zeros((shape[0], shape[1]//2 + 1), np.complex128)
@@ -164,7 +210,19 @@ def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True):
             print(f'  sub {i+1}/{len(cube)}')
     Tt = gauss_otf(target_fwhm, shape)
     scale = den.flat[0]/max(used, 1)           # keep output near input units
-    proper = irfft2(Tt*num/(den + lam*den.flat[0]), s=shape)*scale
+    if red_iters > 0:
+        mu = red_mu*den.flat[0]
+        X = num/(den + mu)                     # warm start, zero prior mean
+        x = irfft2(X, s=shape)
+        sm = star_neutral_mask(x)
+        for it in range(red_iters):
+            d = starlet_denoise(x)
+            d = sm*x + (1.0 - sm)*d
+            X = (num + mu*rfft2(d))/(den + mu)
+            x = irfft2(X, s=shape)
+        proper = irfft2(Tt*X, s=shape)*scale
+    else:
+        proper = irfft2(Tt*num/(den + lam*den.flat[0]), s=shape)*scale
     return proper, mean_acc/max(used, 1), report
 
 # ---------------------------------------------------------- self-test -----
@@ -214,12 +272,17 @@ def selftest():
         A = np.vstack([a, np.ones_like(a)]).T
         sol, *_ = np.linalg.lstsq(A, b, rcond=None)
         return float(np.sqrt(np.mean((A@sol - b)**2))/b.std())
-    sp, sc = score(proper), score(classic)
-    print(f'nebula NRMSE vs truth@target: proper {sp:.4f}  classic {sc:.4f}')
+    red, _, _ = proper_coadd(cube, psfs, target, 1e-3, verbose=False,
+                             red_iters=10, red_mu=1e-2)
+    sp, sc, sr = score(proper), score(classic), score(red)
+    print(f'nebula NRMSE vs truth@target: proper {sp:.4f}  classic {sc:.4f}  '
+          f'proper+RED {sr:.4f}')
     pp = measure_sub(proper, refpts)
-    print(f'delivered FWHM (proper): {np.sqrt(pp["fmaj"]*pp["fmin"]):.2f} px '
-          f'(declared {target})')
+    pr = measure_sub(red, refpts)
+    print(f'delivered FWHM: proper {np.sqrt(pp["fmaj"]*pp["fmin"]):.2f} px, '
+          f'proper+RED {np.sqrt(pr["fmaj"]*pr["fmin"]):.2f} px (declared {target})')
     assert sp < sc, 'proper coadd should beat stack-then-deconvolve'
+    assert sr < sp*1.02, 'RED should not hurt fidelity'
     print('SELFTEST PASS')
 
 # ------------------------------------------------------------- main -------
@@ -229,9 +292,21 @@ def main():
         selftest(); return
     if len(sys.argv) < 3:
         raise SystemExit(__doc__)
-    cube_path, prefix = sys.argv[1], sys.argv[2]
-    target = float(sys.argv[3]) if len(sys.argv) > 3 else 2.36   # 1.8" at 0.7637"/px
-    lam = float(sys.argv[4]) if len(sys.argv) > 4 else 1e-3
+    args = sys.argv[1:]
+    red_iters, red_mu = 0, 1e-2
+    if '--red' in args:
+        i = args.index('--red')
+        red_iters = int(args[i+1])
+        if i+2 < len(args) and not args[i+2].startswith('-'):
+            try:
+                red_mu = float(args[i+2]); del args[i:i+3]
+            except ValueError:
+                del args[i:i+2]
+        else:
+            del args[i:i+2]
+    cube_path, prefix = args[0], args[1]
+    target = float(args[2]) if len(args) > 2 else 2.36   # 1.8" at 0.7637"/px
+    lam = float(args[3]) if len(args) > 3 else 1e-3
     sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
     from star_fwhm import read_fits_f32
     from full_deconv import write_fits_f32
@@ -242,9 +317,11 @@ def main():
     print(f'{cube.shape[0]} subs, {len(refpts)} reference stars')
     psfs = [measure_sub(s, refpts) for s in cube]
     print(f'PSF measured on {sum(p is not None for p in psfs)} subs')
-    proper, mean, rep = proper_coadd(cube, psfs, target, lam)
+    proper, mean, rep = proper_coadd(cube, psfs, target, lam,
+                                     red_iters=red_iters, red_mu=red_mu)
+    tag = f', RED {red_iters} iters mu {red_mu}' if red_iters else f', lambda {lam}'
     write_fits_f32(prefix + '_proper.fits', proper[None].astype(np.float32),
-                   [f'proper coadd, target {target} px, lambda {lam}'])
+                   [f'proper coadd, target {target} px{tag}'])
     write_fits_f32(prefix + '_mean.fits', mean[None].astype(np.float32),
                    ['plain mean of the same subs'])
     with open(prefix + '_report.json', 'w') as f:
