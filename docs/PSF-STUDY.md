@@ -397,33 +397,41 @@ star-masked nebula NRMSE against Hubble at 1.3″:
 | Integrated master (crop) | 2.86″ / 0.60 | 1.94″ / 0.69 | 2.35″ / 0.68 |
 | BXT ML5 master (crop) | 2.40″ / **0.35** | 1.62″ / **0.58** | 1.55″ / **0.46** |
 
-Four findings:
+What survives scrutiny, and what does not:
 
-1. **Where there is diversity and signal, the estimator delivers.** In
-   Hα it beats the plain mean of the identical frames by 0.4″ of
-   extended-structure resolution and 36 % of fidelity; in O III it is
-   sharper *and* truer than both baselines. No frame discarded, no
-   prior consulted.
-2. **A closed-form linear estimator lands within ~12 % of the best
-   neural model** on the photon-rich channel (0.39 vs 0.35) — with
-   every output pixel a stated functional of the data.
-3. **S II is an honest negative.** The faintest channel's extended
-   structure already sat at the stellar resolution (no [N II] cushion),
-   so the matched filter had nothing to harvest; its amplification
-   bought only noise, and the referee promptly said so. The estimator
-   degrades gracefully toward "use the mean" — and the framework
-   detects *per channel* which regime the data is in.
-4. **The residual gap to ML5 — and the whole S II deficit — is
-   denoising, not structure.** The neural model's remaining advantage
-   is its prior acting as a noise model. The principled response is
-   already built earlier in this appendix: the starlet-RED prior,
-   moved *inside* the coaddition's inversion. That unification is the
-   method's natural next version.
-
-Two sanity checks kept the experiment honest: the plain mean of the
-patch cube reproduces the integrated master's behaviour (pipeline
-sound end to end), and the per-sub measurement succeeded blind on all
-201 frames.
+1. **The resolution gains are real and robust.** Proper coaddition
+   recovers 0.4″ of extended-structure resolution over the plain mean
+   of the *identical* Hα frames (2.53″ vs 2.93″) and sharpens O III
+   similarly — structural measurements, insensitive to the fidelity
+   metric's choices below. No frame discarded, no prior consulted, all
+   201 subs blind-measured; and the plain mean reproduces the
+   integrated master's behaviour, so the pipeline is sound end to end.
+2. **The fidelity rankings, however, did not survive their own
+   audit.** The table's NRMSE column uses the study's standard star
+   mask (99th percentile, dilation 6). A modestly stronger mask (97th,
+   dilation 10) *collapses* the Hα spread — mean 0.61 → 0.31, proper
+   0.39 → 0.34, ML5 0.35 → 0.31 — and *inverts* the S II ordering
+   (proper 0.70 vs mean 0.74). Residual maps show why: on a
+   patch-sized region of a faint channel, the score is dominated by
+   under-masked faint stars and by Hubble's own diffraction spikes,
+   not by nebulosity. At patch scale this instrument cannot finely
+   rank near-equal renders, and the fidelity *orderings* above are
+   therefore withdrawn; only the coarse separations (every processed
+   render far ahead of raw-class values) are trusted.
+3. **The denoising hypothesis was tested and falsified in its simple
+   form.** Moving the starlet-RED prior inside the coaddition's
+   inversion (`--red`; the RED fixed point over the accumulators,
+   fine-scale thresholds, star-neutral zones) improves the synthetic
+   self-test (0.054 → 0.044) yet slightly worsens every real-patch
+   score — which is itself part of the evidence that the residuals
+   these scores measure are structured stellar contamination rather
+   than noise.
+4. **The instrument, not the estimator, is the current frontier.** A
+   fidelity referee fit to rank these renders needs photometric star
+   *subtraction* (the per-render fitted PSFs exist) in place of
+   percentile masking, and larger validation areas. Until then, the
+   ninth row's demonstrated claim is the resolution one — which was
+   the point of the estimator all along.
 
 ## Future work: a spatially-variant PSF
 
@@ -474,3 +482,9 @@ time, to certify the machinery.
 - Ground truth changes the epistemics: with a held-out half of a Hubble
   overlap, every processing claim — including a neural network's — becomes
   a measurement.
+- A metric is an instrument and must be calibrated like one. The
+  fidelity score ranked renders confidently for weeks — until a
+  mask-sensitivity audit showed its fine orderings swinging with the
+  star-masking recipe on faint, patch-sized regions. Robust conclusions
+  survived; flattering precision did not. Audit the referee before
+  quoting it.
