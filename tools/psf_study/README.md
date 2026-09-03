@@ -20,6 +20,7 @@ them for another field.
 | `ml5_audit.py` | The linear_deconv protocol condensed to one comparative question: raw vs BXT ML4 vs BXT ML5, per channel — extended-structure kernel FWHM and held-out star-masked nebula fidelity, same registration and rectangles for all three. |
 | `patch_extract.py` | Registered-sub patch extraction: `--locate` maps the study ROI into a new WBPP run's grid (same-source registration); extraction crops every sub into a compact float32 cube + manifest. Ships a minimal monolithic-XISF reader (uncompressed / zlib / zstd / lz4, +byteshuffle) validated bit-exact against the app's decoder. |
 | `proper_coadd.py` | Proper coaddition (Zackay & Ofek 2017): per-sub Moffat PSFs (with residual registration offsets as kernel phases), 1/sigma^2 x transparency weights, matched-filter Fourier accumulation, declared-target output. `--selftest` synthesizes 40 subs with random seeing and asserts it beats stack-then-deconvolve (it does, by 2x) and honours the delivered-PSF contract. |
+| `patch_audit.py --filter H name=path ...` | The Hubble-overlap referee for patch-sized renders (ninth-row experiment): registers the mosaic onto the patch grid (wide-search fallback), kernel FWHM on the west rectangle, star-masked fidelity on the held-out east one. Patch numbers are fair only WITHIN a patch — always include in-patch baselines (raw crop, plain mean). |
 
 Set `PSF_DATA` to the folder holding the data (reference images, and a
 `PSF_comparison/` subfolder with the linear masters and the HST mosaics);
