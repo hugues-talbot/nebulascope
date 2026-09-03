@@ -18,11 +18,11 @@ them for another field.
 | `linear_deconv.py [target_asec] [dump_dir]` | Linear extended-structure kernels vs the HST Heritage M16 mosaics, with a held-out fit/validate split — the honest BXT-on-nebulosity measurement. |
 | `full_deconv.py [target_asec] [dump_dir]` | Full-frame calibrated deconvolution: measured elliptical-Moffat PSF in, declared circular Gaussian out, MCS one-filter transform, contract-first regularization, saturated-core protection, delivered-PSF verification. |
 | `ml5_audit.py` | The linear_deconv protocol condensed to one comparative question: raw vs BXT ML4 vs BXT ML5, per channel — extended-structure kernel FWHM and held-out star-masked nebula fidelity, same registration and rectangles for all three. |
+| `patch_extract.py` | Registered-sub patch extraction: `--locate` maps the study ROI into a new WBPP run's grid (same-source registration); extraction crops every sub into a compact float32 cube + manifest. Ships a minimal monolithic-XISF reader (uncompressed / zlib / zstd / lz4, +byteshuffle) validated bit-exact against the app's decoder. |
+| `proper_coadd.py` | Proper coaddition (Zackay & Ofek 2017): per-sub Moffat PSFs (with residual registration offsets as kernel phases), 1/sigma^2 x transparency weights, matched-filter Fourier accumulation, declared-target output. `--selftest` synthesizes 40 subs with random seeing and asserts it beats stack-then-deconvolve (it does, by 2x) and honours the delivered-PSF contract. |
 
 Set `PSF_DATA` to the folder holding the data (reference images, and a
 `PSF_comparison/` subfolder with the linear masters and the HST mosaics);
 it defaults to the working directory. Float32 FITS dumps of XISF masters
 are produced with NebulaScope itself (`open …` / `save …` in a script).
 Requires Python 3 with NumPy, SciPy and Pillow.
-| `patch_extract.py` | Registered-sub patch extraction: `--locate` maps the study ROI into a new WBPP run's grid (same-source registration); extraction crops every sub into a compact float32 cube + manifest. Ships a minimal monolithic-XISF reader (uncompressed / zlib / zstd / lz4, +byteshuffle) validated bit-exact against the app's decoder. |
-| `proper_coadd.py` | Proper coaddition (Zackay & Ofek 2017): per-sub Moffat PSFs (with residual registration offsets as kernel phases), 1/sigma^2 x transparency weights, matched-filter Fourier accumulation, declared-target output. `--selftest` synthesizes 40 subs with random seeing and asserts it beats stack-then-deconvolve (it does, by 2x) and honours the delivered-PSF contract. |
