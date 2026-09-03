@@ -24,3 +24,5 @@ Set `PSF_DATA` to the folder holding the data (reference images, and a
 it defaults to the working directory. Float32 FITS dumps of XISF masters
 are produced with NebulaScope itself (`open …` / `save …` in a script).
 Requires Python 3 with NumPy, SciPy and Pillow.
+| `patch_extract.py` | Registered-sub patch extraction: `--locate` maps the study ROI into a new WBPP run's grid (same-source registration); extraction crops every sub into a compact float32 cube + manifest. Ships a minimal monolithic-XISF reader (uncompressed / zlib / zstd / lz4, +byteshuffle) validated bit-exact against the app's decoder. |
+| `proper_coadd.py` | Proper coaddition (Zackay & Ofek 2017): per-sub Moffat PSFs (with residual registration offsets as kernel phases), 1/sigma^2 x transparency weights, matched-filter Fourier accumulation, declared-target output. `--selftest` synthesizes 40 subs with random seeing and asserts it beats stack-then-deconvolve (it does, by 2x) and honours the delivered-PSF contract. |
