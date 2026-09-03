@@ -68,9 +68,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-1186ef8162c3c73f68abd6432a9e86e2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-3d497cff885f6278d37568d0ef0763f8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-3686e73f2b10d5e0866cac69e1e072da.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -721,14 +721,13 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Four findings:</p>
+<p>What survives scrutiny, and what does not:</p>
 <ol type="1">
-<li><strong>Where there is diversity and signal, the estimator delivers.</strong> In Hα it beats the plain mean of the identical frames by 0.4″ of extended-structure resolution and 36 % of fidelity; in O III it is sharper <em>and</em> truer than both baselines. No frame discarded, no prior consulted.</li>
-<li><strong>A closed-form linear estimator lands within ~12 % of the best neural model</strong> on the photon-rich channel (0.39 vs 0.35) — with every output pixel a stated functional of the data.</li>
-<li><strong>S II is an honest negative.</strong> The faintest channel’s extended structure already sat at the stellar resolution (no [N II] cushion), so the matched filter had nothing to harvest; its amplification bought only noise, and the referee promptly said so. The estimator degrades gracefully toward “use the mean” — and the framework detects <em>per channel</em> which regime the data is in.</li>
-<li><strong>The residual gap to ML5 — and the whole S II deficit — is denoising, not structure.</strong> The neural model’s remaining advantage is its prior acting as a noise model. The principled response is already built earlier in this appendix: the starlet-RED prior, moved <em>inside</em> the coaddition’s inversion. That unification is the method’s natural next version.</li>
+<li><strong>The resolution gains are real and robust.</strong> Proper coaddition recovers 0.4″ of extended-structure resolution over the plain mean of the <em>identical</em> Hα frames (2.53″ vs 2.93″) and sharpens O III similarly — structural measurements, insensitive to the fidelity metric’s choices below. No frame discarded, no prior consulted, all 201 subs blind-measured; and the plain mean reproduces the integrated master’s behaviour, so the pipeline is sound end to end.</li>
+<li><strong>The fidelity rankings, however, did not survive their own audit.</strong> The table’s NRMSE column uses the study’s standard star mask (99th percentile, dilation 6). A modestly stronger mask (97th, dilation 10) <em>collapses</em> the Hα spread — mean 0.61 → 0.31, proper 0.39 → 0.34, ML5 0.35 → 0.31 — and <em>inverts</em> the S II ordering (proper 0.70 vs mean 0.74). Residual maps show why: on a patch-sized region of a faint channel, the score is dominated by under-masked faint stars and by Hubble’s own diffraction spikes, not by nebulosity. At patch scale this instrument cannot finely rank near-equal renders, and the fidelity <em>orderings</em> above are therefore withdrawn; only the coarse separations (every processed render far ahead of raw-class values) are trusted.</li>
+<li><strong>The denoising hypothesis was tested and falsified in its simple form.</strong> Moving the starlet-RED prior inside the coaddition’s inversion (<code>--red</code>; the RED fixed point over the accumulators, fine-scale thresholds, star-neutral zones) improves the synthetic self-test (0.054 → 0.044) yet slightly worsens every real-patch score — which is itself part of the evidence that the residuals these scores measure are structured stellar contamination rather than noise.</li>
+<li><strong>The instrument, not the estimator, is the current frontier.</strong> A fidelity referee fit to rank these renders needs photometric star <em>subtraction</em> (the per-render fitted PSFs exist) in place of percentile masking, and larger validation areas. Until then, the ninth row’s demonstrated claim is the resolution one — which was the point of the estimator all along.</li>
 </ol>
-<p>Two sanity checks kept the experiment honest: the plain mean of the patch cube reproduces the integrated master’s behaviour (pipeline sound end to end), and the per-sub measurement succeeded blind on all 201 frames.</p>
 </section>
 <section id="future-work-a-spatially-variant-psf" class="level2">
 <h2 class="anchored" data-anchor-id="future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</h2>
@@ -750,6 +749,7 @@ window.Quarto = {
 <li>Iterative deconvolution cannot promise a PSF; a linear filter can, and the promise can be <em>audited</em> by re-measuring stars on the product.</li>
 <li>Stellar analysis is measurement only where the stars are physics: raw linear data, and a calibrated deconvolution whose delivered PSF is declared and re-checked. A neural model’s stars are prior-drawn — essentially cosmetic — and can neither certify optics nor arbitrate a model revision.</li>
 <li>Ground truth changes the epistemics: with a held-out half of a Hubble overlap, every processing claim — including a neural network’s — becomes a measurement.</li>
+<li>A metric is an instrument and must be calibrated like one. The fidelity score ranked renders confidently for weeks — until a mask-sensitivity audit showed its fine orderings swinging with the star-masking recipe on faint, patch-sized regions. Robust conclusions survived; flattering precision did not. Audit the referee before quoting it.</li>
 </ul>
 
 
