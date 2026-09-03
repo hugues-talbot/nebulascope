@@ -422,6 +422,7 @@ window.Quarto = {
   <li><a href="#calibrated-deconvolution-with-a-stated-model" id="toc-calibrated-deconvolution-with-a-stated-model" class="nav-link" data-scroll-target="#calibrated-deconvolution-with-a-stated-model">Calibrated deconvolution with a stated model</a></li>
   <li><a href="#was-hubble-necessary" id="toc-was-hubble-necessary" class="nav-link" data-scroll-target="#was-hubble-necessary">Was Hubble necessary?</a></li>
   <li><a href="#the-noise-and-a-denoiser-inside-the-inversion" id="toc-the-noise-and-a-denoiser-inside-the-inversion" class="nav-link" data-scroll-target="#the-noise-and-a-denoiser-inside-the-inversion">The noise, and a denoiser inside the inversion</a></li>
+  <li><a href="#the-ninth-row-proper-coaddition" id="toc-the-ninth-row-proper-coaddition" class="nav-link" data-scroll-target="#the-ninth-row-proper-coaddition">The ninth row: proper coaddition</a></li>
   <li><a href="#future-work-a-spatially-variant-psf" id="toc-future-work-a-spatially-variant-psf" class="nav-link" data-scroll-target="#future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</a></li>
   <li><a href="#lessons-collected" id="toc-lessons-collected" class="nav-link" data-scroll-target="#lessons-collected">Lessons, collected</a></li>
   </ul>
@@ -670,6 +671,65 @@ window.Quarto = {
   {|\mathrm{OTF}_k|^2 + \mu},\]</span></p>
 <p>warm-started at the pure-MCS solution; the declared target is applied by one final convolution, so the partial kernel is still never formed. The denoiser <span class="math inline">\(D\)</span> is a starlet (à-trous B3-spline) soft-threshold with per-scale MAD noise estimates — the classical astronomical sparsity prior, a <em>declared assumption</em> rather than learned weights. The prior weight μ plays λ’s role and obeys the same contract-first ladder, and the delivered-PSF audit is untouched: it measures the product and does not care how the product was made. What is honestly surrendered is the “stated linear functional” property — the header records the full variational model instead — plus a footnote of rigour: the RED gradient identity does not strictly hold for real denoisers (Reehorst &amp; Schniter 2019), so the iteration is best read as a well-behaved algorithm in its own right; with a nonexpansive threshold it converges in practice, and the test suite asserts the claim that matters — at equal delivered PSF, the RED background variance comes in well under the pure filter’s.</p>
 </section>
+<section id="the-ninth-row-proper-coaddition" class="level2">
+<h2 class="anchored" data-anchor-id="the-ninth-row-proper-coaddition">The ninth row: proper coaddition</h2>
+<p>Finding 2 of the eight-way audit said the model’s gains need the deep stack; finding 3 said sub-selection helps the raw render but caps the ceiling. Together they hint that <em>the stacking itself</em> was the weak link — and that the full-versus-lucky dilemma is a false choice. The classical resolution is <strong>proper coaddition</strong> (Zackay &amp; Ofek 2017): with registered subs <span class="math inline">\(y_i = f_i\,(k_i \ast x) + n_i\)</span>, each carrying its <em>own</em> PSF, the joint least-squares estimate is closed-form in Fourier,</p>
+<p><span class="math display">\[\hat{X}_t \;=\; \mathrm{OTF}_t \cdot
+  \frac{\sum_i (f_i/\sigma_i^2)\, \overline{K_i}\, Y_i}
+       {\sum_i (f_i^2/\sigma_i^2)\, |K_i|^2 \;+\; \lambda}.\]</span></p>
+<p>Each sub is weighted <em>frequency by frequency</em> by its own OTF: good-seeing frames govern the high frequencies, poor ones still donate every photon at low frequencies — lucky imaging without discarding anything. The declared target and the delivered-PSF audit carry over unchanged.</p>
+<p>The implementation (<code>patch_extract.py</code>, <code>proper_coadd.py</code>, <code>patch_audit.py</code>) measures a per-sub elliptical Moffat (the residual registration offset entering <span class="math inline">\(K_i\)</span> as a phase), weights by noise and transparency, and accumulates two Fourier planes — streaming, constant memory. A synthetic self-test (40 subs, seeing 2.4–5.0 px, blind per-sub measurement) has the estimator halving the error of stack-then-deconvolve at the same declared target. The real experiment ran on a 1024-px patch of the Hubble overlap cut from <strong>all 201 registered subs</strong> of a full-frame re-registration (105 Hα, 51 S II, 45 O III; nothing culled); patch numbers compare fairly only within the patch, so every row below shares its rectangles. Kernel FWHM / star-masked nebula NRMSE against Hubble at 1.3″:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Patch render</th>
+<th>Hα (105)</th>
+<th>S II (51)</th>
+<th>O III (45)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Proper coadd, all subs</td>
+<td><strong>2.53″ / 0.39</strong></td>
+<td>1.98″ / 0.89</td>
+<td><strong>1.81″ / 0.53</strong></td>
+</tr>
+<tr class="even">
+<td>Plain mean, same subs</td>
+<td>2.93″ / 0.61</td>
+<td><strong>2.01″ / 0.69</strong></td>
+<td>1.96″ / 0.69</td>
+</tr>
+<tr class="odd">
+<td>Integrated master (crop)</td>
+<td>2.86″ / 0.60</td>
+<td>1.94″ / 0.69</td>
+<td>2.35″ / 0.68</td>
+</tr>
+<tr class="even">
+<td>BXT ML5 master (crop)</td>
+<td>2.40″ / <strong>0.35</strong></td>
+<td>1.62″ / <strong>0.58</strong></td>
+<td>1.55″ / <strong>0.46</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Four findings:</p>
+<ol type="1">
+<li><strong>Where there is diversity and signal, the estimator delivers.</strong> In Hα it beats the plain mean of the identical frames by 0.4″ of extended-structure resolution and 36 % of fidelity; in O III it is sharper <em>and</em> truer than both baselines. No frame discarded, no prior consulted.</li>
+<li><strong>A closed-form linear estimator lands within ~12 % of the best neural model</strong> on the photon-rich channel (0.39 vs 0.35) — with every output pixel a stated functional of the data.</li>
+<li><strong>S II is an honest negative.</strong> The faintest channel’s extended structure already sat at the stellar resolution (no [N II] cushion), so the matched filter had nothing to harvest; its amplification bought only noise, and the referee promptly said so. The estimator degrades gracefully toward “use the mean” — and the framework detects <em>per channel</em> which regime the data is in.</li>
+<li><strong>The residual gap to ML5 — and the whole S II deficit — is denoising, not structure.</strong> The neural model’s remaining advantage is its prior acting as a noise model. The principled response is already built earlier in this appendix: the starlet-RED prior, moved <em>inside</em> the coaddition’s inversion. That unification is the method’s natural next version.</li>
+</ol>
+<p>Two sanity checks kept the experiment honest: the plain mean of the patch cube reproduces the integrated master’s behaviour (pipeline sound end to end), and the per-sub measurement succeeded blind on all 201 frames.</p>
+</section>
 <section id="future-work-a-spatially-variant-psf" class="level2">
 <h2 class="anchored" data-anchor-id="future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</h2>
 <p>This field earned a single kernel per channel — stellar FWHM uniform to ~5 % across 2°, eccentricity axis constant — but that is the exception among amateur optical trains, not the rule. Fast Newtonians, reduced refractors and imperfectly spaced flatteners show coma and astigmatism that grow radially: the PSF is then a <em>field</em> of kernels, typically well parameterized as elliptical Moffat parameters varying smoothly with radius (and the elongation axis rotating tangentially, coma’s signature). The measurement side already exists: the star fitter’s per-zone field map <em>is</em> the sampled PSF field. The natural extension of the present method:</p>
@@ -744,6 +804,12 @@ Starck, J.-L., E. Pantin, and F. Murtagh. 2002. <span>“Deconvolution in Astron
 </div>
 <div id="ref-venkatakrishnan2013" class="csl-entry" role="listitem">
 Venkatakrishnan, Singanallur V., Charles A. Bouman, and Brendt Wohlberg. 2013. <span>“Plug-and-Play Priors for Model Based Reconstruction.”</span> <em>IEEE Global Conference on Signal and Information Processing (GlobalSIP)</em>, 945–48. <a href="https://doi.org/10.1109/GlobalSIP.2013.6737048">https://doi.org/10.1109/GlobalSIP.2013.6737048</a>.
+</div>
+<div id="ref-zackay2017a" class="csl-entry" role="listitem">
+Zackay, Barak, and Eran O. Ofek. 2017a. <span>“How to <span>COAAD</span> Images. <span>I</span>. Optimal Source Detection and Photometry of Point Sources Using Ensembles of Images.”</span> <em>The Astrophysical Journal</em> 836 (2): 187. <a href="https://doi.org/10.3847/1538-4357/836/2/187">https://doi.org/10.3847/1538-4357/836/2/187</a>.
+</div>
+<div id="ref-zackay2017b" class="csl-entry" role="listitem">
+Zackay, Barak, and Eran O. Ofek. 2017b. <span>“How to <span>COAAD</span> Images. <span>II</span>. A Coaddition Image That Is Optimal for Any Purpose in the Background-Dominated Noise Limit.”</span> <em>The Astrophysical Journal</em> 836 (2): 188. <a href="https://doi.org/10.3847/1538-4357/836/2/188">https://doi.org/10.3847/1538-4357/836/2/188</a>.
 </div>
 </div>
 </section>
