@@ -38,6 +38,25 @@ std::vector<float> gaussianKernel(double fwhm, int side) {
 
 void tick(std::atomic<int>* p) { if (p) p->fetch_add(1); }
 
+// Chunked parallel-for over [0, n): fn(begin, end) per worker. The FFTs are
+// already threaded (pocketfft); this covers the other hot paths — the
+// starlet's separable passes and the big element-wise loops — which were
+// single-threaded and dominated the RED iteration wall time.
+template <typename F>
+void parallelFor(int n, F&& fn) {
+    const int nt = std::min<int>(int(std::max(1u, std::thread::hardware_concurrency())), n);
+    if (nt <= 1) { fn(0, n); return; }
+    std::vector<std::thread> ts;
+    ts.reserve(std::size_t(nt));
+    const int chunk = (n + nt - 1) / nt;
+    for (int t = 0; t < nt; ++t) {
+        const int b = t * chunk, e = std::min(n, b + chunk);
+        if (b >= e) break;
+        ts.emplace_back([&fn, b, e] { fn(b, e); });
+    }
+    for (auto& th : ts) th.join();
+}
+
 // Hot pixels above a percentile of the finite values, as stamp seeds.
 std::vector<std::pair<int, int>> hotPixels(const float* in, int w, int h,
                                            double thr) {
@@ -62,23 +81,31 @@ void atrousSmooth(const std::vector<float>& in, std::vector<float>& scratch,
     };
     scratch.resize(in.size());
     out.resize(in.size());
-    for (int y = 0; y < h; ++y) {
-        const float* row = in.data() + std::size_t(y) * w;
-        float* srow = scratch.data() + std::size_t(y) * w;
-        for (int x = 0; x < w; ++x) {
-            double acc = 0.0;
-            for (int t = -2; t <= 2; ++t)
-                acc += h5[t + 2] * row[mirror(x + t * step, w)];
-            srow[x] = float(acc);
+    parallelFor(h, [&](int y0, int y1) {
+        for (int y = y0; y < y1; ++y) {
+            const float* row = in.data() + std::size_t(y) * w;
+            float* srow = scratch.data() + std::size_t(y) * w;
+            for (int x = 0; x < w; ++x) {
+                double acc = 0.0;
+                for (int t = -2; t <= 2; ++t)
+                    acc += h5[t + 2] * row[mirror(x + t * step, w)];
+                srow[x] = float(acc);
+            }
         }
-    }
-    for (int x = 0; x < w; ++x)
-        for (int y = 0; y < h; ++y) {
-            double acc = 0.0;
+    });
+    // Column pass chunked over ROWS of the output (cache-friendly sweep:
+    // each worker walks full rows, reading five staggered scratch rows).
+    parallelFor(h, [&](int y0, int y1) {
+        for (int y = y0; y < y1; ++y) {
+            float* orow = out.data() + std::size_t(y) * w;
+            const float* r[5];
             for (int t = -2; t <= 2; ++t)
-                acc += h5[t + 2] * scratch[std::size_t(mirror(y + t * step, h)) * w + x];
-            out[std::size_t(y) * w + x] = float(acc);
+                r[t + 2] = scratch.data() + std::size_t(mirror(y + t * step, h)) * w;
+            for (int x = 0; x < w; ++x)
+                orow[x] = float(h5[0]*r[0][x] + h5[1]*r[1][x] + h5[2]*r[2][x]
+                              + h5[3]*r[3][x] + h5[4]*r[4][x]);
         }
+    });
 }
 
 // Per-level noise sigma: MAD of a strided sample of the detail plane.
@@ -131,21 +158,33 @@ std::vector<float> starletDenoise(const float* plane, int w, int h,
     std::vector<float> cur(plane, plane + n), next, scratch, out(n, 0.0f);
     for (int j = 0; j < levels; ++j) {
         atrousSmooth(cur, scratch, next, w, h, 1 << j);
-        for (std::size_t i = 0; i < n; ++i) cur[i] -= next[i];   // detail_j
+        parallelFor(int(n / 4096 + 1), [&](int b, int e) {
+            const std::size_t lo = std::size_t(b) * 4096, hi = std::min(n, std::size_t(e) * 4096);
+            for (std::size_t i = lo; i < hi; ++i) cur[i] -= next[i];   // detail_j
+        });
         if (j < threshLevels) {
             const float thr = float(k * madSigma(cur));
-            for (std::size_t i = 0; i < n; ++i) {
-                const float d = cur[i];
-                out[i] += d > thr ? d - thr : (d < -thr ? d + thr : 0.0f);
-            }
+            parallelFor(int(n / 4096 + 1), [&](int b, int e) {
+                const std::size_t lo = std::size_t(b) * 4096, hi = std::min(n, std::size_t(e) * 4096);
+                for (std::size_t i = lo; i < hi; ++i) {
+                    const float d = cur[i];
+                    out[i] += d > thr ? d - thr : (d < -thr ? d + thr : 0.0f);
+                }
+            });
         } else {
             // Coarse detail passes through whole: shrinking it prints the
             // square support edge of the B3 tensor kernel around stars.
-            for (std::size_t i = 0; i < n; ++i) out[i] += cur[i];
+            parallelFor(int(n / 4096 + 1), [&](int b, int e) {
+                const std::size_t lo = std::size_t(b) * 4096, hi = std::min(n, std::size_t(e) * 4096);
+                for (std::size_t i = lo; i < hi; ++i) out[i] += cur[i];
+            });
         }
         cur.swap(next);
     }
-    for (std::size_t i = 0; i < n; ++i) out[i] += cur[i];        // coarse
+    parallelFor(int(n / 4096 + 1), [&](int b, int e) {
+        const std::size_t lo = std::size_t(b) * 4096, hi = std::min(n, std::size_t(e) * 4096);
+        for (std::size_t i = lo; i < hi; ++i) out[i] += cur[i];        // coarse
+    });
     return out;
 }
 
@@ -279,18 +318,25 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
             X[i] = Y[i] * std::conj(K[i]) / (std::norm(K[i]) + beta);
         std::vector<float> x(n), d;
         c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
+        const std::size_t nc = Y.size();
         for (int it = 0; it < opt.redIterations; ++it) {
             // Threshold the fine scales only (noise lives there); coarse
             // scales pass whole so the frame cannot print its support
             // geometry around bright stars.
             d = starletDenoise(x.data(), w, h, opt.redLevels,
                                opt.redThresholdK, 3);
-            for (std::size_t i = 0; i < n; ++i)
-                d[i] = starMask[i] * x[i] + (1.0f - starMask[i]) * d[i];
+            parallelFor(int(n / 4096 + 1), [&](int b, int e) {
+                const std::size_t lo = std::size_t(b) * 4096, hi = std::min(n, std::size_t(e) * 4096);
+                for (std::size_t i = lo; i < hi; ++i)
+                    d[i] = starMask[i] * x[i] + (1.0f - starMask[i]) * d[i];
+            });
             r2c(shape, rs, cs, axes, FORWARD, d.data(), Df.data(), 1.0f, nth);
-            for (std::size_t i = 0; i < Y.size(); ++i)
-                X[i] = (Y[i] * std::conj(K[i]) + beta * Df[i])
-                     / (std::norm(K[i]) + beta);
+            parallelFor(int(nc / 4096 + 1), [&](int b, int e) {
+                const std::size_t lo = std::size_t(b) * 4096, hi = std::min(nc, std::size_t(e) * 4096);
+                for (std::size_t i = lo; i < hi; ++i)
+                    X[i] = (Y[i] * std::conj(K[i]) + beta * Df[i])
+                         / (std::norm(K[i]) + beta);
+            });
             c2r(shape, cs, rs, axes, BACKWARD, X.data(), x.data(), 1.0f / float(n), nth);
             tick(stepsDone);
         }
