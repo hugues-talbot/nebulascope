@@ -215,7 +215,9 @@ def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True,
         if verbose and (i+1) % 20 == 0:
             print(f'  sub {i+1}/{len(cube)}')
     Tt = gauss_otf(target_fwhm, shape)
-    scale = den.flat[0]/max(used, 1)           # keep output near input units
+    # num/den is a ratio of weighted sums: already in the subs' units (at DC,
+    # sum(w Y0)/sum(w f) ~ a weighted mean). No rescaling.
+    scale = 1.0
     if red_iters > 0:
         mu = red_mu*den.flat[0]
         X = num/(den + mu)                     # warm start, zero prior mean
