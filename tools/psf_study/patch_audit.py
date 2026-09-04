@@ -10,14 +10,46 @@ nebula NRMSE against Hubble degraded to 1.3 arcsec on the held-out east
 rectangle — the same protocol, the same numbers, comparable with the
 eight-way table.
 
-    patch_audit.py --filter H name=path [name=path ...]
+    patch_audit.py --filter H [--starless] name=path [name=path ...]
 
 Each path: FITS with one plane (or first plane used). PSF_DATA must
 point at the folder whose PSF_comparison/ holds the HST mosaics.
+
+--starless (metric v2): the fidelity residuals of v1 turned out to be
+dominated by under-masked faint stars and Hubble's diffraction spikes
+on faint, patch-sized regions (see PSF-STUDY.md, the ninth row). v2
+removes stars SYMMETRICALLY on both sides with the RC-Astro
+StarXTerminator CLI (`rc-astro sxt`), then scores starless-vs-starless
+with small residual apertures taken from the two star images. The
+kernel estimate is unchanged. Requires `rc-astro` on PATH.
 """
-import sys, os
+import sys, os, subprocess
 import numpy as np
 from scipy import ndimage
+
+
+def rc_sxt(plane, workdir, tag, ref):
+    """Run StarXTerminator on a 2-D float plane; return (starless, stars)
+    in OUR orientation (rc-astro writes standard FITS, our study writer
+    is top-down: pick the flip that correlates with the input)."""
+    sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
+    from star_fwhm import read_fits_f32
+    from full_deconv import write_fits_f32
+    os.makedirs(workdir, exist_ok=True)
+    src = os.path.join(workdir, f'{tag}.fits')
+    scale = float(np.percentile(plane, 99.9)) or 1.0
+    write_fits_f32(src, (plane/scale)[None].astype(np.float32), ['sxt input'])
+    subprocess.run(['rc-astro', '--no-banner', 'sxt', src, '--stars', '--depth', '32F',
+                    '-o', workdir + '/', '--overwrite'], check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    out = []
+    for suffix in ('-sxt', '-sxt-stars'):
+        a = np.asarray(read_fits_f32(os.path.join(workdir, f'{tag}{suffix}.fits'))[0],
+                       dtype=np.float64)[0]*scale
+        f = np.flipud(a)
+        r = lambda x: np.corrcoef(x.ravel(), ref.ravel())[0, 1]
+        out.append(f if r(f) > r(a) else a)
+    return out[0], out[1]
 
 def main():
     sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
@@ -30,8 +62,12 @@ def main():
     ch = 'H'
     if '--filter' in args:
         i = args.index('--filter'); ch = args[i+1]; del args[i:i+2]
+    starless = '--starless' in args
+    if starless:
+        args.remove('--starless')
     if not args:
         raise SystemExit(__doc__)
+    workdir = os.path.join(os.environ.get('PSF_DATA', '.'), 'ninth_row', 'sxt_work')
     inputs = []
     for a in args:
         name, path = a.split('=', 1)
@@ -80,8 +116,25 @@ def main():
                 (m > np.percentile(m[vmask > 0.5], 99))
         vneb = vmask*(~ndimage.binary_dilation(stars, iterations=6))
         _, e = affine_match(m, truth, vneb)
-        print(f'{name:14s} reg {npairs:3d} pairs/{med:.2f} px | extended-structure '
-              f'FWHM {fw:.2f}" | nebula NRMSE vs Hubble@1.3" {e:.4f}')
+        line = (f'{name:14s} reg {npairs:3d} pairs/{med:.2f} px | extended-structure '
+                f'FWHM {fw:.2f}" | nebula NRMSE vs Hubble@1.3" {e:.4f}')
+        if starless:
+            # v2: symmetric star removal, then starless-vs-starless with
+            # small residual apertures from BOTH star images.
+            r_sl, r_st = rc_sxt(plane, workdir, f'{name}_render', plane)
+            t_sl, t_st = rc_sxt(truth, workdir, f'{name}_truth', truth)
+            m_sl = ndimage.zoom(r_sl, 2, order=3)
+            m_st = ndimage.zoom(r_st, 2, order=3)
+            # Residual apertures: where either star image holds real star
+            # flux — judged against the RENDER's noise (a star image is ~0
+            # almost everywhere, so its own MAD is meaningless) and, for the
+            # noiseless truth, against a fraction of its star peak.
+            def sig(a): return np.median(np.abs(a - np.median(a)))/0.6745 + 1e-12
+            resid = (m_st > 3*sig(m)) | (t_st > 0.005*np.percentile(t_st, 99.9))
+            vneb2 = vmask*(~ndimage.binary_dilation(resid, iterations=4))*cover
+            _, e2 = affine_match(m_sl, t_sl, vneb2)
+            line += f' | STARLESS v2 {e2:.4f} (keep {float((vneb2>0.5).sum()/max(vmask.sum(),1)):.0%})'
+        print(line)
 
 if __name__ == '__main__':
     main()
