@@ -702,18 +702,24 @@ window.Quarto = {
 <td><strong>1.81″ / 0.53</strong></td>
 </tr>
 <tr class="even">
+<td>Plain mean, then deconvolved (same target, same λ)</td>
+<td>2.55″ / 0.50</td>
+<td>2.01″ / 0.98</td>
+<td>1.96″ / 0.82</td>
+</tr>
+<tr class="odd">
 <td>Plain mean, same subs</td>
 <td>2.92″ / 0.61</td>
 <td><strong>2.02″ / 0.64</strong></td>
 <td>1.96″ / 0.69</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Integrated master (crop)</td>
 <td>2.87″ / 0.60</td>
 <td>1.95″ / 0.69</td>
 <td>2.35″ / 0.68</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>BXT ML5 master (crop)</td>
 <td>2.40″ / <strong>0.35</strong></td>
 <td>1.62″ / <strong>0.58</strong></td>
@@ -740,13 +746,25 @@ window.Quarto = {
 <td>Proper coadd (starry subs)</td>
 <td>0.205</td>
 <td>0.993</td>
-<td>0.310</td>
+<td>0.316</td>
 </tr>
 <tr class="even">
 <td>Proper coadd (starless subs)</td>
 <td>0.197</td>
 <td>0.407</td>
 <td>0.351</td>
+</tr>
+<tr class="odd">
+<td>Mean, then deconvolved (starry)</td>
+<td>0.192</td>
+<td>0.993</td>
+<td>0.414</td>
+</tr>
+<tr class="even">
+<td>Mean, then deconvolved (starless)</td>
+<td>0.200</td>
+<td>0.423</td>
+<td>0.407</td>
 </tr>
 <tr class="odd">
 <td>Plain mean, same subs</td>
@@ -773,6 +791,12 @@ window.Quarto = {
 <li><p><strong>The S II defect had a shape, and the fix was already designed.</strong> Under v2 the starry proper coadd scored 0.99 because every bright star wore a ringing moat — the filter’s response to saturated cores no Moffat describes — and star removal left the negative moats behind as craters. The plain coadd had never inherited the app’s core protection. The principled remedy is the one proposed earlier for the app: measure each sub’s PSF on its stars, but <strong>coadd the starless subs</strong> (<code>sxt_subs.py</code>, <code>proper_coadd.py --data</code>), so the one model violation never enters the estimator. Result: 0.99 → 0.41 on S II, and no moats anywhere. On O III, though, the starless coadd scores <em>worse</em> than the starry one (0.35 vs 0.31): the moats are gone but O III’s subs are the noisiest, and what the estimator amplifies there is noise, not stars. (Two tooling notes. The referee’s registration is star-based, so a starless render borrows its starry sibling’s solution — <code>--borrow</code>; a 0.7-px self- registration had inflated the O III score. And its extended- structure kernel leans on stars too: a starless mean reads 4.6″ where its starry twin measures 1.96″, so no FWHM is quoted for starless renders.)</p></li>
 <li><p><strong>The denoising hypothesis was tested and falsified.</strong> RED inside the coaddition (<code>--red</code>) improves the synthetic self-test (0.054 → 0.044) yet moved no real-patch score in its favour — consistent with the residuals being structured (moats, stars) rather than noise, as the diagnosis then confirmed.</p></li>
 <li><p><strong>A referee catches what a PSF fit forgives.</strong> Bringing the result to the Hubble field (below) showed a red ghost beside the brightest star in the mean and in the coadd, but not in the integrated master: one S II sub — and, milder, one Hα sub — taken through a gust of wind, every star doubled. The per-sub Moffat fit had found a core and accepted both (3.0″, 50 stars); a mean has no rejection, and neither had the proper coadd. A per-sub excess test against the per-pixel median of the stack flags them at 690 σ and 42 σ (next frame: 3.7 σ; <code>find_ghost.py</code>, <code>drop_subs.py</code>). The scores above are for the 104 + 50 remaining subs and barely moved — the ghost sat outside the scored nebula — but the lesson stands: a coaddition that trusts every frame’s PSF still needs an outlier gate, a job the integration’s pixel rejection had been doing silently.</p></li>
+<li><p><strong>The control that was missing: stack, then deconvolve.</strong> Proper coaddition <em>is</em> a deconvolution — the denominator Σ|Kᵢ|² is the MCS inversion, OTF_t the re-blur to the declared target — so the fair opponent is not the plain mean but the classic pipeline: the same estimator run on the mean as a one-frame stack, kernel fitted to the mean’s own stars, same 1.8″ target, same relative λ (rows “mean, then deconvolved” above). Theory says the two coincide when every sub has the same PSF and part ways when the PSFs differ (Zackay &amp; Ofek 2017), and the three channels stage exactly that:</p>
+<ul>
+<li><strong>Hα</strong> (104 subs, seeing 1.7–2.8″, spread 15 %): a tie — 2.53″ vs 2.55″, fidelity 0.205 vs 0.192, within the floor; starless 0.197 vs 0.200. Homogeneous subs, one kernel is as good as a hundred.</li>
+<li><strong>S II</strong> (50 subs, spread 14 %): a tie again (starless 0.407 vs 0.423), and both starry variants score 0.99 — the moats are the signature of deconvolving saturated cores, not of proper coaddition.</li>
+<li><strong>O III</strong> (45 subs, seeing 1.5–3.6″, spread 20 %, the best tenth at 1.8″ and the worst at 3.3″): proper coaddition wins outright — 1.81″ against 1.96″ for the deconvolved mean, which did not sharpen the extended structure <em>at all</em>, and fidelity 0.316 against 0.414, four floors. The mean’s fitted Moffat reads 2.43″ where the median sub is 2.89″: the sharp subs own the core and the fit ignores the broad wings the poor subs contribute, so a single-kernel deconvolution leaves those wings in place and amplifies noise for nothing. The per-sub estimator lets the poor frames contribute at low frequencies only — lucky imaging without discarding a photon, which is what the method promised. The pattern is the method’s own prediction, and it says where it pays: on channels whose subs span a range of seeing, which for narrowband O III over several nights is the common case.</li>
+</ul></li>
 </ol>
 <p>The result, brought to the Hubble field (<code>upright_product.png</code> in the study repository’s <code>results/montages/</code>): the starless proper coadd of each channel takes the plain mean’s stars back — additively, the inverse of their removal, with the two unit systems reconciled on nebula pixels — and the raw master, the plain mean and this product are shown under <em>one</em> palette transform fitted on the master against the Heritage reference, inverse-warped upright into its frame. The resolution gain is what the eye reports too: the pillar rims and the fingers of the right-hand pillar that the mean blurs are resolved in the product, at the price of a visibly grainier background.</p>
 </section>
