@@ -394,6 +394,7 @@ star-masked nebula NRMSE against Hubble at 1.3″:
 | Patch render | Hα (104) | S II (50) | O III (45) |
 | --- | --- | --- | --- |
 | Proper coadd, all subs | **2.53″ / 0.39** | 1.99″ / 0.84 | **1.81″ / 0.53** |
+| Plain mean, then deconvolved (same target, same λ) | 2.55″ / 0.50 | 2.01″ / 0.98 | 1.96″ / 0.82 |
 | Plain mean, same subs | 2.92″ / 0.61 | **2.02″ / 0.64** | 1.96″ / 0.69 |
 | Integrated master (crop) | 2.87″ / 0.60 | 1.95″ / 0.69 | 2.35″ / 0.68 |
 | BXT ML5 master (crop) | 2.40″ / **0.35** | 1.62″ / **0.58** | 1.55″ / **0.46** |
@@ -427,8 +428,10 @@ What survives scrutiny, and what does not:
 
    | Patch render | Hα | S II | O III |
    | --- | --- | --- | --- |
-   | Proper coadd (starry subs) | 0.205 | 0.993 | 0.310 |
+   | Proper coadd (starry subs) | 0.205 | 0.993 | 0.316 |
    | Proper coadd (starless subs) | 0.197 | 0.407 | 0.351 |
+   | Mean, then deconvolved (starry) | 0.192 | 0.993 | 0.414 |
+   | Mean, then deconvolved (starless) | 0.200 | 0.423 | 0.407 |
    | Plain mean, same subs | 0.187 | 0.310 | 0.278 |
    | Integrated master (crop) | 0.195 | 0.319 | — |
    | BXT ML5 master (crop) | **0.172** | **0.306** | 0.289 |
@@ -486,6 +489,36 @@ What survives scrutiny, and what does not:
    sat outside the scored nebula — but the lesson stands: a coaddition
    that trusts every frame's PSF still needs an outlier gate, a job the
    integration's pixel rejection had been doing silently.
+8. **The control that was missing: stack, then deconvolve.** Proper
+   coaddition *is* a deconvolution — the denominator Σ|Kᵢ|² is the
+   MCS inversion, OTF_t the re-blur to the declared target — so the
+   fair opponent is not the plain mean but the classic pipeline: the
+   same estimator run on the mean as a one-frame stack, kernel fitted
+   to the mean's own stars, same 1.8″ target, same relative λ (rows
+   "mean, then deconvolved" above). Theory says the two coincide when
+   every sub has the same PSF and part ways when the PSFs differ
+   (Zackay & Ofek 2017), and the three channels stage exactly that:
+   - **Hα** (104 subs, seeing 1.7–2.8″, spread 15 %): a tie — 2.53″ vs
+     2.55″, fidelity 0.205 vs 0.192, within the floor; starless 0.197
+     vs 0.200. Homogeneous subs, one kernel is as good as a hundred.
+   - **S II** (50 subs, spread 14 %): a tie again (starless 0.407 vs
+     0.423), and both starry variants score 0.99 — the moats are the
+     signature of deconvolving saturated cores, not of proper
+     coaddition.
+   - **O III** (45 subs, seeing 1.5–3.6″, spread 20 %, the best tenth
+     at 1.8″ and the worst at 3.3″): proper coaddition wins outright —
+     1.81″ against 1.96″ for the deconvolved mean, which did not
+     sharpen the extended structure *at all*, and fidelity 0.316
+     against 0.414, four floors. The mean's fitted Moffat reads 2.43″
+     where the median sub is 2.89″: the sharp subs own the core and
+     the fit ignores the broad wings the poor subs contribute, so a
+     single-kernel deconvolution leaves those wings in place and
+     amplifies noise for nothing. The per-sub estimator lets the poor
+     frames contribute at low frequencies only — lucky imaging without
+     discarding a photon, which is what the method promised.
+   The pattern is the method's own prediction, and it says where it
+   pays: on channels whose subs span a range of seeing, which for
+   narrowband O III over several nights is the common case.
 
 The result, brought to the Hubble field (`upright_product.png` in the
 study repository's `results/montages/`): the starless proper coadd of
