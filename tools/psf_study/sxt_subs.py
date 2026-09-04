@@ -36,6 +36,12 @@ def main():
             f = np.flipud(a)          # rc-astro writes standard FITS; ours is top-down
             r = lambda x: np.corrcoef(x.ravel(), sub.ravel())[0, 1]
             dst[i] = (f if r(f) > r(a) else a).astype(np.float32)
+        # SXT normalizes by the frame MAX, not our p99.9: recover the exact
+        # gain from starless+stars vs the input (it reconstructs it to
+        # correlation 1.0) so every sub keeps its own units.
+        rec = starless[i].astype(np.float64) + stars[i]
+        g = np.polyfit(rec.ravel(), sub.ravel(), 1)[0]
+        starless[i] *= g; stars[i] *= g
         for suffix in ('', '-sxt', '-sxt-stars'):
             try: os.remove(os.path.join(work, f'sub{i:04d}{suffix}.fits'))
             except OSError: pass

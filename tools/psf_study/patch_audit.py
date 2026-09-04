@@ -49,7 +49,11 @@ def rc_sxt(plane, workdir, tag, ref):
         f = np.flipud(a)
         r = lambda x: np.corrcoef(x.ravel(), ref.ravel())[0, 1]
         out.append(f if r(f) > r(a) else a)
-    return out[0], out[1]
+    # SXT normalizes by the frame max: recover the exact gain (starless+stars
+    # reconstructs the input to correlation 1.0) so units are preserved.
+    rec = out[0] + out[1]
+    g = np.polyfit(rec.ravel(), plane.ravel(), 1)[0]
+    return out[0]*g, out[1]*g
 
 def main():
     sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
