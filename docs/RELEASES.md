@@ -2,6 +2,95 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.97 — 2026-09-04
+
+v0.97 — the PSF study comes home: Measure PSF, calibrated deconvolution, Gaia DR3, and a fast cache
+
+Highlights:
+
+- **Tools ▸ Measure PSF** — the study's stellar instrument, native:
+  elliptical Moffat fits over the frame's isolated stars, per channel
+  the major/minor FWHM (px, and arcsec under a plate solution),
+  eccentricity with its position angle, the Moffat beta, and a 3×4 field
+  map that separates one-axis drift (uniform PA) from optics (PA turning
+  toward the corners). Annotate stars drops rotated ellipses with
+  optional FWHM/eccentricity labels; results are cached per image; a
+  single monotone progress bar spans the job. Scripts: `measure_psf`,
+  `psfannotate [mode]`.
+- **Tools ▸ Deconvolve to Target PSF** — the appendix's calibrated
+  method in one linear pass: measured Moffat kernel in, declared
+  circular-Gaussian target out, the MCS single-filter transform (the
+  partial kernel is never formed). Its honesty ships with it: a
+  contract-first λ ladder keeps the strongest regularization whose
+  delivered FWHM honours the declaration within 5% per channel; the
+  result's stars are re-fitted and the delivered figure written into the
+  header; saturated cores are protected. Validated on the M16 master:
+  in-app measurement reproduces the certified table, and a 1.90″
+  declaration delivers 1.96–1.97″. Scripts: `deconv <fwhm_px> [lambda]`.
+- **Noise prior inside the deconvolution** — Regularization by Denoising
+  (starlet à-trous soft threshold, per-scale MAD) as an option of the
+  same dialog: the same inversion with the denoiser inside, warm-started
+  from MCS, the prior weight obeying the same contract-first ladder. At
+  equal delivered PSF the background comes in 3.6–5.5× quieter than the
+  pure filter, and a ctest holds the bound. Pure MCS stays the default.
+  Scripts: `deconv <fwhm> red [iters] [weight]`.
+- **No square artefacts around stars** — three field reports at 1.7–1.8″
+  contracts, traced by bisection to their real sources and all fixed:
+  separable (square) core protection is now a round radial stamp; the
+  starlet prior is star-neutral, thresholds only the three finest
+  scales, and stays out of round brightness-tiered zones around bright
+  stars; and the root cause, the Moffat kernel's hard truncation at its
+  canvas edge printing a dark frame around every saturated core, is
+  gone: the kernel lives on a wide canvas with a radial cosine taper to
+  a true zero. The non-FFT paths are parallelized: the full 1.7″ RED
+  pipeline on a 61-megapixel master takes 72 s.
+- **Gaia DR3, in-app** — the app's first use of the network (ESA TAP;
+  only sky coordinates leave the machine; soft failure offline). Right
+  click ▸ *Identify Star in Gaia DR3* refines the click to the fitted
+  star centre and reports the NEAREST source (source_id, G, BP−RP,
+  parallax and distance, separation), with a violet annotation at the
+  CATALOGUE position so a plate-solution offset is visible. Right click
+  ▸ *Gaia DR3 Field Overlay* draws the brightest sources of the visible
+  region at their catalogue positions, one undo step. Positions are
+  proper-motion-propagated from 2016.0 to DATE-OBS; dense galactic-plane
+  fields are served by a bright-first magnitude ladder. Scripts:
+  `gaiastar x y`, `gaiaoverlay [count] [labelN]`.
+- **Auto STF (PixInsight) on P** — a NEW stretch option, Juan Conejero's
+  STFAutoStretch verbatim with no floors (clip at median − 2.8·1.4826·MAD,
+  midtone by the MTF parameter identity), for the raw narrowband master
+  that rendered near-black and green under the classic Auto STF because
+  one saturated star pinned the window. The existing Auto STF options
+  are byte-identical to before. Script: `autostf pi`. (P leaves the Info
+  panel, which keeps F4.)
+- **Decoded-image cache and neighbour prefetch** — an LRU of the
+  post-debayer decode plus statistics (Preferences ▸ Image cache, default
+  4096 MB): switching back to a 495 MB master costs 0.3 s instead of 13.
+  Every hit re-checks the file's mtime and size, so an external overwrite
+  is never served from memory. The next and previous rows prefetch in
+  the background, so a first-pass blink is instant.
+- **Neutralize Background from Sky Patch** — the v0.96 tool restated
+  after three field rounds: only the black point moves (midtone and
+  white keep their absolute positions), and the three channels are
+  equalized to a common dark grey rather than black, so faint nebulosity
+  stays visible. Apply it late in a session, once the stretch is settled.
+- **Appendix: the study continues** — the Hubble-overlap audit grows to
+  eight renders (BlurXTerminator ML4/ML5 on both stacks, the two
+  calibrated products), with the principle that stellar analysis is
+  measurement only on raw and calibrated data; a ninth row tries proper
+  coaddition (Zackay & Ofek 2017) on all 201 registered subs, whose
+  referee turned out to need auditing itself: star contamination was
+  driving the fidelity metric, so metric v2 removes stars symmetrically
+  with a null test on half stacks. Verdict, recorded honestly: proper
+  coaddition buys resolution (Hα 2.53″ vs 2.93″ for a plain mean of the
+  same frames), not fidelity. Instruments under `tools/psf_study/`:
+  `ml5_audit`, `patch_extract`, `proper_coadd`, `patch_audit`,
+  `sxt_subs`, and the palette-montage pipeline.
+- **Demo package** — `demo/STORYBOARD.md` plans the presentation video
+  in two cuts, each scene a `.nsc` script validated against real data.
+
+Also: the TRANSPORT chapter states the stretch fit's optimization as it
+now is; QTimeZone::utc() for pre-6.5 Qt on the Linux runner.
+
 ## v0.96 — 2026-08-31
 
 v0.96 — the histogram shows the result: live output distribution, sky-patch neutral black, identity restarts
