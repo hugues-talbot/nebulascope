@@ -405,33 +405,60 @@ What survives scrutiny, and what does not:
    similarly — structural measurements, insensitive to the fidelity
    metric's choices below. No frame discarded, no prior consulted, all
    201 subs blind-measured; and the plain mean reproduces the
-   integrated master's behaviour, so the pipeline is sound end to end.
-2. **The fidelity rankings, however, did not survive their own
-   audit.** The table's NRMSE column uses the study's standard star
-   mask (99th percentile, dilation 6). A modestly stronger mask (97th,
-   dilation 10) *collapses* the Hα spread — mean 0.61 → 0.31, proper
-   0.39 → 0.34, ML5 0.35 → 0.31 — and *inverts* the S II ordering
-   (proper 0.70 vs mean 0.74). Residual maps show why: on a
-   patch-sized region of a faint channel, the score is dominated by
-   under-masked faint stars and by Hubble's own diffraction spikes,
-   not by nebulosity. At patch scale this instrument cannot finely
-   rank near-equal renders, and the fidelity *orderings* above are
-   therefore withdrawn; only the coarse separations (every processed
-   render far ahead of raw-class values) are trusted.
-3. **The denoising hypothesis was tested and falsified in its simple
-   form.** Moving the starlet-RED prior inside the coaddition's
-   inversion (`--red`; the RED fixed point over the accumulators,
-   fine-scale thresholds, star-neutral zones) improves the synthetic
-   self-test (0.054 → 0.044) yet slightly worsens every real-patch
-   score — which is itself part of the evidence that the residuals
-   these scores measure are structured stellar contamination rather
-   than noise.
-4. **The instrument, not the estimator, is the current frontier.** A
-   fidelity referee fit to rank these renders needs photometric star
-   *subtraction* (the per-render fitted PSFs exist) in place of
-   percentile masking, and larger validation areas. Until then, the
-   ninth row's demonstrated claim is the resolution one — which was
-   the point of the estimator all along.
+   integrated master to a correlation of 0.997–0.9996 (an independent
+   re-integration of the same frames confirmed it), so the pipeline is
+   sound end to end.
+2. **The fidelity rankings in the table did not survive their own
+   audit.** That column uses the study's standard star mask (99th
+   percentile, dilation 6). A modestly stronger mask *collapses* the
+   Hα spread and *inverts* the S II ordering; residual maps show why:
+   on a faint, patch-sized region the score is dominated by
+   under-masked faint stars and Hubble's own diffraction spikes, not
+   by nebulosity. Those orderings are withdrawn.
+3. **A referee that can see nebulosity: metric v2.** Stars are removed
+   *symmetrically* from render and truth with StarXTerminator (the
+   RC-Astro command-line tool, so the recipe is scripted), the
+   starless images scored with small residual apertures, and — for the
+   first time — the instrument carries an error bar: two independent
+   half-stacks of the same subs score within ±0.015 (Hα), ±0.02
+   (S II) and ±0.026 (O III), where the v1 metric's S II halves had
+   differed by 0.16. Under v2, with the same rectangles:
+
+   | Patch render | Hα | S II | O III |
+   | --- | --- | --- | --- |
+   | Proper coadd (starry subs) | 0.207 | 0.993 | 0.310 |
+   | Proper coadd (starless subs) | 0.206 | 0.399 | 0.284 |
+   | Plain mean, same subs | 0.188 | 0.311 | 0.277 |
+   | Integrated master (crop) | 0.195 | 0.319 | — |
+   | BXT ML5 master (crop) | **0.172** | **0.306** | 0.289 |
+
+4. **The verdict the error bars allow.** With stars gone, the
+   render-to-render spreads shrink to one or two floors: on Hα and
+   O III proper coaddition, the plain mean and ML5 are all within
+   ~0.03 of each other, ML5's edge over a plain mean amounting to about
+   one floor. The fidelity axis is far *flatter* than the contaminated
+   referee had painted it — the humble mean was always a better image
+   than v1 let it look. What the proper coadd demonstrably buys is
+   resolution; at this metric that gain is paid back in amplified
+   noise, and on S II (faint, no [N II] cushion) the mean genuinely
+   wins.
+5. **The S II defect had a shape, and the fix was already designed.**
+   Under v2 the starry proper coadd scored 0.99 because every bright
+   star wore a ringing moat — the filter's response to saturated cores
+   no Moffat describes — and star removal left the negative moats
+   behind as craters. The plain coadd had never inherited the app's
+   core protection. The principled remedy is the one proposed earlier
+   for the app: measure each sub's PSF on its stars, but **coadd the
+   starless subs** (`sxt_subs.py`, `proper_coadd.py --data`), so the
+   one model violation never enters the estimator. Result: 0.99 →
+   0.40 on S II, and no moats anywhere. (One tooling note: the
+   referee's registration is star-based, so kernel estimates on
+   starless renders must borrow the starry sibling's registration.)
+6. **The denoising hypothesis was tested and falsified.** RED inside
+   the coaddition (`--red`) improves the synthetic self-test
+   (0.054 → 0.044) yet moved no real-patch score in its favour —
+   consistent with the residuals being structured (moats, stars)
+   rather than noise, as the diagnosis then confirmed.
 
 ## Future work: a spatially-variant PSF
 
