@@ -91,12 +91,15 @@ const CommandRef kCommands[] = {
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
     "(rotated ellipses at the fitted shape; the report dialog's button).\n"
     "label: 0 none, 1 FWHM, 2 eccentricity, 3 both."}},
-  {"deconv",     {"deconv <target_fwhm_px> [lambda | red [iters] [weight]]",
+  {"deconv",     {"deconv <target_fwhm_px> [lambda | red [iters] [weight]] [from <row>]",
     "Deconvolve the current LINEAR image to a round Gaussian PSF of the\n"
     "declared FWHM (px), using the measured stellar PSF as the kernel (runs\n"
     "the measurement first if needed). New in-memory list entry. Omitted\n"
     "lambda = contract-first automatic selection. 'red' adds the starlet-RED\n"
     "noise prior (default 15 iterations; omitted weight = automatic).\n"
+    "'from <row>' takes the kernel from list row <row> (1-based) instead:\n"
+    "for a STARLESS input, name its starry sibling on the same grid — the\n"
+    "kernel is measured there and the delivered PSF audited there by proxy.\n"
     "Menu equivalent: Tools > Deconvolve to Target PSF."}},
   {"gaiastar",   {"gaiastar <x> <y>",
     "Identify the star at/near image pixel (x,y) in Gaia DR3: the click is\n"
@@ -499,21 +502,32 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         // deconv <target_fwhm_px> red [iters] [weight] — starlet-RED prior
         // Measures the PSF first if needed. Omitted lambda/weight (or 0) =
         // contract-first automatic selection.
-        if (t.size() < 2) { err = "deconv <target_fwhm_px> [lambda] | deconv <target_fwhm_px> red [iters] [weight]"; return false; }
+        // deconv ... from <row>                  — kernel from another list row
+        //   (starless input: its starry sibling), audited there by proxy.
+        QStringList a = t;
+        int kernelRow = 0;
+        for (int i = 1; i + 1 < a.size(); ++i)
+            if (a[i].toLower() == QLatin1String("from")) {
+                kernelRow = a[i + 1].toInt();
+                if (kernelRow < 1 || kernelRow > m_w->m_fileList->count()) { err = "row out of range"; return false; }
+                a.erase(a.begin() + i, a.begin() + i + 2);
+                break;
+            }
+        if (a.size() < 2) { err = "deconv <target_fwhm_px> [lambda] | deconv <target_fwhm_px> red [iters] [weight] [from <row>]"; return false; }
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         bool ok = false;
-        const double f = t[1].toDouble(&ok);
+        const double f = a[1].toDouble(&ok);
         if (!ok || f <= 0) { err = "bad target FWHM"; return false; }
         double lambda = 0.0, weight = 0.0;
         int iters = 0;
-        if (t.size() > 2 && t[2].toLower() == QLatin1String("red")) {
-            iters = t.size() > 3 ? t[3].toInt() : 15;
+        if (a.size() > 2 && a[2].toLower() == QLatin1String("red")) {
+            iters = a.size() > 3 ? a[3].toInt() : 15;
             if (iters < 1) { err = "bad RED iteration count"; return false; }
-            weight = t.size() > 4 ? t[4].toDouble() : 0.0;
-        } else if (t.size() > 2) {
-            lambda = t[2].toDouble();
+            weight = a.size() > 4 ? a[4].toDouble() : 0.0;
+        } else if (a.size() > 2) {
+            lambda = a[2].toDouble();
         }
-        m_w->scriptDeconvolve(f, lambda, iters, weight);
+        m_w->scriptDeconvolve(f, lambda, iters, weight, kernelRow);
         return true;
     }
     if (cmd == QLatin1String("gaiastar")) {

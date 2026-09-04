@@ -300,7 +300,7 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
         // wider neutral zone (pure-MCS treatment there is cheap: photon-
         // rich neighbourhoods hide MCS noise anyway).
         std::vector<float> starMask;
-        {
+        if (opt.starNeutralPrior) {
             starMask = coreProtectionMask(
                 hotPixels(in.data(), w, h, percentileOf(finiteVals, 99.9)),
                 w, h, 6.0, 14.0);
@@ -312,6 +312,10 @@ std::vector<float> deconvolveChannel(const float* plane, int w, int h,
                 w, h, 28.0, 64.0);
             for (std::size_t i = 0; i < n; ++i)
                 starMask[i] = std::max(starMask[i], std::max(mid[i], big[i]));
+        } else {
+            // Starless input: no stars to stay neutral around — the prior
+            // governs everywhere (a nebular knot is exactly what it is for).
+            starMask.assign(n, 0.0f);
         }
         std::vector<std::complex<float>> X(Y.size()), Df(Y.size());
         for (std::size_t i = 0; i < Y.size(); ++i)
@@ -449,6 +453,49 @@ double selectRedWeight(const ImageData& img, int channel,
     return walkLadder(centerCrop(img, channel, cropSize), psf, opt,
                       kLadder, 6, tolFrac, 1e-2,
                       [](DeconvOptions& o, double v) { o.redPriorWeight = v; });
+}
+
+double proxyDeliveredFwhm(const ImageData& starry, int channel,
+                          const DeconvChannelPsf& psf, const DeconvOptions& opt,
+                          int cropSize) {
+    if (!starry.isValid() || starry.format() != SampleFormat::Float32 ||
+        channel < 0 || channel >= starry.channels())
+        return 0.0;
+    // The very filter the starless product received, on the sibling that
+    // still has stars; the fitter's saturation gate rejects hot cores, so
+    // protection is not needed on the audit crop either.
+    DeconvOptions audit = opt;
+    audit.protectCores = false;
+    audit.starNeutralPrior = true;
+    const ImageData dec = deconvolveToTarget(centerCrop(starry, channel, cropSize),
+                                             {psf}, audit);
+    const PsfChannelReport rep = measurePsf(dec, 0);
+    return rep.nFitted >= 10 ? rep.fwhmGeo : 0.0;
+}
+
+double starlessExcessFraction(const float* starless, const float* starry,
+                              int w, int h, int stride) {
+    stride = std::max(1, stride);
+    std::vector<float> r;
+    r.reserve(std::size_t(w / stride + 1) * std::size_t(h / stride + 1));
+    for (int y = 0; y < h; y += stride)
+        for (int x = 0; x < w; x += stride) {
+            const std::size_t i = std::size_t(y) * w + x;
+            if (std::isfinite(starless[i]) && std::isfinite(starry[i]))
+                r.push_back(starry[i] - starless[i]);
+        }
+    if (r.size() < 16) return 0.0;
+    std::vector<float> a(r);
+    const std::size_t m = a.size() / 2;
+    std::nth_element(a.begin(), a.begin() + m, a.end());
+    const float med = a[m];
+    for (float& v : a) v = std::fabs(v - med);
+    std::nth_element(a.begin(), a.begin() + m, a.end());
+    const double sigma = 1.4826 * a[m];
+    if (!(sigma > 0.0)) return 0.0;              // identical frames: nothing negative
+    std::size_t neg = 0;
+    for (float v : r) if (v < -5.0 * sigma) ++neg;
+    return double(neg) / double(r.size());
 }
 
 ImageData deconvolveToTarget(const ImageData& img,

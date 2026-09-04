@@ -206,4 +206,98 @@ NS_TEST(deconv_moffat_kernel_shape) {
     NS_CHECK(argmax == (side / 2) * side + side / 2);      // centred peak
 }
 
+NS_TEST(deconv_starless_by_linearity) {
+    // Starless deconvolution: the blur model is linear, so deconvolving the
+    // nebula-only frame with the kernel measured on its starry sibling must
+    // equal deconv(starry + nebula) - deconv(starry) — and the delivered PSF
+    // verified BY PROXY on the starry sibling is the certificate of the
+    // starless product. Both are asserted here.
+    const int W = 512, H = 512;
+    ImageData S = makeField(W, H, 4.2, 3.4, 30.0, 2.5);   // stars + sky + noise
+    ImageData N(W, H, 1, SampleFormat::Float32, ColorSpace::Gray);
+    float* pn = N.plane<float>(0);
+    for (int i = 0; i < W * H; ++i) pn[i] = float(2e-4 * (urand() - 0.5));
+    // Smooth nebulosity: wide blobs, none inside the quiet hole [180,330)^2
+    // used below for the RED variance check.
+    const double blobs[][4] = { {90, 90, 30, 0.15}, {400, 120, 30, 0.08},
+                                {120, 420, 25, 0.2}, {420, 410, 35, 0.1} };
+    for (const auto& b : blobs)
+        for (int y = 0; y < H; ++y)
+            for (int x = 0; x < W; ++x) {
+                const double dx = x - b[0], dy = y - b[1];
+                pn[y * W + x] += float(b[3] * std::exp(-0.5 * (dx * dx + dy * dy) / (b[2] * b[2])));
+            }
+    ImageData SN = S;
+    {
+        float* q = SN.plane<float>(0);
+        for (int i = 0; i < W * H; ++i) q[i] += pn[i];
+    }
+
+    DeconvChannelPsf psf;
+    psf.fwhmMajPx = 4.2; psf.fwhmMinPx = 3.4; psf.paDeg = 30.0; psf.beta = 2.5;
+    DeconvOptions opt;
+    opt.targetFwhmPx = 2.6;
+    opt.protectCores = false;                 // starless: nothing to protect
+    opt.starNeutralPrior = false;             // starless: nothing to be neutral around
+    opt.lambda = selectLambda(S, 0, psf, opt.targetFwhmPx);   // ladder on the SIBLING
+
+    const ImageData outN = deconvolveToTarget(N, {psf}, opt);
+    const ImageData outS = deconvolveToTarget(S, {psf}, opt);
+    const ImageData outSN = deconvolveToTarget(SN, {psf}, opt);
+    const float* a = outN.plane<float>(0);
+    const float* b = outS.plane<float>(0);
+    const float* c = outSN.plane<float>(0);
+    double worst = 0.0, peak = 0.0;
+    for (int i = 0; i < W * H; ++i) {
+        worst = std::max(worst, std::fabs(double(c[i]) - double(a[i]) - double(b[i])));
+        peak = std::max(peak, double(c[i]));
+    }
+    // Linearity: the only non-linear ingredient is each frame's own sky
+    // pedestal (2nd percentile), whose DC response differs by lambda/(1+lambda)
+    // — a ~1e-6 term here against a ~0.3 peak.
+    NS_CHECK(worst < 1e-4 * peak);
+
+    // Sibling check: starry minus starless is the stars-only image (never
+    // strongly negative); a vertically flipped sibling — the rc-astro CLI's
+    // FITS come back that way — fails it at the percent level.
+    NS_CHECK(starlessExcessFraction(N.plane<float>(0), SN.plane<float>(0), W, H) < 1e-3);
+    ImageData SNf = SN;
+    for (int y = 0; y < H; ++y)
+        std::copy(SN.plane<float>(0) + std::size_t(H - 1 - y) * W,
+                  SN.plane<float>(0) + std::size_t(H - y) * W,
+                  SNf.plane<float>(0) + std::size_t(y) * W);
+    NS_CHECK(starlessExcessFraction(N.plane<float>(0), SNf.plane<float>(0), W, H) > 5e-3);
+
+    // Audit by proxy: the same filter on the starry sibling honours the
+    // declaration, and the figure is the one a direct audit would give.
+    const double proxy = proxyDeliveredFwhm(S, 0, psf, opt);
+    NS_CHECK(proxy > 0.0);
+    NS_CHECK(std::fabs(proxy - opt.targetFwhmPx) < 0.06 * opt.targetFwhmPx);
+    const PsfChannelReport direct = measurePsf(outS, 0);
+    NS_CHECK(direct.nFitted > 60);
+    NS_CHECK(std::fabs(proxy - direct.fwhmGeo) < 0.03 * opt.targetFwhmPx);
+
+    // RED on the starless frame with the star-neutral zones off: finite
+    // everywhere, and the background quieter than the pure filter's at the
+    // same delivered PSF (the prior now governs the whole frame).
+    DeconvOptions red = opt;
+    red.redIterations = 8;
+    red.redPriorWeight = selectRedWeight(S, 0, psf, red.targetFwhmPx, 8);
+    const ImageData outNr = deconvolveToTarget(N, {psf}, red);
+    const float* r = outNr.plane<float>(0);
+    auto holeVar = [&](const float* q) {
+        double m = 0, v = 0; int cnt = 0;
+        for (int y = 210; y < 300; ++y)
+            for (int x = 210; x < 300; ++x) { m += q[y * W + x]; ++cnt; }
+        m /= cnt;
+        for (int y = 210; y < 300; ++y)
+            for (int x = 210; x < 300; ++x) { const double d = q[y * W + x] - m; v += d * d; }
+        return v / cnt;
+    };
+    int finite = 0;
+    for (int i = 0; i < W * H; ++i) finite += std::isfinite(r[i]) ? 1 : 0;
+    NS_CHECK(finite == W * H);
+    NS_CHECK(holeVar(r) < 0.6 * holeVar(a));
+}
+
 int main() { return nstest::runAll(); }

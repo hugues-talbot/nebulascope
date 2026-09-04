@@ -293,3 +293,36 @@ per-image or global-algorithm — invalidate, because entries are
 post-debayer. Measured: reopening a 495 MB master costs 0.3 s against a
 13 s cold decode. The budget is a preference (default 4096 MB, 0 = off) —
 the eviction boundary is honest and visible, unlike the page cache's.
+
+## Starless deconvolution: kernel from the sibling, audit by proxy (2026-09-04)
+
+Every star-generated artefact the deconvolution ever produced — the
+square frames, the ringing moats, the wavelet halos — was the filter's
+response to a source no Moffat describes: a clipped core, a contrast a
+million times the sky. The protections built against them (round core
+protection, star-neutral prior zones, apodized kernel) treat symptoms.
+The principled cure is the user's own earlier design: apply the filter to
+the STARLESS image. The blur model y = k * (n + s) is linear, so the
+starless product obeys it minus the one component that violated it;
+deconvolving it with the kernel measured on its starry sibling is valid
+by linearity, and nebular contrast rings below the noise floor — no
+protection, no neutral zones, the prior wanted everywhere. Two
+commitments keep it honest, both enforced in code: the delivered PSF is
+audited BY PROXY (the same filter on the starry sibling, its stars
+re-fitted — exact for the pure filter by linearity, which a ctest asserts
+as deconv(n + s) = deconv(n) + deconv(s); approximate under RED), and the
+header states the chain (kernel source, proxy figure, and that the star
+removal upstream is not part of the stated model). UI shape per the
+user: a "Kernel from" selector INSIDE the existing dialog, not a new
+menu; the sibling is measured on demand and the dialog returns with the
+kernel shown; script `deconv … from <row>`. Live on a 2048-px crop of
+the M16 master with its StarXTerminator sibling: delivered by proxy
+1.96/1.92/1.95″ on a 1.90″ declaration (the starry control: 1.95/1.92/
+1.95″), and at the twelve brightest star sites the annulus minima of the
+starless product sit where the input's were (−0.3 to −3.9 noise sigmas)
+while the starry control carries the physical moats (−7.6 and −12.7 σ at
+the two saturated stars). One trap found on the way, now a guard: the
+rc-astro CLI writes its FITS vertically flipped, and a flipped sibling
+would have handed the filter a mirrored kernel — the starry-minus-
+starless residual is the stars-only image, never strongly negative, so a
+percent-level fraction of strongly negative pixels refuses the source.

@@ -618,6 +618,32 @@ filter remains the default — it alone has the "every output pixel is a
 stated linear functional" property; the RED result's header states the
 full variational model instead (kernel, target, prior, μ, iterations).
 
+**Starless input (Kernel from: another image).** The blur model is
+linear, so a *starless* product — StarXTerminator's output, say — obeys
+the same model minus the one component that violated it: the clipped
+stellar cores. Deconvolving the starless image with the kernel *measured
+on its starry sibling* is therefore valid by linearity, and the whole
+class of star-generated artefacts — ringing scales with source contrast,
+and nebular contrast rings below the noise floor — never arises: no core
+protection, no star-neutral zones, the noise prior governs everywhere.
+Show the starless image, open the dialog, and set **Kernel from** to the
+starry sibling in the list (same grid, same orientation); its PSF is
+measured first if it has not been, and the dialog returns with the
+kernel shown. Two commitments keep the method honest. The delivered PSF
+is verified **by proxy**: the same filter (same kernel, target and
+regularization) is applied to the starry sibling and *its* stars are
+re-fitted — for the pure filter the certificate transfers exactly, under
+the RED prior approximately (the prior is star-neutral on the proxy, so
+its stars see the data term alone). And the header states the chain: the
+kernel source, the proxy figure, and that the star removal upstream is
+not part of the stated model — only the deconvolution is. A sanity check
+refuses a source that does not read as the sibling: on one grid the
+starry image minus the starless one is the stars-only image, never
+strongly negative, and a vertically flipped grid (the RC-Astro
+command-line tool writes its FITS that way) or unrelated data fails at
+the percent level — rather than silently getting a mirrored kernel.
+Script: `deconv … from <row>` with the sibling's 1-based list row.
+
 The result is a **new in-memory list entry** (like Combine) carrying the
 source's plate solution, stretch, and annotations — *Save Data As…* keeps
 it. Run it on **linear** data: on stretched data neither the measured
@@ -625,7 +651,8 @@ kernel nor the linear model is valid. A target ~25% below the measured
 width is reliably reachable; more aggressive targets are increasingly
 paid for in regularization (watch the delivered figure). Script:
 `deconv <target_fwhm_px> [lambda]`, or
-`deconv <target_fwhm_px> red [iters] [weight]` for the noise prior.
+`deconv <target_fwhm_px> red [iters] [weight]` for the noise prior,
+either followed by `from <row>` for a starless input.
 
 ### Gaia DR3 lookups (online)
 

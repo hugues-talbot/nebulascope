@@ -76,10 +76,22 @@ private slots:
     void annotatePsfStars(int channel, int count, int labelMode = 0);
     void deconvolveAction();               // Tools > Deconvolve to Target PSF
     bool psfCacheValid() const;            // m_psfCache entry fresh for current image?
+    bool psfCacheValidFor(const QString& key) const;   // … for any list entry
     void runPsfMeasurement(std::function<void()> whenDone);  // measure + cache, then continue
-    void runDeconvolution(DeconvOptions opt, bool autoReg); // autoReg: contract-first lambda/mu per channel
+    // Measure any list entry (the kernel source of a starless deconvolution);
+    // results land in m_psfCache under `key`, and in m_lastPsf when current.
+    void runPsfMeasurementFor(const QString& key, std::shared_ptr<const ImageData> img,
+                              std::function<void()> whenDone);
+    // kernelKey: empty = this image's own stars; else the list entry whose
+    // stars define the kernel (starless input — see core/Deconvolve.h).
+    void runDeconvolution(DeconvOptions opt, bool autoReg,
+                          const QString& kernelKey = QString()); // autoReg: contract-first lambda/mu per channel
     void scriptDeconvolve(double fwhmPx, double lambda,
-                          int redIters, double redWeight);   // script `deconv` (synchronous)
+                          int redIters, double redWeight,
+                          int kernelRow = 0);                  // script `deconv` (synchronous)
+    // Disk-frame pixels of any list entry (synthetic, cached, or decoded and
+    // cached now). Null with `err` set when unreadable.
+    std::shared_ptr<const ImageData> entryImage(const QString& key, QString* err = nullptr);
     void identifyGaiaStar(double px, double py); // context menu; sync when scripted
     void gaiaOverlayAction();                    // Tools > Gaia DR3 Field Overlay (dialog)
     void runGaiaOverlay(int count, int labelN);  // the overlay itself; sync when scripted
@@ -239,6 +251,8 @@ private:
     QFutureWatcher<PrefetchResult>* m_prefetchWatcher = nullptr;
     std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
     QString        m_lastPsfPath;          // image the results belong to
+    QString        m_deconvKernelKey;      // Deconvolve dialog's kernel source across
+                                           // its measure-then-return round trip
     // Per-image PSF result cache: re-opening the report is free unless the
     // image changed — on disk (mtime/size), by rotation, or by debayer mode.
     struct PsfCacheEntry {

@@ -52,7 +52,43 @@ struct DeconvOptions {
     double redPriorWeight = 1e-2;          // beta; resolve 'auto' before calling
     int    redLevels = 5;                  // starlet detail scales
     double redThresholdK = 3.0;            // soft threshold, in noise sigmas
+    // Star-neutral prior: near the brightest pixels the denoiser is blended
+    // back to the identity in round, brightness-tiered zones, so the
+    // separable wavelet frame cannot imprint its geometry around stars.
+    // Off for STARLESS input (see below): there the brightest pixels are
+    // nebular knots, and the prior is wanted everywhere.
+    bool   starNeutralPrior = true;
 };
+
+// STARLESS DECONVOLUTION. The blur model y = k * (n + s) is linear, so the
+// starless product n' ~ k * n (StarXTerminator's output, say) obeys the same
+// model minus the one component that violates it (saturated, clipped cores).
+// Deconvolving the starless image with the kernel MEASURED ON ITS STARRY
+// SIBLING is therefore valid by linearity, and the whole class of
+// star-generated artefacts (ringing scales with source contrast; nebular
+// contrast rings below the noise floor) never arises — no core protection,
+// no star-neutral prior needed. Two commitments keep it honest:
+//   1. AUDIT BY PROXY — the product has no stars to re-measure, so the SAME
+//      filter (same kernel, target, regularization) is applied to the starry
+//      sibling and the delivered PSF verified there; for the pure MCS filter
+//      the certificate transfers exactly (linearity), for RED approximately
+//      (the prior is star-neutral on the proxy, so stars see the data term).
+//   2. The header states the full chain: the starless input is not a stated
+//      linear functional of the raw frame, only the deconvolution is.
+// proxyDeliveredFwhm is commitment 1: the geometric-mean FWHM delivered on a
+// centred crop of `starry` by `opt` with `psf` (0 when too few stars).
+double proxyDeliveredFwhm(const ImageData& starry, int channel,
+                          const DeconvChannelPsf& psf, const DeconvOptions& opt,
+                          int cropSize = 1536);
+
+// Sibling sanity check for the starless path: on one grid, starry minus
+// starless is the stars-only image, non-negative up to noise. Returns the
+// fraction of sampled finite pixels where the STARLESS frame exceeds the
+// starry one by more than 5 noise sigmas (MAD of the residual): ~0 for a
+// true sibling, percent-level for a flipped grid (the rc-astro CLI writes
+// its FITS vertically flipped) or for different data altogether.
+double starlessExcessFraction(const float* starless, const float* starry,
+                              int w, int h, int stride = 4);
 
 // Progress steps deconvolveChannel will tick for these options (4 for pure
 // MCS; 4 + one per RED iteration otherwise).

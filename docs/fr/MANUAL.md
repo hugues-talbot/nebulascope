@@ -712,6 +712,37 @@ défaut — lui seul garde la propriété « chaque pixel est une fonctionnelle
 linéaire déclarée » ; l'en-tête du résultat RED déclare à la place le
 modèle variationnel complet (noyau, cible, a priori, μ, itérations).
 
+**Entrée sans étoiles (Noyau depuis : une autre image).** Le modèle de
+flou est linéaire : un produit *sans étoiles* — la sortie de
+StarXTerminator, par exemple — obéit au même modèle, moins la seule
+composante qui le violait, les cœurs stellaires écrêtés. Déconvoluer
+l'image sans étoiles avec le noyau *mesuré sur sa jumelle étoilée* est
+donc valide par linéarité, et toute la classe des artefacts engendrés
+par les étoiles — les anneaux croissent avec le contraste de la source,
+et le contraste nébulaire sonne sous le plancher de bruit — n'apparaît
+jamais : ni protection des cœurs, ni zones neutres, l'a priori de bruit
+gouverne partout. Affichez l'image sans étoiles, ouvrez le dialogue et
+réglez **Noyau depuis** sur la jumelle étoilée de la liste (même grille,
+même orientation) ; sa PSF est mesurée d'abord si elle ne l'a pas été,
+et le dialogue revient avec le noyau affiché. Deux engagements gardent
+la méthode honnête. La PSF livrée est vérifiée **par procuration** : le
+même filtre (même noyau, même cible, même régularisation) est appliqué à
+la jumelle étoilée et *ses* étoiles sont réajustées — pour le filtre pur
+le certificat se transfère exactement, sous l'a priori RED
+approximativement (l'a priori est neutre près des étoiles sur la
+jumelle, dont les étoiles ne voient que le terme d'attache aux données).
+Et l'en-tête déclare la chaîne : la source du noyau, le chiffre par
+procuration, et le fait que la suppression des étoiles en amont ne fait
+pas partie du modèle déclaré — seule la déconvolution en fait partie. Un
+contrôle de cohérence refuse une source qui ne se lit pas comme la
+jumelle : sur une même grille, l'image étoilée moins l'image sans
+étoiles est l'image des seules étoiles, jamais fortement négative, et une
+grille retournée verticalement (l'outil en ligne de commande de RC-Astro
+écrit ses FITS ainsi) ou des données sans rapport échouent au niveau du
+pour cent — plutôt que de recevoir en silence un noyau en miroir.
+Script : `deconv … from <ligne>` avec la ligne (à partir de 1) de la
+jumelle dans la liste.
+
 Le résultat est une **nouvelle entrée en mémoire** dans la liste (comme
 Combiner), qui porte la solution astrométrique, l'étirement et les
 annotations de la source — *Enregistrer les données sous…* la conserve.
@@ -721,7 +752,8 @@ la largeur mesurée est atteignable de façon fiable ; des cibles plus
 agressives se paient en régularisation (surveillez le chiffre livré).
 Script : `deconv <fwhm_cible_px> [lambda]`, ou
 `deconv <fwhm_cible_px> red [itérations] [poids]` pour l'a priori de
-bruit.
+bruit, l'un ou l'autre suivi de `from <ligne>` pour une entrée sans
+étoiles.
 
 ### Consultations Gaia DR3 (en ligne)
 

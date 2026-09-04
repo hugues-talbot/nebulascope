@@ -399,6 +399,11 @@ action undo
 # stars), and the command must say so and change nothing — the delivered-PSF
 # contract itself runs in test_deconv on a synthetic field with exact truth.
 deconv 2.0
+# Kernel from another list row (the starless-input path): the source is
+# measured and must define a kernel too — here it cannot (same fixture
+# class), and the guard says so on stderr without changing anything.
+deconv 2.0 from 2
+assert rows 5
 
 # Decoded-image cache: the third visit to sample.fits in this run serves the
 # cached decode — the data must be bit-identical to a fresh read (and an
