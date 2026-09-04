@@ -678,7 +678,7 @@ window.Quarto = {
   \frac{\sum_i (f_i/\sigma_i^2)\, \overline{K_i}\, Y_i}
        {\sum_i (f_i^2/\sigma_i^2)\, |K_i|^2 \;+\; \lambda}.\]</span></p>
 <p>Each sub is weighted <em>frequency by frequency</em> by its own OTF: good-seeing frames govern the high frequencies, poor ones still donate every photon at low frequencies — lucky imaging without discarding anything. The declared target and the delivered-PSF audit carry over unchanged.</p>
-<p>The implementation (<code>patch_extract.py</code>, <code>proper_coadd.py</code>, <code>patch_audit.py</code>) measures a per-sub elliptical Moffat (the residual registration offset entering <span class="math inline">\(K_i\)</span> as a phase), weights by noise and transparency, and accumulates two Fourier planes — streaming, constant memory. A synthetic self-test (40 subs, seeing 2.4–5.0 px, blind per-sub measurement) has the estimator halving the error of stack-then-deconvolve at the same declared target. The real experiment ran on a 1024-px patch of the Hubble overlap cut from <strong>all 201 registered subs</strong> of a full-frame re-registration (105 Hα, 51 S II, 45 O III; nothing culled); patch numbers compare fairly only within the patch, so every row below shares its rectangles. Kernel FWHM / star-masked nebula NRMSE against Hubble at 1.3″:</p>
+<p>The implementation (<code>patch_extract.py</code>, <code>proper_coadd.py</code>, <code>patch_audit.py</code>) measures a per-sub elliptical Moffat (the residual registration offset entering <span class="math inline">\(K_i\)</span> as a phase), weights by noise and transparency, and accumulates two Fourier planes — streaming, constant memory. A synthetic self-test (40 subs, seeing 2.4–5.0 px, blind per-sub measurement) has the estimator halving the error of stack-then-deconvolve at the same declared target. The real experiment ran on a 1024-px patch of the Hubble overlap cut from <strong>all 201 registered subs</strong> of a full-frame re-registration (105 Hα, 51 S II, 45 O III; nothing culled at first — two wind-gust frames were removed after the fact, see 7); patch numbers compare fairly only within the patch, so every row below shares its rectangles. Kernel FWHM / star-masked nebula NRMSE against Hubble at 1.3″:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 25%">
@@ -689,8 +689,8 @@ window.Quarto = {
 <thead>
 <tr class="header">
 <th>Patch render</th>
-<th>Hα (105)</th>
-<th>S II (51)</th>
+<th>Hα (104)</th>
+<th>S II (50)</th>
 <th>O III (45)</th>
 </tr>
 </thead>
@@ -698,19 +698,19 @@ window.Quarto = {
 <tr class="odd">
 <td>Proper coadd, all subs</td>
 <td><strong>2.53″ / 0.39</strong></td>
-<td>1.98″ / 0.89</td>
+<td>1.99″ / 0.84</td>
 <td><strong>1.81″ / 0.53</strong></td>
 </tr>
 <tr class="even">
 <td>Plain mean, same subs</td>
-<td>2.93″ / 0.61</td>
-<td><strong>2.01″ / 0.69</strong></td>
+<td>2.92″ / 0.61</td>
+<td><strong>2.02″ / 0.64</strong></td>
 <td>1.96″ / 0.69</td>
 </tr>
 <tr class="odd">
 <td>Integrated master (crop)</td>
-<td>2.86″ / 0.60</td>
-<td>1.94″ / 0.69</td>
+<td>2.87″ / 0.60</td>
+<td>1.95″ / 0.69</td>
 <td>2.35″ / 0.68</td>
 </tr>
 <tr class="even">
@@ -738,21 +738,21 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td>Proper coadd (starry subs)</td>
-<td>0.207</td>
+<td>0.205</td>
 <td>0.993</td>
 <td>0.310</td>
 </tr>
 <tr class="even">
 <td>Proper coadd (starless subs)</td>
-<td>0.206</td>
-<td>0.399</td>
-<td>0.284</td>
+<td>0.197</td>
+<td>0.407</td>
+<td>0.351</td>
 </tr>
 <tr class="odd">
 <td>Plain mean, same subs</td>
-<td>0.188</td>
-<td>0.311</td>
-<td>0.277</td>
+<td>0.187</td>
+<td>0.310</td>
+<td>0.278</td>
 </tr>
 <tr class="even">
 <td>Integrated master (crop)</td>
@@ -767,11 +767,14 @@ window.Quarto = {
 <td>0.289</td>
 </tr>
 </tbody>
-</table></li>
-<li><p><strong>The verdict the error bars allow.</strong> With stars gone, the render-to-render spreads shrink to one or two floors: on Hα and O III proper coaddition, the plain mean and ML5 are all within ~0.03 of each other, ML5’s edge over a plain mean amounting to about one floor. The fidelity axis is far <em>flatter</em> than the contaminated referee had painted it — the humble mean was always a better image than v1 let it look. What the proper coadd demonstrably buys is resolution; at this metric that gain is paid back in amplified noise, and on S II (faint, no [N II] cushion) the mean genuinely wins.</p></li>
-<li><p><strong>The S II defect had a shape, and the fix was already designed.</strong> Under v2 the starry proper coadd scored 0.99 because every bright star wore a ringing moat — the filter’s response to saturated cores no Moffat describes — and star removal left the negative moats behind as craters. The plain coadd had never inherited the app’s core protection. The principled remedy is the one proposed earlier for the app: measure each sub’s PSF on its stars, but <strong>coadd the starless subs</strong> (<code>sxt_subs.py</code>, <code>proper_coadd.py --data</code>), so the one model violation never enters the estimator. Result: 0.99 → 0.40 on S II, and no moats anywhere. (One tooling note: the referee’s registration is star-based, so kernel estimates on starless renders must borrow the starry sibling’s registration.)</p></li>
+</table>
+<p>(A consistency check the instrument passes: a starless mean scores the same as its starry twin — 0.187 / 0.312 / 0.275 — as it must, since v2 removes the stars anyway.)</p></li>
+<li><p><strong>The verdict the error bars allow.</strong> With stars gone, the render-to-render spreads shrink to one or two floors: on Hα, proper coaddition of either kind, the plain mean, the master and ML5 all lie within 0.03 of each other — two floors — ML5’s edge over a plain mean amounting to one; on O III the starry proper coadd, the mean and ML5 are likewise within 0.03. The fidelity axis is far <em>flatter</em> than the contaminated referee had painted it — the humble mean was always a better image than v1 let it look. What the proper coadd demonstrably buys is resolution; at this metric that gain is paid back in amplified noise, and on the faint channels — S II (no [N II] cushion) and O III once the subs are starless — the mean genuinely wins.</p></li>
+<li><p><strong>The S II defect had a shape, and the fix was already designed.</strong> Under v2 the starry proper coadd scored 0.99 because every bright star wore a ringing moat — the filter’s response to saturated cores no Moffat describes — and star removal left the negative moats behind as craters. The plain coadd had never inherited the app’s core protection. The principled remedy is the one proposed earlier for the app: measure each sub’s PSF on its stars, but <strong>coadd the starless subs</strong> (<code>sxt_subs.py</code>, <code>proper_coadd.py --data</code>), so the one model violation never enters the estimator. Result: 0.99 → 0.41 on S II, and no moats anywhere. On O III, though, the starless coadd scores <em>worse</em> than the starry one (0.35 vs 0.31): the moats are gone but O III’s subs are the noisiest, and what the estimator amplifies there is noise, not stars. (Two tooling notes. The referee’s registration is star-based, so a starless render borrows its starry sibling’s solution — <code>--borrow</code>; a 0.7-px self- registration had inflated the O III score. And its extended- structure kernel leans on stars too: a starless mean reads 4.6″ where its starry twin measures 1.96″, so no FWHM is quoted for starless renders.)</p></li>
 <li><p><strong>The denoising hypothesis was tested and falsified.</strong> RED inside the coaddition (<code>--red</code>) improves the synthetic self-test (0.054 → 0.044) yet moved no real-patch score in its favour — consistent with the residuals being structured (moats, stars) rather than noise, as the diagnosis then confirmed.</p></li>
+<li><p><strong>A referee catches what a PSF fit forgives.</strong> Bringing the result to the Hubble field (below) showed a red ghost beside the brightest star in the mean and in the coadd, but not in the integrated master: one S II sub — and, milder, one Hα sub — taken through a gust of wind, every star doubled. The per-sub Moffat fit had found a core and accepted both (3.0″, 50 stars); a mean has no rejection, and neither had the proper coadd. A per-sub excess test against the per-pixel median of the stack flags them at 690 σ and 42 σ (next frame: 3.7 σ; <code>find_ghost.py</code>, <code>drop_subs.py</code>). The scores above are for the 104 + 50 remaining subs and barely moved — the ghost sat outside the scored nebula — but the lesson stands: a coaddition that trusts every frame’s PSF still needs an outlier gate, a job the integration’s pixel rejection had been doing silently.</p></li>
 </ol>
+<p>The result, brought to the Hubble field (<code>upright_product.png</code> in the study repository’s <code>results/montages/</code>): the starless proper coadd of each channel takes the plain mean’s stars back — additively, the inverse of their removal, with the two unit systems reconciled on nebula pixels — and the raw master, the plain mean and this product are shown under <em>one</em> palette transform fitted on the master against the Heritage reference, inverse-warped upright into its frame. The resolution gain is what the eye reports too: the pillar rims and the fingers of the right-hand pillar that the mean blurs are resolved in the product, at the price of a visibly grainier background.</p>
 </section>
 <section id="future-work-a-spatially-variant-psf" class="level2">
 <h2 class="anchored" data-anchor-id="future-work-a-spatially-variant-psf">Future work: a spatially-variant PSF</h2>
