@@ -21,9 +21,11 @@ them for another field.
 | `patch_extract.py` | Registered-sub patch extraction: `--locate` maps the study ROI into a new WBPP run's grid (same-source registration); extraction crops every sub into a compact float32 cube + manifest. Ships a minimal monolithic-XISF reader (uncompressed / zlib / zstd / lz4, +byteshuffle) validated bit-exact against the app's decoder. |
 | `proper_coadd.py` | Proper coaddition (Zackay & Ofek 2017): per-sub Moffat PSFs (with residual registration offsets as kernel phases), 1/sigma^2 x transparency weights, matched-filter Fourier accumulation, declared-target output. `--selftest` synthesizes 40 subs with random seeing and asserts it beats stack-then-deconvolve (it does, by 2x) and honours the delivered-PSF contract. |
 | `patch_audit.py --filter H name=path ...` | The Hubble-overlap referee for patch-sized renders (ninth-row experiment): registers the mosaic onto the patch grid (wide-search fallback), kernel FWHM on the west rectangle, star-masked fidelity on the held-out east one. Patch numbers are fair only WITHIN a patch — always include in-patch baselines (raw crop, plain mean). |
+| `sxt_subs.py <patch_cube.fits>` | Star removal on every sub of a patch cube via the RC-Astro StarXTerminator CLI; writes `_starless` and `_stars` cubes. Feeds `proper_coadd.py --data`: PSFs from the starry subs, estimator on the starless ones — no star cores, no ringing moats. |
+| `patch_audit.py --starless` | Metric v2: symmetric SXT removal on render and truth, starless-vs-starless scoring with residual apertures; validated by a half-stack null test (floors ±0.015–0.026). |
 
 Set `PSF_DATA` to the folder holding the data (reference images, and a
 `PSF_comparison/` subfolder with the linear masters and the HST mosaics);
 it defaults to the working directory. Float32 FITS dumps of XISF masters
 are produced with NebulaScope itself (`open …` / `save …` in a script).
-Requires Python 3 with NumPy, SciPy and Pillow.
+Requires Python 3 with NumPy, SciPy and Pillow; the star-removal steps need the `rc-astro` CLI (StarXTerminator licence) on PATH.

@@ -92,16 +92,21 @@ def locate(old_master, new_master):
     HERE = os.path.dirname(os.path.abspath(__file__))
     old = read_any(old_master)
     new = read_any(new_master)
-    o = regprep(np.nan_to_num(old[min(1, old.shape[0]-1)].astype(np.float64)))
-    n = regprep(np.nan_to_num(new[min(1, new.shape[0]-1)].astype(np.float64)))
+    B = 8   # register at bin-8: fits the search canvas, and patch placement
+            # only needs the centre good to a few full-res pixels.
+    def bin8(a):
+        h, w = (a.shape[0]//B)*B, (a.shape[1]//B)*B
+        return a[:h, :w].reshape(h//B, B, w//B, B).mean(axis=(1, 3))
+    o = regprep(bin8(np.nan_to_num(old[min(1, old.shape[0]-1)].astype(np.float64))))
+    n = regprep(bin8(np.nan_to_num(new[min(1, new.shape[0]-1)].astype(np.float64))))
     # Same sky, same sampling: scale ~1, small rotation; widen if it fails.
     A0, score, s0, r0 = bruteforce_similarity(o, n,
                             np.geomspace(0.97, 1.03, 5), range(-6, 7, 2), n=2048)
     So, Sn = detect_stars(o, maxn=600), detect_stars(n, maxn=600)
     A, npairs, med = refine_affine(A0, So, Sn, tol0=4.0)
-    print(f'new<-old registration: score {score:.3f}, {npairs} pairs, {med:.2f} px')
-    cx = A[0,0]*ROI_CX + A[1,0]*ROI_CY + A[2,0]
-    cy = A[0,1]*ROI_CX + A[1,1]*ROI_CY + A[2,1]
+    print(f'new<-old registration (bin{B}): score {score:.3f}, {npairs} pairs, {med:.2f} bin-px')
+    cx = (A[0,0]*(ROI_CX/B) + A[1,0]*(ROI_CY/B) + A[2,0]) * B
+    cy = (A[0,1]*(ROI_CX/B) + A[1,1]*(ROI_CY/B) + A[2,1]) * B
     side = 1024
     rect = [int(round(cx)) - side//2, int(round(cy)) - side//2, side, side]
     with open(os.path.join(HERE, 'patch_rect.json'), 'w') as f:

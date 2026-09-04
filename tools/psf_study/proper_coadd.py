@@ -176,19 +176,25 @@ def edge_window(shape, margin=32):
     return np.outer(wy, wx)
 
 def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True,
-                 red_iters=0, red_mu=1e-2):
+                 red_iters=0, red_mu=1e-2, data=None):
     """cube [N,h,w] background-subtracted; psfs: list of measure_sub dicts
     (None entries are skipped). red_iters > 0 runs the multi-frame RED
     fixed point over the accumulators (starlet prior, fine scales only,
-    star-neutral near bright stars). Returns (proper, mean, report)."""
+    star-neutral near bright stars). `data` (same shape) substitutes the
+    frames the estimator SEES while `cube` still supplies noise/weights:
+    pass the SXT-starless subs to coadd nebulosity with no star cores —
+    the one model violation — and hence no ringing moats.
+    Returns (proper, mean, report)."""
     shape = cube.shape[1:]
+    if data is None:
+        data = cube
     win = edge_window(shape)
     num = np.zeros((shape[0], shape[1]//2 + 1), np.complex128)
     den = np.zeros_like(num, np.float64)
     used, mean_acc = 0, np.zeros(shape)
     ref_flux = None
     report = []
-    for i, (sub, p) in enumerate(zip(cube, psfs)):
+    for i, (sub, dsub, p) in enumerate(zip(cube, data, psfs)):
         if p is None:
             report.append({'i': i, 'used': False}); continue
         sig = float(np.median(np.abs(sub - np.median(sub))))/0.6745
@@ -199,10 +205,10 @@ def proper_coadd(cube, psfs, target_fwhm, lam, verbose=True,
         wgt = f/max(sig, 1e-12)**2
         K = embed_otf(moffat_kernel(p['fmaj'], p['fmin'], p['pa'], p['beta'],
                                     p['dx'], p['dy'], 65), shape)
-        Y = rfft2(sub*win)
+        Y = rfft2((dsub - np.median(dsub))*win)
         num += wgt*np.conj(K)*Y
         den += wgt*f*np.abs(K)**2
-        mean_acc += sub/f
+        mean_acc += (dsub - np.median(dsub))/f
         used += 1
         report.append({'i': i, 'used': True, 'fwhm': round(np.sqrt(p['fmaj']*p['fmin']), 3),
                        'sigma': round(sig, 6), 'f': round(f, 4), 'nstars': p['nstars']})
@@ -294,6 +300,9 @@ def main():
         raise SystemExit(__doc__)
     args = sys.argv[1:]
     red_iters, red_mu = 0, 1e-2
+    data_path = None
+    if '--data' in args:
+        i = args.index('--data'); data_path = args[i+1]; del args[i:i+2]
     if '--red' in args:
         i = args.index('--red')
         red_iters = int(args[i+1])
@@ -317,9 +326,14 @@ def main():
     print(f'{cube.shape[0]} subs, {len(refpts)} reference stars')
     psfs = [measure_sub(s, refpts) for s in cube]
     print(f'PSF measured on {sum(p is not None for p in psfs)} subs')
+    data = None
+    if data_path:
+        data = np.asarray(read_fits_f32(data_path)[0], dtype=np.float64)
+        print(f'estimator data: {os.path.basename(data_path)} (PSFs/weights from the starry cube)')
     proper, mean, rep = proper_coadd(cube, psfs, target, lam,
-                                     red_iters=red_iters, red_mu=red_mu)
+                                     red_iters=red_iters, red_mu=red_mu, data=data)
     tag = f', RED {red_iters} iters mu {red_mu}' if red_iters else f', lambda {lam}'
+    if data_path: tag += ', starless data'
     write_fits_f32(prefix + '_proper.fits', proper[None].astype(np.float32),
                    [f'proper coadd, target {target} px{tag}'])
     write_fits_f32(prefix + '_mean.fits', mean[None].astype(np.float32),
