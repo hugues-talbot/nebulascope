@@ -10,10 +10,16 @@ nebula NRMSE against Hubble degraded to 1.3 arcsec on the held-out east
 rectangle — the same protocol, the same numbers, comparable with the
 eight-way table.
 
-    patch_audit.py --filter H [--starless] name=path [name=path ...]
+    patch_audit.py --filter H [--starless] [--borrow A=B,C=B] name=path ...
 
 Each path: FITS with one plane (or first plane used). PSF_DATA must
 point at the folder whose PSF_comparison/ holds the HST mosaics.
+
+--borrow A=B: render A takes render B's Hubble registration instead of
+its own. The registration is star-based; a STARLESS render (a starless
+coadd) registers on residuals only, and a 0.7-px misregistration
+inflates its fidelity score. All renders of one patch share the grid,
+so a starless render borrows its starry sibling's solution.
 
 --starless (metric v2): the fidelity residuals of v1 turned out to be
 dominated by under-masked faint stars and Hubble's diffraction spikes
@@ -69,6 +75,11 @@ def main():
     starless = '--starless' in args
     if starless:
         args.remove('--starless')
+    borrow = {}
+    if '--borrow' in args:
+        i = args.index('--borrow')
+        borrow = dict(kv.split('=', 1) for kv in args[i+1].split(','))
+        del args[i:i+2]
     if not args:
         raise SystemExit(__doc__)
     workdir = os.path.join(os.environ.get('PSF_DATA', '.'), 'ninth_row', 'sxt_work')
@@ -85,10 +96,7 @@ def main():
     Sh = detect_stars(regprep(hst8), maxn=600)
     t_psf = gauss_psf(1.3/GRID)
 
-    for name, plane in inputs:
-        m = ndimage.zoom(plane, 2, order=3)
-        m_reg = regprep(m)
-        n2 = m.shape[1]
+    def register(m_reg):
         A0, score, s0, r0 = bruteforce_similarity(regprep(hst8), m_reg,
                                 np.geomspace(0.80, 0.88, 5), np.arange(-67.0, -60.5, 1.0), n=2048)
         Sm = detect_stars(m_reg, maxn=600)
@@ -100,6 +108,21 @@ def main():
                                     np.geomspace(s0*0.94, s0*1.06, 7),
                                     np.arange(r0-3, r0+3.5, 1.0), n=2048)
             A8, npairs, med = refine_affine(A0, Sh, Sm, tol0=5.0)
+        return A8, npairs, med
+
+    regs = {}
+    for name, plane in inputs:
+        if name not in borrow:
+            regs[name] = register(regprep(ndimage.zoom(plane, 2, order=3)))
+    for name, src in borrow.items():
+        if src not in regs:
+            raise SystemExit(f'--borrow {name}={src}: {src} is not a registered input')
+        regs[name] = regs[src]
+
+    for name, plane in inputs:
+        m = ndimage.zoom(plane, 2, order=3)
+        n2 = m.shape[1]
+        A8, npairs, med = regs[name]
         Ahalf = np.zeros((3, 2)); Ahalf[0, 0] = Ahalf[1, 1] = 0.5
         A = compose(Ahalf, A8)
         hst_w = warp_to(hst, A, m.shape)
