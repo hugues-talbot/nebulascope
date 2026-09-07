@@ -404,6 +404,11 @@ deconv 2.0
 # class), and the guard says so on stderr without changing anything.
 deconv 2.0 from 2
 assert rows 5
+# Analytic star removal on the fixture: a new _starless entry (and its
+# stars-only complement), the sum of the two being the input by construction.
+removestars 5 100 stars
+assert rows 7
+assert size 128 128
 
 # Decoded-image cache: the third visit to sample.fits in this run serves the
 # cached decode — the data must be bit-identical to a fresh read (and an

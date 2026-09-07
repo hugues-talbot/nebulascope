@@ -326,3 +326,53 @@ rc-astro CLI writes its FITS vertically flipped, and a flipped sibling
 would have handed the filter a mirrored kernel — the starry-minus-
 starless residual is the stars-only image, never strongly negative, so a
 percent-level fraction of strongly negative pixels refuses the source.
+
+## Analytic star removal: the MCS decomposition's first half (2026-09-06)
+
+The starless deconvolution had one weak point: the star removal upstream
+was StarXTerminator's, learned weights outside the stated model, and the
+header had to say so. Asked whether the starless frame could be computed
+in-app, the answer was that the deconvolution needs far less than a
+cosmetic starless image: only that the residual near every core be
+smooth and low-contrast, since artefacts scale with contrast. That is a
+classical construction — the first half of Magain, Courbin & Sohy's
+original algorithm, point sources fitted and taken out. core/StarRemove:
+per star, brightest first on the running residual, a Moffat of the
+measured field shape with free position, amplitude, background plane
+and curvature (its own width and exponent when bright and unclipped);
+clipped cores excluded from the fit so the flux comes from the wings;
+subtraction to below the noise; and, where the model exceeded 100σ, a
+harmonic fill of the core by the Poisson integral on a round disc — the
+one shape that prints no geometry — with noise at the measured σ. The
+tool certifies itself: per-channel counts and the ring residual rms in
+noise sigmas, flagging what a Moffat cannot describe. Lessons from the
+synthetic-truth test, each a real defect: a plain MAD of the high-passed
+frame overestimates the noise ten-fold under bright-star halos (the
+discrete Laplacian's MAD does not); on power-law wings amplitude, width
+scale and exponent are degenerate, so a clipped star keeps the field's
+shape and gives up only its flux; a subtracted clipped core is a hole of
+large negative values until it is filled, so cores are excluded from
+every later fit and ring (two passes); and the duplicate-maximum claim
+must cover the plateau only, never the core disc, or a neighbour inside
+it is buried under the fill. Then the M16 crop taught four more, each visible in a
+montage against the StarXTerminator sibling: a per-star exponent that
+slides low on a bright star's non-Moffat wings subtracts a hundred
+times too much tens of pixels out (dark lobes along the elongation
+axis) — the exponent now stays at the field's median for every star;
+close pairs lost both members to each other's core through the shape
+gate — a fit now keeps out the pixels of neighbours not yet subtracted,
+and a fit may not wander from its peak; noise on bright nebulosity was
+fitted as faint stars because the box high-pass rides high there —
+detection is by local contrast against the star's own ring; and a
+coherent ring left just outside a filled disc passed a relative-rms
+test on textured nebula — the disc now grows while the ring's coherent
+mean offset or excess scatter against a control ring persists, bounded
+by where the star's model drops under the noise. Result: synthetic
+truth recovered with RMS error at the noise and worst pixel 5σ; on the
+crop 10 254 stars removed with 9 flagged, no pixel over-subtracted, and
+the annulus minima around the brightest stars within a sigma of
+StarXTerminator's — and the deconvolution through it moat-free, the
+delivered PSF by proxy the same 1.96/1.92/1.95″. Shipped as Tools ▸
+Remove Stars (Analytic) — with the stars-only complement for Combine
+Stars — and as a checkbox in the Deconvolve dialog, where the whole
+chain becomes a stated operation.

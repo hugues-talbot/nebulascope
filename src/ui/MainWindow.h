@@ -21,6 +21,7 @@
 #include "core/Wcs.h"
 #include "core/PsfMeasure.h"
 #include "core/Deconvolve.h"
+#include "core/StarRemove.h"
 #include "core/GaiaQuery.h"
 #include "core/ImageCache.h"
 #include "ui/AnnotationLayer.h"
@@ -84,11 +85,19 @@ private slots:
                               std::function<void()> whenDone);
     // kernelKey: empty = this image's own stars; else the list entry whose
     // stars define the kernel (starless input — see core/Deconvolve.h).
+    // analyticStarless: remove this image's stars first (core/StarRemove),
+    // deconvolve the starless frame, audit by proxy on this image.
     void runDeconvolution(DeconvOptions opt, bool autoReg,
-                          const QString& kernelKey = QString()); // autoReg: contract-first lambda/mu per channel
+                          const QString& kernelKey = QString(),
+                          bool analyticStarless = false);      // autoReg: contract-first lambda/mu per channel
     void scriptDeconvolve(double fwhmPx, double lambda,
                           int redIters, double redWeight,
-                          int kernelRow = 0);                  // script `deconv` (synchronous)
+                          int kernelRow = 0, bool analyticStarless = false); // script `deconv` (synchronous)
+    void removeStarsAction();              // Tools > Remove Stars (Analytic)
+    void runStarRemoval(StarRemoveOptions opt, bool starsEntry);   // worker; new entries
+    void scriptRemoveStars(double detectSigma, double coreSigma, bool starsEntry);
+    static QStringList starRemoveHeaderLines(const std::vector<StarRemoveResult>& r,
+                                             const StarRemoveOptions& opt);
     // Disk-frame pixels of any list entry (synthetic, cached, or decoded and
     // cached now). Null with `err` set when unreadable.
     std::shared_ptr<const ImageData> entryImage(const QString& key, QString* err = nullptr);

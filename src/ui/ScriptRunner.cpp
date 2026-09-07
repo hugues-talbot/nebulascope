@@ -91,7 +91,13 @@ const CommandRef kCommands[] = {
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
     "(rotated ellipses at the fitted shape; the report dialog's button).\n"
     "label: 0 none, 1 FWHM, 2 eccentricity, 3 both."}},
-  {"deconv",     {"deconv <target_fwhm_px> [lambda | red [iters] [weight]] [from <row>]",
+  {"removestars",{"removestars [detect_sigma] [core_sigma] [stars]",
+    "Remove the stars analytically (Tools > Remove Stars): each star fitted\n"
+    "with a Moffat of the measured shape and subtracted, cores filled\n"
+    "harmonically. New in-memory entry <name>_starless; 'stars' adds the\n"
+    "stars-only complement too. Defaults: detect 5 sigma, fill cores above\n"
+    "100 sigma. The header carries the per-channel residual report."}},
+  {"deconv",     {"deconv <target_fwhm_px> [lambda | red [iters] [weight]] [from <row> | starless]",
     "Deconvolve the current LINEAR image to a round Gaussian PSF of the\n"
     "declared FWHM (px), using the measured stellar PSF as the kernel (runs\n"
     "the measurement first if needed). New in-memory list entry. Omitted\n"
@@ -100,6 +106,9 @@ const CommandRef kCommands[] = {
     "'from <row>' takes the kernel from list row <row> (1-based) instead:\n"
     "for a STARLESS input, name its starry sibling on the same grid — the\n"
     "kernel is measured there and the delivered PSF audited there by proxy.\n"
+    "'starless' removes this image's stars analytically first and\n"
+    "deconvolves that frame (audit by proxy on this image); the starless\n"
+    "frame is added to the list as well.\n"
     "Menu equivalent: Tools > Deconvolve to Target PSF."}},
   {"gaiastar",   {"gaiastar <x> <y>",
     "Identify the star at/near image pixel (x,y) in Gaia DR3: the click is\n"
@@ -506,6 +515,9 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         //   (starless input: its starry sibling), audited there by proxy.
         QStringList a = t;
         int kernelRow = 0;
+        bool analytic = false;
+        for (int i = 1; i < a.size(); ++i)
+            if (a[i].toLower() == QLatin1String("starless")) { analytic = true; a.erase(a.begin() + i); break; }
         for (int i = 1; i + 1 < a.size(); ++i)
             if (a[i].toLower() == QLatin1String("from")) {
                 kernelRow = a[i + 1].toInt();
@@ -527,7 +539,22 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         } else if (a.size() > 2) {
             lambda = a[2].toDouble();
         }
-        m_w->scriptDeconvolve(f, lambda, iters, weight, kernelRow);
+        m_w->scriptDeconvolve(f, lambda, iters, weight, kernelRow, analytic);
+        return true;
+    }
+    if (cmd == QLatin1String("removestars")) {
+        // removestars [detect_sigma] [core_sigma] [stars]
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        double det = 0.0, core = 0.0;
+        bool stars = false;
+        for (int i = 1; i < t.size(); ++i) {
+            if (t[i].toLower() == QLatin1String("stars")) { stars = true; continue; }
+            bool ok = false;
+            const double v = t[i].toDouble(&ok);
+            if (!ok || v <= 0) { err = "removestars [detect_sigma] [core_sigma] [stars]"; return false; }
+            if (det <= 0) det = v; else core = v;
+        }
+        m_w->scriptRemoveStars(det, core, stars);
         return true;
     }
     if (cmd == QLatin1String("gaiastar")) {

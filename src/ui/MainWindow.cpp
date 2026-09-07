@@ -1406,6 +1406,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["transport_colors"] = tools->addAction(tr("&Transport Colors from Reference…"), this, &MainWindow::transportColorsFromRef);
     acts["measure_psf"] = tools->addAction(tr("&Measure PSF (Stars)…"), this, &MainWindow::measurePsfAction);
     acts["deconvolve"] = tools->addAction(tr("&Deconvolve to Target PSF…"), this, &MainWindow::deconvolveAction);
+    acts["remove_stars"] = tools->addAction(tr("&Remove Stars (Analytic)…"), this, &MainWindow::removeStarsAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
@@ -4443,17 +4444,32 @@ void MainWindow::deconvolveAction() {
                            "with the PSF — so deconvolving them rings. The brightest 0.005%\n"
                            "of pixels keep their input values. Not applicable to a starless\n"
                            "input, which has no cores."));
+    auto* analytic = new QCheckBox(tr("Remove stars first (analytic) — deconvolve the starless frame, audit on this one"));
+    analytic->setChecked(false);
+    analytic->setToolTip(tr("The starless path without an external tool: this image's stars are\n"
+                            "fitted (Moffat of the measured shape, flux from the wings when the\n"
+                            "core is clipped) and subtracted, their cores filled harmonically, and\n"
+                            "the filter runs on that frame — no core protection, no neutral zones.\n"
+                            "The delivered PSF is verified BY PROXY on this image; the starless\n"
+                            "frame is added to the list too, with its own residual report."));
     lay->addLayout(form);
+    lay->addWidget(analytic);
     lay->addWidget(protect);
+    connect(analytic, &QCheckBox::toggled, &dlg, [protect, source](bool on) {
+        protect->setEnabled(!on && source->currentData().toString().isEmpty());
+    });
     // The kernel line and the default target follow the selected source.
-    auto syncSource = [this, source, info, target, protect, describe, asec, nchSelf] {
+    auto syncSource = [this, source, info, target, protect, analytic, describe, asec, nchSelf] {
         const QString key = source->currentData().toString();
         double minGeo = 1e30;
         QString measured, note;
         if (key.isEmpty()) {
             measured = describe(m_lastPsf, nchSelf, minGeo);
-            protect->setEnabled(true);
+            analytic->setEnabled(true);
+            protect->setEnabled(!analytic->isChecked());
         } else {
+            analytic->setEnabled(false);
+            analytic->setChecked(false);
             protect->setEnabled(false);
             if (psfCacheValidFor(key))
                 measured = describe(m_psfCache.value(key).reports, m_image.channels(), minGeo);
@@ -4525,10 +4541,11 @@ void MainWindow::deconvolveAction() {
         const double l = lam->currentData().toDouble();
         if (l > 0) { opt.lambda = l; autoReg = false; }
     }
-    runDeconvolution(opt, autoReg, kernelKey);
+    runDeconvolution(opt, autoReg, kernelKey, kernelKey.isEmpty() && analytic->isChecked());
 }
 
-void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString& kernelKey) {
+void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString& kernelKey,
+                                  bool analyticStarless) {
     const QString path = m_currentPath;
     auto say = [this](const QString& msg) {
         statusBar()->showMessage(msg, 6000);
@@ -4544,6 +4561,14 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
     if (kernelKey.isEmpty()) {
         if (m_lastPsfPath != path || m_lastPsf.empty()) return;
         reports = m_lastPsf;
+        if (analyticStarless) {
+            // The starless path without a sibling: this image's stars are
+            // removed analytically (core/StarRemove) inside the worker, the
+            // filter runs on that frame, the audit by proxy on this one.
+            kernelName = tr("this image, stars removed analytically");
+            opt.protectCores = false;
+            opt.starNeutralPrior = false;
+        }
     } else {
         const auto hit = m_psfCache.constFind(kernelKey);
         if (hit == m_psfCache.constEnd()) return;
@@ -4605,13 +4630,25 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
     struct DeconvRun {
         ImageData out;
         std::vector<double> regs, deliveredGeo;        // per channel; 0 = unmeasurable
+        ImageData starless;                            // analytic path: the frame filtered
+        std::vector<StarRemoveResult> removal;         // … and its report
     };
     auto steps = std::make_shared<std::atomic<int>>(0);   // deconvSteps(opt) per channel
     auto chanIx = std::make_shared<std::atomic<int>>(0);
-    auto stage = std::make_shared<std::atomic<int>>(0);   // 0 calibrating reg, 1 filtering
-    auto compute = [img, psfs, nch, opt, autoReg, steps, chanIx, stage, starry]() {
+    auto stage = std::make_shared<std::atomic<int>>(0);   // -1 removing stars, 0 calibrating reg, 1 filtering
+    auto srDone = std::make_shared<std::atomic<int>>(0);
+    auto srTotal = std::make_shared<std::atomic<int>>(0);
+    const bool analytic = analyticStarless;
+    auto compute = [img, psfs, nch, opt, autoReg, steps, chanIx, stage, starry,
+                    analytic, reports, srDone, srTotal]() {
         DeconvRun res;
-        res.out = img;
+        if (analytic) {
+            stage->store(-1);
+            res.starless = removeStarsImage(img, reports, {}, &res.removal,
+                                            srDone.get(), srTotal.get());
+        }
+        const ImageData& input = analytic ? res.starless : img;   // what the filter sees
+        res.out = input;
         const ImageData& calib = starry ? *starry : img;   // where the stars are
         // Delivered-PSF verification on a centred crop of the result — the
         // same audit the study ran on the full frame.
@@ -4643,16 +4680,16 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
             }
             stage->store(1);
             std::vector<float> plane = deconvolveChannel(
-                img.plane<float>(c), img.width(), img.height(),
+                input.plane<float>(c), img.width(), img.height(),
                 psfs[std::size_t(c)], chOpt, steps.get());
             std::copy(plane.begin(), plane.end(), res.out.plane<float>(c));
             res.regs.push_back(chOpt.redIterations > 0 ? chOpt.redPriorWeight
                                                        : chOpt.lambda);
             // Audit: the product's own stars, or by proxy — the SAME filter on
-            // the starry sibling (exact for the pure filter by linearity).
+            // the starry frame (exact for the pure filter by linearity).
             res.deliveredGeo.push_back(
-                starry ? proxyDeliveredFwhm(*starry, c, psfs[std::size_t(c)], chOpt)
-                       : deliveredOn(c));
+                (starry || analytic) ? proxyDeliveredFwhm(calib, c, psfs[std::size_t(c)], chOpt)
+                                     : deliveredOn(c));
         }
         return res;
     };
@@ -4664,11 +4701,22 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
     const ImageHeader srcHdr = m_header;
     const StretchModel::State st = m_model.state();
     const std::vector<Annotation> srcAnns = m_annByPath.value(path);
-    auto finish = [this, path, opt, asec, nch, kernelName,
+    auto finish = [this, path, opt, asec, nch, kernelName, analytic,
                    srcHdr, reports, st, srcAnns](DeconvRun res) {
         const double targetFwhmPx = opt.targetFwhmPx;
         const bool red = opt.redIterations > 0;
         const bool proxy = !kernelName.isEmpty();
+        QString starlessKey;
+        if (analytic) {                     // the intermediate frame, inspectable
+            ImageHeader sh = srcHdr;
+            sh.container = "In-memory";
+            sh.structure = starRemoveHeaderLines(res.removal, {});
+            starlessKey = addSyntheticImage(
+                QFileInfo(path).completeBaseName() + QStringLiteral("_starless"),
+                std::move(res.starless));
+            m_syntheticHeaders.insert(starlessKey, sh);
+            m_stfByPath.insert(starlessKey, st);
+        }
         auto fw = [asec](double px) {
             return asec > 0 ? QStringLiteral("%1″").arg(px * asec, 0, 'f', 2)
                             : QStringLiteral("%1 px").arg(px, 0, 'f', 2);
@@ -4688,7 +4736,13 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
                               : tr("MCS single-filter transform"))
                      .arg(opt.protectCores ? tr(" · saturated cores protected") : QString())
                      .arg(proxy ? tr(" · kernel from «%1» (starless input)").arg(kernelName) : QString());
-        if (proxy)
+        if (analytic)
+            lines << tr("Starless input, made here: stars removed analytically (see the "
+                        "_starless entry for the construction and its residual report); the "
+                        "delivered PSF was verified on the starry frame by the same filter "
+                        "(exact for the pure filter by linearity, approximate under the RED "
+                        "prior). The whole chain is a stated operation.");
+        else if (proxy)
             lines << tr("Starless input: the kernel was measured on «%1» and the delivered PSF "
                         "verified there by the same filter (exact for the pure filter by "
                         "linearity, approximate under the RED prior); the star removal "
@@ -4710,7 +4764,8 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
         }
         hdr.structure = lines;
         const QString key = addSyntheticImage(
-            QFileInfo(path).completeBaseName() + QStringLiteral("_deconv"),
+            QFileInfo(path).completeBaseName()
+                + (analytic ? QStringLiteral("_starless_deconv") : QStringLiteral("_deconv")),
             std::move(res.out));
         m_syntheticHeaders.insert(key, hdr);
         if (!srcAnns.empty()) m_annByPath.insert(key, srcAnns);   // geometry unchanged
@@ -4735,10 +4790,13 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
     bar->setValue(0);
     statusBar()->addPermanentWidget(bar);
     auto* tick = new QTimer(this);
-    connect(tick, &QTimer::timeout, this, [this, bar, steps, chanIx, stage, nch] {
+    connect(tick, &QTimer::timeout, this, [this, bar, steps, chanIx, stage, nch, srDone, srTotal] {
         bar->setValue(steps->load());
         const int ci = chanIx->load();
-        statusBar()->showMessage(stage->load() == 0
+        const int sg = stage->load();
+        statusBar()->showMessage(sg < 0
+            ? tr("Removing stars analytically — %1 / %2 candidates").arg(srDone->load()).arg(srTotal->load())
+            : sg == 0
             ? tr("Deconvolving — channel %1/%2: calibrating regularization…").arg(ci + 1).arg(nch)
             : tr("Deconvolving — channel %1/%2: filtering…").arg(ci + 1).arg(nch));
     });
@@ -4757,7 +4815,8 @@ void MainWindow::runDeconvolution(DeconvOptions opt, bool autoReg, const QString
 }
 
 void MainWindow::scriptDeconvolve(double fwhmPx, double lambda,
-                                  int redIters, double redWeight, int kernelRow) {
+                                  int redIters, double redWeight, int kernelRow,
+                                  bool analyticStarless) {
     if (!m_image.isValid()) return;
     QString kernelKey;
     if (kernelRow > 0 && kernelRow <= m_fileList->count())
@@ -4793,7 +4852,181 @@ void MainWindow::scriptDeconvolve(double fwhmPx, double lambda,
         opt.lambda = lambda;
         autoReg = false;
     }
-    runDeconvolution(opt, autoReg, kernelKey);
+    runDeconvolution(opt, autoReg, kernelKey, kernelKey.isEmpty() && analyticStarless);
+}
+
+// ---- Tools > Remove Stars (Analytic) ----------------------------------------
+//
+// core/StarRemove as a tool of its own: the starless frame (and optionally
+// the stars-only complement, for Combine Stars) as new list entries, with the
+// construction and the per-channel residual report in the header.
+
+QStringList MainWindow::starRemoveHeaderLines(const std::vector<StarRemoveResult>& r,
+                                              const StarRemoveOptions& opt) {
+    QStringList lines;
+    lines << tr("Stars removed analytically: Moffat of the measured shape fitted per star "
+                "(flux from the wings where the core is clipped) and subtracted; cores where "
+                "the model exceeded %1σ filled by harmonic continuation of the surrounding "
+                "ring, with noise at the measured σ%2. Detection at %3σ.")
+                 .arg(opt.coreSigma, 0, 'f', 0)
+                 .arg(opt.fillNoise ? QString() : tr(" (noise fill off)"))
+                 .arg(opt.detectSigma, 0, 'f', 1);
+    for (std::size_t c = 0; c < r.size(); ++c)
+        lines << tr("channel %1: %2 stars removed (%3 cores filled, %4 clipped) · ring residual "
+                    "max %5σ rms · %6 flagged above %7σ · noise σ %8")
+                     .arg(c).arg(r[c].nRemoved).arg(r[c].nInpainted).arg(r[c].nClipped)
+                     .arg(r[c].maxResidualSigma, 0, 'f', 1).arg(r[c].nFlagged)
+                     .arg(kStarRemoveFlagSigma, 0, 'f', 0)
+                     .arg(r[c].noiseSigma, 0, 'g', 3);
+    return lines;
+}
+
+void MainWindow::removeStarsAction() {
+    if (!m_image.isValid()) return;
+    if (!psfCacheValid()) {
+        statusBar()->showMessage(tr("Measuring the PSF first — it is the shape of the stars to remove…"));
+        runPsfMeasurement([this] { removeStarsAction(); });
+        return;
+    }
+    m_lastPsf = m_psfCache.value(m_currentPath).reports;
+    m_lastPsfPath = m_currentPath;
+    const bool shapeOk = !m_lastPsf.empty() && m_lastPsf[0].nFitted >= 5;
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Remove stars (analytic)"));
+    auto* lay = new QVBoxLayout(&dlg);
+    auto* info = new QLabel(tr("Every star is fitted with a Moffat of this image's MEASURED shape%1\n"
+        "(position, amplitude, local background with gradient and curvature free; its\n"
+        "own width scale when the core is unclipped; flux from the wings where it is)\n"
+        "and subtracted. Where the model exceeded the core threshold — grown until the\n"
+        "ring outside is quiet — the pixels are replaced by the harmonic continuation\n"
+        "of the surrounding ring: a smooth guess, as under any starless tool. The result\n"
+        "is a NEW list entry whose header states the construction and, per channel,\n"
+        "the residual left around each core.")
+        .arg(shapeOk ? QString() : tr(" (too few stars measured: a circular default shape)")));
+    lay->addWidget(info);
+    auto* form = new QFormLayout();
+    auto* detect = new QDoubleSpinBox();
+    detect->setRange(3.0, 20.0); detect->setDecimals(1); detect->setValue(5.0);
+    detect->setSuffix(tr(" σ"));
+    detect->setToolTip(tr("Detection threshold over the noise. Fainter stars than this stay."));
+    form->addRow(tr("Detect above:"), detect);
+    auto* core = new QDoubleSpinBox();
+    core->setRange(20.0, 1000.0); core->setDecimals(0); core->setValue(100.0);
+    core->setSuffix(tr(" σ"));
+    core->setToolTip(tr("Fill the core where the fitted model exceeds this many sigmas — where\n"
+                        "a few-percent fit residual would show. Below it, subtraction alone\n"
+                        "lands under the noise."));
+    form->addRow(tr("Fill core above:"), core);
+    auto* noise = new QCheckBox(tr("Fill cores with noise at the measured σ (uniform statistics)"));
+    noise->setChecked(true);
+    auto* stars = new QCheckBox(tr("Also add the stars-only complement (input minus starless)"));
+    stars->setChecked(true);
+    stars->setToolTip(tr("For Combine Stars (screen) and for inspecting what was taken out."));
+    lay->addLayout(form);
+    lay->addWidget(noise);
+    lay->addWidget(stars);
+    auto* bb = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(bb, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(bb, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(bb);
+    if (dlg.exec() != QDialog::Accepted) return;
+    StarRemoveOptions opt;
+    opt.detectSigma = detect->value();
+    opt.coreSigma = core->value();
+    opt.fillNoise = noise->isChecked();
+    runStarRemoval(opt, stars->isChecked());
+}
+
+void MainWindow::runStarRemoval(StarRemoveOptions opt, bool starsEntry) {
+    const QString path = m_currentPath;
+    if (m_lastPsfPath != path) return;
+    const ImageData img = m_image;                     // deep copy for the worker
+    const std::vector<PsfChannelReport> reports = m_lastPsf;
+    struct Run { ImageData starless; std::vector<StarRemoveResult> rep; };
+    auto done = std::make_shared<std::atomic<int>>(0);
+    auto total = std::make_shared<std::atomic<int>>(0);
+    auto compute = [img, reports, opt, done, total]() {
+        Run r;
+        r.starless = removeStarsImage(img, reports, opt, &r.rep, done.get(), total.get());
+        return r;
+    };
+    const ImageHeader srcHdr = m_header;
+    const StretchModel::State st = m_model.state();
+    const std::vector<Annotation> srcAnns = m_annByPath.value(path);
+    auto finish = [this, path, opt, starsEntry, srcHdr, st, srcAnns, img](Run r) {
+        ImageHeader hdr = srcHdr;
+        hdr.container = "In-memory";
+        hdr.structure = starRemoveHeaderLines(r.rep, opt);
+        QString summary;
+        int removed = 0, flagged = 0;
+        double worst = 0.0;
+        for (const StarRemoveResult& c : r.rep) {
+            removed += c.nRemoved; flagged += c.nFlagged;
+            worst = std::max(worst, c.maxResidualSigma);
+        }
+        if (starsEntry) {
+            ImageData stars = img;
+            for (int c = 0; c < stars.channels(); ++c) {
+                float* d = stars.plane<float>(c);
+                const float* s = r.starless.plane<float>(c);
+                const std::size_t n = std::size_t(stars.width()) * stars.height();
+                for (std::size_t i = 0; i < n; ++i) d[i] = std::isfinite(d[i]) ? d[i] - s[i] : d[i];
+            }
+            ImageHeader sh = hdr;
+            sh.structure = QStringList{ tr("Stars only: the input minus its analytic starless "
+                                           "(the fitted models, and inside each filled core the "
+                                           "input minus the fill)") } + hdr.structure;
+            const QString skey = addSyntheticImage(
+                QFileInfo(path).completeBaseName() + QStringLiteral("_stars"), std::move(stars));
+            m_syntheticHeaders.insert(skey, sh);
+            m_stfByPath.insert(skey, st);
+        }
+        const QString key = addSyntheticImage(
+            QFileInfo(path).completeBaseName() + QStringLiteral("_starless"), std::move(r.starless));
+        m_syntheticHeaders.insert(key, hdr);
+        if (!srcAnns.empty()) m_annByPath.insert(key, srcAnns);
+        m_stfByPath.insert(key, st);
+        displayPath(key);
+        const QString msg = tr("Stars removed: %1 — worst ring residual %2σ rms, %3 flagged — Save Data As… keeps it")
+            .arg(removed).arg(worst, 0, 'f', 1).arg(flagged);
+        if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+        statusBar()->showMessage(msg, 8000);
+    };
+    if (m_scriptDriving) { finish(compute()); return; }
+    statusBar()->showMessage(tr("Removing stars analytically…"));
+    auto* bar = new QProgressBar();
+    bar->setMaximumWidth(220);
+    bar->setRange(0, 1000);
+    statusBar()->addPermanentWidget(bar);
+    auto* tick = new QTimer(this);
+    connect(tick, &QTimer::timeout, this, [this, bar, done, total] {
+        const int t = total->load(), d = done->load();
+        bar->setValue(t > 0 ? int(1000.0 * d / t) : 0);
+        statusBar()->showMessage(t > 0
+            ? tr("Removing stars analytically — %1 / %2 candidates").arg(d).arg(t)
+            : tr("Removing stars analytically — detecting…"));
+    });
+    tick->start(150);
+    auto* watcher = new QFutureWatcher<Run>(this);
+    connect(watcher, &QFutureWatcher<Run>::finished, this,
+            [this, watcher, finish, bar, tick] {
+                tick->stop(); tick->deleteLater();
+                statusBar()->removeWidget(bar); bar->deleteLater();
+                watcher->deleteLater();
+                finish(watcher->result());
+            });
+    watcher->setFuture(QtConcurrent::run(compute));
+}
+
+void MainWindow::scriptRemoveStars(double detectSigma, double coreSigma, bool starsEntry) {
+    if (!m_image.isValid()) return;
+    if (!psfCacheValid()) runPsfMeasurement({});         // synchronous when scripted
+    else { m_lastPsf = m_psfCache.value(m_currentPath).reports; m_lastPsfPath = m_currentPath; }
+    StarRemoveOptions opt;
+    if (detectSigma > 0) opt.detectSigma = detectSigma;
+    if (coreSigma > 0) opt.coreSigma = coreSigma;
+    runStarRemoval(opt, starsEntry);
 }
 
 // ---- Gaia DR3 lookups -------------------------------------------------------

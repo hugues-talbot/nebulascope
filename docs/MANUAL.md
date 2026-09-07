@@ -570,6 +570,49 @@ actually changed — on disk, by rotation, or by debayer mode. Best run on **lin
 (see the appendix). Scripts: `action measure_psf`, then
 `psfannotate [channel] [count]`.
 
+### Remove Stars (Analytic) (Tools ▸ Remove Stars (Analytic)…)
+
+A starless image with a **stated construction** rather than learned
+weights — the first half of the original MCS decomposition (Magain,
+Courbin & Sohy 1998), where the point sources are fitted and taken out
+and the smooth component kept. Every star is fitted, brightest first on
+the running residual, with a Moffat of this image's *measured* shape
+(Measure PSF, run first if needed): position, amplitude, local
+background with its gradient and curvature are free, and a star with an
+unclipped core also gets its own width scale; the Moffat exponent stays
+at the field's measured median, which thousands of stars set better
+than any single fit. A **clipped core contributes nothing** — the flux
+comes from the wings, as PSF photometry does with saturated pixels
+masked — so saturated stars are removed with a photometrically
+meaningful amplitude. Stars are detected by local contrast against
+their own surrounding ring, so noise on bright nebulosity is never
+mistaken for a star, and a fit keeps out the pixels of neighbours not
+yet subtracted, so close pairs come out one at a time. The model is
+subtracted out to where it drops under the noise. Inside the *core* —
+where the model exceeded the core threshold (default 100σ), so that a
+few-percent fit residual would show — the pixels are replaced by the
+**harmonic continuation** of the surrounding ring (the Poisson integral
+on a round disc: exact, no iteration, no geometry to print), with noise
+at the measured σ so the statistics stay uniform. The disc *grows*
+while the ring outside it still holds a coherent offset or excess
+scatter compared with a control ring further out — a bright star's
+wings are rounder than its core, and the fill then covers exactly what
+the model could not explain, bounded by where the model itself drops
+under the noise. Faint stars need no core: subtraction alone lands
+below the noise. Nebular knots and galaxies fail the shape gate and
+stay.
+
+What sits under a filled core is a smooth guess, as under any starless
+tool; here the guess is declared. The tool **certifies its own work**:
+the new `_starless` entry's header states the construction and, per
+channel, the stars removed, the cores filled, the clipped ones, and the
+worst residual left in the ring around a core relative to its control
+ring (1 is nothing left), flagging what a Moffat cannot describe —
+reflection halos, ghosts, diffraction spikes. The `_stars` complement (input minus
+starless) is added too, for *Combine Stars (screen)* and for inspecting
+what was taken out. Script: `removestars [detect_sigma] [core_sigma]
+[stars]`.
+
 ### Deconvolve to Target PSF (Tools ▸ Deconvolve to Target PSF…)
 
 The appendix's closing experiment as a tool: **deconvolution with a stated
@@ -643,6 +686,14 @@ strongly negative, and a vertically flipped grid (the RC-Astro
 command-line tool writes its FITS that way) or unrelated data fails at
 the percent level — rather than silently getting a mirrored kernel.
 Script: `deconv … from <row>` with the sibling's 1-based list row.
+
+No sibling is needed at all with **Remove stars first (analytic)**: the
+image's stars are removed by the tool above inside the same run, the
+filter is applied to that frame, and the delivered PSF is verified by
+proxy on the starry input — the whole chain, star removal included, is
+then a stated operation. The intermediate `_starless` entry lands in
+the list with its residual report, and the product is named
+`_starless_deconv`. Script: `deconv … starless`.
 
 The result is a **new in-memory list entry** (like Combine) carrying the
 source's plate solution, stretch, and annotations — *Save Data As…* keeps

@@ -660,6 +660,53 @@ réellement changé — sur disque, par rotation, ou par mode de dématriçage. 
 étirement élargit tous les profils. Scripts : `action measure_psf`, puis
 `psfannotate [canal] [nombre]`.
 
+### Supprimer les étoiles (analytique) (Outils ▸ Supprimer les étoiles (analytique)…)
+
+Une image sans étoiles à **construction déclarée** plutôt qu'à poids
+appris — la première moitié de la décomposition MCS originale (Magain,
+Courbin & Sohy 1998), où les sources ponctuelles sont ajustées et
+retirées, et la composante lisse conservée. Chaque étoile est ajustée,
+de la plus brillante à la plus faible sur le résidu courant, par un
+Moffat de la forme *mesurée* de cette image (Mesurer la PSF, lancée
+d'abord au besoin) : position, amplitude, fond local avec son gradient
+et sa courbure sont libres, et une étoile au cœur non écrêté reçoit
+aussi sa propre échelle de largeur ; l'exposant du Moffat reste à la
+médiane mesurée du champ, que des milliers d'étoiles fixent mieux que
+n'importe quel ajustement isolé. Un **cœur écrêté ne contribue en
+rien** — le flux vient des ailes, comme en photométrie PSF avec les
+pixels saturés masqués — de sorte que les étoiles saturées sont
+retirées avec une amplitude photométriquement sensée. Les étoiles sont
+détectées par contraste local contre leur propre anneau environnant, si
+bien que le bruit sur une nébulosité brillante n'est jamais pris pour
+une étoile, et un ajustement écarte les pixels des voisines pas encore
+soustraites, si bien que les paires serrées sortent une à une. Le
+modèle est soustrait jusqu'où il passe sous le bruit. Dans le *cœur* —
+là où le modèle dépassait le seuil de cœur (100σ par défaut), où un
+résidu d'ajustement de quelques pour cent se verrait — les pixels sont
+remplacés par la **continuation harmonique** de l'anneau environnant
+(l'intégrale de Poisson sur un disque rond : exacte, sans itération,
+sans géométrie à imprimer), avec du bruit au σ mesuré pour que les
+statistiques restent uniformes. Le disque *croît* tant que l'anneau
+extérieur garde un décalage cohérent ou une dispersion excessive par
+rapport à un anneau témoin plus loin — les ailes d'une étoile
+brillante sont plus rondes que son cœur, et le remplissage couvre alors
+exactement ce que le modèle n'a pu expliquer, borné par le rayon où le
+modèle lui-même passe sous le bruit. Les étoiles faibles n'ont pas
+besoin de cœur : la soustraction seule tombe sous le bruit. Les nœuds
+nébulaires et les galaxies échouent au test de forme et restent.
+
+Ce qui se trouve sous un cœur rempli est une supposition lisse, comme
+sous tout outil sans étoiles ; ici la supposition est déclarée. L'outil
+**certifie son propre travail** : l'en-tête de la nouvelle entrée
+`_starless` déclare la construction et, par canal, les étoiles retirées,
+les cœurs remplis, les étoiles écrêtées et le pire résidu laissé dans
+l'anneau autour d'un cœur, rapporté à son anneau témoin (1 : plus
+rien), signalant ce qu'un Moffat ne peut décrire — halos de réflexion,
+fantômes, aigrettes de diffraction. Le complément `_stars` (l'entrée
+moins l'image sans étoiles) est ajouté aussi, pour *Combiner les
+étoiles (écran)* et pour inspecter ce qui a été retiré. Script :
+`removestars [sigma_détection] [sigma_cœur] [stars]`.
+
 ### Déconvoluer vers une PSF cible (Outils ▸ Déconvoluer vers une PSF cible…)
 
 L'expérience finale de l'appendice, devenue outil : la **déconvolution à
@@ -742,6 +789,15 @@ grille retournée verticalement (l'outil en ligne de commande de RC-Astro
 pour cent — plutôt que de recevoir en silence un noyau en miroir.
 Script : `deconv … from <ligne>` avec la ligne (à partir de 1) de la
 jumelle dans la liste.
+
+Aucune jumelle n'est nécessaire avec **Supprimer d'abord les étoiles
+(analytique)** : les étoiles de l'image sont retirées par l'outil
+ci-dessus au sein de la même exécution, le filtre est appliqué à cette
+image, et la PSF livrée est vérifiée par procuration sur l'entrée
+étoilée — toute la chaîne, suppression des étoiles comprise, est alors
+une opération déclarée. L'entrée intermédiaire `_starless` arrive dans
+la liste avec son rapport de résidus, et le produit se nomme
+`_starless_deconv`. Script : `deconv … starless`.
 
 Le résultat est une **nouvelle entrée en mémoire** dans la liste (comme
 Combiner), qui porte la solution astrométrique, l'étirement et les
