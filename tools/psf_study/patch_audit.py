@@ -60,6 +60,19 @@ def prepare_truth(truth, cover, seed=7):
     return truth_in, inner, sigma
 
 
+def star_discs(shape, detect_stars, *imgs_r_maxn):
+    """Boolean mask of discs around the stars the study's detector finds
+    in each (image, radius, maxn) triple; True inside a disc."""
+    ap = np.zeros(shape, bool)
+    yy, xx = np.mgrid[:shape[0], :shape[1]]
+    for img, r, maxn in imgs_r_maxn:
+        for x, y in detect_stars(img, nsig=6.0, box=9, maxn=maxn):
+            y0, y1 = int(max(0, y - r - 1)), int(min(shape[0], y + r + 2))
+            x0, x1 = int(max(0, x - r - 1)), int(min(shape[1], x + r + 2))
+            ap[y0:y1, x0:x1] |= (yy[y0:y1, x0:x1] - y)**2 + (xx[y0:y1, x0:x1] - x)**2 <= r*r
+    return ap
+
+
 def star_apertures(m, truth_in, m_st, detect_stars, r_truth=8, r_render=10):
     """Residual apertures for metric v2, independent of the remover:
     discs at every star the study's detector finds in the truth and in
@@ -171,13 +184,8 @@ def main():
             # +6 on a first try). Mask star discs found on both sides, use
             # normalized (masked) smoothing, and keep k in its physical
             # range: F657N = Hα + [N II], so removing [N II] means k ≤ 0.
-            w = np.ones(m.shape)
-            yy, xx = np.mgrid[:m.shape[0], :m.shape[1]]
-            for img, r, maxn in ((m, 14, 2000), (hst_w, 10, 4000), (hst2_w, 10, 4000)):
-                for x, y in detect_stars(img, nsig=6.0, box=9, maxn=maxn):
-                    y0, y1 = int(max(0, y - r - 1)), int(min(m.shape[0], y + r + 2))
-                    x0, x1 = int(max(0, x - r - 1)), int(min(m.shape[1], x + r + 2))
-                    w[y0:y1, x0:x1][(yy[y0:y1, x0:x1] - y)**2 + (xx[y0:y1, x0:x1] - x)**2 <= r*r] = 0.0
+            w = (~star_discs(m.shape, detect_stars, (m, 14, 2000), (hst_w, 10, 4000),
+                             (hst2_w, 10, 4000))).astype(float)
             # At 8-px smoothing the two Hubble images are nearly collinear
             # (k swung from -1.5 to +1.2 between halves of the same sky), so
             # the fit works in a BAND-PASS at the render's own resolution:
@@ -207,7 +215,10 @@ def main():
         mk = np.clip(m, 0, np.percentile(m, 99.8))
         k = wiener_kernel_lin(hw, mk, rect_fit)
         fw = fwhm_area(k)*GRID
-        fwm, beta, _ = moffat_kernel_fit(hw, mk, rect_fit)
+        # Parametric kernel with stars masked on BOTH sides (generous discs:
+        # a star's wings convolved with the kernel leak past its core).
+        kmask = ~star_discs(m.shape, detect_stars, (hw, 12, 4000), (m, 16, 2000))
+        fwm, beta, _ = moffat_kernel_fit(hw, mk, rect_fit, mask=kmask)
         fwm *= GRID
         truth = conv(hw, t_psf)
         vy0, vy1, vx0, vx1 = rect_val

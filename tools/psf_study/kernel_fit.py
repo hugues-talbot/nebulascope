@@ -30,19 +30,24 @@ def _bandpass(a):
     return a - ndimage.gaussian_filter(a, 25.0 / 2.355)
 
 
-def moffat_kernel_fit(hst_w, render, rect, fwhm0=6.0, beta_bounds=(1.5, 8.0), margin=48):
+def moffat_kernel_fit(hst_w, render, rect, mask=None, fwhm0=6.0, beta_bounds=(1.5, 8.0), margin=48):
+    """`mask` (bool, same shape, True = use): with stars excluded on both
+    sides the fit measures EXTENDED-structure resolution; without it the
+    stars — the sharpest structures in the field — dominate and the fit
+    reports a stellar PSF (an ML5 render then reads 1.46", its stars)."""
     y0, y1, x0, x1 = rect
     Y0, Y1 = max(0, y0 - margin), min(hst_w.shape[0], y1 + margin)
     X0, X1 = max(0, x0 - margin), min(hst_w.shape[1], x1 + margin)
     h = _bandpass(hst_w[Y0:Y1, X0:X1])
     r = _bandpass(render[Y0:Y1, X0:X1])
     iy, ix = slice(y0 - Y0, y1 - Y0), slice(x0 - X0, x1 - X0)
-    rv = r[iy, ix][::2, ::2].ravel()
+    use = np.ones(r[iy, ix][::2, ::2].shape, bool) if mask is None else mask[y0:y1, x0:x1][::2, ::2]
+    rv = r[iy, ix][::2, ::2][use].ravel()
     ones = np.ones_like(rv)
 
     def model(p):
         k = moffat_psf(p[0], p[1])
-        c = fftconvolve(h, k, mode='same')[iy, ix][::2, ::2].ravel()
+        c = fftconvolve(h, k, mode='same')[iy, ix][::2, ::2][use].ravel()
         A = np.stack([c, ones], 1)
         sol, *_ = np.linalg.lstsq(A, rv, rcond=None)
         return A @ sol - rv
