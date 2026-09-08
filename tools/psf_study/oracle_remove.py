@@ -144,7 +144,7 @@ def build_catalogue(stack, fit_moffat, sat, nsig=4.0, border=14):
 
 
 def remove_sub(sub, cat, sat, fit_moffat, sig_i, nref=60, halo_model=False):
-    """One sub: PSF + offset + transparency at catalogue positions, then
+    """One sub: PSF + offset + peak ratio at catalogue positions, then
     hierarchical subtraction. Returns starless, report."""
     h, w = sub.shape
     yy27, xx27 = np.mgrid[0:27, 0:27] - 13
