@@ -37,6 +37,47 @@ import numpy as np
 from scipy import ndimage
 
 
+def prepare_truth(truth, cover, seed=7):
+    """Make the referee truth a fair input for a star remover: it is
+    noiseless and drops to exactly zero at the mosaic's coverage edge,
+    a hard step that every remover treats as structure (the analytic
+    detector scallops it, the neural ones bead it). Continue the image
+    beyond coverage by nearest-value extension, smoothed there, and add
+    a noise floor at 1e-3 of the nebula peak — far below anything the
+    metric resolves — so noise-calibrated tools work in their design
+    regime. Returns (truth_in, inner) with `inner` the eroded coverage
+    inside which the score is taken."""
+    idx = ndimage.distance_transform_edt(~cover, return_distances=False, return_indices=True)
+    ext = truth[tuple(idx)]
+    ext = np.where(cover, truth, ndimage.gaussian_filter(ext, 8))
+    rng = np.random.default_rng(seed)
+    sigma = 2e-4*float(np.percentile(truth[cover], 99.9))
+    truth_in = ext + rng.normal(0.0, sigma, truth.shape)
+    inner = ndimage.binary_erosion(cover, iterations=24)
+    return truth_in, inner, sigma
+
+
+def star_apertures(m, truth_in, m_st, detect_stars, r_truth=8, r_render=10):
+    """Residual apertures for metric v2, independent of the remover:
+    discs at every star the study's detector finds in the truth and in
+    the render (positions come from the images themselves, not from a
+    remover's residual, so a remover that smooths the nebula is not
+    'rewarded' by masking its own error), plus the cores the render's
+    stars image still holds above 6 sigma (bright-star halos)."""
+    def sig(a): return np.median(np.abs(a - np.median(a)))/0.6745 + 1e-12
+    ap = np.zeros(m.shape, bool)
+    yy, xx = np.mgrid[:m.shape[0], :m.shape[1]]
+    for img, r, maxn in ((truth_in, r_truth, 4000), (m, r_render, 2000)):
+        pts = detect_stars(img, nsig=6.0, box=9, maxn=maxn)
+        for x, y in pts:
+            y0, y1 = int(max(0, y - r - 1)), int(min(m.shape[0], y + r + 2))
+            x0, x1 = int(max(0, x - r - 1)), int(min(m.shape[1], x + r + 2))
+            ap[y0:y1, x0:x1] |= (yy[y0:y1, x0:x1] - y)**2 + (xx[y0:y1, x0:x1] - x)**2 <= r*r
+    hp = m_st - ndimage.gaussian_filter(m_st, 6)
+    ap |= ndimage.binary_dilation(hp > 6*sig(m), iterations=4)
+    return ap
+
+
 def main():
     sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
     from psf_pipeline import bruteforce_similarity, refine_affine, detect_stars, compose
@@ -128,17 +169,21 @@ def main():
         if starless:
             # v2: symmetric star removal, then starless-vs-starless with
             # small residual apertures from BOTH star images.
+            # The truth is noiseless; noise-calibrated removers (the analytic
+            # one's detector, the neural tools' stretches) misbehave on it.
+            # A noise floor at 1e-3 of the nebula peak is far below anything
+            # the metric resolves and puts every remover in its design regime.
+            truth_in, inner, t_sigma = prepare_truth(truth, cover)
             r_sl, r_st = remove_stars(plane, remover, workdir, f'{name}_render')
-            t_sl, t_st = remove_stars(truth, remover, workdir, f'{name}_truth')
+            t_sl, t_st = remove_stars(truth_in, remover, workdir, f'{name}_truth')
             m_sl = ndimage.zoom(r_sl, 2, order=3)
             m_st = ndimage.zoom(r_st, 2, order=3)
-            # Residual apertures: where either star image holds real star
-            # flux — judged against the RENDER's noise (a star image is ~0
-            # almost everywhere, so its own MAD is meaningless) and, for the
-            # noiseless truth, against a fraction of its star peak.
-            def sig(a): return np.median(np.abs(a - np.median(a)))/0.6745 + 1e-12
-            resid = (m_st > 3*sig(m)) | (t_st > 0.005*np.percentile(t_st, 99.9))
-            vneb2 = vmask*(~ndimage.binary_dilation(resid, iterations=4))*cover
+            # Residual apertures at the stars of BOTH images, found by the
+            # study's own detector (remover-independent), plus bright cores
+            # left in the render's stars image; scored inside the eroded
+            # coverage only.
+            resid = star_apertures(m, truth_in, m_st, detect_stars)
+            vneb2 = vmask*(~resid)*inner
             _, e2 = affine_match(m_sl, t_sl, vneb2)
             line += f' | STARLESS v2/{remover} {e2:.4f} (keep {float((vneb2>0.5).sum()/max(vmask.sum(),1)):.0%})'
         print(line)
