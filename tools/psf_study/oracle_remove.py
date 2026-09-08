@@ -10,7 +10,11 @@ can. Per sub, the catalogue drives everything:
   1. the sub's PSF (elliptical Moffat, proper_coadd's own fitter) is
      measured on the catalogue's brightest unsaturated stars at their
      KNOWN positions, which also yields the sub's residual registration
-     offset and its transparency t_i = median(A_sub / F_stack);
+     offset and its PEAK RATIO t_i = median(A_sub / F_stack) — the factor
+     that scales catalogue amplitudes into this sub. It is NOT a
+     transparency: a peak ratio is confounded by seeing (sharper sub,
+     higher peaks at equal flux); photometric weights stay the coadd's
+     flux ratios;
   2. every catalogue star is subtracted with that PSF, brightest first
      on the running residual: bright stars (expected peak > 8 sigma)
      get a free amplitude and sub-pixel position; faint ones get their
@@ -248,7 +252,7 @@ def remove_sub(sub, cat, sat, fit_moffat, sig_i, nref=60, halo_model=False):
         resid += wgt*rng.normal(0.0, sig_i, resid.shape)
     rep = {'used': True, 'fwhm': round(float(np.sqrt(fmaj*fmin)), 3), 'fmaj': round(fmaj, 3),
            'fmin': round(fmin, 3), 'pa': round(float(pa), 1), 'beta': round(beta, 2),
-           'dx': round(dx, 3), 'dy': round(dy, 3), 'transparency': round(t, 4),
+           'dx': round(dx, 3), 'dy': round(dy, 3), 'peak_ratio': round(t, 4),
            'nref': len(fits), 'n_free': n_free, 'n_fixed': n_fixed, 'filled_px': int(fill.sum())}
     return resid, rep
 
@@ -293,7 +297,7 @@ def main():
             starless[i] = sl
         reports.append(rep)
         if (i + 1) % 10 == 0 or i == 0:
-            print(f'  {i+1}/{N}: fwhm {rep.get("fwhm")} px, t {rep.get("transparency")}, '
+            print(f'  {i+1}/{N}: fwhm {rep.get("fwhm")} px, peak ratio {rep.get("peak_ratio")}, '
                   f'free {rep.get("n_free")} fixed {rep.get("n_fixed")}', flush=True)
     base = cube_path[:-5] if cube_path.endswith('.fits') else cube_path
     write_fits_f32(base + f'_starless_{tag}.fits', starless, [f'oracle-guided analytic starless subs from {os.path.basename(cube_path)}'])

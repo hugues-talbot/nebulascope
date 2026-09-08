@@ -609,9 +609,17 @@ What survives scrutiny, and what does not:
    do. The rest, about one floor, is spread over the medium stars'
    residual rings. Verdict: the prior-free route stands one to two
    floors behind the neural tools instead of five, with the stack as
-   its only extra input; and the per-sub PSFs and transparencies it
-   measures on a common star set are, incidentally, the inputs the
-   seeing-diversity criterion of item 8 wants.
+   its only extra input. What the oracle does *not* improve is the
+   coadd's PSF: its per-sub FWHMs agree with the estimator's own
+   60-star measurement to 0.003 px (correlation 1.000), because both
+   fit the same bright stars, and coadding the same starless data with
+   PSFs from the starry cube, from StarXTerminator's stars-only cube,
+   or from the oracle scores 0.768 / 0.768 / 0.765 — identical. The
+   bright stars already saturate the PSF measurement; the oracle's
+   √N reaches the faint stars, which only the removal needs. (Its
+   per-sub "peak ratio" is the factor scaling catalogue amplitudes into
+   a sub, confounded by seeing, and must never be mistaken for a
+   photometric weight — the coadd's flux ratios are the transparency.)
 
 The result, brought to the Hubble field (`upright_product.png` in the
 study repository's `results/montages/`): the starless proper coadd of

@@ -11,7 +11,7 @@ photons at low frequencies — lucky imaging without discarding anything.
 The declared circular-Gaussian target OTF_t keeps the study's contract
 discipline; re-measure the product's stars to audit delivery.
 
-    proper_coadd.py <patch_cube.fits> <out_prefix> [target_fwhm_px] [lambda]
+    proper_coadd.py [--psf oracle_report.json | --psfcube stars_cube.fits] <patch_cube.fits> <out_prefix> [target_fwhm_px] [lambda]
     proper_coadd.py --selftest
 
 Inputs come from patch_extract.py (cube [N,h,w] + .manifest.json).
@@ -302,7 +302,11 @@ def main():
         raise SystemExit(__doc__)
     args = sys.argv[1:]
     red_iters, red_mu = 0, 1e-2
-    data_path = None
+    data_path = None; psf_path = None; psfcube_path = None
+    if '--psfcube' in args:
+        i = args.index('--psfcube'); psfcube_path = args[i+1]; del args[i:i+2]
+    if '--psf' in args:
+        i = args.index('--psf'); psf_path = args[i+1]; del args[i:i+2]
     if '--data' in args:
         i = args.index('--data'); data_path = args[i+1]; del args[i:i+2]
     if '--red' in args:
@@ -324,10 +328,31 @@ def main():
     cube = np.asarray(read_fits_f32(cube_path)[0], dtype=np.float64)
     med = np.median(cube, axis=(1, 2), keepdims=True)
     cube = cube - med                          # per-sub background off
-    refpts = detect_stars(cube[0], 60)
-    print(f'{cube.shape[0]} subs, {len(refpts)} reference stars')
-    psfs = [measure_sub(s, refpts) for s in cube]
-    print(f'PSF measured on {sum(p is not None for p in psfs)} subs')
+    if psf_path:
+        # per-sub PSFs from an oracle_remove.py report: measured on the
+        # stack catalogue's stars at their known positions (same star set
+        # for every sub), instead of each sub's own 60-star detection
+        rep_in = json.load(open(psf_path))['subs']
+        byi = {r['i']: r for r in rep_in}
+        psfs = []
+        for i in range(cube.shape[0]):
+            r = byi.get(i)
+            psfs.append({'fmaj': r['fmaj'], 'fmin': r['fmin'], 'pa': r['pa'], 'beta': r['beta'],
+                         'dx': r['dx'], 'dy': r['dy'], 'nstars': r['nref']} if r and r.get('used') else None)
+        print(f'{cube.shape[0]} subs, PSFs from {os.path.basename(psf_path)} ({sum(p is not None for p in psfs)} usable)')
+    else:
+        # --psfcube: measure the PSFs on another cube on the same grid
+        # (e.g. a stars-only cube from a star remover, free of nebula under
+        # the stars); weights and noise still come from `cube`.
+        pc = cube
+        if psfcube_path:
+            pc = np.asarray(read_fits_f32(psfcube_path)[0], dtype=np.float64)
+            pc = pc - np.median(pc, axis=(1, 2), keepdims=True)
+            print(f'PSFs measured on {os.path.basename(psfcube_path)}')
+        refpts = detect_stars(pc[0], 60)
+        print(f'{cube.shape[0]} subs, {len(refpts)} reference stars')
+        psfs = [measure_sub(s, refpts) for s in pc]
+        print(f'PSF measured on {sum(p is not None for p in psfs)} subs')
     data = None
     if data_path:
         data = np.asarray(read_fits_f32(data_path)[0], dtype=np.float64)
