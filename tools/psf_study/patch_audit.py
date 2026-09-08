@@ -10,7 +10,8 @@ nebula NRMSE against Hubble degraded to 1.3 arcsec on the held-out east
 rectangle — the same protocol, the same numbers, comparable with the
 eight-way table.
 
-    patch_audit.py --filter H [--starless] [--borrow A=B,C=B] name=path ...
+    patch_audit.py --filter H [--starless [--remover sxt|starnet|analytic]]
+                   [--borrow A=B,C=B] name=path ...
 
 Each path: FITS with one plane (or first plane used). PSF_DATA must
 point at the folder whose PSF_comparison/ holds the HST mosaics.
@@ -27,44 +28,20 @@ on faint, patch-sized regions (see PSF-STUDY.md, the ninth row). v2
 removes stars SYMMETRICALLY on both sides with the RC-Astro
 StarXTerminator CLI (`rc-astro sxt`), then scores starless-vs-starless
 with small residual apertures taken from the two star images. The
-kernel estimate is unchanged. Requires `rc-astro` on PATH.
+kernel estimate is unchanged. The remover is a backend of
+star_removers.py (--remover, default sxt): the referee itself can be
+A/B'd across star-removal tools, including the prior-free analytic one.
 """
-import sys, os, subprocess
+import sys, os
 import numpy as np
 from scipy import ndimage
 
-
-def rc_sxt(plane, workdir, tag, ref):
-    """Run StarXTerminator on a 2-D float plane; return (starless, stars)
-    in OUR orientation (rc-astro writes standard FITS, our study writer
-    is top-down: pick the flip that correlates with the input)."""
-    sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
-    from star_fwhm import read_fits_f32
-    from full_deconv import write_fits_f32
-    os.makedirs(workdir, exist_ok=True)
-    src = os.path.join(workdir, f'{tag}.fits')
-    scale = float(np.percentile(plane, 99.9)) or 1.0
-    write_fits_f32(src, (plane/scale)[None].astype(np.float32), ['sxt input'])
-    subprocess.run(['rc-astro', '--no-banner', 'sxt', src, '--stars', '--depth', '32F',
-                    '-o', workdir + '/', '--overwrite'], check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    out = []
-    for suffix in ('-sxt', '-sxt-stars'):
-        a = np.asarray(read_fits_f32(os.path.join(workdir, f'{tag}{suffix}.fits'))[0],
-                       dtype=np.float64)[0]*scale
-        f = np.flipud(a)
-        r = lambda x: np.corrcoef(x.ravel(), ref.ravel())[0, 1]
-        out.append(f if r(f) > r(a) else a)
-    # SXT normalizes by the frame max: recover the exact gain (starless+stars
-    # reconstructs the input to correlation 1.0) so units are preserved.
-    rec = out[0] + out[1]
-    g = np.polyfit(rec.ravel(), plane.ravel(), 1)[0]
-    return out[0]*g, out[1]*g
 
 def main():
     sys.path.insert(0, os.environ.get('PSF_DATA', '.'))
     from psf_pipeline import bruteforce_similarity, refine_affine, detect_stars, compose
     from star_fwhm import read_fits_f32
+    from star_removers import remove_stars
     from linear_deconv import (load_hst, regprep, warp_to, wiener_kernel_lin,
                                fwhm_area, inscribed_rect, conv, gauss_psf,
                                affine_match, HST_FILES, GRID)
@@ -75,6 +52,9 @@ def main():
     starless = '--starless' in args
     if starless:
         args.remove('--starless')
+    remover = 'sxt'
+    if '--remover' in args:
+        i = args.index('--remover'); remover = args[i+1]; del args[i:i+2]
     borrow = {}
     if '--borrow' in args:
         i = args.index('--borrow')
@@ -82,7 +62,7 @@ def main():
         del args[i:i+2]
     if not args:
         raise SystemExit(__doc__)
-    workdir = os.path.join(os.environ.get('PSF_DATA', '.'), 'ninth_row', 'sxt_work')
+    workdir = os.path.join(os.environ.get('PSF_DATA', '.'), 'ninth_row', f'{remover}_work')
     inputs = []
     for a in args:
         name, path = a.split('=', 1)
@@ -148,8 +128,8 @@ def main():
         if starless:
             # v2: symmetric star removal, then starless-vs-starless with
             # small residual apertures from BOTH star images.
-            r_sl, r_st = rc_sxt(plane, workdir, f'{name}_render', plane)
-            t_sl, t_st = rc_sxt(truth, workdir, f'{name}_truth', truth)
+            r_sl, r_st = remove_stars(plane, remover, workdir, f'{name}_render')
+            t_sl, t_st = remove_stars(truth, remover, workdir, f'{name}_truth')
             m_sl = ndimage.zoom(r_sl, 2, order=3)
             m_st = ndimage.zoom(r_st, 2, order=3)
             # Residual apertures: where either star image holds real star
@@ -160,7 +140,7 @@ def main():
             resid = (m_st > 3*sig(m)) | (t_st > 0.005*np.percentile(t_st, 99.9))
             vneb2 = vmask*(~ndimage.binary_dilation(resid, iterations=4))*cover
             _, e2 = affine_match(m_sl, t_sl, vneb2)
-            line += f' | STARLESS v2 {e2:.4f} (keep {float((vneb2>0.5).sum()/max(vmask.sum(),1)):.0%})'
+            line += f' | STARLESS v2/{remover} {e2:.4f} (keep {float((vneb2>0.5).sum()/max(vmask.sum(),1)):.0%})'
         print(line)
 
 if __name__ == '__main__':
