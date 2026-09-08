@@ -10,8 +10,11 @@ nebula NRMSE against Hubble degraded to 1.3 arcsec on the held-out east
 rectangle — the same protocol, the same numbers, comparable with the
 eight-way table.
 
-    patch_audit.py --filter H [--starless [--remover sxt|starnet|analytic]]
+    patch_audit.py --filter H [--nii] [--starless [--remover sxt|starnet|analytic|darkstar]]
                    [--borrow A=B,C=B] name=path ...
+
+--nii (Hα): model Hubble's F657N truth as Hα + k·[S II] (F673N) to remove
+the [N II] contribution the study's 3 nm filter does not see.
 
 Each path: FITS with one plane (or first plane used). PSF_DATA must
 point at the folder whose PSF_comparison/ holds the HST mosaics.
@@ -96,6 +99,15 @@ def main():
     remover = 'sxt'
     if '--remover' in args:
         i = args.index('--remover'); remover = args[i+1]; del args[i:i+2]
+    # --nii (Hα only): Hubble's F657N admits both [N II] lines, which the
+    # study's 3 nm Hα filter excludes; the kernel estimator absorbs that
+    # structural mismatch as blur (Hα kernels read ~3" against ~2" stars).
+    # [N II] follows [S II] in this nebula, so the truth becomes a linear
+    # combination F657N + k·F673N with k fitted at low resolution, where
+    # PSF differences do not matter (expect k < 0).
+    nii = '--nii' in args
+    if nii:
+        args.remove('--nii')
     borrow = {}
     if '--borrow' in args:
         i = args.index('--borrow')
@@ -114,6 +126,7 @@ def main():
 
     hst = np.fliplr(load_hst(HST_FILES[ch]))
     hst8 = np.fliplr(load_hst(HST_FILES[ch], binf=8))
+    hst2 = np.fliplr(load_hst(HST_FILES['S'])) if (nii and ch == 'H') else None
     Sh = detect_stars(regprep(hst8), maxn=600)
     t_psf = gauss_psf(1.3/GRID)
 
@@ -149,6 +162,18 @@ def main():
         hst_w = warp_to(hst, A, m.shape)
         valid = ndimage.binary_erosion(hst > 0.01, iterations=4)
         cover = warp_to(valid.astype(np.float64), A, m.shape) > 0.98
+        nii_note = ''
+        if hst2 is not None:
+            hst2_w = warp_to(hst2, A, m.shape)
+            lp = lambda a: ndimage.gaussian_filter(a, 8)
+            sel = ndimage.binary_erosion(cover, iterations=16)
+            X = np.stack([lp(hst_w)[sel], lp(hst2_w)[sel], np.ones(sel.sum())], 1)
+            sol, *_ = np.linalg.lstsq(X, lp(m)[sel], rcond=None)
+            k = sol[1]/sol[0]
+            r1 = np.corrcoef(lp(hst_w)[sel], lp(m)[sel])[0, 1]
+            r2 = np.corrcoef((lp(hst_w) + k*lp(hst2_w))[sel], lp(m)[sel])[0, 1]
+            hst_w = np.clip(hst_w + k*hst2_w, 0, None)
+            nii_note = f' | [N II] via F673N: k {k:+.3f}, low-res corr {r1:.3f} -> {r2:.3f}'
         rect_fit = inscribed_rect(cover, 0, n2//2)
         rect_val = inscribed_rect(cover, n2//2 + n2//20, n2)
         if rect_fit is None or rect_val is None:
@@ -165,7 +190,7 @@ def main():
         vneb = vmask*(~ndimage.binary_dilation(stars, iterations=6))
         _, e = affine_match(m, truth, vneb)
         line = (f'{name:14s} reg {npairs:3d} pairs/{med:.2f} px | extended-structure '
-                f'FWHM {fw:.2f}" | nebula NRMSE vs Hubble@1.3" {e:.4f}')
+                f'FWHM {fw:.2f}" | nebula NRMSE vs Hubble@1.3" {e:.4f}{nii_note}')
         if starless:
             # v2: symmetric star removal, then starless-vs-starless with
             # small residual apertures from BOTH star images.
