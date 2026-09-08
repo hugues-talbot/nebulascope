@@ -399,11 +399,16 @@ star-masked nebula NRMSE against Hubble at 1.3″:
 | Integrated master (crop) | 2.87″ / 0.60 | 1.95″ / 0.69 | 2.35″ / 0.68 |
 | BXT ML5 master (crop) | 2.40″ / **0.35** | 1.62″ / **0.58** | 1.55″ / **0.46** |
 
+(The kernel figures are the Wiener estimator's at its standard
+regularization; they compare rows within a channel but are not absolute
+resolutions — see 10.)
+
 What survives scrutiny, and what does not:
 
 1. **The resolution gains are real and robust.** Proper coaddition
    recovers 0.4″ of extended-structure resolution over the plain mean
-   of the *identical* Hα frames (2.53″ vs 2.93″) and sharpens O III
+   of the *identical* Hα frames (2.53″ vs 2.93″ by the Wiener kernel;
+   0.7″ by the parametric fit of item 10) and sharpens O III
    similarly — structural measurements, insensitive to the fidelity
    metric's choices below. No frame discarded, no prior consulted, all
    201 subs blind-measured; and the plain mean reproduces the
@@ -422,36 +427,39 @@ What survives scrutiny, and what does not:
    RC-Astro command-line tool, so the recipe is scripted), the
    starless images scored with small residual apertures, and — for the
    first time — the instrument carries an error bar: two independent
-   half-stacks of the same subs score within ±0.015 (Hα), ±0.02
-   (S II) and ±0.026 (O III), where the v1 metric's S II halves had
-   differed by 0.16. Under v2, with the same rectangles:
+   half-stacks of the same subs score within 0.01–0.02 of each other
+   (they sit above the full mean by their √2 noise), where the v1
+   metric's S II halves had differed by 0.16. Under v2.1 — the referee
+   as audited once more in item 9, whose numbers replace an earlier v2
+   table that had flattered every row — with the same rectangles:
 
    | Patch render | Hα | S II | O III |
    | --- | --- | --- | --- |
-   | Proper coadd (starry subs) | 0.205 | 0.993 | 0.316 |
-   | Proper coadd (starless subs) | 0.197 | 0.407 | 0.351 |
-   | Mean, then deconvolved (starry) | 0.192 | 0.993 | 0.414 |
-   | Mean, then deconvolved (starless) | 0.200 | 0.423 | 0.407 |
-   | Plain mean, same subs | 0.187 | 0.310 | 0.278 |
-   | Integrated master (crop) | 0.195 | 0.319 | — |
-   | BXT ML5 master (crop) | **0.172** | **0.306** | 0.289 |
+   | Proper coadd (starry subs) | 0.328 | 0.996 | 0.494 |
+   | Proper coadd (starless subs) | 0.425 | 0.768 | 0.473 |
+   | Mean, then deconvolved (starry) | 0.373 | 0.997 | 0.682 |
+   | Mean, then deconvolved (starless) | 0.425 | 0.785 | 0.525 |
+   | Plain mean, same subs | 0.307 | **0.526** | 0.355 |
+   | Integrated master (crop) | 0.292 | 0.612 | **0.273** |
+   | BXT ML5 master (crop) | **0.237** | 0.664 | 0.427 |
+   | Half stacks A / B (same subs) | 0.315 / 0.295 | 0.600 / 0.620 | 0.386 / 0.429 |
 
-   (A consistency check the instrument passes: a starless mean scores
-   the same as its starry twin — 0.187 / 0.312 / 0.275 — as it must,
-   since v2 removes the stars anyway.)
-
-4. **The verdict the error bars allow.** With stars gone, the
-   render-to-render spreads shrink to one or two floors: on Hα, proper
-   coaddition of either kind, the plain mean, the master and ML5 all
-   lie within 0.03 of each other — two floors — ML5's edge over a plain
-   mean amounting to one; on O III the starry proper coadd, the mean
-   and ML5 are likewise within 0.03. The fidelity axis is far *flatter*
-   than the contaminated referee had painted it — the humble mean was
-   always a better image than v1 let it look. What the proper coadd
-   demonstrably buys is resolution; at this metric that gain is paid
-   back in amplified noise, and on the faint channels — S II (no
-   [N II] cushion) and O III once the subs are starless — the mean
-   genuinely wins.
+4. **The verdict the error bars allow.** The corrected referee charges
+   every render its full noise against a noiseless truth, and that
+   settles the faint channels bluntly: on S II and O III the plain mean
+   and the integrated master beat every sharpened product, ML5
+   included, and the deconvolved renders — proper or classic — trail
+   by their amplified noise. On Hα, the bright channel, ML5 keeps a
+   clear edge (0.24 against 0.29–0.31 for master and mean), and the
+   proper coadd sits two floors behind the mean. So ML5's fidelity
+   advantage is real *where the signal is strong* and absent where it
+   is not, and what proper coaddition demonstrably buys is resolution,
+   paid for in noise at this metric. That "paid for in noise" is the
+   metric's blind spot: a single NRMSE cannot tell a sharper-but-noisier
+   image from a worse one. The instrument the question deserves is a
+   noise-decomposed referee — each pipeline's noise measured on
+   half-stack renders of that *same* pipeline, bias and noise reported
+   separately — proposed here, not yet built.
 5. **The S II defect had a shape, and the fix was already designed.**
    Under v2 the starry proper coadd scored 0.99 because every bright
    star wore a ringing moat — the filter's response to saturated cores
@@ -461,10 +469,10 @@ What survives scrutiny, and what does not:
    for the app: measure each sub's PSF on its stars, but **coadd the
    starless subs** (`sxt_subs.py`, `proper_coadd.py --data`), so the
    one model violation never enters the estimator. Result: 0.99 →
-   0.41 on S II, and no moats anywhere. On O III, though, the starless
-   coadd scores *worse* than the starry one (0.35 vs 0.31): the moats
-   are gone but O III's subs are the noisiest, and what the estimator
-   amplifies there is noise, not stars. (Two tooling notes. The
+   0.77 on S II under v2.1, and no moats anywhere. On O III the two
+   coadds score within a floor of each other (0.47 starless, 0.49
+   starry): the moats are gone but O III's subs are the noisiest, and
+   what the estimator amplifies there is noise, not stars. (Two tooling notes. The
    referee's registration is star-based, so a starless render borrows
    its starry sibling's solution — `--borrow`; a 0.7-px self-
    registration had inflated the O III score. And its extended-
@@ -499,17 +507,18 @@ What survives scrutiny, and what does not:
    every sub has the same PSF and part ways when the PSFs differ
    (Zackay & Ofek 2017), and the three channels stage exactly that:
    - **Hα** (104 subs, seeing 1.7–2.8″, spread 15 %): a tie — 2.53″ vs
-     2.55″, fidelity 0.205 vs 0.192, within the floor; starless 0.197
-     vs 0.200. Homogeneous subs, one kernel is as good as a hundred.
-   - **S II** (50 subs, spread 14 %): a tie again (starless 0.407 vs
-     0.423), and both starry variants score 0.99 — the moats are the
+     2.55″, fidelity 0.33 vs 0.37 (proper ahead by two floors);
+     starless 0.425 vs 0.425. Homogeneous subs, one kernel is as good
+     as a hundred.
+   - **S II** (50 subs, spread 14 %): a tie again (starless 0.77 vs
+     0.78), and both starry variants score 1.0 — the moats are the
      signature of deconvolving saturated cores, not of proper
      coaddition.
    - **O III** (45 subs, seeing 1.5–3.6″, spread 20 %, the best tenth
      at 1.8″ and the worst at 3.3″): proper coaddition wins outright —
      1.81″ against 1.96″ for the deconvolved mean, which did not
-     sharpen the extended structure *at all*, and fidelity 0.316
-     against 0.414, four floors. The mean's fitted Moffat reads 2.43″
+     sharpen the extended structure *at all*, and fidelity 0.49
+     against 0.68 (starless: 0.47 against 0.52). The mean's fitted Moffat reads 2.43″
      where the median sub is 2.89″: the sharp subs own the core and
      the fit ignores the broad wings the poor subs contribute, so a
      single-kernel deconvolution leaves those wings in place and
@@ -519,6 +528,60 @@ What survives scrutiny, and what does not:
    The pattern is the method's own prediction, and it says where it
    pays: on channels whose subs span a range of seeing, which for
    narrowband O III over several nights is the common case.
+9. **The referee, audited again — and the star removers A/B'd.**
+   Putting three more removers behind one call (`star_removers.py`:
+   StarNet2, Cosmic Clarity's Dark Star, and NebulaScope's own
+   analytic, prior-free removal) exposed a flaw in v2 itself. The
+   neural removers clip negative pixels, and every patch render is
+   background-subtracted, so half of each render's background noise had
+   been squashed to zero before scoring — flattering every v2 number,
+   most on the faint channels (the S II mean read 0.31; it reads 0.53).
+   v2.1 lifts the frame by a pedestal before any external tool and
+   fits the returned image's gain and offset on low-passed nebula
+   pixels; continues the Hubble truth smoothly beyond its coverage
+   edge and gives it a noise floor, because a hard zero edge and a
+   noiseless image break every remover (StarNet's own linear mode
+   saturated the whole nebula, the analytic detector scalloped the
+   edge); and takes its star apertures from the study's detector on
+   both images rather than from a remover's residual, which had let a
+   remover mask its own nebula errors. The A/B then ran on S II, every
+   sub star-removed four ways, each cube proper-coadded, each coadd
+   scored by the SXT referee (a StarNet2 referee agrees on every row
+   to 0.01): SXT subs 0.768, StarNet2 0.776, Dark Star 0.789, analytic
+   0.872. The three neural removers are interchangeable, so the
+   open-source StarNet2 can stand in for StarXTerminator throughout.
+   The prior-free removal costs five floors as a coadd input — its 5 σ
+   detection leaves each sub's faint stars and small imprints for the
+   inversion to amplify — and cannot serve as the referee's remover
+   either (it blobs Hubble's bright star and scallops edges). A
+   precise negative: the analytic route needs star positions from a
+   catalogue or from the stack, not from per-sub detection.
+10. **The kernel column carries the regularization's fingerprint.**
+   Hα is the brightest channel with the best stellar FWHM (1.94″), yet
+   its extended-structure kernel read ~3″. Two hypotheses were tested.
+   *[N II]*: Hubble's F657N admits both [N II] lines, which the 3 nm
+   Hα filter excludes; a two-regressor truth, F657N + k·F673N with
+   [S II] as the [N II] proxy and k fitted star-masked in a band-pass
+   (`--nii`), finds a consistent k ≈ −0.9 and better band-pass
+   agreement, yet the kernels do not move — rejected. *Regularization*:
+   the Wiener kernel's FWHM tracks λ in every channel (channel means:
+   2.92 / 2.02 / 1.96″ at the standard 10⁻³, 2.20 / 1.66 / 1.59″ at
+   10⁻⁵, the latter already fitting noise), Hα being the most inflated
+   because its smooth, high-contrast field has the steepest spectrum.
+   A two-parameter Moffat kernel fitted by least squares with stars
+   masked on both sides (`kernel_fit.py`) can be neither inflated nor
+   overfit: on Hα it reads 2.35–2.45″ for the mean, the master and a
+   half stack — consistent to 0.1″, the stars' 1.94″ plus wings — and
+   1.5–1.6″ for every deconvolved render, ML5 included. On S II and
+   O III the same fit is unstable between renders of the same sky
+   (halves differ by up to 0.5″): those patches are too noise-limited
+   at fine scales for a kernel to be measured without a prior, which
+   is what the Wiener λ had silently supplied. So the kernel figures
+   in this section are the Wiener estimator's at one λ — fair for
+   ranking rows within a channel, not absolute resolutions; Hα's
+   absolute extended-structure resolution is the Moffat figure. The
+   eight-way table's kernel column, made with the same estimator,
+   deserves the same regrade one day.
 
 The result, brought to the Hubble field (`upright_product.png` in the
 study repository's `results/montages/`): the starless proper coadd of
