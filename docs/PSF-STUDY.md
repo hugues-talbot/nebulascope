@@ -582,6 +582,36 @@ What survives scrutiny, and what does not:
    absolute extended-structure resolution is the Moffat figure. The
    eight-way table's kernel column, made with the same estimator,
    deserves the same regrade one day.
+11. **The oracle: star positions from the stack.** The analytic
+   remover's five-floor loss in item 9 came from having to *find* stars
+   in a single 300 s frame. The proposal, Hugues's: let a first stack —
+   which sees stars at √N times a sub's signal-to-noise, seven times
+   for S II — be the oracle. `oracle_remove.py` builds a catalogue of
+   every star the plain mean shows above 4 σ (1130 on the patch, where
+   a sub finds ~60), measures each sub's PSF and transparency on the
+   catalogue's brightest unsaturated stars at their *known* positions,
+   then subtracts every catalogue star with that PSF: free amplitude
+   and position for stars expected above 8 σ, amplitude *fixed* at
+   catalogue flux times transparency below that, where a fit would fit
+   noise — photometric star subtraction in its hierarchical form;
+   clipped cores are excluded from every fit, and cores with the
+   connected region of >4 σ residual around them are filled
+   harmonically. Scores (S II starless proper coadd, SXT referee; the
+   StarNet2 referee agrees within 0.01): blind analytic 0.872 → oracle
+   0.80–0.81 (three fill variants tie), against 0.768 for SXT subs.
+   With the twelve brightest stars masked from the score: 0.763
+   against 0.737. So a third of the remaining gap sits at those few
+   stars, whose halos no Moffat models — an explicit halo term
+   over-subtracts by ~1.5 σ per sub, a bias that sums coherently over
+   50 frames into 12–17 σ holes in the coadd, and filling the halo
+   instead invents smooth nebula over 2 % of the frame; the neural
+   removers *inpaint* there, which is a prior doing exactly what priors
+   do. The rest, about one floor, is spread over the medium stars'
+   residual rings. Verdict: the prior-free route stands one to two
+   floors behind the neural tools instead of five, with the stack as
+   its only extra input; and the per-sub PSFs and transparencies it
+   measures on a common star set are, incidentally, the inputs the
+   seeing-diversity criterion of item 8 wants.
 
 The result, brought to the Hubble field (`upright_product.png` in the
 study repository's `results/montages/`): the starless proper coadd of

@@ -122,6 +122,12 @@ def main():
     nii = '--nii' in args
     if nii:
         args.remove('--nii')
+    # --mask-bright N R: additionally exclude discs of radius R (2x-grid px)
+    # around the N brightest stars of each render from the v2 score — to
+    # ask how much of a remover's gap lives at the few brightest stars.
+    mask_bright = None
+    if '--mask-bright' in args:
+        i = args.index('--mask-bright'); mask_bright = (int(args[i+1]), float(args[i+2])); del args[i:i+3]
     borrow = {}
     if '--borrow' in args:
         i = args.index('--borrow')
@@ -159,6 +165,7 @@ def main():
         return A8, npairs, med
 
     regs = {}
+    regs_src = dict(borrow)
     for name, plane in inputs:
         if name not in borrow:
             regs[name] = register(regprep(ndimage.zoom(plane, 2, order=3)))
@@ -247,6 +254,14 @@ def main():
             # left in the render's stars image; scored inside the eroded
             # coverage only.
             resid = star_apertures(m, truth_in, m_st, detect_stars)
+            if mask_bright is not None:
+                nb, rb = mask_bright
+                # brightest stars of the STARRY render (the borrowed sibling
+                # when the row is starless): the same discs for every row
+                src = regs_src.get(name, name)
+                bright_img = dict(inputs)[src]
+                bm = ndimage.zoom(bright_img, 2, order=1)
+                resid = resid | star_discs(m.shape, detect_stars, (bm, rb, nb))
             vneb2 = vmask*(~resid)*inner
             _, e2 = affine_match(m_sl, t_sl, vneb2)
             line += f' | STARLESS v2/{remover} {e2:.4f} (keep {float((vneb2>0.5).sum()/max(vmask.sum(),1)):.0%})'
