@@ -165,15 +165,39 @@ def main():
         nii_note = ''
         if hst2 is not None:
             hst2_w = warp_to(hst2, A, m.shape)
-            lp = lambda a: ndimage.gaussian_filter(a, 8)
-            sel = ndimage.binary_erosion(cover, iterations=16)
-            X = np.stack([lp(hst_w)[sel], lp(hst2_w)[sel], np.ones(sel.sum())], 1)
-            sol, *_ = np.linalg.lstsq(X, lp(m)[sel], rcond=None)
-            k = sol[1]/sol[0]
-            r1 = np.corrcoef(lp(hst_w)[sel], lp(m)[sel])[0, 1]
-            r2 = np.corrcoef((lp(hst_w) + k*lp(hst2_w))[sel], lp(m)[sel])[0, 1]
+            # Fit k on NEBULA only: stars dominate any low-passed starry
+            # image and F673N's stars would "help" the match (k came out
+            # +6 on a first try). Mask star discs found on both sides, use
+            # normalized (masked) smoothing, and keep k in its physical
+            # range: F657N = Hα + [N II], so removing [N II] means k ≤ 0.
+            w = np.ones(m.shape)
+            yy, xx = np.mgrid[:m.shape[0], :m.shape[1]]
+            for img, r, maxn in ((m, 14, 2000), (hst_w, 10, 4000), (hst2_w, 10, 4000)):
+                for x, y in detect_stars(img, nsig=6.0, box=9, maxn=maxn):
+                    y0, y1 = int(max(0, y - r - 1)), int(min(m.shape[0], y + r + 2))
+                    x0, x1 = int(max(0, x - r - 1)), int(min(m.shape[1], x + r + 2))
+                    w[y0:y1, x0:x1][(yy[y0:y1, x0:x1] - y)**2 + (xx[y0:y1, x0:x1] - x)**2 <= r*r] = 0.0
+            # At 8-px smoothing the two Hubble images are nearly collinear
+            # (k swung from -1.5 to +1.2 between halves of the same sky), so
+            # the fit works in a BAND-PASS at the render's own resolution:
+            # Hubble degraded to the render's approximate PSF (from the
+            # one-regressor kernel, ~2.9"), then scales 3–20 px on the 2x
+            # grid, where the [N II] fronts differ from Hα.
+            s_r = max(1.0, 0.85*fw_est/GRID/2.355) if 'fw_est' in dir() else 3.2
+            wl = ndimage.gaussian_filter(w, 3)
+            def bp(a, extra=0.0):
+                if extra > 0:
+                    a = ndimage.gaussian_filter(a, extra)
+                aw = ndimage.gaussian_filter(a*w, 3)/(wl + 1e-9)
+                return aw - ndimage.gaussian_filter(aw, 20)
+            sel = ndimage.binary_erosion(cover, iterations=16) & (wl > 0.8)
+            X = np.stack([bp(hst_w, s_r)[sel], bp(hst2_w, s_r)[sel], np.ones(sel.sum())], 1)
+            sol, *_ = np.linalg.lstsq(X, bp(m)[sel], rcond=None)
+            k = float(np.clip(sol[1]/sol[0], -1.0, 0.0))
+            r1 = np.corrcoef(bp(hst_w, s_r)[sel], bp(m)[sel])[0, 1]
+            r2 = np.corrcoef((bp(hst_w, s_r) + k*bp(hst2_w, s_r))[sel], bp(m)[sel])[0, 1]
             hst_w = np.clip(hst_w + k*hst2_w, 0, None)
-            nii_note = f' | [N II] via F673N: k {k:+.3f}, low-res corr {r1:.3f} -> {r2:.3f}'
+            nii_note = f' | [N II] via F673N: k {k:+.3f} (raw {sol[1]/sol[0]:+.3f}), band-pass corr {r1:.3f} -> {r2:.3f}'
         rect_fit = inscribed_rect(cover, 0, n2//2)
         rect_val = inscribed_rect(cover, n2//2 + n2//20, n2)
         if rect_fit is None or rect_val is None:
