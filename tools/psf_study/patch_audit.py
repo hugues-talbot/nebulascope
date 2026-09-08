@@ -86,6 +86,7 @@ def main():
     from psf_pipeline import bruteforce_similarity, refine_affine, detect_stars, compose
     from star_fwhm import read_fits_f32
     from star_removers import remove_stars
+    from kernel_fit import moffat_kernel_fit
     from linear_deconv import (load_hst, regprep, warp_to, wiener_kernel_lin,
                                fwhm_area, inscribed_rect, conv, gauss_psf,
                                affine_match, HST_FILES, GRID)
@@ -206,6 +207,8 @@ def main():
         mk = np.clip(m, 0, np.percentile(m, 99.8))
         k = wiener_kernel_lin(hw, mk, rect_fit)
         fw = fwhm_area(k)*GRID
+        fwm, beta, _ = moffat_kernel_fit(hw, mk, rect_fit)
+        fwm *= GRID
         truth = conv(hw, t_psf)
         vy0, vy1, vx0, vx1 = rect_val
         vmask = np.zeros_like(truth); vmask[vy0:vy1, vx0:vx1] = 1.0
@@ -214,7 +217,8 @@ def main():
         vneb = vmask*(~ndimage.binary_dilation(stars, iterations=6))
         _, e = affine_match(m, truth, vneb)
         line = (f'{name:14s} reg {npairs:3d} pairs/{med:.2f} px | extended-structure '
-                f'FWHM {fw:.2f}" | nebula NRMSE vs Hubble@1.3" {e:.4f}{nii_note}')
+                f'FWHM {fw:.2f}" (Wiener) / {fwm:.2f}" (Moffat fit, beta {beta:.1f}) | '
+                f'nebula NRMSE vs Hubble@1.3" {e:.4f}{nii_note}')
         if starless:
             # v2: symmetric star removal, then starless-vs-starless with
             # small residual apertures from BOTH star images.
