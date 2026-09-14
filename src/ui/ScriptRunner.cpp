@@ -914,10 +914,13 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         // async decode/render on slow machines (CI runners).
         const int timeout = t.size() > 1 ? t[1].toInt() : 10000;
         QElapsedTimer et; et.start();
+        // A navigation decodes asynchronously: the previous image stays valid
+        // while the requested one is still in flight, so wait for that too.
+        auto pending = [&] { return !m_w->m_displayWanted.isEmpty() || !m_w->m_displayInFlight.isEmpty(); };
         while (et.elapsed() < timeout &&
-               (!m_w->m_image.isValid() || m_w->m_curStats.empty()))
+               (pending() || !m_w->m_image.isValid() || m_w->m_curStats.empty()))
             QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-        if (!m_w->m_image.isValid() || m_w->m_curStats.empty()) {
+        if (pending() || !m_w->m_image.isValid() || m_w->m_curStats.empty()) {
             err = QStringLiteral("image not loaded within %1 ms").arg(timeout);
             return false;
         }

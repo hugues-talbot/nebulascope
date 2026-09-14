@@ -37,6 +37,7 @@ class QCheckBox;
 class QShortcut;
 class QSlider;
 class QWidget;
+class QProgressBar;
 
 namespace astro {
 
@@ -255,9 +256,31 @@ private:
     };
     void schedulePrefetch();
     void startNextPrefetch();
+    // The decode itself (load, debayer, statistics) — pure, runs off-thread
+    // for both the prefetch and the asynchronous display below.
+    static PrefetchResult decodeEntry(const QString& key, const QString& base,
+                                      int hduReq, int debayerMode, int debayerMethod);
     QStringList    m_prefetchQueue;
     QString        m_prefetchInFlight;
     QFutureWatcher<PrefetchResult>* m_prefetchWatcher = nullptr;
+    // Asynchronous display: a cache miss on a NAVIGATION (list row, blink,
+    // open, close fix-up) decodes off the GUI thread — the window stays live,
+    // the status bar names the file at once, and an indeterminate bar
+    // appears when the decode runs past kDecodeBarDelayMs. The latest
+    // request wins the display; every finished decode still enters the
+    // cache. Re-decodes of the current image (reload, reset orientation,
+    // debayer change) stay synchronous — their callers continue with the
+    // new pixels in hand.
+    static constexpr int kDecodeBarDelayMs = 4000;
+    void displayPathAsync(const QString& path);
+    void startDisplayDecode(const QString& path);
+    void showDecodeBar(bool on);
+    QString        m_displayWanted;        // asked for, not yet shown
+    QString        m_displayInFlight;      // decode running for the display
+    QFutureWatcher<PrefetchResult>* m_displayWatcher = nullptr;
+    QProgressBar*  m_decodeBar = nullptr;
+    QTimer*        m_decodeBarTimer = nullptr;
+    bool           m_sharedStfPending = false;   // --shared-stf waits for the first decode
     std::vector<PsfChannelReport> m_lastPsf;   // Measure PSF results (per channel)
     QString        m_lastPsfPath;          // image the results belong to
     QString        m_deconvKernelKey;      // Deconvolve dialog's kernel source across

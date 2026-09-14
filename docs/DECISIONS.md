@@ -376,3 +376,26 @@ delivered PSF by proxy the same 1.96/1.92/1.95″. Shipped as Tools ▸
 Remove Stars (Analytic) — with the stars-only complement for Combine
 Stars — and as a checkbox in the Deconvolve dialog, where the whole
 chain becomes a stated operation.
+
+## The display decode leaves the interface thread (2026-09-14)
+
+Field report: closing a heavily worked-on image "took a long time", and
+opening a large master in a normal workflow made the application look
+stuck. Diagnosis (Activity Monitor at 12 GB, no swap, 64 GB machine): the
+close itself frees little; what the user waits for is the synchronous
+decode of the row that becomes current — a compressed 500 MB XISF is a
+13-second inflate/unshuffle/promote/statistics pass, and it ran on the
+GUI thread. The prefetch already had a pure off-thread decoder; the
+display now uses the same one. A navigation (list row, blink, open, the
+close fix-up) that misses the cache starts that decode and returns; the
+previous image stays live, the status bar names the file at once, and an
+indeterminate bar joins it after four seconds (the decoder has no
+milestones to report, so a busy indicator is the honest one). Latest
+request wins the display; every finished decode still lands in the
+cache, so a fast blink through a cold batch warms it. Two callers keep
+the synchronous decode on purpose: the `--split` startup layout, which
+renders each cell as it goes, and every re-decode of the current image
+(reload, reset orientation, debayer change), whose callers continue with
+the new pixels in hand. `--shared-stf` waits for the first decode.
+Scripts see none of this: `waitloaded` also waits for a pending display.
+

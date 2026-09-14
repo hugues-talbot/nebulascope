@@ -1033,7 +1033,14 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     l'horodatage à chaque accès, et le rechargement automatique évince
     aussitôt). 0 le désactive. Pendant que vous regardez une image, ses
     **voisines dans la liste se préchargent** en arrière-plan — le blink est
-    instantané dès le premier passage sur un lot.
+    instantané dès le premier passage sur un lot. Un décodage qui doit bel
+    et bien s'exécuter pour un clic dans la liste, un blink ou une ouverture
+    a lieu **hors du fil de l'interface** : la fenêtre reste vivante sur
+    l'image précédente, la barre d'état nomme aussitôt le fichier en cours
+    de décodage, et un indicateur d'activité s'y ajoute si le décodage
+    dépasse quatre secondes. Si vous passez entre-temps à une autre ligne,
+    c'est le dernier choix qui s'affiche ; chaque décodage achevé entre tout
+    de même dans le cache.
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis). Chaque entrée enregistre le réglage par défaut avec lequel

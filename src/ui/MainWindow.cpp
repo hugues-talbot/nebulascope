@@ -920,7 +920,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         for (int r = 0; r < m_fileList->count(); ++r) {
             QListWidgetItem* it = m_fileList->item(r);
             if (it->data(Qt::UserRole).toString() == key) {
-                if (m_fileList->currentItem() == it) displayPath(key);
+                if (m_fileList->currentItem() == it) displayPathAsync(key);
                 else m_fileList->setCurrentItem(it, QItemSelectionModel::ClearAndSelect);
                 break;
             }
@@ -1721,7 +1721,7 @@ void MainWindow::addPaths(const QStringList& paths) {
         if (m_grid->activeCell()->occupied())
             if (ViewCell* empty = m_grid->firstEmptyVisible()) m_grid->activate(empty);
         if (m_fileList->currentItem() == firstExisting)
-            displayPath(firstExisting->data(Qt::UserRole).toString());
+            displayPathAsync(firstExisting->data(Qt::UserRole).toString());
         else
             m_fileList->setCurrentItem(firstExisting, QItemSelectionModel::ClearAndSelect);
     }
@@ -1788,6 +1788,7 @@ void MainWindow::applyStretchToAllList() {
 }
 
 void MainWindow::sharedStfStartup() {
+    if (!m_displayWanted.isEmpty()) { m_sharedStfPending = true; return; }   // first decode still running
     if (!m_image.isValid() || m_curStats.empty()) return;
     m_model.autoStretch(m_curStats);
     applyStretchToAllList();
@@ -2646,7 +2647,7 @@ void MainWindow::removeSelectedRows(bool promptForAnnotations) {
         // The displayed image was among the closed ones but another row kept
         // current status (no row-change signal fired): show it explicitly so
         // the active view doesn't keep presenting freed data.
-        displayPath(m_fileList->currentItem()->data(Qt::UserRole).toString());
+        displayPathAsync(m_fileList->currentItem()->data(Qt::UserRole).toString());
     }
 }
 
@@ -2708,7 +2709,8 @@ void MainWindow::applySplitLayout(int rows, int cols) {
     const int n = std::min(rows * cols, m_fileList->count());
     for (int i = 0; i < n; ++i) {                 // raster order: row-major cells
         m_grid->activate(m_grid->cellAt(i));      // swap state into cell i
-        showRow(i);                               // decode list row i into it
+        displayPath(m_fileList->item(i)->data(Qt::UserRole).toString());   // synchronous: the
+                                                  // render below needs the pixels now
         // Render synchronously: the async pipeline would drop this frame as
         // soon as the next cell activates (identity check) — the cell would
         // keep its pixels but never get a pixmap. Fit: the grid is new.
@@ -2746,7 +2748,7 @@ void MainWindow::importListFile(const QString& listPath) {
 void MainWindow::showRow(int row) {
     if (row < 0 || row >= m_fileList->count()) return;
     const QString path = m_fileList->item(row)->data(Qt::UserRole).toString();
-    if (!path.isEmpty()) displayPath(path);
+    if (!path.isEmpty()) displayPathAsync(path);
 }
 
 void MainWindow::nextImage() {
@@ -3688,28 +3690,116 @@ void MainWindow::startNextPrefetch() {
             if (r.ok && fi.exists() && fi.lastModified() == r.mtimeBefore &&
                 fi.size() == r.sizeBefore && !m_imgCache.contains(r.key))
                 m_imgCache.insert(r.key, r.base, ImageCache::Entry(r.entry));
+            // The row the user asked for meanwhile: show it now.
+            if (!m_displayWanted.isEmpty() && m_displayWanted == r.key && m_displayInFlight.isEmpty()) {
+                const QString want = m_displayWanted;
+                m_displayWanted.clear();
+                displayPath(want);
+                if (m_sharedStfPending) { m_sharedStfPending = false; sharedStfStartup(); }
+            }
             startNextPrefetch();
         });
     }
     m_prefetchWatcher->setFuture(QtConcurrent::run([key, base, hduReq, mode, method]() {
-        PrefetchResult r;
-        r.key = key;
-        r.base = base;
-        const QFileInfo fi(base);
-        if (!fi.exists()) return r;
-        r.mtimeBefore = fi.lastModified();
-        r.sizeBefore = fi.size();
-        io::LoadOptions lopts;
-        lopts.fitsHdu = hduReq;
-        io::LoadResult res = io::loadImage(base, lopts);
-        if (!res.ok) return r;
-        ImageData img = applyDebayerPure(std::move(res.image), res.header, mode, method);
-        r.entry.stats = computeStats(img);
-        r.entry.header = std::move(res.header);
-        r.entry.image = std::make_shared<const ImageData>(std::move(img));
-        r.ok = true;
-        return r;
+        return decodeEntry(key, base, hduReq, mode, method);
     }));
+}
+
+MainWindow::PrefetchResult MainWindow::decodeEntry(const QString& key, const QString& base,
+                                                   int hduReq, int mode, int method) {
+    PrefetchResult r;
+    r.key = key;
+    r.base = base;
+    const QFileInfo fi(base);
+    if (!fi.exists()) return r;
+    r.mtimeBefore = fi.lastModified();
+    r.sizeBefore = fi.size();
+    io::LoadOptions lopts;
+    lopts.fitsHdu = hduReq;
+    io::LoadResult res = io::loadImage(base, lopts);
+    if (!res.ok) return r;
+    ImageData img = applyDebayerPure(std::move(res.image), res.header, mode, method);
+    r.entry.stats = computeStats(img);
+    r.entry.header = std::move(res.header);
+    r.entry.image = std::make_shared<const ImageData>(std::move(img));
+    r.ok = true;
+    return r;
+}
+
+// ---- asynchronous display -----------------------------------------------------
+
+void MainWindow::displayPathAsync(const QString& path) {
+    if (path.isEmpty()) return;
+    // Served from memory: the synchronous path is a memcpy away.
+    if (m_synthetic.contains(path) || m_imgCache.get(path, splitHduBase(path))) {
+        m_displayWanted.clear();
+        displayPath(path);
+        return;
+    }
+    m_displayWanted = path;
+    statusBar()->showMessage(tr("Decoding %1…").arg(QFileInfo(splitHduBase(path)).fileName()));
+    if (m_displayInFlight == path || m_prefetchInFlight == path) return;   // already coming
+    if (!m_displayInFlight.isEmpty()) return;       // one at a time; picked up on completion
+    startDisplayDecode(path);
+}
+
+void MainWindow::startDisplayDecode(const QString& path) {
+    int hduReq = -1;
+    const QString base = splitHduKey(path, hduReq);
+    const int mode = m_debayerByPath.value(path, 0);
+    const int method = Preferences::get().debayerMethod;
+    m_displayInFlight = path;
+    if (!m_decodeBarTimer) {
+        m_decodeBarTimer = new QTimer(this);
+        m_decodeBarTimer->setSingleShot(true);
+        connect(m_decodeBarTimer, &QTimer::timeout, this, [this] {
+            if (!m_displayInFlight.isEmpty()) showDecodeBar(true);
+        });
+    }
+    m_decodeBarTimer->start(kDecodeBarDelayMs);
+    if (!m_displayWatcher) {
+        m_displayWatcher = new QFutureWatcher<PrefetchResult>(this);
+        connect(m_displayWatcher, &QFutureWatcher<PrefetchResult>::finished, this, [this] {
+            const PrefetchResult r = m_displayWatcher->result();
+            m_displayInFlight.clear();
+            m_decodeBarTimer->stop();
+            showDecodeBar(false);
+            const QFileInfo fi(r.base);
+            if (r.ok && fi.exists() && fi.lastModified() == r.mtimeBefore &&
+                fi.size() == r.sizeBefore)
+                m_imgCache.insert(r.key, r.base, ImageCache::Entry(r.entry));
+            if (m_displayWanted.isEmpty()) return;
+            const QString want = m_displayWanted;
+            bool listed = false;                     // closed meanwhile? then nothing to show
+            for (int i = 0; i < m_fileList->count() && !listed; ++i)
+                listed = m_fileList->item(i)->data(Qt::UserRole).toString() == want;
+            if (!listed) { m_displayWanted.clear(); statusBar()->clearMessage(); return; }
+            if (want != r.key) { startDisplayDecode(want); return; }   // the user moved on
+            m_displayWanted.clear();
+            displayPath(want);                       // cache hit now — or the failure reported there
+            if (m_sharedStfPending) { m_sharedStfPending = false; sharedStfStartup(); }
+        });
+    }
+    m_displayWatcher->setFuture(QtConcurrent::run([path, base, hduReq, mode, method]() {
+        return decodeEntry(path, base, hduReq, mode, method);
+    }));
+}
+
+void MainWindow::showDecodeBar(bool on) {
+    if (on && !m_decodeBar) {
+        m_decodeBar = new QProgressBar();
+        m_decodeBar->setMaximumWidth(160);
+        m_decodeBar->setRange(0, 0);                 // busy: the decoder has no milestones
+        m_decodeBar->setTextVisible(false);
+        statusBar()->addPermanentWidget(m_decodeBar);
+        const QFileInfo fi(splitHduBase(m_displayInFlight));
+        statusBar()->showMessage(tr("Decoding %1 (%2 MB)…")
+            .arg(fi.fileName()).arg(fi.size() / (1024.0 * 1024.0), 0, 'f', 0));
+    } else if (!on && m_decodeBar) {
+        statusBar()->removeWidget(m_decodeBar);
+        m_decodeBar->deleteLater();
+        m_decodeBar = nullptr;
+    }
 }
 
 // ---- save dialogs with INLINE format options --------------------------------

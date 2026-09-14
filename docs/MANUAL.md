@@ -927,7 +927,13 @@ name reassembles exactly, for overwriting or re-saving.
     file's timestamp on every hit, and the auto-reload watcher evicts
     eagerly). 0 disables it. While you view an image, its list
     **neighbours prefetch** in the background — blinking is instant even on
-    the first pass through a batch.
+    the first pass through a batch. A decode that does have to run for a
+    list click, a blink or an open happens **off the interface thread**:
+    the window stays live on the previous image, the status bar names the
+    file being decoded at once, and a busy indicator joins it if the decode
+    runs past four seconds. If you move on to another row meanwhile, the
+    latest choice is the one shown; every decode that finishes still enters
+    the cache.
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert). Each
     entry records the default it was written with (`name.default`), so
