@@ -420,7 +420,13 @@ Image menu / toolbar:
   (and DS9) put it at the bottom, so a standard professional FITS frame
   appears here upside down and therefore mirrored — for such a frame the
   action is a single, lossless vertical flip. The astrometric-solution
-  line of the Info panel says *shown mirrored* when it applies.
+  line of the Info panel says *shown mirrored* when it applies. The action
+  reaches the **whole list**, like a preference: the image shown is
+  oriented at once (and that is what Undo undoes); every other listed image
+  is oriented the same way — each by its *own* plate solution, exactly
+  north up — when it is next shown, and at once if it is visible in
+  another view cell. Images without a plate solution are left alone, and
+  **Reset Orientation** returns every image to the file.
 
 ![Rotation dialog with dial, preview and North Up](screenshots/rotate-dialog.png)
 

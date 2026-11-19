@@ -487,7 +487,14 @@ Menu Image / barre d'outils :
   ici tête en bas, et par conséquent en miroir — pour une telle image
   l'action se réduit à un seul retournement vertical, sans perte. La ligne
   « solution astrométrique » du panneau Info indique *shown mirrored*
-  quand c'est le cas.
+  quand c'est le cas. L'action porte sur **toute la liste**, à la manière
+  d'une préférence : l'image affichée est orientée aussitôt (et c'est ce
+  qu'Annuler annule) ; chaque autre image de la liste est orientée de même
+  — chacune d'après sa *propre* solution astrométrique, nord exactement en
+  haut — lorsqu'elle est affichée, et aussitôt si elle est visible dans
+  une autre cellule. Les images sans solution astrométrique sont laissées
+  telles quelles, et **Réinitialiser l'orientation** ramène chaque image
+  au fichier.
 
 ![Boîte de rotation avec cadran, aperçu et Nord en haut](../screenshots/rotate-dialog.png)
 

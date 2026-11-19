@@ -2409,43 +2409,73 @@ double MainWindow::northUpDelta() const {
 
 void MainWindow::orientToSky() {
     auto say = [this](const QString& msg) {
-        statusBar()->showMessage(msg, 6000);
+        statusBar()->showMessage(msg, 8000);
         if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
     };
     if (!m_image.isValid()) return;
+
+    // The whole list, like a preference: every other row is marked, and is
+    // oriented by its OWN plate solution when it is next shown (rows without
+    // one are left alone). Rows visible in other view cells are done now.
+    const QString here = m_currentPath;
+    int others = 0;
+    for (int i = 0; i < m_fileList->count(); ++i) {
+        const QString k = m_fileList->item(i)->data(Qt::UserRole).toString();
+        if (k.isEmpty() || k == here) continue;
+        m_skyOrientPending.insert(k);
+        bumpXformRev(k);                         // a stashed cell re-derives on activation
+        ++others;
+    }
+    const QString tail = others > 0
+        ? tr(" — and the other %n listed image(s), each by its own plate solution, as they are shown",
+             nullptr, others)
+        : QString();
+
+    // This image: undoable, as before.
+    QString did;
     double rel = northUpDelta();
     if (!std::isfinite(rel)) {
-        say(tr("Orient to Sky needs a plate solution (the orientation is read from it)"));
-        return;
+        did = tr("this image has no plate solution");
+    } else {
+        const bool mirrored = m_wcs.mirroredOnScreen();
+        if (!mirrored && std::fabs(rel) < 0.01) {
+            did = tr("this image already is");
+        } else {
+            m_undo->beginMacro(tr("orient to sky"));
+            if (mirrored) {
+                // Either flip restores the parity; they differ by a half
+                // turn. A horizontal flip turns the needed rotation rel into
+                // -rel, a vertical one into 180 - rel: take the one that
+                // leaves less to rotate. A standard FITS (north DOWN here,
+                // east left) then needs the vertical flip alone — exact, no
+                // resampling.
+                const bool horiz = std::fabs(rel) <= 90.0;
+                applyTransform(horiz ? Xform::FlipH : Xform::FlipV);
+                did = horiz ? tr("flipped horizontally") : tr("flipped vertically");
+                rel = northUpDelta();
+            }
+            if (std::isfinite(rel) && std::fabs(rel) >= 0.01) {
+                double t = currentRotationAngle() + rel;
+                while (t > 180.0) t -= 360.0;
+                while (t < -180.0) t += 360.0;
+                pushRotateTo(t);
+                did += (did.isEmpty() ? QString() : QStringLiteral(", ")) +
+                       tr("rotated %1°").arg(rel, 0, 'f', 2);
+            }
+            m_undo->endMacro();
+        }
     }
-    const bool mirrored = m_wcs.mirroredOnScreen();
-    if (!mirrored && std::fabs(rel) < 0.01) {
-        say(tr("Already oriented as the sky: north up, east left"));
-        return;
+
+    // Other view cells showing marked rows: activating a cell whose
+    // orientation revision moved re-derives it (the same path as a click).
+    if (others > 0) {
+        ViewCell* home = m_grid->activeCell();
+        for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+            if (c != home && c->occupied() && m_skyOrientPending.contains(c->path))
+                m_grid->activate(c);
+        if (m_grid->activeCell() != home) m_grid->activate(home);
     }
-    m_undo->beginMacro(tr("orient to sky"));
-    QString did;
-    if (mirrored) {
-        // Either flip restores the parity; they differ by a half turn. A
-        // horizontal flip turns the needed rotation rel into -rel, a
-        // vertical one into 180 - rel: take the one that leaves less to
-        // rotate. A standard FITS (north DOWN here, east left) then needs
-        // the vertical flip alone — exact, no resampling.
-        const bool horiz = std::fabs(rel) <= 90.0;
-        applyTransform(horiz ? Xform::FlipH : Xform::FlipV);
-        did = horiz ? tr("flipped horizontally") : tr("flipped vertically");
-        rel = northUpDelta();
-    }
-    if (std::isfinite(rel) && std::fabs(rel) >= 0.01) {
-        double t = currentRotationAngle() + rel;
-        while (t > 180.0) t -= 360.0;
-        while (t < -180.0) t += 360.0;
-        pushRotateTo(t);
-        did += (did.isEmpty() ? QString() : QStringLiteral(", ")) +
-               tr("rotated %1°").arg(rel, 0, 'f', 2);
-    }
-    m_undo->endMacro();
-    say(tr("Oriented as the sky (north up, east left): %1").arg(did));
+    say(tr("Oriented as the sky (north up, east left): %1%2").arg(did, tail));
 }
 
 // Combine-channels dialog over every MONO image in the list (loading those
@@ -2692,6 +2722,7 @@ void MainWindow::removeSelectedRows(bool promptForAnnotations) {
         m_diskSizeByPath.remove(p);
         m_debayerByPath.remove(p);
         m_skyOrientSeen.remove(p);                       // reopening considers it afresh
+        m_skyOrientPending.remove(p);
         for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
             if (c != m_grid->activeCell() && c->path == p) c->clearContent();
         delete m_fileList->takeItem(m_fileList->row(it));
@@ -3179,6 +3210,7 @@ void MainWindow::resetOrientation() {
         bumpXformRev(it.key());
     }
     m_xformByPath.clear();
+    m_skyOrientPending.clear();               // "as freshly read" means it, for every row
     m_rotBasePath.clear();                    // stale rotation-dialog base
     m_rotBase = ImageData();
     m_undo->clear();
@@ -3473,13 +3505,42 @@ void MainWindow::displayPath(const QString& path) {
     // all treat it as any other orientation. Once per list row: after a
     // Reset Orientation the file stays as stored.
     QString skyOrientNote;
-    if (!m_skyOrientSeen.contains(path)) {
+    {
+        const bool firstVisit = !m_skyOrientSeen.contains(path);
         m_skyOrientSeen.insert(path);
+        // Two ways in: the open-time preference (first visit, FITS, no
+        // orientation yet), or Orient to Sky having been applied to the
+        // whole list while this row was not shown (any format, exact, on
+        // top of whatever orientation the row already has).
+        const bool pending = m_skyOrientPending.remove(path);
         const int mode = Preferences::get().effectiveSkyOrient();
-        if (mode > 0 && m_wcs.valid() && !m_xformByPath.contains(path) &&
-            m_header.container == QLatin1String("FITS")) {
-            const Wcs::SkyOrientPlan plan =
-                m_wcs.skyOrientPlan(m_image.width(), m_image.height(), mode == 2);
+        const bool byPref = firstVisit && mode > 0 && !m_xformByPath.contains(path) &&
+                            m_header.container == QLatin1String("FITS");
+        if ((pending || byPref) && m_wcs.valid()) {
+            // The solution and frame size as they will be once the existing
+            // history has been replayed (the header's solution is the disk
+            // frame's).
+            const QStringList existing = canonicalXforms(m_xformByPath.value(path));
+            Wcs cur = m_wcs;
+            int cw = m_image.width(), ch = m_image.height();
+            for (const QString& n : existing) {
+                if (n.startsWith(QLatin1String("rot:"))) {
+                    const double a = n.mid(4).toDouble(), th = a * M_PI / 180.0;
+                    const int nw = std::max(1, int(std::ceil(cw * std::fabs(std::cos(th)) + ch * std::fabs(std::sin(th)))));
+                    const int nh = std::max(1, int(std::ceil(cw * std::fabs(std::sin(th)) + ch * std::fabs(std::cos(th)))));
+                    cur = cur.rotated(a, cw, ch, nw, nh);
+                    cw = nw; ch = nh;
+                    continue;
+                }
+                Xform x;
+                if (!xformFromName(n, x)) continue;
+                cur = cur.transformed(x == Xform::RotCW  ? Wcs::PixelXform::RotCW
+                                    : x == Xform::RotCCW ? Wcs::PixelXform::RotCCW
+                                    : x == Xform::FlipH  ? Wcs::PixelXform::FlipH
+                                                         : Wcs::PixelXform::FlipV, cw, ch);
+                if (x == Xform::RotCW || x == Xform::RotCCW) std::swap(cw, ch);
+            }
+            const Wcs::SkyOrientPlan plan = cur.skyOrientPlan(cw, ch, pending || mode == 2);
             QStringList ops, said;
             for (Wcs::PixelXform op : plan.ops) {
                 const Xform x = op == Wcs::PixelXform::RotCW  ? Xform::RotCW
@@ -3496,9 +3557,16 @@ void MainWindow::displayPath(const QString& path) {
                 said << tr("rotated %1°").arg(plan.rotateDeg, 0, 'f', 2);
             }
             if (!ops.isEmpty()) {
-                m_xformByPath[path] = ops;
+                // Annotations already in memory live in the frame of the
+                // existing history: carry them through the added ops. (Ones
+                // still on disk are mapped through the whole history below.)
+                auto an = m_annByPath.find(path);
+                if (an != m_annByPath.end() && !an.value().empty())
+                    mapAnnotationsThroughOps(an.value(), ops, cw, ch);
+                m_xformByPath[path] = existing + ops;
                 bumpXformRev(path);
-                skyOrientNote = tr("Opened oriented as the sky (%1) — Image ▸ Reset Orientation shows it as stored")
+                skyOrientNote = (pending ? tr("Oriented as the sky (%1)")
+                                         : tr("Opened oriented as the sky (%1) — Image ▸ Reset Orientation shows it as stored"))
                                     .arg(said.join(QStringLiteral(", ")));
             }
         }
@@ -5814,7 +5882,11 @@ void MainWindow::mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns) {
     if (ops.isEmpty() || anns.empty()) return;
     const QSize d = m_diskSizeByPath.value(m_currentPath,
                                            QSize(m_image.width(), m_image.height()));
-    int w = d.width(), h = d.height();
+    mapAnnotationsThroughOps(anns, ops, d.width(), d.height());
+}
+
+void MainWindow::mapAnnotationsThroughOps(std::vector<Annotation>& anns, const QStringList& ops,
+                                          int w, int h) const {
     for (const QString& n : ops) {
         if (n.startsWith(QLatin1String("rot:"))) {
             const double a = n.mid(4).toDouble();

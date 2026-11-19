@@ -503,5 +503,32 @@ skyorient off
 open tests/testdata/wcs_wide.fits
 waitloaded
 assert size 128 128
+# Orient to Sky reaches the whole list, like a preference: applied on the
+# rotated frame, it also orients the unrotated one when that is shown next
+# (each by its own plate solution), and a row without a solution is left
+# alone. Reset Orientation takes every row back to the file.
+open tests/testdata/wcs_narrow.fits
+waitloaded
+open tests/testdata/sample.fits
+waitloaded
+show 2
+waitloaded
+action orient_to_sky
+assert skyoriented 0.05
+show 1
+waitloaded
+assert skyoriented 0.05
+assert size 128 128
+show 3
+waitloaded
+assert size 128 128
+show 2
+waitloaded
+assert skyoriented 0.05
+action reset_orientation
+waitloaded
+show 1
+waitloaded
+assert size 128 128
 
 quit

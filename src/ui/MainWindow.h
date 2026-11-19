@@ -242,6 +242,9 @@ private:
     // Map annotations given in the DISK (as-loaded) pixel frame through this
     // image's orientation history, so imports line up with a rotated view.
     void mapAnnotationsFromDiskFrame(std::vector<Annotation>& anns);
+    // The same walk for an explicit op list, from a frame of w x h pixels.
+    void mapAnnotationsThroughOps(std::vector<Annotation>& anns, const QStringList& ops,
+                                  int w, int h) const;
     // Inverse: take annotations expressed in the frame described by `ops` back
     // to the disk frame (walk the op chain backwards with exact inverses).
     void unmapAnnotationsToDiskFrame(std::vector<Annotation>& anns, const QStringList& ops);
@@ -306,6 +309,8 @@ private:
     void startDisplayDecode(const QString& path);
     void showDecodeBar(bool on);
     QStringList    m_pendingRegFiles;      // .reg opened WITH an image: applied once it shows
+    QSet<QString>  m_skyOrientPending;     // rows that Orient to Sky reached while not shown:
+                                           // oriented (exactly, any format) when next displayed
     QSet<QString>  m_skyOrientSeen;        // paths already considered for sky orientation at
                                            // open (once per row: Reset Orientation must stick)
     int            m_simbadIx = -1;        // SIMBAD server kept for the session; -1 = not probed yet

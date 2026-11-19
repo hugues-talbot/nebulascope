@@ -516,3 +516,14 @@ the solution (Wcs::skyOrientPlan), tested over all rotations and both
 parities; quarter-turn direction is chosen by trial, not by a sign
 convention. FITS only: XISF frames come from PixInsight in sky parity.
 
+And the menu action itself reaches the whole list (user, testing: with
+default preferences, Orient to Sky should apply "like a preference, to
+all the images"). The shown image is oriented at once, undoably; every
+other row is marked and oriented by its OWN solution when next shown —
+through the same seeding point, now computing the plan on the solution
+as it will stand after the row's existing history, and carrying
+annotations already in memory through the added operations. No header
+is read ahead of time, so a long list costs nothing until a row is
+visited. Reset Orientation, which already acted on every image, is its
+exact inverse.
+
