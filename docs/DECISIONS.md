@@ -405,9 +405,14 @@ First feedback from a daily DS9 user (Andrea Persici) trying NebulaScope:
 his regions had to come along, and his right hand expected DS9's
 contrast/bias drag.
 
-*Regions.* `.reg` files import onto the three vector primitives the
-annotation layer already has; shapes it lacks (box, polygon) become their
-exact outline as line segments rather than an approximating ellipse.
+*Regions.* `.reg` files import onto the annotation layer's vector
+primitives. A DS9 box first came in as four line segments — exact, but
+four unrelated objects; on review (the user: "a new annotation type, for
+sure") the layer gained a BOX type. It shares the ellipse's geometry
+fields (centre, half-sizes, angle), so handles, rotation/flip maps,
+sidecar fields and undo came with it; it has its own toolbar tool
+(corner to corner) and sidecar type `"box"`. Polygons, which have no
+such parametrization, remain exact outlines in line segments.
 The one decision with content is the angle of a region given in sky
 coordinates. DS9 measures it from west toward north — the +x axis of a
 north-up, east-left display — and corrects for the image's rotation and

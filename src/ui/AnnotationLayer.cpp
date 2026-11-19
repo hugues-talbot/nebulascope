@@ -29,10 +29,11 @@ static const QColor kGridLabelInv(10, 20, 32, 230);
 
 QJsonObject Annotation::toJson() const {
     QJsonObject o;
-    o["type"] = type == Type::Line ? "line" : (type == Type::Text ? "text" : "ellipse");
+    o["type"] = type == Type::Line ? "line" : type == Type::Text ? "text"
+              : type == Type::Box ? "box" : "ellipse";
     o["x"] = x; o["y"] = y;
     if (type == Type::Line) { o["x2"] = x2; o["y2"] = y2; }
-    if (type == Type::Ellipse) { o["a"] = a; o["b"] = b; o["angle"] = angleDeg; }
+    if (hasAxes()) { o["a"] = a; o["b"] = b; o["angle"] = angleDeg; }
     if (!label.isEmpty()) o["label"] = label;
     o["size"] = textSize;
     o["color"] = color.name(QColor::HexRgb);
@@ -43,7 +44,8 @@ Annotation Annotation::fromJson(const QJsonObject& o) {
     Annotation a;
     const QString t = o["type"].toString(QStringLiteral("ellipse"));
     a.type = t == QLatin1String("line") ? Type::Line
-           : t == QLatin1String("text") ? Type::Text : Type::Ellipse;
+           : t == QLatin1String("text") ? Type::Text
+           : t == QLatin1String("box") ? Type::Box : Type::Ellipse;
     a.x = o["x"].toDouble(); a.y = o["y"].toDouble();
     a.x2 = o["x2"].toDouble(); a.y2 = o["y2"].toDouble();
     a.a = o["a"].toDouble(40); a.b = o["b"].toDouble(40);
@@ -146,7 +148,7 @@ void AnnotationLayer::rebuildHandles() {
     const Annotation& a = m_lastAnns[std::size_t(idx)];
 
     QStringList roles;
-    if (a.type == Annotation::Type::Ellipse) roles = { "a", "b" };
+    if (a.hasAxes()) roles = { "a", "b" };       // box: mid-edge handles, same roles
     else if (a.type == Annotation::Type::Line) roles = { "p1", "p2" };
     else return;                                   // text: move only
 
@@ -320,6 +322,24 @@ void AnnotationLayer::buildAnnotations(const std::vector<Annotation>& annotation
             ell->setTransform(tr);
             g->addToGroup(ell);
             lx = a.x + a.a * 0.7071; ly = a.y - a.b * 0.7071;   // NE of the ellipse
+        } else if (a.type == Annotation::Type::Box) {
+            // Same local-coords + explicit transform as the ellipse (QTBUG-22335).
+            auto* box = new QGraphicsRectItem(-a.a, -a.b, 2 * a.a, 2 * a.b);
+            box->setPen(stroke);
+            box->setBrush(Qt::NoBrush);
+            QTransform tr;
+            tr.translate(a.x, a.y);
+            tr.rotate(a.angleDeg);
+            box->setTransform(tr);
+            g->addToGroup(box);
+            // Label at the corner that sits furthest up and to the right once
+            // the box is rotated.
+            double best = -1e300;
+            for (int sx : { -1, 1 })
+                for (int sy : { -1, 1 }) {
+                    const QPointF c = tr.map(QPointF(sx * a.a, sy * a.b));
+                    if (c.x() - c.y() > best) { best = c.x() - c.y(); lx = c.x(); ly = c.y(); }
+                }
         }
         // Text: for Type::Text the label IS the annotation, at (x, y).
         if (!a.label.isEmpty()) {

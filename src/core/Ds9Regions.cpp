@@ -430,12 +430,10 @@ std::vector<Ds9Shape> parseDs9Regions(const QString& text, const Wcs* wcs,
                     ok = R.vec(theta, parseVal(args[2 + 2 * p], false), half, u) &&
                          R.vec(theta + 90.0, parseVal(args[3 + 2 * p], false), half, v);
                     if (!ok) break;
-                    if (!box) { emitEllipse(u, v); continue; }
-                    const Pt c1 { R.c.x + u.x + v.x, R.c.y + u.y + v.y };
-                    const Pt c2 { R.c.x - u.x + v.x, R.c.y - u.y + v.y };
-                    const Pt c3 { R.c.x - u.x - v.x, R.c.y - u.y - v.y };
-                    const Pt c4 { R.c.x + u.x - v.x, R.c.y + u.y - v.y };
-                    emitLine(c1, c2); emitLine(c2, c3); emitLine(c3, c4); emitLine(c4, c1);
+                    // A box is the ellipse's frame with corners: centre, the
+                    // two half-size vectors, the direction of the first.
+                    emitEllipse(u, v);
+                    if (box) made.back().kind = Ds9Shape::Kind::Box;
                 }
             } else if (name == QLatin1String("polygon") || name == QLatin1String("segment")) {
                 ok = n >= 4 && n % 2 == 0;

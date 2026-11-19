@@ -55,8 +55,8 @@ NS_TEST(ds9_image_coordinates) {
     const std::vector<Ds9Shape> s = parseDs9Regions(reg, nullptr, 3.0, &st);
     NS_CHECK(st.regions == 9);
     NS_CHECK(st.malformed == 0 && st.needWcs == 0 && st.unsupported == 0);
-    // circle 1, ellipse 1, box 4, polygon 3, line 1, vector 1, text 1, point 1, circle 1
-    NS_CHECK(st.shapes == 14 && s.size() == 14);
+    // circle 1, ellipse 1, box 1, polygon 3, line 1, vector 1, text 1, point 1, circle 1
+    NS_CHECK(st.shapes == 11 && s.size() == 11);
 
     // circle: FITS 1-based -> 0-based, per-region colour and label (with ';').
     NS_CHECK(s[0].kind == Ds9Shape::Kind::Ellipse);
@@ -70,31 +70,27 @@ NS_TEST(ds9_image_coordinates) {
     NS_CHECK_NEAR(s[1].angleDeg, 30.0, 1e-9);
     NS_CHECK(s[1].color == QLatin1String("#00ff00"));      // the global default
     NS_CHECK_NEAR(s[1].textSize, 10.0, 1e-9);
-    // box: four segments around (100,200), half-sizes 20 x 10.
-    double minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
-    for (int i = 2; i < 6; ++i) {
-        NS_CHECK(s[i].kind == Ds9Shape::Kind::Line);
-        for (double x : { s[i].x, s[i].x2 }) { minx = std::min(minx, x); maxx = std::max(maxx, x); }
-        for (double y : { s[i].y, s[i].y2 }) { miny = std::min(miny, y); maxy = std::max(maxy, y); }
-    }
-    NS_CHECK_NEAR(minx, 80.0, 1e-9); NS_CHECK_NEAR(maxx, 120.0, 1e-9);
-    NS_CHECK_NEAR(miny, 190.0, 1e-9); NS_CHECK_NEAR(maxy, 210.0, 1e-9);
+    // box: one rotated-box shape, centre (100,200), HALF-sizes 20 x 10.
+    NS_CHECK(s[2].kind == Ds9Shape::Kind::Box);
+    NS_CHECK_NEAR(s[2].x, 100.0, 1e-9); NS_CHECK_NEAR(s[2].y, 200.0, 1e-9);
+    NS_CHECK_NEAR(s[2].a, 20.0, 1e-9);  NS_CHECK_NEAR(s[2].b, 10.0, 1e-9);
+    NS_CHECK_NEAR(s[2].angleDeg, 0.0, 1e-9);
     // polygon closes: last segment returns to the first vertex.
-    NS_CHECK_NEAR(s[8].x, 20.0, 1e-9); NS_CHECK_NEAR(s[8].y, 20.0, 1e-9);
-    NS_CHECK_NEAR(s[8].x2, 10.0, 1e-9); NS_CHECK_NEAR(s[8].y2, 10.0, 1e-9);
+    NS_CHECK_NEAR(s[5].x, 20.0, 1e-9); NS_CHECK_NEAR(s[5].y, 20.0, 1e-9);
+    NS_CHECK_NEAR(s[5].x2, 10.0, 1e-9); NS_CHECK_NEAR(s[5].y2, 10.0, 1e-9);
     // line
-    NS_CHECK_NEAR(s[9].x2, 10.0, 1e-9); NS_CHECK_NEAR(s[9].y2, 20.0, 1e-9);
+    NS_CHECK_NEAR(s[6].x2, 10.0, 1e-9); NS_CHECK_NEAR(s[6].y2, 20.0, 1e-9);
     // vector (comment form): 50 px at 90 degrees = +Y.
-    NS_CHECK_NEAR(s[10].x2, 100.0, 1e-9); NS_CHECK_NEAR(s[10].y2, 250.0, 1e-9);
+    NS_CHECK_NEAR(s[7].x2, 100.0, 1e-9); NS_CHECK_NEAR(s[7].y2, 250.0, 1e-9);
     // text (comment form), hex colour, font size.
-    NS_CHECK(s[11].kind == Ds9Shape::Kind::Text);
-    NS_CHECK(s[11].text == QLatin1String("hello world"));
-    NS_CHECK(s[11].color == QLatin1String("#ff8800"));
-    NS_CHECK_NEAR(s[11].textSize, 14.0, 1e-9);
-    NS_CHECK_NEAR(s[11].x, 50.0, 1e-9); NS_CHECK_NEAR(s[11].y, 60.0, 1e-9);
+    NS_CHECK(s[8].kind == Ds9Shape::Kind::Text);
+    NS_CHECK(s[8].text == QLatin1String("hello world"));
+    NS_CHECK(s[8].color == QLatin1String("#ff8800"));
+    NS_CHECK_NEAR(s[8].textSize, 14.0, 1e-9);
+    NS_CHECK_NEAR(s[8].x, 50.0, 1e-9); NS_CHECK_NEAR(s[8].y, 60.0, 1e-9);
     // point -> small circle of the requested radius; excluded region kept.
-    NS_CHECK_NEAR(s[12].a, 3.0, 1e-9);
-    NS_CHECK_NEAR(s[13].x, 300.0, 1e-9); NS_CHECK_NEAR(s[13].a, 5.0, 1e-9);
+    NS_CHECK_NEAR(s[9].a, 3.0, 1e-9);
+    NS_CHECK_NEAR(s[10].x, 300.0, 1e-9); NS_CHECK_NEAR(s[10].a, 5.0, 1e-9);
 }
 
 NS_TEST(ds9_sky_coordinates_and_units) {
@@ -138,6 +134,16 @@ NS_TEST(ds9_sky_coordinates_and_units) {
     NS_CHECK(sm.size() == 1);
     NS_CHECK(axisDiff(sm[0].angleDeg, -30.0) < 1e-3);
     NS_CHECK_NEAR(sm[0].a, 20.0, 1e-3);
+
+    // A sky box: half-sizes and the direction of its first side, both parities.
+    const std::vector<Ds9Shape> bx = parseDs9Regions(
+        QStringLiteral("fk5;box(180.0,45.0,60\",30\",30)"), &w, 3.0, &st);
+    NS_CHECK(bx.size() == 1 && bx[0].kind == Ds9Shape::Kind::Box);
+    NS_CHECK_NEAR(bx[0].a, 20.0, 1e-3); NS_CHECK_NEAR(bx[0].b, 10.0, 1e-3);
+    NS_CHECK(axisDiff(bx[0].angleDeg, 30.0) < 1e-3);
+    const std::vector<Ds9Shape> bm = parseDs9Regions(
+        QStringLiteral("fk5;box(180.0,45.0,60\",30\",30)"), &m, 3.0, &st);
+    NS_CHECK(bm.size() == 1 && axisDiff(bm[0].angleDeg, -30.0) < 1e-3);
 
     // An angular size in image coordinates borrows the plate scale.
     const std::vector<Ds9Shape> si = parseDs9Regions(

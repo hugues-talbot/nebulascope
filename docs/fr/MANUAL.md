@@ -511,7 +511,10 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
 
 ![Champ annoté : ellipses, un segment étiqueté, la grille AD/Déc](../screenshots/annotations.png)
 
-- **Dessiner** — outils de la barre : ellipse (glisser), segment (glisser ;
+- **Dessiner** — outils de la barre : ellipse (glisser depuis le centre),
+  boîte (glisser d'un coin à l'autre ; ses deux poignées la redimensionnent
+  ensuite, et la première la fait aussi tourner, exactement comme pour une
+  ellipse), segment (glisser ;
   l'étiquette se place au-delà du point de départ, sans jamais croiser le
   segment), texte (clic).
 - **Éditer** — clic pour sélectionner (poignées : redimensionnement
@@ -553,8 +556,9 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
   fichiers `.reg` de SAOImage DS9 sur l'image affichée (un `.reg` déposé
   sur la fenêtre, ou donné en ligne de commande avec son image, fait de
   même). Cercles, ellipses et anneaux deviennent des annotations ellipse ;
-  boîtes, polygones et segments deviennent leur contour exact en segments
-  de droite, rotation comprise ; lignes, vecteurs, règles et projections
+  les boîtes deviennent des annotations boîte, rotation comprise ;
+  polygones et segments deviennent leur contour exact en segments de
+  droite ; lignes, vecteurs, règles et projections
   deviennent des lignes ; les points un petit cercle ; le texte une
   annotation texte. `color`, `text={…}` et la taille de police sont
   conservés. Les coordonnées peuvent être en pixels `image`/`physical` ou

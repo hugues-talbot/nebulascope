@@ -113,6 +113,7 @@ private slots:
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
     void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
     void onEllipseDrawn(double cx, double cy, double a, double b);
+    void onBoxDrawn(double cx, double cy, double halfW, double halfH);
     void onSkyPatchPicked(double x, double y, double w, double h);
     void onLineDrawn(double x1, double y1, double x2, double y2);
     void onTextPointPicked(double x, double y);
@@ -343,6 +344,7 @@ private:
     void updateReadouts(int x, int y, bool valid);   // fan the active hover out
     void clearReadouts();
     QAction* m_toolEllipse = nullptr;
+    QAction* m_toolBox = nullptr;
     QAction* m_toolLine = nullptr;
     QAction* m_toolText = nullptr;
     void refreshAnnotations();            // rebuild the overlay for the shown image

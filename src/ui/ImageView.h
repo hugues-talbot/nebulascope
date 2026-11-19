@@ -60,7 +60,7 @@ public:
     // Annotation drawing tools: while a tool is armed, left-drag draws the
     // shape (dashed preview) instead of the zoom rectangle; Text is a single
     // click. The tool disarms itself after each shape.
-    enum class DrawTool { None, Ellipse, Line, Text, Register, SkyPatch };
+    enum class DrawTool { None, Ellipse, Line, Text, Register, SkyPatch, Box };
     void setDrawTool(DrawTool t);
     // DS9-style contrast/bias drag. Ctrl/Cmd + left-drag always does it; with
     // this on, the RIGHT button does too, as in DS9 (pan then stays on the
@@ -89,6 +89,7 @@ signals:
     void contextMenuRequested(const QPoint& globalPos, int x, int y, bool onImage);
     // Drawing-tool results, in image-pixel coordinates.
     void ellipseDrawn(double cx, double cy, double a, double b);
+    void boxDrawn(double cx, double cy, double halfW, double halfH);   // dragged corner to corner
     void lineDrawn(double x1, double y1, double x2, double y2);
     void textPointPicked(double x, double y);
     void registerPointPicked(double x, double y);   // Register tool: a feature clicked

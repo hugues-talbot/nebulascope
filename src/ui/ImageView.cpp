@@ -303,7 +303,7 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
         QPen pen(QColor("#8fc0f5"), 0, Qt::DashLine);
         m_preview = (m_tool == DrawTool::Line)
             ? static_cast<QGraphicsItem*>(scene()->addLine(QLineF(sp, sp), pen))
-            : (m_tool == DrawTool::SkyPatch)
+            : (m_tool == DrawTool::SkyPatch || m_tool == DrawTool::Box)
             ? static_cast<QGraphicsItem*>(scene()->addRect(QRectF(sp, sp), pen))
             : static_cast<QGraphicsItem*>(scene()->addEllipse(QRectF(sp, sp), pen));
         m_preview->setZValue(20);
@@ -401,7 +401,7 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
         const QPointF sp = mapToScene(e->pos());
         if (m_tool == DrawTool::Line) {
             static_cast<QGraphicsLineItem*>(m_preview)->setLine(QLineF(m_drawStart, sp));
-        } else if (m_tool == DrawTool::SkyPatch) {
+        } else if (m_tool == DrawTool::SkyPatch || m_tool == DrawTool::Box) {
             static_cast<QGraphicsRectItem*>(m_preview)->setRect(
                 QRectF(m_drawStart, sp).normalized());
         } else {
@@ -462,6 +462,11 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
             const QRectF pr = QRectF(m_drawStart, sp).normalized();
             if (pr.width() > 2 && pr.height() > 2)
                 emit skyPatchPicked(pr.x(), pr.y(), pr.width(), pr.height());
+        } else if (tool == DrawTool::Box) {
+            const QRectF pr = QRectF(m_drawStart, sp).normalized();
+            if (pr.width() > 3 || pr.height() > 3)
+                emit boxDrawn(pr.center().x(), pr.center().y(),
+                              std::max(1.0, pr.width() / 2.0), std::max(1.0, pr.height() / 2.0));
         } else {
             const double a = std::fabs(sp.x() - m_drawStart.x());
             const double b = std::fabs(sp.y() - m_drawStart.y());

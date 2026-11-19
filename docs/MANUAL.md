@@ -440,8 +440,11 @@ A pure **vector overlay** — never rasterized into the data.
 
 ![Annotated field: ellipses, a labelled segment, the RA/Dec grid](screenshots/annotations.png)
 
-- **Draw** — toolbar tools: ellipse (drag), line segment (drag; the label
-  sits beyond the start point, never crossing the segment), text (click).
+- **Draw** — toolbar tools: ellipse (drag outward from the centre), box
+  (drag corner to corner; its two handles then resize it, and the first
+  also rotates it, exactly as for an ellipse), line segment (drag; the
+  label sits beyond the start point, never crossing the segment), text
+  (click).
 - **Edit** — click to select (grab handles: axis/endpoint resize, drag body
   to move), **double-click** to edit text & colour, **Delete** to remove,
   **⌘⇧C / ⌘⇧V** copy / paste-at-cursor, full **undo/redo**.
@@ -474,9 +477,9 @@ A pure **vector overlay** — never rasterized into the data.
 - **DS9 region import** — Tools ▸ Import DS9 Regions… reads SAOImage DS9
   `.reg` files onto the shown image (a `.reg` dropped on the window, or
   given on the command line with its image, does the same). Circles,
-  ellipses and annuli become ellipse annotations; boxes, polygons and
-  segments become their exact outline as line segments, rotation included;
-  lines, vectors, rulers and projections become lines; points a small
+  ellipses and annuli become ellipse annotations; boxes become box
+  annotations, rotation included; polygons and segments become their
+  exact outline as line segments; lines, vectors, rulers and projections become lines; points a small
   circle; text a text annotation. `color`, `text={…}` and the font size
   are kept. Coordinates may be `image`/`physical` pixels or `fk5`, `icrs`,
   `j2000`, `galactic` through the plate solution, in degrees, sexagesimal

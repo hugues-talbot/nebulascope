@@ -448,7 +448,7 @@ static void transformAnnotations(std::vector<Annotation>& anns, MainWindow::Xfor
     for (Annotation& a : anns) {
         mapPt(a.x, a.y);
         if (a.type == Annotation::Type::Line) mapPt(a.x2, a.y2);
-        if (a.type == Annotation::Type::Ellipse) {
+        if (a.hasAxes()) {
             switch (t) {
                 case Xform::RotCW:  a.angleDeg += 90; break;
                 case Xform::RotCCW: a.angleDeg -= 90; break;
@@ -476,7 +476,7 @@ static void rotateAnnotationsBy(std::vector<Annotation>& anns, double angleDeg,
     for (Annotation& a : anns) {
         mapPt(a.x, a.y);
         if (a.type == Annotation::Type::Line) mapPt(a.x2, a.y2);
-        if (a.type == Annotation::Type::Ellipse) a.angleDeg -= angleDeg;
+        if (a.hasAxes()) a.angleDeg -= angleDeg;
     }
 }
 
@@ -934,6 +934,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         }
     });
     connect(v, &ImageView::ellipseDrawn, this, &MainWindow::onEllipseDrawn);
+    connect(v, &ImageView::boxDrawn, this, &MainWindow::onBoxDrawn);
     connect(v, &ImageView::skyPatchPicked, this, &MainWindow::onSkyPatchPicked);
     connect(v, &ImageView::lineDrawn, this, &MainWindow::onLineDrawn);
     connect(v, &ImageView::textPointPicked, this, &MainWindow::onTextPointPicked);
@@ -958,7 +959,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         }
     });
     connect(v, &ImageView::drawToolFinished, this, [this] {
-        for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText })
+        for (QAction* a : { m_toolEllipse, m_toolBox, m_toolLine, m_toolText })
             if (a) a->setChecked(false);
     });
 }
@@ -1548,11 +1549,14 @@ void MainWindow::buildMenusAndToolbar() {
     toolGroup->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
     m_toolEllipse = tb->addAction(tr("\u25ef Ellipse"));
     m_toolEllipse->setToolTip(tr("Draw an ellipse annotation — drag outward from the centre"));
+    m_toolBox = tb->addAction(tr("\u25ad Box"));
+    m_toolBox->setToolTip(tr("Draw a box annotation — drag from corner to corner\n"
+                             "(its handles then resize and rotate it)"));
     m_toolLine = tb->addAction(tr("\u2571 Line"));
     m_toolLine->setToolTip(tr("Draw a line annotation — drag from start to end"));
     m_toolText = tb->addAction(tr("T Text"));
     m_toolText->setToolTip(tr("Place a text annotation — click the anchor point"));
-    for (QAction* a : { m_toolEllipse, m_toolLine, m_toolText }) {
+    for (QAction* a : { m_toolEllipse, m_toolBox, m_toolLine, m_toolText }) {
         a->setCheckable(true);
         toolGroup->addAction(a);
     }
@@ -1560,6 +1564,7 @@ void MainWindow::buildMenusAndToolbar() {
         ImageView::DrawTool t = ImageView::DrawTool::None;
         if (a->isChecked()) {
             if (a == m_toolEllipse)   t = ImageView::DrawTool::Ellipse;
+            else if (a == m_toolBox)  t = ImageView::DrawTool::Box;
             else if (a == m_toolLine) t = ImageView::DrawTool::Line;
             else                      t = ImageView::DrawTool::Text;
         }
@@ -5997,6 +6002,7 @@ bool MainWindow::importDs9RegionsFile(const QString& path, QString* errOut) {
     for (const Ds9Shape& s : shapes) {
         Annotation a;
         a.type = s.kind == Ds9Shape::Kind::Ellipse ? Annotation::Type::Ellipse
+               : s.kind == Ds9Shape::Kind::Box     ? Annotation::Type::Box
                : s.kind == Ds9Shape::Kind::Line    ? Annotation::Type::Line
                                                    : Annotation::Type::Text;
         a.x = s.x; a.y = s.y; a.x2 = s.x2; a.y2 = s.y2;
@@ -6444,6 +6450,24 @@ void MainWindow::onEllipseDrawn(double cx, double cy, double a, double b) {
     m_annDirty.insert(m_currentPath);
     refreshAnnotations();
     pushAnnotationEdit(tr("add ellipse"), m_currentPath, std::move(before));
+}
+
+void MainWindow::onBoxDrawn(double cx, double cy, double halfW, double halfH) {
+    if (!m_image.isValid()) return;
+    bool ok = false;
+    const QString label = QInputDialog::getText(this, tr("Box annotation"),
+        tr("Label (optional):"), QLineEdit::Normal, QString(), &ok);
+    if (!ok) return;                              // cancelled — discard the shape
+    Annotation an;
+    an.type = Annotation::Type::Box;
+    an.x = cx; an.y = cy; an.a = halfW; an.b = halfH;
+    an.label = label.trimmed();
+    an.color = m_annColor;
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    m_annByPath[m_currentPath].push_back(an);
+    m_annDirty.insert(m_currentPath);
+    refreshAnnotations();
+    pushAnnotationEdit(tr("add box"), m_currentPath, std::move(before));
 }
 
 void MainWindow::onLineDrawn(double x1, double y1, double x2, double y2) {

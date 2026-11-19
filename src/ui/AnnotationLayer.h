@@ -27,13 +27,16 @@ class QJsonDocument;
 namespace astro {
 
 struct Annotation {
-    enum class Type { Ellipse, Line, Text };
+    // Box: a rotated rectangle sharing the ellipse's geometry fields (centre
+    // x,y, HALF-sizes a,b, angleDeg) — and therefore its handles and maps.
+    enum class Type { Ellipse, Line, Text, Box };
+    bool hasAxes() const { return type == Type::Ellipse || type == Type::Box; }
     Type    type = Type::Ellipse;
     QString label;                 // text content (Text) or marker name (Ellipse/Line)
     double  x = 0, y = 0;          // centre (Ellipse/Text) or first endpoint (Line), image px
     double  x2 = 0, y2 = 0;        // second endpoint (Line)
-    double  a = 40, b = 40;        // semi-major / semi-minor axes (Ellipse), image px
-    double  angleDeg = 0;          // ellipse rotation, degrees
+    double  a = 40, b = 40;        // semi-axes (Ellipse) or half-sizes (Box), image px
+    double  angleDeg = 0;          // ellipse/box rotation, degrees
     double  textSize = 10;         // label point size (screen points)
     QColor  color = QColor("#8fc0f5");
 

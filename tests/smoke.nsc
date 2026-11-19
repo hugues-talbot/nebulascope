@@ -326,11 +326,11 @@ activate 2
 open tests/testdata/wcs_narrow.fits      # into cell 2 (active)
 waitloaded
 activate 1
-# DS9 regions onto the solved frame: 2 pixel regions (a circle; a box = 4
-# segments) + 4 sky regions through the plate solution = 9 annotations;
-# the panda is reported unsupported, not dropped silently. One undo step.
+# DS9 regions onto the solved frame: 2 pixel regions (a circle, a box) + 4
+# sky regions through the plate solution = 6 annotations; the panda is
+# reported unsupported, not dropped silently. One undo step.
 importreg tests/testdata/regions.reg
-assert annotations 9
+assert annotations 6
 action undo
 assert annotations 0
 action register_views

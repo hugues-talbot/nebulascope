@@ -4,10 +4,10 @@
 // three vector primitives the annotation layer draws (ellipse, line, text).
 //
 // Supported shapes: circle, ellipse, annulus (and multi-ring ellipse/box) as
-// concentric outlines; box, polygon, segment as line segments (exact
-// geometry, including the rotation); line, vector, ruler, projection as a
-// line; point as a small circle; text. Unsupported and counted: panda,
-// epanda, bpanda, compass, composite.
+// concentric outlines; box as a rotated box; polygon, segment as line
+// segments (exact geometry); line, vector, ruler, projection as a line;
+// point as a small circle; text. Unsupported and counted: panda, epanda,
+// bpanda, compass, composite.
 //
 // Coordinate systems: image and physical (1-based FITS pixels; physical is
 // read as image — LTV/LTM offsets are not applied), fk5 / j2000 / icrs / wcs
@@ -34,11 +34,11 @@ namespace astro {
 
 // One primitive in 0-based image pixels — same fields as an Annotation.
 struct Ds9Shape {
-    enum class Kind { Ellipse, Line, Text };
+    enum class Kind { Ellipse, Line, Text, Box };   // Box: a, b are HALF-sizes
     Kind    kind = Kind::Ellipse;
-    double  x = 0, y = 0;            // centre (Ellipse/Text) or first endpoint (Line)
+    double  x = 0, y = 0;            // centre (Ellipse/Box/Text) or first endpoint (Line)
     double  x2 = 0, y2 = 0;          // second endpoint (Line)
-    double  a = 0, b = 0;            // semi-axes (Ellipse), px
+    double  a = 0, b = 0;            // semi-axes (Ellipse) / half-sizes (Box), px
     double  angleDeg = 0;            // direction of the a-axis, atan2(dy, dx) in pixel coords
     QString text;                    // label (Ellipse/Line) or content (Text)
     QString color;                   // "#rrggbb"; empty = the importer's default
