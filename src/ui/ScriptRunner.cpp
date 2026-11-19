@@ -47,12 +47,13 @@ const CommandRef kCommands[] = {
   {"histdrag",   {"histdrag b|m|w <dx_px>",
     "Synthesize a drag of the histogram's B/M/W grip by dx screen pixels\n"
     "(past the plot edge extends the axis). Test hook."}},
-  {"viewdrag",   {"viewdrag ctrl|right|ds9 <fx0> <fy0> <fx1> <fy1>",
+  {"viewdrag",   {"viewdrag ctrl|alt|right|ds9 <fx0> <fy0> <fx1> <fy1>",
     "Synthesize a mouse drag on the active image view between two points\n"
     "given as fractions of the viewport (0..1 from the left / the top):\n"
-    "ctrl = Ctrl/Cmd + left-drag (contrast/bias), right = right-drag with the\n"
-    "default mouse (pan), ds9 = right-drag with the DS9 mouse preference on\n"
-    "for this drag (contrast/bias). Test hook."}},
+    "ctrl = Ctrl/Cmd + left-drag (contrast/bias), alt = Alt/Option +\n"
+    "right-drag with the default mouse (contrast/bias), right = plain\n"
+    "right-drag with the default mouse (pan), ds9 = plain right-drag with\n"
+    "the DS9 mouse preference on for this drag (contrast/bias). Test hook."}},
   {"window",     {"window <c|all> <black> <mid> <white>",
     "Set the linear window (B/M/W) in RAW data units for channel c (0..2) or\n"
     "all channels. Values may lie outside the data range."}},
@@ -340,11 +341,13 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         return true;
     }
     if (cmd == QLatin1String("viewdrag")) {
-        if (t.size() < 6) { err = "viewdrag ctrl|right|ds9 <fx0> <fy0> <fx1> <fy1>"; return false; }
+        if (t.size() < 6) { err = "viewdrag ctrl|alt|right|ds9 <fx0> <fy0> <fx1> <fy1>"; return false; }
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         const QString mode = t[1].toLower();
         if (mode != QLatin1String("ctrl") && mode != QLatin1String("right") &&
-            mode != QLatin1String("ds9")) { err = "mode: ctrl | right | ds9"; return false; }
+            mode != QLatin1String("ds9") && mode != QLatin1String("alt")) {
+            err = "mode: ctrl | alt | right | ds9"; return false;
+        }
         ImageView* v = m_w->m_view;
         QWidget* vp = v->viewport();
         const QSize vs = vp->size();
@@ -352,6 +355,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         const QPointF end(t[4].toDouble() * vs.width(), t[5].toDouble() * vs.height());
         const Qt::MouseButton btn = mode == QLatin1String("ctrl") ? Qt::LeftButton : Qt::RightButton;
         const Qt::KeyboardModifiers mods = mode == QLatin1String("ctrl") ? Qt::ControlModifier
+                                         : mode == QLatin1String("alt")  ? Qt::AltModifier
                                                                          : Qt::NoModifier;
         // The DS9 mouse is a persisted preference; a test must not write it.
         v->setRightDragAdjusts(mode == QLatin1String("ds9"));

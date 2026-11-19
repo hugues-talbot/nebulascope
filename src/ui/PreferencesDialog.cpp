@@ -119,7 +119,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                             "and contrast (up-down) from the pointer position, exactly as DS9 does —\n"
                             "it drives the Brightness and Contrast adjustments. Pan stays on the\n"
                             "middle button and Shift + left-drag; a right-click is still the menu.\n"
-                            "Ctrl/Cmd + left-drag does the same in either setting."));
+                            "In either setting, a modifier does the same: Ctrl, Alt/Option or Cmd +\n"
+                            "right-drag, or Ctrl/Cmd + left-drag."));
     form->addRow(tr("Mouse:"), ds9Mouse);
 
     auto* recentImg = new QSpinBox();

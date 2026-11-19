@@ -370,7 +370,11 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
         m_band->show();
         return;
     }
-    if (e->button() == Qt::RightButton && m_rightAdjusts) {   // DS9 mouse: contrast/bias
+    // Contrast/bias on the right button: always with a modifier (Ctrl, Alt /
+    // Option, Cmd — macOS reports the Control key as Meta), and without one
+    // when the DS9 mouse preference is on. Shift is left alone (it pans).
+    const bool cbMod = e->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier);
+    if (e->button() == Qt::RightButton && (m_rightAdjusts || cbMod)) {
         m_cbDrag = true; m_cbMoved = false;
         m_cbButton = Qt::RightButton;
         m_cbStart = e->pos();

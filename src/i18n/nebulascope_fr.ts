@@ -3419,103 +3419,105 @@ d&apos;abord. 0 désactive le cache.</translation>
 and contrast (up-down) from the pointer position, exactly as DS9 does —
 it drives the Brightness and Contrast adjustments. Pan stays on the
 middle button and Shift + left-drag; a right-click is still the menu.
-Ctrl/Cmd + left-drag does the same in either setting.</source>
+In either setting, a modifier does the same: Ctrl, Alt/Option or Cmd +
+right-drag, or Ctrl/Cmd + left-drag.</source>
         <translation>Désactivé (défaut) : le glisser droit déplace l&apos;image. Activé : il règle le
 biais (gauche-droite) et le contraste (haut-bas) d&apos;après la position du
 pointeur, exactement comme DS9 — il pilote les ajustements Luminosité et
 Contraste. Le panoramique reste sur le bouton du milieu et Maj + glisser
-gauche ; un clic droit ouvre toujours le menu. Ctrl/Cmd + glisser gauche
-fait de même dans les deux réglages.</translation>
+gauche ; un clic droit ouvre toujours le menu. Dans les deux réglages, une
+touche fait de même : Ctrl, Alt/Option ou Cmd + glisser droit, ou
+Ctrl/Cmd + glisser gauche.</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="123"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="124"/>
         <source>Mouse:</source>
         <translation>Souris :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="128"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="129"/>
         <source>How many images File ▸ Open Recent remembers (0 disables)</source>
         <translation>Nombre d&apos;images retenues par Fichier ▸ Ouvrir récent (0 désactive)</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="129"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="130"/>
         <source>Recent images history:</source>
         <translation>Historique des images récentes :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="134"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="135"/>
         <source>How many annotation files File ▸ Recent Annotations remembers (0 disables)</source>
         <translation>Nombre de fichiers d&apos;annotations retenus par Fichier ▸ Annotations récentes (0 désactive)</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="135"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="136"/>
         <source>Recent annotations history:</source>
         <translation>Historique des annotations récentes :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="138"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="139"/>
         <source>Superpixel (half size)</source>
         <translation>Superpixel (demi-taille)</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="138"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="139"/>
         <source>Bilinear</source>
         <translation>Bilinéaire</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="138"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="139"/>
         <source>RCD (best)</source>
         <translation>RCD (meilleur)</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="140"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="141"/>
         <source>Demosaic algorithm for one-shot-colour (Bayer) frames.
 Also switchable per session in Image ▸ Debayer.</source>
         <translation>Algorithme de dématriçage des images couleur one-shot (Bayer).
 Modifiable aussi par session dans Image ▸ Dématriçage.</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="142"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="143"/>
         <source>Debayer algorithm:</source>
         <translation>Algorithme de dématriçage :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="148"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="149"/>
         <source>Keyboard zoom step for &gt; and &lt;</source>
         <translation>Pas du zoom clavier pour &gt; et &lt;</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="149"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="150"/>
         <source>Zoom step (&gt; / &lt;):</source>
         <translation>Pas de zoom (&gt; / &lt;) :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="155"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="156"/>
         <source>Keyboard zoom step for . and ,</source>
         <translation>Pas du zoom clavier pour . et ,</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="156"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="157"/>
         <source>Fine zoom step (. / ,):</source>
         <translation>Pas de zoom fin (. / ,) :</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="165"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="166"/>
         <source>Action</source>
         <translation>Action</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="165"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="166"/>
         <source>Shortcut</source>
         <translation>Raccourci</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="188"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="189"/>
         <source>Backspace in a field clears it (shortcut disabled). Changes apply at the next launch.</source>
         <translation>Retour arrière dans un champ l&apos;efface (raccourci désactivé). Les changements s&apos;appliquent au prochain lancement.</translation>
     </message>
     <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="193"/>
+        <location filename="../ui/PreferencesDialog.cpp" line="194"/>
         <source>Shortcuts</source>
         <translation>Raccourcis</translation>
     </message>

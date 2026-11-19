@@ -362,8 +362,8 @@ Les images RVB ignorent la palette (le sélecteur est désactivé).
 - **Glisser gauche** — zoom élastique sur la région tracée.
 - **Molette** — zoom au curseur (**Maj+molette** = pas 5× plus fins).
 - **Glisser droit / molette / Maj+gauche** — panoramique.
-- **Ctrl+glisser gauche** (⌘ sur macOS) — **contraste et biais, comme dans
-  SAOImage DS9** : la position horizontale du pointeur règle le biais, sa
+- **Ctrl, Alt ou ⌘ + glisser droit**, ou **Ctrl+glisser gauche** (⌘ sur
+  macOS) — **contraste et biais, comme dans SAOImage DS9** : la position horizontale du pointeur règle le biais, sa
   position verticale le contraste (faible en haut, l'échelle 0–10 de DS9
   vers le bas), et la position *est* le réglage, comme dans DS9 — le
   milieu de la largeur est le biais neutre, un dixième de la hauteur le
@@ -378,9 +378,9 @@ Les images RVB ignorent la palette (le sélecteur est désactivé).
   l'écran : l'image suit le pointeur même sur un master de 60 mégapixels ;
   l'image entière est rendue une seule fois, au relâchement. Pour les
   habitués de
-  DS9, **Préférences ▸ Souris** place le même contrôle sur le **bouton
-  droit** (le panoramique reste alors sur le bouton du milieu et
-  Maj+glisser gauche ; un clic droit ouvre toujours le menu). Script :
+  DS9, **Préférences ▸ Souris** place le même contrôle sur le **simple
+  glisser droit**, sans touche (le panoramique reste alors sur le bouton du
+  milieu et Maj+glisser gauche ; un clic droit ouvre toujours le menu). Script :
   `contrastbias <contraste> <biais>`.
 - **Clic droit** — menu contextuel (§10).
 - **Survol** — la barre d'état affiche (x, y), les valeurs brutes par canal,

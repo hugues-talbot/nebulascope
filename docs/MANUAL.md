@@ -315,8 +315,8 @@ Mouse (in any view):
 - **Left-drag** — rubber-band zoom to the dragged region.
 - **Wheel** — zoom at the cursor (**Shift+wheel** = 5× finer steps).
 - **Right-drag / middle-drag / Shift+left-drag** — pan.
-- **Ctrl+left-drag** (⌘ on macOS) — **contrast and bias, as in SAOImage
-  DS9**: the pointer's horizontal position sets the bias, its vertical
+- **Ctrl, Alt or ⌘ + right-drag**, or **Ctrl+left-drag** (⌘ on macOS) —
+  **contrast and bias, as in SAOImage DS9**: the pointer's horizontal position sets the bias, its vertical
   position the contrast (low at the top, DS9's 0–10 scale downward), and
   the position *is* the setting, as in DS9 — the middle of the left–right
   span is neutral bias, a tenth of the way down is neutral contrast. It is
@@ -329,9 +329,9 @@ Mouse (in any view):
   the **visible region** is re-rendered, at about screen resolution, so it
   follows the pointer even on a 60-megapixel master; the full frame is
   rendered once, on release. For DS9 muscle memory,
-  **Preferences ▸ Mouse** puts the same control on the **right button**
-  (pan then stays on the middle button and Shift+left-drag; a right-click
-  is still the menu). Script: `contrastbias <contrast> <bias>`.
+  **Preferences ▸ Mouse** puts the same control on the **plain right-drag**,
+  no modifier needed (pan then stays on the middle button and
+  Shift+left-drag; a right-click is still the menu). Script: `contrastbias <contrast> <bias>`.
 - **Right-click** — context menu (§10).
 - **Hover** — status bar shows (x, y), raw channel values, and RA/Dec when a
   plate solution exists.

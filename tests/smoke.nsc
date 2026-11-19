@@ -163,6 +163,12 @@ viewdrag ctrl 0.5 0.5 0.25 0.1
 assert adjust brightness 0.5 0.02
 assert adjust contrast 0 0.03
 contrastbias 1 0.5
+# A modifier + right-drag does it with the default mouse too (field report:
+# that is where a DS9 hand goes first).
+viewdrag alt 0.5 0.5 0.4 0.1
+assert adjust brightness 0.2 0.02
+assert adjust contrast 0 0.03
+contrastbias 1 0.5
 viewdrag ds9 0.5 0.5 0.75 0.1
 assert adjust brightness -0.5 0.02
 assert adjust contrast 0 0.03

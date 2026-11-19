@@ -62,9 +62,10 @@ public:
     // click. The tool disarms itself after each shape.
     enum class DrawTool { None, Ellipse, Line, Text, Register, SkyPatch, Box };
     void setDrawTool(DrawTool t);
-    // DS9-style contrast/bias drag. Ctrl/Cmd + left-drag always does it; with
-    // this on, the RIGHT button does too, as in DS9 (pan then stays on the
-    // middle button and Shift + left-drag; a right-CLICK is still the menu).
+    // DS9-style contrast/bias drag. Ctrl/Cmd + left-drag and Ctrl/Alt/Cmd +
+    // right-drag always do it; with this on, the PLAIN right-drag does too,
+    // as in DS9 (pan then stays on the middle button and Shift + left-drag;
+    // a right-CLICK is still the menu).
     void setRightDragAdjusts(bool on) { m_rightAdjusts = on; }
     // Interactive preview: a freshly rendered patch of the VISIBLE region,
     // laid over the (stale) full-frame pixmap while a display drag runs.
