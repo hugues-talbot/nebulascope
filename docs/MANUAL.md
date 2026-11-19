@@ -408,6 +408,19 @@ Image menu / toolbar:
   resampling; uncovered corners become blank (NaN).
 - **⬆ North Up** (in the dialog, when plate-solved) — one click sets the
   angle that puts celestial north up / the central Dec line horizontal.
+- **Orient to Sky (North Up, East Left)** — Image menu, and the **⬆ North
+  Up, East Left** button of the dialog. A rotation cannot undo a mirror, so
+  North Up alone may leave east on the right. The plate solution knows the
+  parity: on the sky, east lies counter-clockwise from north, and the sign
+  of the solution's determinant says whether the frame is drawn that way.
+  This action flips the image first when it is shown mirrored — choosing
+  the flip that leaves the smaller rotation — then puts north up; one undo
+  step. NebulaScope draws the first row of a file at the **top**, the
+  convention of PixInsight and of most capture software; the FITS standard
+  (and DS9) put it at the bottom, so a standard professional FITS frame
+  appears here upside down and therefore mirrored — for such a frame the
+  action is a single, lossless vertical flip. The astrometric-solution
+  line of the Info panel says *shown mirrored* when it applies.
 
 ![Rotation dialog with dial, preview and North Up](screenshots/rotate-dialog.png)
 

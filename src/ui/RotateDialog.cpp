@@ -141,6 +141,18 @@ RotateDialog::RotateDialog(const QImage& thumb, double currentDeg, double northU
         connect(northBtn, &QPushButton::clicked, this,
                 [this, northUpDeg] { m_spin->setValue(northUpDeg); });   // syncs knob+preview via valueChanged
         side->addWidget(northBtn);
+        // A rotation cannot undo a mirror: the sky orientation (north up
+        // AND east left) may need a flip as well, which the window applies.
+        auto* skyBtn = new QPushButton(tr("\u2B06 North Up, East Left"));
+        skyBtn->setToolTip(tr("Orient the image as the sky: north up and east to the left.\n"
+                              "Flips the image first if the plate solution says it is shown\n"
+                              "mirrored (a rotation alone cannot fix that), then rotates.\n"
+                              "Applies at once and closes this dialog; one undo step."));
+        connect(skyBtn, &QPushButton::clicked, this, [this] {
+            emit skyOrientRequested();
+            reject();                                 // already applied — nothing left to accept
+        });
+        side->addWidget(skyBtn);
     }
 
     auto* hint = new QLabel(tr(

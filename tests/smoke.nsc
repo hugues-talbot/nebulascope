@@ -339,6 +339,16 @@ importreg tests/testdata/regions.reg
 assert annotations 6
 action undo
 assert annotations 0
+# Orient to Sky: this fixture is a standard FITS solution (north up, east
+# left with y UP), which the app shows mirrored with north down. The plate
+# solution says so, and one lossless vertical flip puts north up, east left;
+# a second call has nothing to do; undo restores the frame as read.
+action orient_to_sky
+assert skyoriented
+assert size 128 128
+action orient_to_sky
+assert skyoriented
+action undo
 action register_views
 sleep 200
 assert wcsmatch 2 64 64 0.02

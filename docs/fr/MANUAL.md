@@ -472,6 +472,22 @@ Menu Image / barre d'outils :
 - **⬆ Nord en haut** (dans la boîte, si l'image est résolue) — un clic règle
   l'angle qui met le nord céleste en haut / la ligne de Déc centrale à
   l'horizontale.
+- **Orienter comme le ciel (nord en haut, est à gauche)** — menu Image, et
+  bouton **⬆ Nord en haut, est à gauche** de la boîte. Une rotation ne peut
+  pas défaire un miroir : Nord en haut seul peut laisser l'est à droite. La
+  solution astrométrique connaît la parité : sur le ciel, l'est se trouve
+  dans le sens antihoraire à partir du nord, et le signe du déterminant de
+  la solution dit si l'image est dessinée ainsi. Cette action retourne
+  d'abord l'image quand elle est affichée en miroir — en choisissant le
+  retournement qui laisse la plus petite rotation — puis met le nord en
+  haut ; une seule étape d'annulation. NebulaScope dessine la première
+  ligne d'un fichier en **haut**, la convention de PixInsight et de la
+  plupart des logiciels d'acquisition ; le standard FITS (et DS9) la
+  placent en bas : une image FITS professionnelle standard apparaît donc
+  ici tête en bas, et par conséquent en miroir — pour une telle image
+  l'action se réduit à un seul retournement vertical, sans perte. La ligne
+  « solution astrométrique » du panneau Info indique *shown mirrored*
+  quand c'est le cas.
 
 ![Boîte de rotation avec cadran, aperçu et Nord en haut](../screenshots/rotate-dialog.png)
 

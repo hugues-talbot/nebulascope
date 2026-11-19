@@ -52,6 +52,12 @@ public:
 
     double pixelScaleArcsec() const;   // mean scale, arcsec/pixel
     double rotationDeg() const;        // position angle of +Y axis, approx.
+    // Parity as THIS app draws the frame (pixel x to the right, pixel y
+    // DOWN the screen — row 1 at the top). On the sky, east lies counter-
+    // clockwise from north; that holds on screen iff det(CD) > 0 in these
+    // axes. A standard FITS solution (north up, east left with y UP) has
+    // det(CD) < 0 and is therefore shown mirrored here.
+    bool mirroredOnScreen() const;
 
     static QString formatRa(double raDeg);    // "HH:MM:SS.ss"
     static QString formatDec(double decDeg);  // "±DD°MM′SS.s″"

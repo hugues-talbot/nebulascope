@@ -191,4 +191,25 @@ NS_TEST(wcs_pointing_parse) {
     NS_CHECK_NEAR(dec, -20.25, 1e-6);
 }
 
+NS_TEST(wcs_parity_as_displayed) {
+    // The app draws pixel y DOWN the screen. A standard solution (north up,
+    // east left with y UP: CD1_1 < 0, CD2_2 > 0) is therefore shown mirrored;
+    // one flip of either axis restores the sky's parity, a rotation never does.
+    Wcs w = Wcs::fromHeader(tanHeader(180.0, 45.0, 64.5, 64.5, 2.0));
+    NS_CHECK(w.mirroredOnScreen());
+    NS_CHECK(!w.transformed(Wcs::PixelXform::FlipV, 128, 128).mirroredOnScreen());
+    NS_CHECK(!w.transformed(Wcs::PixelXform::FlipH, 128, 128).mirroredOnScreen());
+    NS_CHECK(w.transformed(Wcs::PixelXform::RotCW, 128, 128).mirroredOnScreen());
+    NS_CHECK(w.rotated(37.0, 128, 128, 180, 180).mirroredOnScreen());
+    // After the vertical flip north is up: dec increases toward smaller y.
+    const Wcs f = w.transformed(Wcs::PixelXform::FlipV, 128, 128);
+    double ra = 0, dec = 0, ra2 = 0, dec2 = 0;
+    NS_CHECK(f.pixelToSky(64, 64, ra, dec) && f.pixelToSky(64, 44, ra2, dec2));
+    NS_CHECK(dec2 > dec);
+    // ... and east is to the left: RA increases toward smaller x.
+    NS_CHECK(f.pixelToSky(44, 64, ra2, dec2));
+    NS_CHECK(ra2 > ra);
+    NS_CHECK(!Wcs().mirroredOnScreen());           // no solution: no claim
+}
+
 int main() { return nstest::runAll(); }

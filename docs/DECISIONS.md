@@ -478,3 +478,22 @@ lost mouse release cannot wedge it. Histogram-handle and adjustment-
 slider drags keep their v0.96 behaviour (render deferred to release);
 the same preview could make them live, as an option.
 
+## Orient to Sky: parity is in the plate solution (2026-11-19)
+
+Field report: a large LIGHTS survey frame came out mirrored left-right
+after North Up. A rotation preserves parity, so North Up can only ever
+fix half of the orientation. The other half is discoverable: on the sky
+east lies counter-clockwise from north, and in the app's screen axes
+(pixel y DOWN) that holds iff det(CD) > 0. The root cause is a row-order
+convention, not the survey: the app draws row 1 at the top, as PixInsight
+and capture software do (top-down is also what the amateur Bayer
+conventions assume), while the FITS standard and DS9 draw it at the
+bottom. A standard professional solution (det < 0) is therefore shown
+upside down, hence mirrored. Orient to Sky (Image menu, and a button in
+the rotation dialog — a NEW control; North Up is unchanged) flips first
+when the frame is mirrored, picking the flip that leaves the smaller
+rotation (H turns the needed rotation r into -r, V into 180 - r), then
+rotates; for a standard FITS the whole operation is one lossless
+vertical flip. Left open, as a larger question: honouring ROWORDER /
+offering a bottom-up FITS display preference for DS9 parity at load.
+

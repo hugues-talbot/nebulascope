@@ -260,6 +260,10 @@ double Wcs::rotationDeg() const {
     return qRadiansToDegrees(std::atan2(m_cd21, m_cd11));
 }
 
+bool Wcs::mirroredOnScreen() const {
+    return m_valid && (m_cd11 * m_cd22 - m_cd12 * m_cd21) < 0.0;
+}
+
 QString Wcs::formatRa(double raDeg) {
     double hours = raDeg / 15.0;
     int hh = int(hours);
@@ -327,10 +331,12 @@ QString Wcs::summary() const {
     if (!m_valid) return {};
     double ra = 0, dec = 0;
     pixelToSky(m_crpix1 - 1.0, m_crpix2 - 1.0, ra, dec);   // reference pixel centre
-    return QStringLiteral("%1\u2033/px \u00b7 rotation %2\u00b0 \u00b7 TAN \u00b7 ref %3 %4")
+    return QStringLiteral("%1\u2033/px \u00b7 rotation %2\u00b0 \u00b7 TAN \u00b7 ref %3 %4%5")
         .arg(pixelScaleArcsec(), 0, 'f', 2)
         .arg(rotationDeg(), 0, 'f', 1)
-        .arg(formatRa(ra), formatDec(dec));
+        .arg(formatRa(ra), formatDec(dec))
+        .arg(mirroredOnScreen() ? QStringLiteral(" \u00b7 shown mirrored (Image \u25b8 Orient to Sky)")
+                                : QString());
 }
 
 } // namespace astro

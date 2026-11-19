@@ -164,7 +164,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | annotations <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol] | levels <c> <min>",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | annotations <n> | skyoriented [tol] | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol] | levels <c> <min>",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -1030,6 +1030,19 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
         if (img.width() != w || img.height() != h) {
             err = QStringLiteral("size is %1x%2, expected %3x%4")
                       .arg(img.width()).arg(img.height()).arg(w).arg(h);
+            return false;
+        }
+        return true;
+    }
+    if (what == QLatin1String("skyoriented")) {
+        // assert skyoriented [tol_deg] — the plate solution says: not shown
+        // mirrored, and celestial north within tol of screen-up.
+        const double tol = t.size() > 2 ? t[2].toDouble() : 0.05;
+        const double rel = m_w->northUpDelta();
+        if (!std::isfinite(rel)) { err = "no plate solution"; return false; }
+        if (m_w->m_wcs.mirroredOnScreen() || std::fabs(rel) > tol) {
+            err = QStringLiteral("mirrored=%1, north is %2 deg from up")
+                      .arg(m_w->m_wcs.mirroredOnScreen()).arg(rel, 0, 'f', 3);
             return false;
         }
         return true;

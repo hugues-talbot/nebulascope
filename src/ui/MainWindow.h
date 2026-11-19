@@ -154,6 +154,14 @@ private slots:
     // DS9's contrast/bias control (contrast 0..10, bias 0..1), carried by
     // the Brightness and Contrast adjustments — an exact correspondence.
     void applyDs9ContrastBias(double contrast, double bias);
+    // Orient as the sky: north up AND east left. Flips first when the plate
+    // solution says the frame is shown mirrored (choosing the flip that
+    // leaves the smaller rotation — a standard FITS needs only a lossless
+    // vertical flip), then rotates. One undo step.
+    void orientToSky();
+    // Visual-CCW rotation that would bring celestial north up at the image
+    // centre, in (-180, 180]; NaN without a plate solution.
+    double northUpDelta() const;
     // SIMBAD with failover: the main server is probed once per session; if
     // it does not answer, the mirrors are asked together and the first that
     // answers is kept until the app quits. `then` receives the chosen index

@@ -51,6 +51,7 @@ public:
     double angle() const;
 signals:
     void applyRequested(double totalDeg);         // Apply — dialog stays open
+    void skyOrientRequested();                    // North up AND east left — applied by the window
 private:
     void setAngle(double deg, bool fromKnob);
     void updatePreview();

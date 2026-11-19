@@ -1288,6 +1288,9 @@ void MainWindow::buildMenusAndToolbar() {
         if (dlg->exec() == QDialog::Accepted) pushRotateTo(dlg->angle());
         dlg->deleteLater();
     });
+    acts["orient_to_sky"] = image->addAction(tr("Orient to &Sky (North Up, East Left)"), this, &MainWindow::orientToSky);
+    acts["orient_to_sky"]->setToolTip(tr("Use the plate solution to show the image as the sky: unmirror it if\n"
+                                         "needed (a flip), then put north up (a rotation)."));
     image->addSeparator();
     acts["flip_horizontal"] = image->addAction(tr("Flip &Horizontal"), QKeySequence("Ctrl+H"), this, [this]{ applyTransform(Xform::FlipH); });
     acts["flip_vertical"]   = image->addAction(tr("Flip &Vertical"),   QKeySequence("Ctrl+J"), this, [this]{ applyTransform(Xform::FlipV); });
@@ -2384,29 +2387,79 @@ RotateDialog* MainWindow::makeRotateDialog() {
     // Small preview of the current display for the dialog's live thumbnail.
     const QImage thumb = DisplayRenderer::render(m_image, m_model)
         .scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    // North-up preset: measure the screen direction of celestial north at
-    // the image centre; the rotation that sends it to "up" (screen angle
-    // -90°, with visual-CCW positive) is rel = phi + 90.
+    // North-up preset: the absolute angle that brings celestial north up.
     double northUp = std::numeric_limits<double>::quiet_NaN();
-    if (m_wcs.valid()) {
-        const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
-        double ra = 0, dec = 0, nx = 0, ny = 0;
-        if (m_wcs.pixelToSky(cx, cy, ra, dec)) {
-            const bool south = dec > 89.0;               // sample away from the pole
-            const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
-            if (m_wcs.skyToPixel(ra, dec + dd, nx, ny)) {
-                double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
-                if (south) phi += 180.0;
-                double t = currentRotationAngle() + phi + 90.0;
-                while (t > 180.0) t -= 360.0;
-                while (t < -180.0) t += 360.0;
-                northUp = t;
-            }
-        }
+    const double rel = northUpDelta();
+    if (std::isfinite(rel)) {
+        double t = currentRotationAngle() + rel;
+        while (t > 180.0) t -= 360.0;
+        while (t < -180.0) t += 360.0;
+        northUp = t;
     }
     auto* dlg = new RotateDialog(thumb, currentRotationAngle(), northUp, this);
     connect(dlg, &RotateDialog::applyRequested, this, [this](double a){ pushRotateTo(a); });
+    connect(dlg, &RotateDialog::skyOrientRequested, this, &MainWindow::orientToSky);
     return dlg;
+}
+
+double MainWindow::northUpDelta() const {
+    if (!m_image.isValid() || !m_wcs.valid()) return std::numeric_limits<double>::quiet_NaN();
+    // Screen direction of celestial north at the image centre; the rotation
+    // that sends it to "up" (screen angle -90 deg, visual-CCW positive) is
+    // phi + 90.
+    const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
+    double ra = 0, dec = 0, nx = 0, ny = 0;
+    if (!m_wcs.pixelToSky(cx, cy, ra, dec)) return std::numeric_limits<double>::quiet_NaN();
+    const bool south = dec > 89.0;                   // sample away from the pole
+    const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
+    if (!m_wcs.skyToPixel(ra, dec + dd, nx, ny)) return std::numeric_limits<double>::quiet_NaN();
+    double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
+    if (south) phi += 180.0;
+    double rel = phi + 90.0;
+    while (rel > 180.0) rel -= 360.0;
+    while (rel <= -180.0) rel += 360.0;
+    return rel;
+}
+
+void MainWindow::orientToSky() {
+    auto say = [this](const QString& msg) {
+        statusBar()->showMessage(msg, 6000);
+        if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+    };
+    if (!m_image.isValid()) return;
+    double rel = northUpDelta();
+    if (!std::isfinite(rel)) {
+        say(tr("Orient to Sky needs a plate solution (the orientation is read from it)"));
+        return;
+    }
+    const bool mirrored = m_wcs.mirroredOnScreen();
+    if (!mirrored && std::fabs(rel) < 0.01) {
+        say(tr("Already oriented as the sky: north up, east left"));
+        return;
+    }
+    m_undo->beginMacro(tr("orient to sky"));
+    QString did;
+    if (mirrored) {
+        // Either flip restores the parity; they differ by a half turn. A
+        // horizontal flip turns the needed rotation rel into -rel, a
+        // vertical one into 180 - rel: take the one that leaves less to
+        // rotate. A standard FITS (north DOWN here, east left) then needs
+        // the vertical flip alone — exact, no resampling.
+        const bool horiz = std::fabs(rel) <= 90.0;
+        applyTransform(horiz ? Xform::FlipH : Xform::FlipV);
+        did = horiz ? tr("flipped horizontally") : tr("flipped vertically");
+        rel = northUpDelta();
+    }
+    if (std::isfinite(rel) && std::fabs(rel) >= 0.01) {
+        double t = currentRotationAngle() + rel;
+        while (t > 180.0) t -= 360.0;
+        while (t < -180.0) t += 360.0;
+        pushRotateTo(t);
+        did += (did.isEmpty() ? QString() : QStringLiteral(", ")) +
+               tr("rotated %1°").arg(rel, 0, 'f', 2);
+    }
+    m_undo->endMacro();
+    say(tr("Oriented as the sky (north up, east left): %1").arg(did));
 }
 
 // Combine-channels dialog over every MONO image in the list (loading those
