@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr" xml:lang="fr"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.11.9">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -59,18 +59,19 @@ div.csl-indent {
 <link href="./index.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-447e42e69aaa9833c0ba1b986f430b20.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-3686e73f2b10d5e0866cac69e1e072da.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -103,7 +104,7 @@ div.csl-indent {
 <link rel="stylesheet" href="web.css">
 </head>
 
-<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Aller au contenu principal</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -126,6 +127,7 @@ div.csl-indent {
       for (let i=0; i < toggles.length; i++) {
         const toggle = toggles[i];
         if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
           if (alternate) {
             toggle.classList.add("alternate");
           } else {
@@ -155,13 +157,19 @@ div.csl-indent {
       manageTransitions('#quarto-margin-sidebar .nav-link', true);
       // Switch the toggles
       setColorSchemeToggle(alternate)
-      // Hack to workaround the fact that safari doesn't
-      // properly recolor the scrollbar when toggling (#1455)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
       if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
         manageTransitions("body", false);
-        window.scrollTo(0, 1);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
         setTimeout(() => {
-          window.scrollTo(0, 0);
+          window.scrollTo(0, scrollY);
           manageTransitions("body", true);
         }, 40);
       }
@@ -255,6 +263,7 @@ div.csl-indent {
       // Read the current dark / light value
       let toAlternate = !hasAlternateSentinel();
       toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
       setStyleSentinel(toAlternate);
       toggleGiscusIfUsed(toAlternate, darkModeDefault);
       window.dispatchEvent(new Event('resize'));
@@ -269,13 +278,13 @@ div.csl-indent {
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-  <nav class="quarto-secondary-nav">
+  <nav class="quarto-secondary-nav" aria-label="Barre d'outils">
     <div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./MANUAL.html"><span class="chapter-title">NebulaScope — Manuel de l’utilisateur</span></a></li></ol></nav>
-        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Basculer la barre latérale" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        <nav class="quarto-page-breadcrumbs" aria-label="Fil d'Ariane"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./MANUAL.html"><span class="chapter-title">NebulaScope — Manuel de l’utilisateur</span></a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Recherche" onclick="window.quartoOpenSearch();">
         <i class="bi bi-search"></i>
@@ -286,14 +295,14 @@ div.csl-indent {
 <!-- content -->
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site web">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">NebulaScope</a> 
         <div class="sidebar-tools-main tools-wide">
     <a href="./../index.html" title="English edition" class="quarto-navigation-tool px-1" aria-label="English edition"><i class="bi bi-translate"></i></a>
     <a href="https://github.com/hugues-talbot/nebulascope" title="Code source" class="quarto-navigation-tool px-1" aria-label="Code source"><i class="bi bi-github"></i></a>
-  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre"><i class="bi"></i></a>
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Basculer le mode sombre" aria-label="Basculer le mode sombre"><i class="bi"></i></button>
 </div>
     </div>
       </div>
@@ -332,7 +341,7 @@ div.csl-indent {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
     <h2 id="toc-title">Table des matières</h2>
    
   <ul>
@@ -365,7 +374,7 @@ div.csl-indent {
 <div class="toc-actions"><ul><li><a href="https://github.com/hugues-talbot/nebulascope/issues/new" class="toc-action"><i class="bi bi-github"></i>Faire part d'un problème</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content" tabindex="-1">
 
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -540,7 +549,7 @@ div.csl-indent {
 </section>
 <section id="inspection" class="level2">
 <h2 class="anchored" data-anchor-id="inspection">6. Inspection</h2>
-<p>À la souris (dans toute vue) : - <strong>Glisser gauche</strong> — zoom élastique sur la région tracée. - <strong>Molette</strong> — zoom au curseur (<strong>Maj+molette</strong> = pas 5× plus fins). - <strong>Glisser droit / molette / Maj+gauche</strong> — panoramique. - <strong>Clic droit</strong> — menu contextuel (§10). - <strong>Survol</strong> — la barre d’état affiche (x, y), les valeurs brutes par canal, et AD/Déc quand une solution astrométrique existe.</p>
+<p>À la souris (dans toute vue) : - <strong>Glisser gauche</strong> — zoom élastique sur la région tracée. - <strong>Molette</strong> — zoom au curseur (<strong>Maj+molette</strong> = pas 5× plus fins). - <strong>Glisser droit / molette / Maj+gauche</strong> — panoramique. - <strong>Ctrl, Alt ou ⌘ + glisser droit</strong>, ou <strong>Ctrl+glisser gauche</strong> (⌘ sur macOS) — <strong>contraste et biais, comme dans SAOImage DS9</strong> : la position horizontale du pointeur règle le biais, sa position verticale le contraste (faible en haut, l’échelle 0–10 de DS9 vers le bas), et la position <em>est</em> le réglage, comme dans DS9 — le milieu de la largeur est le biais neutre, un dixième de la hauteur le contraste neutre. Ce n’est pas un mécanisme à part : la loi de DS9, (x − biais) × contraste + ½, est exactement ce que calculent les ajustements <strong>Luminosité</strong> et <strong>Contraste</strong> (§4) ; le geste pilote donc ces deux curseurs — on les voit bouger, le résultat vaut dans tous les modes d’étirement, s’annule comme tout geste d’étirement, s’enregistre dans le fichier annexe et se réinitialise avec les ajustements. La barre d’état affiche les valeurs sur l’échelle de DS9. Pendant le geste, seule la <strong>région visible</strong> est recalculée, à peu près à la résolution de l’écran : l’image suit le pointeur même sur un master de 60 mégapixels ; l’image entière est rendue une seule fois, au relâchement. Pour les habitués de DS9, <strong>Préférences ▸ Souris</strong> place le même contrôle sur le <strong>simple glisser droit</strong>, sans touche (le panoramique reste alors sur le bouton du milieu et Maj+glisser gauche ; un clic droit ouvre toujours le menu). Script : <code>contrastbias &lt;contraste&gt; &lt;biais&gt;</code>. - <strong>Clic droit</strong> — menu contextuel (§10). - <strong>Survol</strong> — la barre d’état affiche (x, y), les valeurs brutes par canal, et AD/Déc quand une solution astrométrique existe.</p>
 <p>Commandes de zoom : <strong>Ajuster à la vue</strong> (<strong>F</strong>), <strong>Ajuster à la largeur</strong> (<strong>W</strong> — remplit la largeur de la vue ; une image en portrait remplit l’écran et se fait défiler verticalement, votre position verticale étant conservée) et <strong>1:1</strong> (touche <strong>1</strong>) dans le menu Affichage et la barre d’outils — et le zoom clavier pour travailler sans souris : <strong>&gt;</strong> / <strong>&lt;</strong> par pas de 10 %, <strong>.</strong> / <strong>,</strong> par pas de 3 % (les deux pourcentages sont réglables dans les Préférences), centrés sur la vue. Quand la vue image a le focus, les <strong>flèches font un panoramique</strong> ; quand la liste d’images a le focus, ↑/↓ parcourent la liste (le blink lui-même reste sur <strong>Espace</strong>/<strong>Maj+Espace</strong>).</p>
 <p>Le <strong>panneau Infos</strong> (<strong>F4</strong>) montre les dimensions, le format des pixels, min / max / médiane / MAD par canal, la structure des HDU FITS, et l’en-tête complet (cartes FITS ou propriétés XISF) dans un tableau filtrable et copiable.</p>
 </section>
@@ -557,7 +566,7 @@ div.csl-indent {
 </section>
 <section id="géométrie-rotation-et-miroir" class="level2">
 <h2 class="anchored" data-anchor-id="géométrie-rotation-et-miroir">8. Géométrie : rotation et miroir</h2>
-<p>Menu Image / barre d’outils : - <strong>Rotation 90° horaire / antihoraire</strong> ( <code>]</code> / <code>[</code> ) et <strong>Miroir horizontal / vertical</strong> (⌘H / ⌘J) — sans perte, exacts. - <strong>Rotation d’un angle…</strong> (⌘R) — la boîte de rotation : un <strong>cadran d’angle</strong> manipulable (Maj = fin, molette = ±1°, double-clic = 0°), un champ de précision, et un aperçu en direct. <strong>Appliquer</strong> tourne sans fermer (pour tâtonner). L’angle est <em>absolu</em> : toute nouvelle rotation rééchantillonne <strong>une seule fois</strong> depuis les données d’origine — essayer de nombreux angles ne dégrade jamais l’image. Rééchantillonnage bilinéaire ; les coins découverts deviennent vides (NaN). - <strong>⬆ Nord en haut</strong> (dans la boîte, si l’image est résolue) — un clic règle l’angle qui met le nord céleste en haut / la ligne de Déc centrale à l’horizontale.</p>
+<p>Menu Image / barre d’outils : - <strong>Rotation 90° horaire / antihoraire</strong> ( <code>]</code> / <code>[</code> ) et <strong>Miroir horizontal / vertical</strong> (⌘H / ⌘J) — sans perte, exacts. - <strong>Rotation d’un angle…</strong> (⌘R) — la boîte de rotation : un <strong>cadran d’angle</strong> manipulable (Maj = fin, molette = ±1°, double-clic = 0°), un champ de précision, et un aperçu en direct. <strong>Appliquer</strong> tourne sans fermer (pour tâtonner). L’angle est <em>absolu</em> : toute nouvelle rotation rééchantillonne <strong>une seule fois</strong> depuis les données d’origine — essayer de nombreux angles ne dégrade jamais l’image. Rééchantillonnage bilinéaire ; les coins découverts deviennent vides (NaN). - <strong>⬆ Nord en haut</strong> (dans la boîte, si l’image est résolue) — un clic règle l’angle qui met le nord céleste en haut / la ligne de Déc centrale à l’horizontale. - <strong>Orienter comme le ciel (nord en haut, est à gauche)</strong> — menu Image, et bouton <strong>⬆ Nord en haut, est à gauche</strong> de la boîte. Une rotation ne peut pas défaire un miroir : Nord en haut seul peut laisser l’est à droite. La solution astrométrique connaît la parité : sur le ciel, l’est se trouve dans le sens antihoraire à partir du nord, et le signe du déterminant de la solution dit si l’image est dessinée ainsi. Cette action retourne d’abord l’image quand elle est affichée en miroir — en choisissant le retournement qui laisse la plus petite rotation — puis met le nord en haut ; une seule étape d’annulation. NebulaScope dessine la première ligne d’un fichier en <strong>haut</strong>, la convention de PixInsight et de la plupart des logiciels d’acquisition ; le standard FITS (et DS9) la placent en bas : une image FITS professionnelle standard apparaît donc ici tête en bas, et par conséquent en miroir — pour une telle image l’action se réduit à un seul retournement vertical, sans perte. La ligne « solution astrométrique » du panneau Info indique <em>shown mirrored</em> quand c’est le cas. L’action porte sur <strong>toute la liste</strong>, à la manière d’une préférence : l’image affichée est orientée aussitôt (et c’est ce qu’Annuler annule) ; chaque autre image de la liste est orientée de même — chacune d’après sa <em>propre</em> solution astrométrique, nord exactement en haut — lorsqu’elle est affichée, et aussitôt si elle est visible dans une autre cellule. Les images sans solution astrométrique sont laissées telles quelles, et <strong>Réinitialiser l’orientation</strong> ramène chaque image au fichier.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../screenshots/rotate-dialog.png" class="img-fluid figure-img"></p>
@@ -577,13 +586,14 @@ div.csl-indent {
 </figure>
 </div>
 <ul>
-<li><strong>Dessiner</strong> — outils de la barre : ellipse (glisser), segment (glisser ; l’étiquette se place au-delà du point de départ, sans jamais croiser le segment), texte (clic).</li>
+<li><strong>Dessiner</strong> — outils de la barre : ellipse (glisser depuis le centre), boîte (glisser d’un coin à l’autre ; ses deux poignées la redimensionnent ensuite, et la première la fait aussi tourner, exactement comme pour une ellipse), segment (glisser ; l’étiquette se place au-delà du point de départ, sans jamais croiser le segment), texte (clic).</li>
 <li><strong>Éditer</strong> — clic pour sélectionner (poignées : redimensionnement d’axe/extrémité, glisser le corps pour déplacer), <strong>double-clic</strong> pour éditer texte et couleur, <strong>Suppr</strong> pour retirer, <strong>⌘⇧C / ⌘⇧V</strong> copier / coller-au-curseur, <strong>annuler/rétablir</strong> complet.</li>
 <li><strong>Enregistrer les annotations et l’affichage</strong> (menu Fichier, ou menu contextuel de l’image) est toujours disponible : outre les formes et l’historique de rotation/miroir, le fichier annexe capture l’<strong>état d’affichage entier</strong> — fonction de transfert, fenêtrage noir/milieu/blanc par canal, paramètres GHS, palette et ajustements — « garder cette apparence » tient donc en un enregistrement. C’est ainsi qu’un <strong>transport de couleurs non destructif</strong> (§11) devient permanent : l’ajustement vit dans le fenêtrage <em>et</em> dans les ajustements, et les deux reviennent à l’ouverture suivante, en priorité sur les règles d’étirement automatique.</li>
 <li><strong>Afficher/masquer</strong> — touche <strong>A</strong> (la grille est séparée). Charger ou importer des annotations les rend toujours visibles.</li>
 <li><strong>Inverser le contraste</strong> — menu clic droit, pour les champs brillants.</li>
 <li><strong>Persistance</strong> — fichiers annexes JSON (<code>&lt;image&gt;_annotation.json</code>), chargés automatiquement à l’ouverture (réglable dans les Préférences). <em>Enregistrer</em> écrase sans demander ; <em>Enregistrer sous…</em> demande. Les annexes portent aussi l’<strong>orientation</strong> de l’image et l’<strong>état d’affichage</strong> complet (clé <code>display</code> : étirement, fenêtrage, GHS, palette, ajustements — §4) ; l’enregistrement fonctionne sans aucune forme. Les annotations non sauvegardées avertissent à la fermeture. (Les annexes antérieures à la v0.95 ne portaient que les ajustements ; ré-enregistrez une fois pour capturer aussi l’étirement.) Le bloc <code>display</code> est un <strong>format ouvert et documenté</strong> : chaque champ correspond à une équation, et un moteur de rendu de référence autonome (<code>tools/render_sidecar.py</code>) reproduit le rendu de NebulaScope à partir de lui — voir le chapitre Transport de couleurs, §6.</li>
 <li><strong>Import SExtractor</strong> — Outils ▸ Importer un catalogue SExtractor… lit les catalogues ASCII (requiert <code>X_IMAGE</code>/<code>Y_IMAGE</code> ; utilise les ellipses <code>A/B/THETA_IMAGE</code> si présentes), avec facteur d’échelle des ellipses, filtrage par <code>FLAGS</code>, coloration par <code>CLASS_STAR</code>, et étiquettes <code>NUMBER</code>/<code>MAG_AUTO</code>. Les détections se projettent correctement sur les vues tournées.</li>
+<li><strong>Import de régions DS9</strong> — Outils ▸ Importer des régions DS9… lit les fichiers <code>.reg</code> de SAOImage DS9 sur l’image affichée (un <code>.reg</code> déposé sur la fenêtre, ou donné en ligne de commande avec son image, fait de même). Cercles, ellipses et anneaux deviennent des annotations ellipse ; les boîtes deviennent des annotations boîte, rotation comprise ; polygones et segments deviennent leur contour exact en segments de droite ; lignes, vecteurs, règles et projections deviennent des lignes ; les points un petit cercle ; le texte une annotation texte. <code>color</code>, <code>text={…}</code> et la taille de police sont conservés. Les coordonnées peuvent être en pixels <code>image</code>/<code>physical</code> ou en <code>fk5</code>, <code>icrs</code>, <code>j2000</code>, <code>galactic</code> via la solution astrométrique, en degrés, en sexagésimal ou sous la forme <code>12h34m56s</code>, avec des tailles en <code>"</code>, <code>'</code>, <code>d</code>, <code>r</code>, <code>p</code>, <code>i</code> (sans unité : degrés sur le ciel, pixels dans l’image — la règle de DS9). Une région donnée sur le ciel est construite <em>sur le ciel</em> — son angle va de l’ouest vers le nord, comme DS9 le définit — et chaque sommet passe par la solution astrométrique : elle tombe juste sur les images tournées comme sur les images en miroir ; les régions en pixels suivent l’image à travers les rotations de la session. Rien n’est écarté en silence : la barre d’état compte ce qui a été ignoré et pourquoi — régions célestes sur une image non résolue, formes (<code>panda</code>, <code>epanda</code>, <code>bpanda</code>, <code>compass</code>, <code>composite</code>) ou systèmes (<code>fk4</code>, <code>ecliptic</code>) non pris en charge, lignes illisibles. Une seule étape d’annulation. Script : <code>importreg &lt;chemin&gt;</code>.</li>
 </ul>
 </section>
 <section id="astrométrie" class="level2">
@@ -598,7 +608,7 @@ div.csl-indent {
 <ul>
 <li>Lecture au survol : AD/Déc du pixel sous le curseur.</li>
 <li><strong>Grille AD/Déc</strong> (<strong>Maj+G</strong>) avec libellés de coordonnées alignés sur les axes (densité réglée dans les Préférences).</li>
-<li><strong>Menu clic droit</strong>, groupé lecture / annotations / consultation / zoom : copier AD/Déc, copier la valeur du pixel, annoter ici, coller l’annotation, <strong>Consulter dans Aladin</strong> (ouvre Aladin Lite cadré à ~10× l’annotation cliquée), <strong>Identifier dans SIMBAD</strong> (recherche par cône à l’échelle de l’annotation), et <strong>Pointer Stellarium ici</strong> — pilote un Stellarium en cours d’exécution (son greffon <em>Remote Control</em> activé, port 8090 par défaut) vers la position céleste cliquée avec un champ correspondant : là où Aladin répond <em>qu’est-ce que c’est</em>, Stellarium répond <em>où est-ce dans le ciel de ce soir depuis mon site</em>.</li>
+<li><strong>Menu clic droit</strong>, groupé lecture / annotations / consultation / zoom : copier AD/Déc, copier la valeur du pixel, annoter ici, coller l’annotation, <strong>Consulter dans Aladin</strong> (ouvre Aladin Lite cadré à ~10× l’annotation cliquée), <strong>Identifier dans SIMBAD</strong> (recherche par cône à l’échelle de l’annotation. La première consultation d’une session vérifie que le serveur de Strasbourg répond ; sinon ses miroirs officiels — CfA Harvard et IDIA — sont interrogés ensemble, le premier à répondre est utilisé, et la barre d’état le signale. Ce choix est conservé jusqu’à la fermeture, sans autre vérification), et <strong>Pointer Stellarium ici</strong> — pilote un Stellarium en cours d’exécution (son greffon <em>Remote Control</em> activé, port 8090 par défaut) vers la position céleste cliquée avec un champ correspondant : là où Aladin répond <em>qu’est-ce que c’est</em>, Stellarium répond <em>où est-ce dans le ciel de ce soir depuis mon site</em>.</li>
 </ul>
 </section>
 <section id="combiner-des-images" class="level2">
@@ -727,6 +737,12 @@ div.csl-indent {
       --split &lt;LxC&gt;      Divise la vue (max 5x5).
       --shared-stf       Étire la première image et partage cet étirement.
       --lang &lt;code&gt;      Force la langue de l'interface (en, fr, system).
+      --orient &lt;mode&gt;    Orientation des FITS résolus à l'ouverture, pour cette
+                         exécution : stored (tel que stocké), sky (retournement
+                         et quarts de tour seulement) ou sky-exact (nord
+                         exactement en haut, rééchantillonné).
+      --mouse &lt;mode&gt;     Glisser au bouton droit pour cette exécution : default
+                         (panoramique) ou ds9 (contraste/biais).
       --run &lt;script&gt;     Exécute un script de commandes (tests/batch).
       --run list         Liste toutes les commandes de script.
   -h, --help [commande]  Aide — générale, ou détaillée pour une commande.</code></pre>
@@ -754,7 +770,7 @@ div.csl-indent {
 <li><strong>Tab</strong> — mode image seule (tous les panneaux masqués ; Échap sort). Le <strong>plein écran</strong> a son propre raccourci ; <strong>⌥F</strong> est le bouton vert au clavier : plein écran natif aller-retour sous macOS (barre de menus masquée, Espace dédié ; sous Linux/Windows, agrandit/restaure). <strong>H</strong> masque les barres de défilement <strong>et tout l’habillage des vues</strong> — bordure de cellule active et boutons de liaison — pour un canevas entièrement épuré (les panoramiques fonctionnent toujours), p.&nbsp;ex. pour prévisualiser un fond d’écran en plein écran.</li>
 <li><strong>Préférences…</strong> (menu de l’application sur macOS) :
 <ul>
-<li><strong>Général</strong> — langue de l’interface (système / English / Français) ; couleur, taille de texte et épaisseur de trait par défaut des annotations ; densité de la grille AD/Déc ; chargement automatique des fichiers annexes ; opacité des panneaux en surimpression ; tailles des listes de fichiers récents ; taille du <strong>cache d’images</strong> — les images décodées gardées en mémoire (4096 Mo par défaut) pour que revenir à une image récemment vue soit instantané. Le système d’exploitation ne met en cache que les <em>octets</em> du fichier ; la partie lente d’un grand master est le décodage (décompression, promotion en flottant, dématriçage, statistiques), et c’est cela que ce cache conserve. Les entrées les moins récemment vues sont évincées d’abord ; un fichier modifié de l’extérieur n’est jamais servi périmé (le cache vérifie l’horodatage à chaque accès, et le rechargement automatique évince aussitôt). 0 le désactive. Pendant que vous regardez une image, ses <strong>voisines dans la liste se préchargent</strong> en arrière-plan — le blink est instantané dès le premier passage sur un lot. Un décodage qui doit bel et bien s’exécuter pour un clic dans la liste, un blink ou une ouverture a lieu <strong>hors du fil de l’interface</strong> : la fenêtre reste vivante sur l’image précédente, la barre d’état nomme aussitôt le fichier en cours de décodage, et un indicateur d’activité s’y ajoute si le décodage dépasse quatre secondes. Si vous passez entre-temps à une autre ligne, c’est le dernier choix qui s’affiche ; chaque décodage achevé entre tout de même dans le cache.</li>
+<li><strong>Général</strong> — langue de l’interface (système / English / Français) ; couleur, taille de texte et épaisseur de trait par défaut des annotations ; densité de la grille AD/Déc ; chargement automatique des fichiers annexes ; opacité des panneaux en surimpression ; tailles des listes de fichiers récents ; taille du <strong>cache d’images</strong> — les images décodées gardées en mémoire (4096 Mo par défaut) pour que revenir à une image récemment vue soit instantané. Le système d’exploitation ne met en cache que les <em>octets</em> du fichier ; la partie lente d’un grand master est le décodage (décompression, promotion en flottant, dématriçage, statistiques), et c’est cela que ce cache conserve. Les entrées les moins récemment vues sont évincées d’abord ; un fichier modifié de l’extérieur n’est jamais servi périmé (le cache vérifie l’horodatage à chaque accès, et le rechargement automatique évince aussitôt). 0 le désactive. Pendant que vous regardez une image, ses <strong>voisines dans la liste se préchargent</strong> en arrière-plan — le blink est instantané dès le premier passage sur un lot. Un décodage qui doit bel et bien s’exécuter pour un clic dans la liste, un blink ou une ouverture a lieu <strong>hors du fil de l’interface</strong> : la fenêtre reste vivante sur l’image précédente, la barre d’état nomme aussitôt le fichier en cours de décodage, et un indicateur d’activité s’y ajoute si le décodage dépasse quatre secondes. Si vous passez entre-temps à une autre ligne, c’est le dernier choix qui s’affiche ; chaque décodage achevé entre tout de même dans le cache. <strong>Souris</strong> — le glisser au bouton droit règle contraste et biais comme dans SAOImage DS9 (désactivé par défaut : le glisser droit déplace l’image ; voir §6). <strong>Orientation à l’ouverture</strong> — <em>telle que stockée dans le fichier</em> (défaut), ou <em>comme le ciel</em> : un fichier FITS porteur d’une solution astrométrique est alors orienté à l’ouverture, est à gauche du nord et nord en haut, exactement comme le ferait <strong>Orienter comme le ciel</strong>. Le premier choix « comme le ciel » n’emploie qu’un retournement et des quarts de tour — chaque pixel garde sa valeur, le nord finit à moins de 45° du haut, et une image standard non tournée apparaît exactement comme dans DS9 ; le second retire aussi l’angle restant par rotation, ce qui rééchantillonne. L’orientation est enregistrée comme une orientation appliquée à la main : annotations, fichiers annexes et régions DS9 la suivent, et <strong>Réinitialiser l’orientation</strong> montre le fichier tel que stocké. Elle s’applique aux fichiers ouverts après le changement, aux FITS seulement (les XISF viennent de PixInsight déjà dans la parité du ciel), et jamais à un fichier sans solution astrométrique. Ce réglage et celui de la souris peuvent être fixés pour une seule exécution depuis la ligne de commande (<code>--orient</code>, <code>--mouse</code>), sans toucher à la préférence enregistrée.</li>
 <li><strong>Raccourcis</strong> — le raccourci de chaque action, éditable ; stocké dans <code>shortcuts.ini</code> (valeur vide = désactivé ; les conflits obsolètes sont rétablis). Chaque entrée enregistre le réglage par défaut avec lequel elle a été écrite (<code>nom.default</code>) : quand une version change une touche par défaut, les raccourcis que vous n’avez jamais modifiés suivent le nouveau défaut, tandis que vos personnalisations sont conservées.</li>
 </ul></li>
 <li><strong>À propos</strong> — la version et le copyright viennent de <code>src/app/AppInfo.h</code> (maintenu à la main), suivis de l’<strong>identifiant de compilation</strong> exact (<code>git describe</code>, p.&nbsp;ex. <code>v0.92-3-ga6a8118</code>, <code>-dirty</code> si compilé avec des changements non commités) — un binaire de test dit ainsi toujours de quel commit il provient. Aussi en ligne de commande : <code>--version</code>.</li>
@@ -841,15 +857,50 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-      const a = window.document.createElement('a');
-      a.classList.add('top-right');
-      a.classList.add('quarto-color-scheme-toggle');
-      a.href = "";
-      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Basculer le mode sombre");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
       const i = window.document.createElement("i");
       i.classList.add('bi');
-      a.appendChild(i);
-      window.document.body.appendChild(a);
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Basculer le mode sombre");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
     }
     setColorSchemeToggle(hasAlternateSentinel())
     const icon = "";
@@ -928,7 +979,8 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -937,8 +989,69 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -952,6 +1065,7 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -1114,44 +1228,54 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -1250,7 +1374,10 @@ Zackay, Barak, et Eran O. Ofek. 2017b. <span>«&nbsp;How to <span>COAAD</span> I
     }
   });
   </script>
-<nav class="page-navigation">
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Code défilable","output":"Sortie défilable"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
   <div class="nav-page nav-page-previous">
       <a href="./index.html" class="pagination-link" aria-label="Préface">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Préface</span>
