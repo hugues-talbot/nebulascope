@@ -450,6 +450,30 @@ NS_TEST(fit_color_matrix_recovers_mixer) {
              std::fabs(b - 0.60) < 1e-5);
 }
 
+NS_TEST(adjust_ds9_contrast_bias_is_exact) {
+    // DS9's colormap control: y = clamp((x - bias) * contrast + 0.5). The
+    // Brightness/Contrast adjustments reproduce it exactly, and round-trip.
+    for (double c : { 0.25, 1.0, 2.5, 7.0, 10.0 })
+        for (double b : { 0.0, 0.2, 0.5, 0.73, 1.0 }) {
+            AdjustParams a;
+            setDs9ContrastBias(a, c, b);
+            NS_CHECK(a.brightness >= -1.0 && a.brightness <= 1.0);
+            NS_CHECK(a.contrast >= -1.0 && a.contrast <= 1.0);
+            for (double x = 0.0; x <= 1.0; x += 0.0625) {
+                const double want = std::min(1.0, std::max(0.0, (x - b) * c + 0.5));
+                NS_CHECK_NEAR(applyTone(float(x), a), want, 2e-6);
+            }
+            double c2 = 0, b2 = 0;
+            getDs9ContrastBias(a, c2, b2);
+            NS_CHECK_NEAR(c2, c, 1e-9);
+            NS_CHECK_NEAR(b2, b, 1e-12);
+        }
+    AdjustParams n;
+    setDs9ContrastBias(n, 1.0, 0.5);          // DS9's neutral = our identity
+    NS_CHECK_NEAR(n.brightness, 0.0, 1e-12);
+    NS_CHECK_NEAR(n.contrast, 0.0, 1e-12);
+}
+
 int main() { return nstest::runAll(); }
 
 // DisplayFunction import regime: a PI STF whose white point sits ~80x beyond

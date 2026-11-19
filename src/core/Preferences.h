@@ -31,6 +31,8 @@ struct Preferences {
     int    zoomStepFine    = 3;                // keyboard zoom . / , step, percent
     bool   commonAxis      = true;             // histogram: RGB channels on one pooled axis
     int    imageCacheMB    = 4096;             // decoded-image cache budget (0 = off)
+    bool   ds9RightDrag    = false;            // right-button drag adjusts contrast/bias
+                                               // as in SAOImage DS9 (default: it pans)
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

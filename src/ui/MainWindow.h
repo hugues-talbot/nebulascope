@@ -139,6 +139,13 @@ private slots:
     bool runColorTransport(const QString& refKey, int strengthPct,
                            QString* errOut = nullptr, bool asStretch = false,
                            bool fitColourAdj = false);
+    void importDs9Regions();              // Tools ▸ Import DS9 Regions… (dialog)
+    // The import itself (menu, script, a dropped/opened .reg): shapes of the
+    // region file become annotations of the shown image, one undo step.
+    bool importDs9RegionsFile(const QString& path, QString* errOut = nullptr);
+    // DS9's contrast/bias control (contrast 0..10, bias 0..1), carried by
+    // the Brightness and Contrast adjustments — an exact correspondence.
+    void applyDs9ContrastBias(double contrast, double bias);
     void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:
@@ -275,6 +282,7 @@ private:
     void displayPathAsync(const QString& path);
     void startDisplayDecode(const QString& path);
     void showDecodeBar(bool on);
+    QStringList    m_pendingRegFiles;      // .reg opened WITH an image: applied once it shows
     QString        m_displayWanted;        // asked for, not yet shown
     QString        m_displayInFlight;      // decode running for the display
     QFutureWatcher<PrefetchResult>* m_displayWatcher = nullptr;

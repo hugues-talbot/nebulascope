@@ -327,11 +327,23 @@ void ImageView::mousePressEvent(QMouseEvent* e) {
             }
         }
         emit annotationPressed(mapToScene(e->pos()), false);   // empty sky → clears handles
+        if (e->modifiers() & Qt::ControlModifier) {            // Ctrl/Cmd + drag: contrast/bias
+            m_cbDrag = true; m_cbMoved = false;
+            m_cbButton = Qt::LeftButton;
+            m_cbStart = e->pos();
+            return;
+        }
         m_press = e->pos();
         m_banding = true;
         if (!m_band) m_band = new QRubberBand(QRubberBand::Rectangle, this);
         m_band->setGeometry(QRect(m_press, QSize()));
         m_band->show();
+        return;
+    }
+    if (e->button() == Qt::RightButton && m_rightAdjusts) {   // DS9 mouse: contrast/bias
+        m_cbDrag = true; m_cbMoved = false;
+        m_cbButton = Qt::RightButton;
+        m_cbStart = e->pos();
         return;
     }
     if (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton) {  // pan
@@ -358,7 +370,26 @@ void ImageView::mouseDoubleClickEvent(QMouseEvent* e) {
     QGraphicsView::mouseDoubleClickEvent(e);
 }
 
+void ImageView::requestContextMenuAt(const QPoint& pos, const QPoint& globalPos) {
+    const QPointF sp = mapToScene(pos);
+    const int x = int(std::floor(sp.x()));
+    const int y = int(std::floor(sp.y()));
+    const bool onImage = m_src && x >= 0 && y >= 0 &&
+                         x < m_src->width() && y < m_src->height();
+    emit contextMenuRequested(globalPos, x, y, onImage);
+}
+
 void ImageView::mouseMoveEvent(QMouseEvent* e) {
+    if (m_cbDrag) {
+        // A press that never really moves stays a click (the context menu on
+        // the right button): nothing changes until the drag is unmistakable.
+        if (!m_cbMoved && (e->pos() - m_cbStart).manhattanLength() < 4) return;
+        m_cbMoved = true;
+        const QSize vs = viewport()->size();
+        emit contrastBiasDragged(double(e->pos().x()) / std::max(1, vs.width()),
+                                 double(e->pos().y()) / std::max(1, vs.height()));
+        return;
+    }
     if (m_itemDrag) {
         QGraphicsView::mouseMoveEvent(e);         // base moves the item
         // Handles follow a body drag — but a HANDLE drag must not be synced,
@@ -440,19 +471,19 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
         emit drawToolFinished();
         return;
     }
+    if (m_cbDrag && e->button() == m_cbButton) {
+        m_cbDrag = false;
+        if (!m_cbMoved && e->button() == Qt::RightButton)       // a click after all
+            requestContextMenuAt(e->pos(), e->globalPosition().toPoint());
+        return;
+    }
     if (m_panning && (e->button() == Qt::RightButton || e->button() == Qt::MiddleButton)) {
         m_panning = false;
         unsetCursor();
         // A right-click that never really moved is a context-menu request, not a pan.
         if (e->button() == Qt::RightButton &&
-            (e->pos() - m_panStart).manhattanLength() < 4) {
-            const QPointF sp = mapToScene(e->pos());
-            const int x = int(std::floor(sp.x()));
-            const int y = int(std::floor(sp.y()));
-            const bool onImage = m_src && x >= 0 && y >= 0 &&
-                                 x < m_src->width() && y < m_src->height();
-            emit contextMenuRequested(e->globalPosition().toPoint(), x, y, onImage);
-        }
+            (e->pos() - m_panStart).manhattanLength() < 4)
+            requestContextMenuAt(e->pos(), e->globalPosition().toPoint());
         return;
     }
     // End a Shift-pan: hand the release to the base class while still in

@@ -144,6 +144,29 @@ assert adjust hue -0.99995914 1e-6
 assert adjust saturation 0.11033605 1e-6
 assert adjust temperature -0.0738426 1e-6
 assert adjust gamma 1.3 1e-6
+# DS9 contrast/bias (DS9's argument order): carried exactly by Brightness and
+# Contrast — brightness = 1 - 2 bias, contrast = (4/pi) atan(C) - 1.
+contrastbias 2.5 0.3
+assert adjust brightness 0.4 1e-9
+assert adjust contrast 0.51552423 1e-6
+contrastbias 1 0.5
+assert adjust brightness 0 1e-9
+assert adjust contrast 0 1e-9
+# The mouse itself. A default right-drag pans and must leave the display
+# alone; Ctrl/Cmd + left-drag and the DS9-mouse right-drag read bias off the
+# end point's x and contrast (0..10) off its y: at (0.25, 0.1) that is bias
+# 0.25 -> brightness 0.5, contrast 1 -> 0 (pixel rounding sets the tolerance).
+viewdrag right 0.5 0.5 0.25 0.1
+assert adjust brightness 0 1e-9
+assert adjust contrast 0 1e-9
+viewdrag ctrl 0.5 0.5 0.25 0.1
+assert adjust brightness 0.5 0.02
+assert adjust contrast 0 0.03
+contrastbias 1 0.5
+viewdrag ds9 0.5 0.5 0.75 0.1
+assert adjust brightness -0.5 0.02
+assert adjust contrast 0 0.03
+contrastbias 1 0.5
 
 # DisplayFunction import matrix (synthetic fixtures; expected values from
 # tests/testdata/make_df_fixtures.py — same closed-form Mobius rebase).
@@ -303,6 +326,13 @@ activate 2
 open tests/testdata/wcs_narrow.fits      # into cell 2 (active)
 waitloaded
 activate 1
+# DS9 regions onto the solved frame: 2 pixel regions (a circle; a box = 4
+# segments) + 4 sky regions through the plate solution = 9 annotations;
+# the panda is reported unsupported, not dropped silently. One undo step.
+importreg tests/testdata/regions.reg
+assert annotations 9
+action undo
+assert annotations 0
 action register_views
 sleep 200
 assert wcsmatch 2 64 64 0.02

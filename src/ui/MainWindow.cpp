@@ -17,6 +17,7 @@
 #include "app/MacSavePanel.h"
 #endif
 #include "io/ImageWriter.h"
+#include "core/Ds9Regions.h"
 #include "core/Debayer.h"
 #include "core/ImageStats.h"
 #include "core/ColorTransport.h"
@@ -129,7 +130,8 @@ protected:
 
 static bool looksLikeImage(const QString& path) {
     static const QStringList exts = {
-        "fits","fit","fts","fz","xisf","jpg","jpeg","png","tif","tiff","txt" };
+        "fits","fit","fts","fz","xisf","jpg","jpeg","png","tif","tiff","txt",
+        "reg" };                           // DS9 regions: imported onto the shown image
     return exts.contains(QFileInfo(path).suffix().toLower());
 }
 
@@ -912,6 +914,11 @@ void MainWindow::connectViewSignals(ImageView* v) {
         if (v == m_view) onPixelHovered(x, y, r, g, b, valid);
     });
     connect(v, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
+    v->setRightDragAdjusts(Preferences::get().ds9RightDrag);
+    connect(v, &ImageView::contrastBiasDragged, this, [this, v](double fx, double fy) {
+        // DS9: bias off the horizontal position, contrast (0..10) off the vertical.
+        if (v == m_view && m_image.isValid()) applyDs9ContrastBias(10.0 * fy, fx);
+    });
     // A list row dropped on this view: activate its cell, then show the row
     // there (same path as click-to-activate + click-the-row).
     connect(v, &ImageView::listKeyDropped, this, [this, v](const QString& key) {
@@ -1408,6 +1415,7 @@ void MainWindow::buildMenusAndToolbar() {
     acts["deconvolve"] = tools->addAction(tr("&Deconvolve to Target PSF…"), this, &MainWindow::deconvolveAction);
     acts["remove_stars"] = tools->addAction(tr("&Remove Stars (Analytic)…"), this, &MainWindow::removeStarsAction);
     acts["import_sextractor"] = tools->addAction(tr("Import &SExtractor Catalog…"), this, &MainWindow::importSexCatalog);
+    acts["import_ds9_regions"] = tools->addAction(tr("Import DS&9 Regions…"), this, &MainWindow::importDs9Regions);
 
     // Help — the About action carries AboutRole, so on macOS Qt moves it into
     // the application menu (“NebulaScope ▸ About NebulaScope”) automatically.
@@ -1420,6 +1428,8 @@ void MainWindow::buildMenusAndToolbar() {
             m_annColor = Preferences::get().annColor;   // new-annotation default
             refreshAnnotations();                       // grid density, stroke width
             m_imgCache.setBudgetBytes(qint64(Preferences::get().imageCacheMB) * 1024 * 1024);
+            for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
+                c->view()->setRightDragAdjusts(Preferences::get().ds9RightDrag);
             const int newDebayer = Preferences::get().debayerMethod;
             if (newDebayer != oldDebayer) {
                 // Route through the undo stack: rewind the pref the dialog
@@ -1594,11 +1604,25 @@ void MainWindow::openFile() {
 }
 
 void MainWindow::openPaths(const QStringList& paths) {
-    addPaths(paths);
+    // DS9 region files ride along with images (command line, drop, Open
+    // With): they are imported onto the image, not listed.
+    QStringList imgs, regs;
+    for (const QString& p : paths)
+        (p.endsWith(QLatin1String(".reg"), Qt::CaseInsensitive) ? regs : imgs) << p;
+    addPaths(imgs);
     // Visible confirmation even when the window is buried — Finder "Open
     // With" reports of silent no-ops are otherwise undiagnosable.
-    if (!paths.isEmpty())
-        statusBar()->showMessage(tr("Opened %n file(s)", nullptr, int(paths.size())), 4000);
+    if (!imgs.isEmpty())
+        statusBar()->showMessage(tr("Opened %n file(s)", nullptr, int(imgs.size())), 4000);
+    if (regs.isEmpty()) return;
+    if (imgs.isEmpty() && m_image.isValid() && m_displayWanted.isEmpty()) {
+        for (const QString& r : regs) {
+            QString err;
+            if (!importDs9RegionsFile(r, &err)) statusBar()->showMessage(err, 8000);
+        }
+    } else {
+        m_pendingRegFiles << regs;          // applied when the image they came with shows
+    }
 }
 
 // ---- multi-HDU list keys ----------------------------------------------------
@@ -3647,6 +3671,14 @@ void MainWindow::displayPath(const QString& path) {
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count())
         .arg(debayerNote), 4000);
 
+    if (!m_pendingRegFiles.isEmpty()) {     // region files opened together with this image
+        const QStringList regs = m_pendingRegFiles;
+        m_pendingRegFiles.clear();
+        for (const QString& r : regs) {
+            QString err;
+            if (!importDs9RegionsFile(r, &err)) statusBar()->showMessage(err, 8000);
+        }
+    }
     schedulePrefetch();
 }
 
@@ -5919,6 +5951,91 @@ void MainWindow::keyPressEvent(QKeyEvent* e) {
 
 // Tools ▸ Import SExtractor Catalog… — one ellipse annotation per detection.
 // Needs X_IMAGE/Y_IMAGE; uses A/B/THETA_IMAGE for the shape when present.
+// ---- SAOImage DS9 interoperability -------------------------------------------
+
+void MainWindow::importDs9Regions() {
+    if (!m_image.isValid()) return;
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Import DS9 regions"), openDialogDir(),
+        tr("DS9 region files (*.reg);;All files (*)"));
+    if (path.isEmpty()) return;
+    QString err;
+    if (!importDs9RegionsFile(path, &err))
+        QMessageBox::warning(this, tr("Import failed"), err);
+}
+
+bool MainWindow::importDs9RegionsFile(const QString& path, QString* errOut) {
+    auto fail = [&](const QString& msg) {
+        if (errOut) *errOut = msg;
+        if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+        return false;
+    };
+    if (!m_image.isValid()) return fail(tr("No image shown to import the regions onto"));
+    Ds9ImportStats st;
+    QString err;
+    // `point` regions carry no size: a small circle that scales with the frame.
+    const double pointR = std::max(3.0, m_image.width() / 300.0);
+    const std::vector<Ds9Shape> shapes =
+        loadDs9Regions(path, m_wcs.valid() ? &m_wcs : nullptr, pointR, &st, &err);
+    if (!err.isEmpty()) return fail(tr("Cannot read %1: %2").arg(QFileInfo(path).fileName(), err));
+    // What was left out, and why — never silently.
+    QStringList notes;
+    if (st.needWcs > 0)
+        notes << tr("%n in sky coordinates skipped (no plate solution)", nullptr, st.needWcs);
+    if (st.unsupported > 0)
+        notes << tr("%n unsupported (%1)", nullptr, st.unsupported).arg(st.unsupportedKinds.join(QStringLiteral(", ")));
+    if (st.offImage > 0)
+        notes << tr("%n not projectable", nullptr, st.offImage);
+    if (st.malformed > 0)
+        notes << tr("%n unreadable", nullptr, st.malformed);
+    const QString tail = notes.isEmpty() ? QString() : QStringLiteral(" — ") + notes.join(QStringLiteral(", "));
+    if (shapes.empty())
+        return fail(tr("No regions imported from %1").arg(QFileInfo(path).fileName()) + tail);
+
+    std::vector<Annotation> before = m_annByPath.value(m_currentPath);
+    std::vector<Annotation> disk, sky;
+    for (const Ds9Shape& s : shapes) {
+        Annotation a;
+        a.type = s.kind == Ds9Shape::Kind::Ellipse ? Annotation::Type::Ellipse
+               : s.kind == Ds9Shape::Kind::Line    ? Annotation::Type::Line
+                                                   : Annotation::Type::Text;
+        a.x = s.x; a.y = s.y; a.x2 = s.x2; a.y2 = s.y2;
+        a.a = std::max(0.5, s.a); a.b = std::max(0.5, s.b);
+        a.angleDeg = s.angleDeg;
+        a.label = s.text;
+        a.textSize = s.textSize > 0 ? s.textSize : Preferences::get().annTextSize;
+        const QColor col(s.color);
+        a.color = (!s.color.isEmpty() && col.isValid()) ? col : m_annColor;
+        (s.sky ? sky : disk).push_back(a);
+    }
+    // Pixel regions refer to the file on disk: carry them through any
+    // rotation/flip applied this session. Sky regions came through the
+    // CURRENT plate solution and are already in the view's frame.
+    mapAnnotationsFromDiskFrame(disk);
+    auto& anns = m_annByPath[m_currentPath];
+    anns.insert(anns.end(), disk.begin(), disk.end());
+    anns.insert(anns.end(), sky.begin(), sky.end());
+    m_annDirty.insert(m_currentPath);
+    ensureAnnotationsVisible();
+    refreshAnnotations();
+    pushAnnotationEdit(tr("import DS9 regions"), m_currentPath, std::move(before));
+    const QString msg = tr("Imported %1 DS9 region(s) as %2 annotation(s)%3")
+        .arg(st.regions).arg(st.shapes).arg(tail);
+    statusBar()->showMessage(msg, 8000);
+    if (m_scriptDriving) fprintf(stderr, "%s\n", msg.toUtf8().constData());
+    return true;
+}
+
+void MainWindow::applyDs9ContrastBias(double contrast, double bias) {
+    contrast = qBound(0.0, contrast, 10.0);
+    bias = qBound(0.0, bias, 1.0);
+    AdjustParams a = m_model.adjust();
+    setDs9ContrastBias(a, contrast, bias);
+    m_model.setAdjust(a);                  // panel sliders, render and undo follow changed()
+    statusBar()->showMessage(tr("Contrast %1 · bias %2 (DS9 scale)")
+        .arg(contrast, 0, 'f', 2).arg(bias, 0, 'f', 3), 3000);
+}
+
 void MainWindow::importSexCatalog() {
     if (!m_image.isValid()) return;
     const QString path = QFileDialog::getOpenFileName(
@@ -6441,6 +6558,7 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     menu.addSeparator();
     QAction* aAladin = nullptr;
     QAction* aSimbad = nullptr;
+    QAction* aSimbadCfa = nullptr;         // the Harvard mirror: same service, same URL form
     QAction* aStellarium = nullptr;
     QAction* aGaia = nullptr;
     QAction* aGaiaOverlay = nullptr;
@@ -6463,6 +6581,8 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             aAladin = menu.addAction(tr("Look up in Aladin — %1").arg(where));
             aSimbad = menu.addAction(tr("Identify in SIMBAD — %1").arg(where));
             aSimbad->setData(radiusArcmin);
+            aSimbadCfa = menu.addAction(tr("Identify in SIMBAD (CfA mirror) — %1").arg(where));
+            aSimbadCfa->setData(radiusArcmin);
             aStellarium = menu.addAction(tr("Point Stellarium Here — %1").arg(where));
             aGaia = menu.addAction(tr("Identify Star in Gaia DR3 — %1").arg(where));
             gaiaX = cx; gaiaY = cy;
@@ -6530,11 +6650,18 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
         pushAnnotationEdit(tr("delete annotation"), m_currentPath, std::move(before));
     }
     else if (aAladin && chosen == aAladin) {
+        // The Aladin Lite page changed its URL contract in 2026: it now reads
+        // numeric ra / dec / fov (and an optional hips URL; its default is
+        // DSS2 colour) and ignores target / survey — the old link opened an
+        // all-sky view. Both forms are sent: each page reads its own and
+        // ignores the other's, so the link survives a return to the old one.
         QUrl url(QStringLiteral("https://aladin.cds.unistra.fr/AladinLite/"));
         QUrlQuery q;
+        q.addQueryItem(QStringLiteral("ra"), QString::number(alRa, 'f', 6));
+        q.addQueryItem(QStringLiteral("dec"), QString::number(alDec, 'f', 6));
+        q.addQueryItem(QStringLiteral("fov"), QString::number(alFovDeg, 'f', 3));
         q.addQueryItem(QStringLiteral("target"), QStringLiteral("%1 %2")
             .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
-        q.addQueryItem(QStringLiteral("fov"), QString::number(alFovDeg, 'f', 3));
         q.addQueryItem(QStringLiteral("survey"), QStringLiteral("P/DSS2/color"));
         url.setQuery(q);
         QDesktopServices::openUrl(url);
@@ -6552,13 +6679,16 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     else if (aGaiaOverlay && chosen == aGaiaOverlay) {
         gaiaOverlayAction();
     }
-    else if (aSimbad && chosen == aSimbad) {
-        // SIMBAD coordinate (cone) query around the target.
-        QUrl url(QStringLiteral("https://simbad.cds.unistra.fr/simbad/sim-coo"));
+    else if ((aSimbad && chosen == aSimbad) || (aSimbadCfa && chosen == aSimbadCfa)) {
+        // SIMBAD coordinate (cone) query around the target — at CDS, or at
+        // the CfA mirror (same service and URL form; there when CDS is not).
+        QUrl url(chosen == aSimbad
+            ? QStringLiteral("https://simbad.cds.unistra.fr/simbad/sim-coo")
+            : QStringLiteral("https://simbad.cfa.harvard.edu/simbad/sim-coo"));
         QUrlQuery q;
         q.addQueryItem(QStringLiteral("Coord"), QStringLiteral("%1 %2")
             .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
-        q.addQueryItem(QStringLiteral("Radius"), QString::number(aSimbad->data().toDouble(), 'f', 2));
+        q.addQueryItem(QStringLiteral("Radius"), QString::number(chosen->data().toDouble(), 'f', 2));
         q.addQueryItem(QStringLiteral("Radius.unit"), QStringLiteral("arcmin"));
         url.setQuery(q);
         QDesktopServices::openUrl(url);

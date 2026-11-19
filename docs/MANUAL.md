@@ -315,6 +315,20 @@ Mouse (in any view):
 - **Left-drag** — rubber-band zoom to the dragged region.
 - **Wheel** — zoom at the cursor (**Shift+wheel** = 5× finer steps).
 - **Right-drag / middle-drag / Shift+left-drag** — pan.
+- **Ctrl+left-drag** (⌘ on macOS) — **contrast and bias, as in SAOImage
+  DS9**: the pointer's horizontal position sets the bias, its vertical
+  position the contrast (low at the top, DS9's 0–10 scale downward), and
+  the position *is* the setting, as in DS9 — the middle of the left–right
+  span is neutral bias, a tenth of the way down is neutral contrast. It is
+  not a separate mechanism: DS9's map, (x − bias) × contrast + ½, is
+  exactly what the **Brightness** and **Contrast** adjustments (§4)
+  compute, so the gesture drives those two sliders — you see them move,
+  the result works in every stretch mode, is undone like any stretch
+  gesture, saved in the sidecar, and reset by the adjustments' Reset. The
+  status bar shows the values on DS9's scale. For DS9 muscle memory,
+  **Preferences ▸ Mouse** puts the same control on the **right button**
+  (pan then stays on the middle button and Shift+left-drag; a right-click
+  is still the menu). Script: `contrastbias <contrast> <bias>`.
 - **Right-click** — context menu (§10).
 - **Hover** — status bar shows (x, y), raw channel values, and RA/Dec when a
   plate solution exists.
@@ -457,6 +471,25 @@ A pure **vector overlay** — never rasterized into the data.
   present), with ellipse scale factor, `FLAGS` filtering, `CLASS_STAR`
   colouring, and `NUMBER`/`MAG_AUTO` labels. Detections map correctly onto
   rotated views.
+- **DS9 region import** — Tools ▸ Import DS9 Regions… reads SAOImage DS9
+  `.reg` files onto the shown image (a `.reg` dropped on the window, or
+  given on the command line with its image, does the same). Circles,
+  ellipses and annuli become ellipse annotations; boxes, polygons and
+  segments become their exact outline as line segments, rotation included;
+  lines, vectors, rulers and projections become lines; points a small
+  circle; text a text annotation. `color`, `text={…}` and the font size
+  are kept. Coordinates may be `image`/`physical` pixels or `fk5`, `icrs`,
+  `j2000`, `galactic` through the plate solution, in degrees, sexagesimal
+  or `12h34m56s` form, with sizes in `"`, `'`, `d`, `r`, `p`, `i` (no
+  unit: degrees on the sky, pixels in the image — DS9's rule). A region
+  given on the sky is laid out *on the sky* — its angle runs from west
+  toward north, as DS9 defines it — and each vertex is carried through the
+  plate solution, so it lands correctly on rotated and mirrored frames;
+  pixel regions follow the image through this session's rotations. Nothing
+  is dropped silently: the status bar counts what was skipped and why —
+  sky regions on an unsolved image, unsupported shapes (`panda`, `epanda`,
+  `bpanda`, `compass`, `composite`) or systems (`fk4`, `ecliptic`),
+  unreadable lines. One undo step. Script: `importreg <path>`.
 
 ## 10. Astrometry
 
@@ -472,7 +505,9 @@ telescope-pointing keywords for approximate coordinates.
 - **Right-click menu**, grouped readout / annotations / lookup / zoom:
   copy RA/Dec, copy pixel value, annotate here, paste annotation,
   **Look up in Aladin** (opens Aladin Lite framed ~10× the clicked
-  annotation), **Identify in SIMBAD** (cone search scaled to the annotation),
+  annotation), **Identify in SIMBAD** (cone search scaled to the annotation;
+  a second entry sends the same query to the **CfA mirror**, for when the
+  Strasbourg service is unavailable),
   and **Point Stellarium Here** — drives a running Stellarium (its *Remote
   Control* plugin enabled, default port 8090) to the clicked sky position
   and a matching field of view: where Aladin answers *what is this*,
@@ -933,7 +968,8 @@ name reassembles exactly, for overwriting or re-saving.
     file being decoded at once, and a busy indicator joins it if the decode
     runs past four seconds. If you move on to another row meanwhile, the
     latest choice is the one shown; every decode that finishes still enters
-    the cache.
+    the cache. **Mouse** — right-button drag adjusts contrast/bias as in
+    SAOImage DS9 (off by default: right-drag pans; see §6).
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert). Each
     entry records the default it was written with (`name.default`), so

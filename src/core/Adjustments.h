@@ -54,6 +54,27 @@ struct AdjustParams {
     bool identity() const { return toneIdentity() && colorIdentity(); }
 };
 
+// SAOImage DS9's contrast/bias colormap control, expressed in these
+// adjustments. DS9 maps a stretched value x to (x - bias) * contrast + 0.5,
+// clamped, with bias in [0,1] (neutral 0.5) and contrast in [0,10] (neutral
+// 1). Brightness followed by contrast below is the same affine map —
+//   0.5 + (x + brightness/2 - 0.5) * gain,   gain = tan((contrast + 1) pi/4)
+// — so the correspondence is EXACT, not an emulation: brightness = 1 - 2 bias,
+// contrast = (4/pi) atan(ds9contrast) - 1. The other tone fields are left
+// alone.
+inline void setDs9ContrastBias(AdjustParams& a, double ds9Contrast, double ds9Bias) {
+    constexpr double kPi = 3.14159265358979323846;
+    ds9Contrast = std::min(10.0, std::max(0.0, ds9Contrast));
+    ds9Bias = std::min(1.0, std::max(0.0, ds9Bias));
+    a.brightness = 1.0 - 2.0 * ds9Bias;
+    a.contrast = 4.0 / kPi * std::atan(ds9Contrast) - 1.0;
+}
+inline void getDs9ContrastBias(const AdjustParams& a, double& ds9Contrast, double& ds9Bias) {
+    constexpr double kPi4 = 0.78539816339744830961;
+    ds9Bias = 0.5 * (1.0 - a.brightness);
+    ds9Contrast = std::tan((a.contrast + 1.0) * kPi4);
+}
+
 // Tone curve on one stretched value. Order: BP/WP window -> shadows/highlights
 // -> brightness -> contrast -> gamma. Maps [0,1] -> [0,1], monotone for the
 // documented parameter ranges.

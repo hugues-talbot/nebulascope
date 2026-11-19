@@ -1,0 +1,11 @@
+# Region file format: DS9 version 4.1
+global color=green dashlist=8 3 width=1 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1
+image
+circle(65,65,10) # color=red text={centre}
+box(40,40,20,10,30)
+fk5
+circle(10:00:00.000,+20:00:00.00,20")
+ellipse(150.0,20.0,40",20",45) # color=cyan
+line(150.01,20.0,149.99,20.0)
+# text(150.0,20.01) text={north of centre}
+panda(150.0,20.0,0,360,4,10",20",1)

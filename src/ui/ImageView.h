@@ -62,6 +62,10 @@ public:
     // click. The tool disarms itself after each shape.
     enum class DrawTool { None, Ellipse, Line, Text, Register, SkyPatch };
     void setDrawTool(DrawTool t);
+    // DS9-style contrast/bias drag. Ctrl/Cmd + left-drag always does it; with
+    // this on, the RIGHT button does too, as in DS9 (pan then stays on the
+    // middle button and Shift + left-drag; a right-CLICK is still the menu).
+    void setRightDragAdjusts(bool on) { m_rightAdjusts = on; }
     DrawTool drawTool() const { return m_tool; }
 
     bool hasImage() const { return m_item != nullptr; }
@@ -96,6 +100,10 @@ signals:
     void annotationDragged();      // live item drag in progress (each move tick)
     void annotationDoubleClicked(const QPointF& scenePos);   // open the edit dialog
     void listKeyDropped(const QString& key);  // image-list row dropped onto this view
+    // Contrast/bias drag in progress: the pointer as fractions of the
+    // viewport (0..1 from the left / from the top) — DS9 reads bias off x
+    // and contrast off y, absolutely, so the position IS the setting.
+    void contrastBiasDragged(double fx, double fy);
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -127,6 +135,11 @@ private:
     QGraphicsItem* m_preview = nullptr;    // dashed rubber shape while dragging
     const ImageData* m_src = nullptr;
     bool m_adopting = false;               // suppress viewNavigated during adoptNavigation
+    bool m_rightAdjusts = false;           // right-drag = contrast/bias (DS9 mouse)
+    bool m_cbDrag = false, m_cbMoved = false;
+    Qt::MouseButton m_cbButton = Qt::NoButton;
+    QPoint m_cbStart;
+    void requestContextMenuAt(const QPoint& pos, const QPoint& globalPos);
 };
 
 } // namespace astro

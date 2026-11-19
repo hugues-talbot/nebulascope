@@ -113,6 +113,15 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                            "0 disables the cache."));
     form->addRow(tr("Image cache:"), cacheMB);
 
+    auto* ds9Mouse = new QCheckBox(tr("Right-button drag adjusts contrast/bias (as in SAOImage DS9)"));
+    ds9Mouse->setChecked(p.ds9RightDrag);
+    ds9Mouse->setToolTip(tr("Off (default): right-drag pans. On: right-drag sets bias (left-right)\n"
+                            "and contrast (up-down) from the pointer position, exactly as DS9 does —\n"
+                            "it drives the Brightness and Contrast adjustments. Pan stays on the\n"
+                            "middle button and Shift + left-drag; a right-click is still the menu.\n"
+                            "Ctrl/Cmd + left-drag does the same in either setting."));
+    form->addRow(tr("Mouse:"), ds9Mouse);
+
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
     recentImg->setValue(p.recentImagesMax);
@@ -219,6 +228,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.recentJsonMax   = recentJson->value();
         p.overlayOpacity  = overlayOp->value() / 100.0;
         p.imageCacheMB = cacheMB->value();
+        p.ds9RightDrag    = ds9Mouse->isChecked();
         p.debayerMethod   = debayerMeth->currentIndex();
         p.zoomStepCoarse  = zoomCoarse->value();
         p.zoomStepFine    = zoomFine->value();

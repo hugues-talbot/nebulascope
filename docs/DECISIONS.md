@@ -399,3 +399,44 @@ renders each cell as it goes, and every re-decode of the current image
 the new pixels in hand. `--shared-stf` waits for the first decode.
 Scripts see none of this: `waitloaded` also waits for a pending display.
 
+## DS9 interoperability: regions in, contrast/bias on the mouse (2026-11-19)
+
+First feedback from a daily DS9 user (Andrea Persici) trying NebulaScope:
+his regions had to come along, and his right hand expected DS9's
+contrast/bias drag.
+
+*Regions.* `.reg` files import onto the three vector primitives the
+annotation layer already has; shapes it lacks (box, polygon) become their
+exact outline as line segments rather than an approximating ellipse.
+The one decision with content is the angle of a region given in sky
+coordinates. DS9 measures it from west toward north — the +x axis of a
+north-up, east-left display — and corrects for the image's rotation and
+parity with a special case. The import instead lays the shape out ON THE
+SKY (each axis end and each box corner is the exact spherical destination
+point from the centre) and carries every vertex through the plate
+solution: rotation and parity are then consequences, not cases, and a
+ctest holds the mirrored-image answer. Skips are counted and named, never
+silent. Establishing the pixel convention for this exposed a bug in the
+SExtractor import of July: THETA_IMAGE was negated while positions were
+(rightly) not flipped — every imported ellipse was mirrored about the
+horizontal. Fixed separately.
+
+*Contrast/bias.* DS9 maps a stretched value x to (x − bias)·contrast + ½.
+The existing Brightness and Contrast adjustments compute
+½ + (x + b/2 − ½)·tan((c+1)π/4): the same affine map, with
+b = 1 − 2·bias and c = (4/π)·atan(contrast) − 1. So the "emulation" is an
+exact reparametrization, asserted in a ctest, and needs no new state: the
+gesture drives two sliders the user can see, and inherits mode
+independence, undo, sidecar persistence and reset. The position is the
+setting, absolutely, as in DS9 (bias off x, contrast 0–10 off y).
+Gesture: DS9 uses the right button, which pans here; per the standing
+rule (new behaviour = new option), Ctrl/Cmd + left-drag always does it,
+and a Mouse preference, off by default, gives the right button to it for
+DS9 hands.
+
+*Aladin.* The lookup opened an all-sky view: the Aladin Lite page (rebuilt
+after the 2026 CDS incident) reads numeric `ra`/`dec`/`fov` and ignores
+`target`/`survey`. The link now sends both forms — each page reads its own.
+SIMBAD at Strasbourg was down; the CfA mirror answers the same URL, and
+is offered as a second menu entry rather than a silent redirect.
+

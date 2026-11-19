@@ -362,6 +362,22 @@ Les images RVB ignorent la palette (le sélecteur est désactivé).
 - **Glisser gauche** — zoom élastique sur la région tracée.
 - **Molette** — zoom au curseur (**Maj+molette** = pas 5× plus fins).
 - **Glisser droit / molette / Maj+gauche** — panoramique.
+- **Ctrl+glisser gauche** (⌘ sur macOS) — **contraste et biais, comme dans
+  SAOImage DS9** : la position horizontale du pointeur règle le biais, sa
+  position verticale le contraste (faible en haut, l'échelle 0–10 de DS9
+  vers le bas), et la position *est* le réglage, comme dans DS9 — le
+  milieu de la largeur est le biais neutre, un dixième de la hauteur le
+  contraste neutre. Ce n'est pas un mécanisme à part : la loi de DS9,
+  (x − biais) × contraste + ½, est exactement ce que calculent les
+  ajustements **Luminosité** et **Contraste** (§4) ; le geste pilote donc
+  ces deux curseurs — on les voit bouger, le résultat vaut dans tous les
+  modes d'étirement, s'annule comme tout geste d'étirement, s'enregistre
+  dans le fichier annexe et se réinitialise avec les ajustements. La barre
+  d'état affiche les valeurs sur l'échelle de DS9. Pour les habitués de
+  DS9, **Préférences ▸ Souris** place le même contrôle sur le **bouton
+  droit** (le panoramique reste alors sur le bouton du milieu et
+  Maj+glisser gauche ; un clic droit ouvre toujours le menu). Script :
+  `contrastbias <contraste> <biais>`.
 - **Clic droit** — menu contextuel (§10).
 - **Survol** — la barre d'état affiche (x, y), les valeurs brutes par canal,
   et AD/Déc quand une solution astrométrique existe.
@@ -533,6 +549,28 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
   filtrage par `FLAGS`, coloration par `CLASS_STAR`, et étiquettes
   `NUMBER`/`MAG_AUTO`. Les détections se projettent correctement sur les
   vues tournées.
+- **Import de régions DS9** — Outils ▸ Importer des régions DS9… lit les
+  fichiers `.reg` de SAOImage DS9 sur l'image affichée (un `.reg` déposé
+  sur la fenêtre, ou donné en ligne de commande avec son image, fait de
+  même). Cercles, ellipses et anneaux deviennent des annotations ellipse ;
+  boîtes, polygones et segments deviennent leur contour exact en segments
+  de droite, rotation comprise ; lignes, vecteurs, règles et projections
+  deviennent des lignes ; les points un petit cercle ; le texte une
+  annotation texte. `color`, `text={…}` et la taille de police sont
+  conservés. Les coordonnées peuvent être en pixels `image`/`physical` ou
+  en `fk5`, `icrs`, `j2000`, `galactic` via la solution astrométrique, en
+  degrés, en sexagésimal ou sous la forme `12h34m56s`, avec des tailles en
+  `"`, `'`, `d`, `r`, `p`, `i` (sans unité : degrés sur le ciel, pixels
+  dans l'image — la règle de DS9). Une région donnée sur le ciel est
+  construite *sur le ciel* — son angle va de l'ouest vers le nord, comme
+  DS9 le définit — et chaque sommet passe par la solution astrométrique :
+  elle tombe juste sur les images tournées comme sur les images en miroir ;
+  les régions en pixels suivent l'image à travers les rotations de la
+  session. Rien n'est écarté en silence : la barre d'état compte ce qui a
+  été ignoré et pourquoi — régions célestes sur une image non résolue,
+  formes (`panda`, `epanda`, `bpanda`, `compass`, `composite`) ou systèmes
+  (`fk4`, `ecliptic`) non pris en charge, lignes illisibles. Une seule
+  étape d'annulation. Script : `importreg <chemin>`.
 
 ## 10. Astrométrie
 
@@ -550,7 +588,9 @@ coordonnées approchées.
   copier AD/Déc, copier la valeur du pixel, annoter ici, coller
   l'annotation, **Consulter dans Aladin** (ouvre Aladin Lite cadré à ~10×
   l'annotation cliquée), **Identifier dans SIMBAD** (recherche par cône à
-  l'échelle de l'annotation), et **Pointer Stellarium ici** — pilote un
+  l'échelle de l'annotation ; une seconde entrée envoie la même requête au
+  **miroir du CfA**, pour les jours où le service de Strasbourg est
+  indisponible), et **Pointer Stellarium ici** — pilote un
   Stellarium en cours d'exécution (son greffon *Remote Control* activé,
   port 8090 par défaut) vers la position céleste cliquée avec un champ
   correspondant : là où Aladin répond *qu'est-ce que c'est*, Stellarium
@@ -1040,7 +1080,9 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     de décodage, et un indicateur d'activité s'y ajoute si le décodage
     dépasse quatre secondes. Si vous passez entre-temps à une autre ligne,
     c'est le dernier choix qui s'affiche ; chaque décodage achevé entre tout
-    de même dans le cache.
+    de même dans le cache. **Souris** — le glisser au bouton droit règle
+    contraste et biais comme dans SAOImage DS9 (désactivé par défaut : le
+    glisser droit déplace l'image ; voir §6).
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis). Chaque entrée enregistre le réglage par défaut avec lequel

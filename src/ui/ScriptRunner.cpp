@@ -47,6 +47,12 @@ const CommandRef kCommands[] = {
   {"histdrag",   {"histdrag b|m|w <dx_px>",
     "Synthesize a drag of the histogram's B/M/W grip by dx screen pixels\n"
     "(past the plot edge extends the axis). Test hook."}},
+  {"viewdrag",   {"viewdrag ctrl|right|ds9 <fx0> <fy0> <fx1> <fy1>",
+    "Synthesize a mouse drag on the active image view between two points\n"
+    "given as fractions of the viewport (0..1 from the left / the top):\n"
+    "ctrl = Ctrl/Cmd + left-drag (contrast/bias), right = right-drag with the\n"
+    "default mouse (pan), ds9 = right-drag with the DS9 mouse preference on\n"
+    "for this drag (contrast/bias). Test hook."}},
   {"window",     {"window <c|all> <black> <mid> <white>",
     "Set the linear window (B/M/W) in RAW data units for channel c (0..2) or\n"
     "all channels. Values may lie outside the data range."}},
@@ -87,6 +93,16 @@ const CommandRef kCommands[] = {
     "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
     "standard FITS cards; annotations translate with the pixels. `view`\n"
     "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
+  {"importreg",  {"importreg <path>",
+    "Import a SAOImage DS9 region file (.reg) onto the shown image as\n"
+    "annotations (circle, ellipse, box, polygon, line, vector, text, point,\n"
+    "annulus; image, fk5/icrs and galactic coordinates). One undo step.\n"
+    "Menu equivalent: Tools > Import DS9 Regions."}},
+  {"contrastbias",{"contrastbias <contrast> <bias>",
+    "Set DS9's contrast (0..10, neutral 1) and bias (0..1, neutral 0.5), in\n"
+    "DS9's own argument order (-cmap value). Carried exactly by the\n"
+    "Brightness and Contrast adjustments. Mouse equivalent: Ctrl/Cmd +\n"
+    "left-drag on the image (or right-drag with the DS9 mouse preference)."}},
   {"psfannotate",{"psfannotate [channel] [count] [label]",
     "Annotate the brightest fitted stars from the last `action measure_psf`\n"
     "(rotated ellipses at the fitted shape; the report dialog's button).\n"
@@ -143,7 +159,7 @@ const CommandRef kCommands[] = {
     "Write the DATA (Float32) as FITS/XISF/16-bit TIFF. XISF saves use the\n"
     "default compression (Zlib, byte-shuffled). An in-memory result's list\n"
     "entry takes the saved name (as in the GUI)."}},
-  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol] | levels <c> <min>",
+  {"assert",     {"assert size <W> <H> | channels <n> | rows <n> | annotations <n> | name <text> | stretch <c> <b> <m> <w> [tol] | adjust <name> <v> [tol] | fn <name> | pixel <x> <y> <v...> [tol] | range <min> <max> [tol] | mapped <x> <y> <cell> <qx> <qy> [tol] | wcsmatch <cell> <x> <y> [tol] | levels <c> <min>",
     "Test assertions against the displayed image's raw data (rows: the\n"
     "image-list row count). Failures are counted; the process exit code is\n"
     "the failure count."}},
@@ -317,6 +333,35 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         for (int i = 1; i <= steps; ++i)
             send(QEvent::MouseMove, start + (end - start) * (double(i) / steps));
         send(QEvent::MouseButtonRelease, end);
+        return true;
+    }
+    if (cmd == QLatin1String("viewdrag")) {
+        if (t.size() < 6) { err = "viewdrag ctrl|right|ds9 <fx0> <fy0> <fx1> <fy1>"; return false; }
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        const QString mode = t[1].toLower();
+        if (mode != QLatin1String("ctrl") && mode != QLatin1String("right") &&
+            mode != QLatin1String("ds9")) { err = "mode: ctrl | right | ds9"; return false; }
+        ImageView* v = m_w->m_view;
+        QWidget* vp = v->viewport();
+        const QSize vs = vp->size();
+        const QPointF start(t[2].toDouble() * vs.width(), t[3].toDouble() * vs.height());
+        const QPointF end(t[4].toDouble() * vs.width(), t[5].toDouble() * vs.height());
+        const Qt::MouseButton btn = mode == QLatin1String("ctrl") ? Qt::LeftButton : Qt::RightButton;
+        const Qt::KeyboardModifiers mods = mode == QLatin1String("ctrl") ? Qt::ControlModifier
+                                                                         : Qt::NoModifier;
+        // The DS9 mouse is a persisted preference; a test must not write it.
+        v->setRightDragAdjusts(mode == QLatin1String("ds9"));
+        auto send = [&](QEvent::Type ty, const QPointF& pos) {
+            QMouseEvent ev(ty, pos, vp->mapToGlobal(pos.toPoint()), btn,
+                           ty == QEvent::MouseButtonRelease ? Qt::NoButton : btn, mods);
+            QCoreApplication::sendEvent(vp, &ev);
+        };
+        send(QEvent::MouseButtonPress, start);
+        const int steps = 8;
+        for (int i = 1; i <= steps; ++i)
+            send(QEvent::MouseMove, start + (end - start) * (double(i) / steps));
+        send(QEvent::MouseButtonRelease, end);
+        v->setRightDragAdjusts(Preferences::get().ds9RightDrag);
         return true;
     }
     if (cmd == QLatin1String("window")) {
@@ -496,6 +541,26 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         }
         else { err = "unknown adjustment"; return false; }
         m_w->m_model.setAdjust(a);
+        return true;
+    }
+    if (cmd == QLatin1String("importreg")) {
+        if (!needArgs(1)) return false;
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        QString ierr;
+        if (!m_w->importDs9RegionsFile(
+                QFileInfo(t.mid(1).join(QLatin1Char(' '))).absoluteFilePath(), &ierr)) {
+            err = ierr;
+            return false;
+        }
+        return true;
+    }
+    if (cmd == QLatin1String("contrastbias")) {
+        if (!needArgs(2)) return false;
+        if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
+        bool ok1 = false, ok2 = false;
+        const double c = t[1].toDouble(&ok1), b = t[2].toDouble(&ok2);
+        if (!ok1 || !ok2) { err = "contrastbias <contrast 0..10> <bias 0..1>"; return false; }
+        m_w->applyDs9ContrastBias(c, b);
         return true;
     }
     if (cmd == QLatin1String("psfannotate")) {
@@ -947,6 +1012,15 @@ bool ScriptRunner::doAssert(const QStringList& t, QString& err) {
         if (img.width() != w || img.height() != h) {
             err = QStringLiteral("size is %1x%2, expected %3x%4")
                       .arg(img.width()).arg(img.height()).arg(w).arg(h);
+            return false;
+        }
+        return true;
+    }
+    if (what == QLatin1String("annotations")) {
+        if (t.size() < 3) { err = "assert annotations n"; return false; }
+        const int n = int(m_w->m_annByPath.value(m_w->m_currentPath).size());
+        if (n != t[2].toInt()) {
+            err = QStringLiteral("image has %1 annotation(s)").arg(n);
             return false;
         }
         return true;
