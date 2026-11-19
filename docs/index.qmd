@@ -9,9 +9,10 @@ without blowing out cores and stars.
 It reads FITS [@pence2010] — including multi-HDU and tile-compressed files —
 PixInsight XISF [@xisf10] with embedded astrometric solutions, and ordinary
 JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor
-[@bertin1996] import directly as annotation overlays, and a reference image's
-colour palette can be transferred onto the displayed image through sliced
-optimal transport [@pitie2007].
+[@bertin1996] and region files written by SAOImage DS9 [@joye2003] import
+directly as annotation overlays, and a reference image's colour palette can
+be transferred onto the displayed image through sliced optimal transport
+[@pitie2007].
 
 Where it fits: between viewers like SAOImage DS9 [@joye2003] (regions, WCS
 readout, but dated stretch ergonomics) and processing suites like PixInsight
@@ -20,7 +21,9 @@ NebulaScope combines modern histogram manipulation — including the
 Generalised Hyperbolic Stretch [@ghs2022] — blink comparison with per-image
 stretch memory, and an editable, undoable vector annotation layer that can be
 fed from SExtractor catalogs, e.g. for building machine-learning training
-sets.
+sets. A DS9 user finds familiar ground: region files, the contrast/bias
+mouse control, the DS9 palettes, and frames shown north up and east left
+from their plate solution.
 
 This document collects the complete user manual, the developer-facing
 architecture map and design-decision log, with the per-platform build

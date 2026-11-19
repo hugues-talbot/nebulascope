@@ -11,7 +11,8 @@ Il lit le format FITS [@pence2010] — y compris les fichiers multi-HDU et
 compressés par tuiles — le format XISF de PixInsight [@xisf10] avec ses
 solutions astrométriques embarquées, ainsi que les images ordinaires
 JPEG/PNG/TIFF/WebP. Les catalogues d'étoiles produits par SExtractor
-[@bertin1996] s'importent directement comme calques d'annotation, et la
+[@bertin1996] et les fichiers de régions de SAOImage DS9 [@joye2003]
+s'importent directement comme calques d'annotation, et la
 palette de couleurs d'une image de référence peut être transférée sur
 l'image affichée par transport optimal par tranches [@pitie2007].
 
@@ -24,7 +25,10 @@ généralisé [@ghs2022] — la comparaison par clignotement (*blink*) avec
 mémoire d'étirement par image, et un calque d'annotations vectoriel,
 éditable et annulable, qui peut être alimenté par des catalogues
 SExtractor, par exemple pour constituer des jeux d'entraînement en
-apprentissage automatique.
+apprentissage automatique. Un utilisateur de DS9 y retrouve ses repères :
+les fichiers de régions, le réglage contraste/biais à la souris, les
+palettes de DS9, et des images présentées nord en haut et est à gauche
+d'après leur solution astrométrique.
 
 Ce document rassemble le manuel de l'utilisateur complet et le chapitre
 théorique sur le transport de couleurs ; les chapitres destinés aux

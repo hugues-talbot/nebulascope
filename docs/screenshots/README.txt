@@ -7,7 +7,8 @@ Drop PNGs here with these exact names and they appear in ../MANUAL.md:
   histogram-linear.png   Linear tab, RGB image, separated per-channel lines
   adjust-panel.png       ADJUST sliders mid-edit, colour shift visible behind
   colormap-split.png     Mono image with split(t) map + colorbar
-  rotate-dialog.png      Rotation dialog: dial, preview, North Up
+  rotate-dialog.png      Rotation dialog: dial, preview, North Up, North Up East Left
+  ds9-regions.png        DS9 regions (ds9-regions.reg, fk5) imported onto M81, panels hidden
   annotations.png        Ellipses + labelled line + text, grid on, handles shown
   combine-channels.png   Combine dialog, SHO preset, live preview
   transport.png          Colour transport before/after in a split view

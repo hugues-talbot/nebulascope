@@ -65,6 +65,15 @@ demand.
       persists in FITS after SPCC).
 - [ ] Siril CLI round-trip (send current image to a Siril script, ingest result)
 - [ ] SAMP client (broadcast/receive images + coordinates with DS9/Aladin/Topcat)
+- [x] DS9 interoperability, first round (v0.98, from a daily DS9 user's
+      trial): `.reg` import, contrast/bias on the mouse, box annotations,
+      Orient to Sky and "orientation at open", SIMBAD mirror failover
+- [ ] DS9 interoperability, candidates not yet requested: `.reg` export,
+      a polygon annotation type (polygons import as line segments today),
+      `panda` shapes, `fk4`/`ecliptic` region systems, a zscale stretch
+- [ ] Visible-region live preview for histogram-handle and slider drags
+      (the contrast/bias drag has it; the handles render on release), as
+      an option
 - [ ] Differentiator polish as usage reveals friction (star combine, transport,
       annotation/dataset export)
 

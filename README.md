@@ -47,24 +47,43 @@ and never needs to know the source format.
   pan, hover pixel readout; **split views up to 5×5** with linked pan/zoom —
   automatic for same-size images, user-calibrated between differing ones
   (links survive rotation); right-click menu with copyable RA/Dec + pixel
-  values and **Aladin / SIMBAD lookups**; an Info panel with data range,
-  statistics, FITS structure and a searchable header.
+  values, **Aladin / SIMBAD lookups** (SIMBAD falls back to its official
+  mirrors when the main site is down), **Gaia DR3** star identification and
+  field overlay, and *Point Stellarium Here*; an Info panel with data
+  range, statistics, FITS structure and a searchable header. Large files
+  decode in the background, with a decoded-image cache and neighbour
+  prefetch so blinking is instant.
+- **For SAOImage DS9 users** — DS9 **region files** (`.reg`) import as
+  annotations, laid out on the sky through the plate solution; DS9's
+  **contrast/bias** mouse control (a modifier + right-drag, or the plain
+  right-drag as a preference); the DS9 colour palettes; and **Orient to
+  Sky**, which shows a plate-solved frame north up and east left, as DS9
+  does, on demand or for every FITS opened (a preference, off by default).
 - **Astrometry** — WCS from FITS keywords (TAN) *and* PixInsight's
   `PCL:AstrometricSolution` XISF properties; live RA/Dec hover readout,
   copyable coordinates, RA/Dec coordinate grid overlay with labelled lines,
-  telescope-pointing fallback for unsolved frames.
+  telescope-pointing fallback for unsolved frames. The solution follows
+  every rotation, flip and crop, and its parity tells whether a frame is
+  shown mirrored.
 - **Annotations** — a vector overlay (never rasterized into the data):
-  ellipses, line segments, and text with per-annotation colour and size. Draw
+  ellipses, boxes, line segments, and text with per-annotation colour and
+  size. Draw
   with toolbar tools, move/resize with grab-handles, double-click to edit,
   copy/paste, full undo/redo. Persisted as JSON sidecars
   (`<image>_annotation.json`, auto-loaded, orientation-aware), and importable
   from **SExtractor** ASCII catalogs (scaled A/B/THETA ellipses, FLAGS
-  filtering, CLASS_STAR colouring) — handy for building NN training sets.
+  filtering, CLASS_STAR colouring) and from **DS9 region files** — handy for
+  building NN training sets.
 - **Adjustments** — post-stretch display tuning in the histogram panel:
   tone (brightness/contrast/gamma, shadows/highlights, black/white point)
   and colour (temperature/tint, hue, saturation, vibrance), reflected live
   in the transfer curve and colorbar, persisted per image in the JSON
   sidecar.
+- **PSF tools** — *Measure PSF* (elliptical Moffat fits over the field:
+  FWHM in px and arcsec, eccentricity, a field map), *Deconvolve to Target
+  PSF* (calibrated, in linear space, with a declared output PSF that is
+  re-measured and written to the header; works on a starless image with
+  the kernel taken from its starry sibling), and *Remove Stars (Analytic)*.
 - **Star recomposition** — Tools ▸ Combine Stars screen-blends a starless
   image with its stars-only counterpart (amount slider, auto-guessed
   pairing) for the starless-processing workflow.
@@ -90,7 +109,10 @@ and never needs to know the source format.
   layout one keypress away), image-only mode (Tab), fullscreen,
   user-configurable shortcuts (`shortcuts.ini`), Preferences dialog (defaults,
   histories, shortcuts), recent images/annotations menus, undo/redo for
-  annotations and image transforms.
+  annotations and image transforms. English and French interface.
+- **Scripting** — `--run <script>` drives the real application headless
+  (about fifty commands, with assertions) for tests, batch work and
+  reproducible screenshots; a scripted run never touches your settings.
 
 ## Download
 
@@ -116,18 +138,27 @@ per-commit artifacts are on the Actions tab.
 CMakeLists.txt          # project + dependency discovery
 src/
   CMakeLists.txt        # build targets (+ macOS .app bundle)
-  core/                 # ImageData, Convert, ImageStats, Stretch (+ GHS), Colormap
+  core/                 # ImageData, ImageStats, Stretch (+ GHS), Colormap, Wcs,
+                        # Debayer, PsfMeasure, Deconvolve, StarRemove,
+                        # Ds9Regions, SexCatalog, GaiaQuery, ImageCache, …
   io/                   # ImageReader/Writer + FITS, XISF, Qt-image, TIFF backends
   render/               # StretchModel (shared state) + DisplayRenderer
-  ui/                   # ImageView, Histogram*, ColorBar, InfoPanel, MainWindow
-  app/                  # main.cpp (entry + theme), app.qrc, appicon.png
+  ui/                   # ImageView, Histogram*, AnnotationLayer, dialogs,
+                        # MainWindow, ScriptRunner (--run)
+  i18n/                 # French translation (nebulascope_fr.ts)
+  app/                  # main.cpp (entry + theme), app.qrc, AppInfo.h
 tests/                  # CTest units (core, io, wcs, catalog, combine,
-                        # colormap) + script-mode smoke test (smoke.nsc)
+                        # colormap, debayer, psf, deconv, starremove, gaia,
+                        # ds9reg) + script-mode smoke test (smoke.nsc),
+                        # settings isolation, sidecar conformance
                         # + committed fixtures (testdata/)
+tools/                  # render_sidecar.py (reference renderer), psf_study/
 icon/                   # iconset PNGs + make_icns.sh (-> NebulaScope.icns)
 docs/
-  BUILDING-macos.md     # Homebrew + libXISF, step by step
+  MANUAL.md, fr/        # user manual, English and French
   ARCHITECTURE.md       # data flow, the shared-model design, IO details
+  DECISIONS.md          # why things work the way they do
+  BUILDING-*.md         # per-platform build instructions
 ```
 
 ## Quick build
@@ -155,12 +186,17 @@ float-normalization and per-codec block compression for PixInsight
 interop — plus fixtures written by PixInsight itself, in Float32
 plain/Zstd/Zlib and UInt16, asserted to decode identically), the
 WCS/astrometry math (TAN round-trips, keyword fallbacks,
-transform rebasing), SExtractor catalog parsing, channel combination,
-colour transport, and the colormap/modifier algebra. The script mode
+transform rebasing, the parity and sky-orientation plan), SExtractor
+catalog parsing, DS9 region parsing, channel combination, colour
+transport, the colormap/modifier algebra, debayering, PSF measurement,
+deconvolution, star removal and the Gaia query. The script mode
 (`--run`, see the manual §13) drives the real application — open, stretch,
 rotate, export, save/reload — with assertions, against the committed
 synthetic FITS in `tests/testdata/`; it runs headless in CI as the `smoke`
-CTest (`QT_QPA_PLATFORM=offscreen`).
+CTest (`QT_QPA_PLATFORM=offscreen`). Two further script-mode tests check
+that a scripted run leaves the user's settings alone, and that the
+sidecar's display block reproduces the application's rendering in an
+independent NumPy reference renderer.
 
 **Linux / Windows** — the binary is `build/src/nebulascope`:
 
@@ -197,8 +233,10 @@ macOS specifics (Homebrew, building libXISF, common link errors) are in
 ## Documentation
 
 - **[docs/MANUAL.md](docs/MANUAL.md)** — the complete user manual: every
-  feature, shortcut, dialog, and file format (screenshot slots ready in
-  `docs/screenshots/`).
+  feature, shortcut, dialog, and file format. Also in French:
+  **[docs/fr/MANUAL.md](docs/fr/MANUAL.md)**.
+- **[docs/RELEASES.md](docs/RELEASES.md)** — release notes, version by
+  version.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — developer map: layers,
   data flow, and the geometry/windowing invariants to preserve when extending.
 - **[docs/DECISIONS.md](docs/DECISIONS.md)** — design-decision log: why the

@@ -23,6 +23,9 @@ Ways to open:
   declares the file types, so Finder's *Open With* also lists NebulaScope).
 - **File ▸ Open Recent** — the last 10 images and last 5 annotation files.
 - **Command line** — see §13.
+- A **SAOImage DS9 region file** (`.reg`) dropped on the window, or given
+  with its image, is not listed: it is imported onto the image as
+  annotations (§9).
 - **Multi-HDU FITS** appear in the image list as an expandable entry, one row
   per image HDU; click the HDU you want.
 
@@ -31,7 +34,12 @@ the view is split, otherwise in the active view. Opening *several* images
 fills the empty cells **in the order given** (command line, Finder selection,
 dialog), one image per cell, until the cells run out. The list holds each
 image **once**: re-opening a listed image selects its existing row instead of
-adding a duplicate (the status bar notes it). On first view an image gets a
+adding a duplicate (the status bar notes it). A large file is decoded in the
+background: the window stays live, the status bar names the file, and a busy
+indicator appears if the decode runs past four seconds (§15). An image is
+shown **as stored in the file**, first row at the top; a plate-solved FITS
+frame can instead be opened oriented as the sky (§8, and **Preferences ▸
+Orientation at open**, §15). On first view an image gets a
 plain **min→max linear ramp** (predictable, no guessing); press **Auto STF**
 for a boosted stretch (§3). Exception: an XISF that carries the producing
 application's **saved screen stretch** (the `DisplayFunction` element —
@@ -428,7 +436,7 @@ Image menu / toolbar:
   another view cell. Images without a plate solution are left alone, and
   **Reset Orientation** returns every image to the file.
 
-![Rotation dialog with dial, preview and North Up](screenshots/rotate-dialog.png)
+![Rotation dialog with dial, preview, North Up and North Up, East Left](screenshots/rotate-dialog.png)
 
 Everything follows the pixels through every transform: annotations, the
 astrometric solution (reference pixel + CD matrix), and view-link
@@ -515,6 +523,14 @@ A pure **vector overlay** — never rasterized into the data.
   sky regions on an unsolved image, unsupported shapes (`panda`, `epanda`,
   `bpanda`, `compass`, `composite`) or systems (`fk4`, `ecliptic`),
   unreadable lines. One undo step. Script: `importreg <path>`.
+
+![DS9 regions imported onto M81: ellipse, box, circle and two vectors given in fk5](screenshots/ds9-regions.png)
+
+*A hand-written region file (`docs/screenshots/ds9-regions.reg`) on a frame
+whose north points to the right. The ellipse, the box, the circle and the
+two 5′ vectors toward north and east are given in `fk5`; each is laid out
+on the sky and carried through the plate solution, so they land where they
+should without the image being reoriented.*
 
 ## 10. Astrometry
 
@@ -884,46 +900,57 @@ nebulascope [options] [files...]
                          The default is Preferences ▸ Orientation at open.
       --mouse <mode>     Right-button drag for this run: default (pan) or ds9
                          (contrast/bias). The default is Preferences ▸ Mouse.
-      --run list         List all script commands (one-line summaries);
-                         detailed help: --help <command>.
       --run <script>     Execute a command script and exit with the number of
                          failed assertions (testing/batch; headless with
-                         QT_QPA_PLATFORM=offscreen). Commands: open, show,
-                         next/prev, split, fn, autostf [linked], reset,
-                         adjust <name> <v>, stfall (share stretch with the
-                         whole list), rot90, flip, rotate, export, save,
-                         assert size|channels|pixel|range, sleep,
-                         waitloaded [ms] (block until image + stats ready),
-                         screenshot <file> (grab the whole window to PNG),
-                         cmap <name>, cmapmod invert|split on|off [t],
-                         panels on|off (Image Only toggle),
-                         action <name> (trigger a menu action by its
-                         shortcut-registry name, e.g. toggle_grid; avoid
-                         modal dialogs — they block the script),
-                         debayer auto|off|<pattern> [method] [all] (OSC
-                         demosaic mode for the displayed frame; `all`
-                         stamps it onto every list row),
-                         saveann [path] (write the annotation sidecar with
-                         the full display block), bake <path> (the display
-                         transfer baked as Float32 FITS — the conformance
-                         reference for tools/render_sidecar.py),
-                         tag on|off|toggle, tagsort, tagremove, tagmove
-                         (blink-culling: keep-checks and acting on them),
-                         transport <row> [strength%] (colour transport onto
-                         the displayed image, list row as reference),
-                         dialog rotate|combine|preferences|close (open a
-                         dialog NON-modally for scripted captures),
-                         dlgclick <button text>, dlgcombo <n> <prefix>
-                         (drive the open dialog's buttons / combos),
-                         screenshot <file> dialog (capture the open dialog),
-                         quit — one per line, #-comments; see tests/smoke.nsc.
-  -h, --help             This help.
+                         QT_QPA_PLATFORM=offscreen). One command per line,
+                         #-comments; see below and tests/smoke.nsc.
+      --run list         List all script commands with one-line summaries.
+  -h, --help [command]   This help — or the detailed help of one script
+                         command, e.g. nebulascope --help transport.
+  -V, --version          Version and exact build id (git describe).
 ```
 
 Examples: `nebulascope *.fits` · `nebulascope --list tonight.txt` ·
 `nebulascope --split 1x2 lum.fits ha.fits`.
+A `.reg` file given with an image is imported onto it (§9).
 (macOS: invoke the binary inside the bundle, or symlink it onto your PATH —
 see docs/BUILDING-macos.md. Finder-injected `-psn` arguments are ignored.)
+
+### Script commands
+
+A script drives the real application, one command per line. The
+application itself is the reference: `nebulascope --run list` prints every
+command with a one-line summary, and `nebulascope --help <command>` its
+usage and details. By purpose:
+
+| Purpose | Commands |
+|:--------|:--------------------------|
+| Files and list | `open`, `show`, `next`, `prev`, `split`, `activate`, `tag`, `tagsort`, `tagremove`, `tagmove` |
+| Stretch and display | `fn`, `autostf`, `reset`, `window`, `axis`, `adjust`, `contrastbias`, `stfall`, `cmap`, `cmapmod`, `blackpatch`, `transport`, `debayer` |
+| Geometry | `rot90`, `flip`, `rotate`, `crop`, `skyorient` |
+| Annotations and catalogues | `importreg`, `psfannotate`, `gaiastar`, `gaiaoverlay`, `simbadprobe` |
+| Processing | `removestars`, `deconv` |
+| Output | `export`, `save`, `saveann`, `bake`, `screenshot` |
+| Synthetic input | `histdrag`, `viewdrag`, `hover`, `regpick`, `action`, `dialog`, `dlgclick`, `dlgcombo`, `panels` |
+| Control and tests | `assert`, `waitloaded`, `sleep`, `quit` |
+
+`action <name>` triggers any menu action by its shortcut-registry name
+(for example `toggle_grid`, `orient_to_sky`, `measure_psf`); avoid actions
+that open a modal dialog, which would block the script, and use `dialog`
+for the dialogs that can be driven. `assert` checks the displayed image
+and the session (`size`, `channels`, `rows`, `annotations`, `skyoriented`,
+`pixel`, `range`, `stretch`, `adjust`, `fn`, and more); the process exits
+with the number of failed assertions. `waitloaded` blocks until the image,
+its statistics and the list are ready, which is the deterministic
+alternative to a fixed `sleep`.
+
+**A scripted run never touches your settings.** With `--run`, the
+preferences, the shortcuts and the recent-files lists live in a private
+temporary directory that is removed on exit. A script therefore starts
+from the built-in defaults on every machine, which also makes it
+reproducible, and nothing it opens appears in **File ▸ Open Recent**. Set
+what a script needs inside the script (`skyorient`, `debayer`, …) or with
+the per-run options above (`--orient`, `--mouse`, `--lang`).
 
 ## 14. Export
 
@@ -1048,6 +1075,25 @@ name reassembles exactly, for overwriting or re-saving.
   `PCL:AstrometricSolution:*` properties (Info panel filter: `Astrometric`).
 - *Annotations misplaced after import* — they map through the recorded
   orientation; if the sidecar predates v0.12, re-orient and re-save once.
+- *A professional FITS frame looks mirrored, or upside down compared with
+  DS9* — NebulaScope draws the first row of a file at the top, DS9 at the
+  bottom. **Image ▸ Orient to Sky** puts north up and east left for every
+  plate-solved image in the list (§8); **Preferences ▸ Orientation at
+  open** does it for every FITS you open (§15).
+- *North Up leaves east on the right* — a rotation cannot undo a mirror;
+  use **Orient to Sky**, which flips first when the plate solution says so.
+- *Right-drag pans but you expected DS9's contrast/bias (or the reverse)* —
+  **Preferences ▸ Mouse**. With either setting, Ctrl, Alt or ⌘ +
+  right-drag adjusts contrast/bias, and Shift+left-drag pans (§6).
+- *Some DS9 regions did not import* — the status bar says how many and
+  why. Regions given in sky coordinates need a plate-solved image; `panda`
+  shapes, `compass`, `composite` and the `fk4`/`ecliptic` systems are not
+  read (§9).
+- *Identify in SIMBAD reports that no server answered* — the Strasbourg
+  site and both mirrors were tried; check the network. The servers are
+  checked again at the next lookup (§10).
+- *A script ignores my preferences or shortcuts* — by design: a `--run`
+  session uses private default settings (§13).
 - *Slow zoom/pan with overlay panels* — set overlay opacity to 100% in
   Preferences (translucency costs repaints).
 - Build issues — see `docs/BUILDING-{macos,linux,windows}.md`.

@@ -1,0 +1,8 @@
+# Region file format: DS9 version 4.1
+global color=green font="helvetica 12 normal"
+fk5
+ellipse(9:55:33.2,+69:03:55,7',3.4',67) # color=cyan text={M81}
+box(9:55:33.2,+69:03:55,17',9.5',67) # color=magenta
+circle(9:55:33.2,+69:03:55,35") # color=yellow
+line(9:55:33.2,+69:08:55,9:55:33.2,+69:03:55) # color=white text={N}
+line(9:56:29.2,+69:03:55,9:55:33.2,+69:03:55) # color=white text={E}

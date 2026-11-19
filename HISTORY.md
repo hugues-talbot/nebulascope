@@ -163,6 +163,85 @@ reference control points — the project's first feature landed on an
 outside user's request — and exact build provenance (`git describe` in the
 About box and `--version`), so a test binary always names its commit.
 
+## From comparing to measuring (v0.94 – v0.97, August–September 2026)
+
+Four releases in three weeks, each with one idea. **v0.94** was the
+eclipse release: the total solar eclipse of 12 August 2026 arrived as
+metadata-less mosaics, which produced the statistical CFA
+sniffer, selection-aware culling, and a batch close that no longer
+decoded a neighbour for every removed row. **v0.95** made comparison an
+instrument: *Match* links two views by plate solution or by two clicked
+stars, *Values in All Views* reads every cell at the corresponding pixel,
+and the display state became an open format — a written specification, a
+NumPy reference renderer, and a CI test holding the two to a few float32
+ULPs. **v0.96** turned the histogram around: it shows the *output*
+distribution, computed without an image pass, so the render can wait for
+the release of the mouse and a 60-megapixel master drags fluidly.
+
+Then the PSF study, which had started as a side question — how does a
+140 mm refractor compare with Hubble on the Pillars of
+Creation? — and became an appendix of the book, with star-free kernels
+measured against HST ground truth. **v0.97** brought it home: *Measure
+PSF*, *Deconvolve to Target PSF* (a declared output PSF, re-measured and
+written into the header: the contract is checked, not assumed), Gaia DR3
+lookups, and a cache of decoded images. In the weeks after the tag the
+same thread continued: deconvolution of a starless image with the kernel
+taken from its starry sibling, an analytic star removal that is the first
+half of the MCS decomposition, and the display decode moved off the
+interface thread, because a window that looks stuck for several seconds is a
+bug even when nothing is wrong.
+
+## A DS9 user sits down (v0.98, November 2026)
+
+After two quiet months of use, a student who lives in SAOImage DS9 agreed
+to try NebulaScope, and reported back in three lines: it must read `.reg`
+region files; DS9's contrast/bias on the mouse would be immensely useful;
+and the Aladin lookup fails. Two days of work followed, and they are a
+fair portrait of how an outside user changes a tool.
+
+- **Regions.** Parsing the format was the small part. The decision was
+  where to lay a region out: a region given on the sky is built *on the
+  sky*, by exact destination points on the sphere, and each vertex is
+  carried through the plate solution. Rotation and mirroring then need no
+  special case. Boxes had no home, so the box became the fourth
+  annotation type.
+- **Contrast and bias.** DS9's map, (x − bias) × contrast + ½, turned out
+  to be exactly the existing Brightness followed by Contrast. So the
+  gesture is not a second mechanism: it drives those two sliders, and
+  undo, sidecars and every stretch mode came for free. It felt slow on a
+  61-megapixel master (180 ms a frame), so during the drag only the
+  visible region is rendered (9 ms), and the full frame once on release.
+- **The lookups.** Aladin Lite had changed the parameters it reads. And
+  SIMBAD was simply down: the Strasbourg services were offline after a
+  security incident. The official mirrors were not; the application now
+  asks the main site once, then the mirrors together, and stays with the
+  first to answer until it quits.
+- **The mirror image.** A survey coadd of NGC 3972 came up north-down
+  *and* mirrored. Nothing was wrong with the file. NebulaScope draws the
+  first row at the top, as PixInsight and capture software do; the FITS
+  convention and DS9 draw it at the bottom. The plate solution already
+  knows: on the sky east lies counter-clockwise from north, and the sign
+  of the solution's determinant says whether the screen agrees. *Orient
+  to Sky* flips first when it must, then puts north up — for that coadd,
+  one lossless vertical flip. The same reasoning exposed a sign error in
+  the SExtractor ellipse angle that had been there since July.
+
+One rule came out of it, stated by the author and now written into the
+architecture notes: **behaviour borrowed from another tool arrives as a
+preference, with the old behaviour as the default, and a command-line
+flag for one run.** The DS9 right-drag and the sky orientation at open
+both follow it (`--mouse`, `--orient`); a newcomer gets DS9's habits with
+two settings, and nobody else's muscle memory moves.
+
+The release preparation had its own small discoveries. Test runs had been
+filling the author's *Open Recent* menu with fixtures, so a scripted run
+now has private settings. And the Windows build had been red since
+September for a real reason, hidden behind an unrelated upload failure
+the week before: once the decode ran on a worker thread, it met the
+multi-HDU probe on the same file, and the CFITSIO build on Windows is not
+thread-safe. Every FITS access now takes one lock. It is the kind of bug
+that only a third platform finds.
+
 ## Between the milestones
 
 Some of the project's texture lives outside the feature list. The same
@@ -198,3 +277,5 @@ full-night session tree (`IMAGETYP × FILTER`) and the Knothe–Rosenblatt
 colour operator whose mathematics is already sketched.
 
 *— written 6 August 2026, at v0.93.*
+
+*— continued 20 November 2026, for v0.98.*

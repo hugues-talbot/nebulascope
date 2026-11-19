@@ -14,8 +14,10 @@ abstract: >-
   provides draggable per-channel RGB histogram control with Linear/Log/Asinh
   and Generalised Hyperbolic Stretch transfer functions, false-colour maps,
   blink comparison with per-image stretch memory, WCS-based RA/Dec readout and
-  coordinate grids, and an editable vector annotation layer (ellipses, lines,
-  text) with JSON sidecar persistence and SExtractor catalog import.
+  coordinate grids, and an editable vector annotation layer (ellipses, boxes,
+  lines, text) with JSON sidecar persistence and import of SExtractor catalogs
+  and SAOImage DS9 region files. It also measures the stellar PSF across the
+  field and deconvolves linear images to a declared target PSF.
 keywords:
   - astronomy
   - FITS

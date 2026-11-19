@@ -29,6 +29,9 @@ Pour ouvrir :
 - **Fichier ▸ Ouvrir récent** — les 10 dernières images et les 5 derniers
   fichiers d'annotations.
 - **Ligne de commande** — voir §13.
+- Un **fichier de régions SAOImage DS9** (`.reg`) déposé sur la fenêtre, ou
+  donné avec son image, n'est pas listé : il est importé sur l'image sous
+  forme d'annotations (§9).
 - Les **FITS multi-HDU** apparaissent dans la liste d'images comme une
   entrée dépliable, une ligne par HDU image ; cliquez sur le HDU voulu.
 
@@ -39,7 +42,13 @@ donné** (ligne de commande, sélection du Finder, boîte de dialogue), une
 image par cellule, jusqu'à épuisement des cellules. La liste ne contient
 chaque image qu'**une seule fois** : rouvrir une image déjà listée
 sélectionne sa ligne existante au lieu d'ajouter un doublon (la barre d'état
-le signale). À la première visualisation une image reçoit une simple
+le signale). Un gros fichier est décodé en arrière-plan : la fenêtre reste
+réactive, la barre d'état nomme le fichier, et un indicateur d'occupation
+apparaît si le décodage dépasse quatre secondes (§15). Une image est montrée
+**telle que stockée dans le fichier**, première ligne en haut ; un FITS
+résolu astrométriquement peut au contraire s'ouvrir orienté comme le ciel
+(§8, et **Préférences ▸ Orientation à l'ouverture**, §15). À la première
+visualisation une image reçoit une simple
 **rampe linéaire min→max** (prévisible, sans conjecture) ; appuyez sur
 **Auto STF** pour un étirement renforcé (§3). Exception : un XISF portant
 l'**étirement d'écran enregistré** par l'application productrice
@@ -496,7 +505,7 @@ Menu Image / barre d'outils :
   telles quelles, et **Réinitialiser l'orientation** ramène chaque image
   au fichier.
 
-![Boîte de rotation avec cadran, aperçu et Nord en haut](../screenshots/rotate-dialog.png)
+![Boîte de rotation avec cadran, aperçu, Nord en haut et Nord en haut, est à gauche](../screenshots/rotate-dialog.png)
 
 Tout suit les pixels à travers chaque transformation : les annotations, la
 solution astrométrique (pixel de référence + matrice CD) et les
@@ -602,6 +611,15 @@ Un pur **calque vectoriel** — jamais rastérisé dans les données.
   formes (`panda`, `epanda`, `bpanda`, `compass`, `composite`) ou systèmes
   (`fk4`, `ecliptic`) non pris en charge, lignes illisibles. Une seule
   étape d'annulation. Script : `importreg <chemin>`.
+
+![Régions DS9 importées sur M81 : ellipse, boîte, cercle et deux vecteurs donnés en fk5](../screenshots/ds9-regions.png)
+
+*Un fichier de régions écrit à la main (`docs/screenshots/ds9-regions.reg`)
+sur une image dont le nord pointe vers la droite. L'ellipse, la boîte, le
+cercle et les deux vecteurs de 5′ vers le nord et l'est sont donnés en
+`fk5` ; chacun est construit sur le ciel puis porté par la solution
+astrométrique, et tombe donc au bon endroit sans que l'image soit
+réorientée.*
 
 ## 10. Astrométrie
 
@@ -998,15 +1016,55 @@ nebulascope [options] [fichiers...]
                          exactement en haut, rééchantillonné).
       --mouse <mode>     Glisser au bouton droit pour cette exécution : default
                          (panoramique) ou ds9 (contraste/biais).
-      --run <script>     Exécute un script de commandes (tests/batch).
+      --run <script>     Exécute un script de commandes (tests/batch) et
+                         renvoie le nombre d'assertions en échec.
       --run list         Liste toutes les commandes de script.
   -h, --help [commande]  Aide — générale, ou détaillée pour une commande.
+  -V, --version          Version et identifiant exact de la compilation.
 ```
 
 Exemples : `nebulascope *.fits` · `nebulascope --list cette-nuit.txt` ·
 `nebulascope --split 1x2 lum.fits ha.fits`.
+Un fichier `.reg` donné avec une image est importé sur celle-ci (§9).
 (macOS : invoquez le binaire à l'intérieur du bundle, ou créez un lien
 symbolique vers votre PATH — voir docs/BUILDING-macos.md.)
+
+### Commandes de script
+
+Un script pilote l'application réelle, une commande par ligne. La référence
+est l'application elle-même : `nebulascope --run list` affiche chaque
+commande avec un résumé d'une ligne, et `nebulascope --help <commande>` son
+usage détaillé (en anglais). Par usage :
+
+| Usage | Commandes |
+|:--------|:--------------------------|
+| Fichiers et liste | `open`, `show`, `next`, `prev`, `split`, `activate`, `tag`, `tagsort`, `tagremove`, `tagmove` |
+| Étirement et affichage | `fn`, `autostf`, `reset`, `window`, `axis`, `adjust`, `contrastbias`, `stfall`, `cmap`, `cmapmod`, `blackpatch`, `transport`, `debayer` |
+| Géométrie | `rot90`, `flip`, `rotate`, `crop`, `skyorient` |
+| Annotations et catalogues | `importreg`, `psfannotate`, `gaiastar`, `gaiaoverlay`, `simbadprobe` |
+| Traitement | `removestars`, `deconv` |
+| Sorties | `export`, `save`, `saveann`, `bake`, `screenshot` |
+| Entrées simulées | `histdrag`, `viewdrag`, `hover`, `regpick`, `action`, `dialog`, `dlgclick`, `dlgcombo`, `panels` |
+| Contrôle et tests | `assert`, `waitloaded`, `sleep`, `quit` |
+
+`action <nom>` déclenche n'importe quelle action de menu par son nom dans
+le registre des raccourcis (par exemple `toggle_grid`, `orient_to_sky`,
+`measure_psf`) ; évitez les actions qui ouvrent une boîte de dialogue
+modale, qui bloquerait le script, et utilisez `dialog` pour les boîtes
+pilotables. `assert` vérifie l'image affichée et la session (`size`,
+`channels`, `rows`, `annotations`, `skyoriented`, `pixel`, `range`,
+`stretch`, `adjust`, `fn`, entre autres) ; le processus renvoie le nombre
+d'assertions en échec. `waitloaded` attend que l'image, ses statistiques et
+la liste soient prêtes : c'est l'alternative déterministe à un `sleep` fixe.
+
+**Une exécution par script ne touche jamais à vos réglages.** Avec `--run`,
+les préférences, les raccourcis et les listes de fichiers récents vivent
+dans un dossier temporaire privé, supprimé à la sortie. Un script part donc
+des réglages par défaut sur toute machine, ce qui le rend aussi
+reproductible, et rien de ce qu'il ouvre n'apparaît dans **Fichier ▸ Ouvrir
+récent**. Réglez ce dont un script a besoin dans le script lui-même
+(`skyorient`, `debayer`, …) ou avec les options par exécution ci-dessus
+(`--orient`, `--mouse`, `--lang`).
 
 ## 14. Export
 
@@ -1176,6 +1234,27 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
 - *Annotations déplacées après import* — elles se projettent via
   l'orientation enregistrée ; si le fichier annexe précède la v0.12,
   réorientez et réenregistrez une fois.
+- *Un FITS professionnel paraît en miroir, ou à l'envers par rapport à
+  DS9* — NebulaScope dessine la première ligne d'un fichier en haut, DS9 en
+  bas. **Image ▸ Orienter comme le ciel** met le nord en haut et l'est à
+  gauche pour chaque image résolue de la liste (§8) ; **Préférences ▸
+  Orientation à l'ouverture** le fait pour chaque FITS ouvert (§15).
+- *Nord en haut laisse l'est à droite* — une rotation ne peut pas défaire
+  un miroir ; utilisez **Orienter comme le ciel**, qui retourne d'abord
+  l'image quand la solution astrométrique l'indique.
+- *Le glisser droit déplace l'image alors que vous attendiez le
+  contraste/biais de DS9 (ou l'inverse)* — **Préférences ▸ Souris**. Dans
+  les deux cas, Ctrl, Alt ou ⌘ + glisser droit règle le contraste/biais, et
+  Maj+glisser gauche déplace l'image (§6).
+- *Certaines régions DS9 n'ont pas été importées* — la barre d'état dit
+  combien et pourquoi. Les régions données en coordonnées célestes exigent
+  une image résolue ; les formes `panda`, `compass`, `composite` et les
+  systèmes `fk4`/`ecliptic` ne sont pas lus (§9).
+- *Identifier dans SIMBAD signale qu'aucun serveur n'a répondu* — le site
+  de Strasbourg et ses deux miroirs ont été essayés ; vérifiez le réseau.
+  Les serveurs sont vérifiés de nouveau à la consultation suivante (§10).
+- *Un script ignore mes préférences ou mes raccourcis* — c'est voulu : une
+  session `--run` utilise des réglages par défaut privés (§13).
 - *Zoom/panoramique lents avec les panneaux en surimpression* — passez
   l'opacité à 100 % dans les Préférences (la translucidité coûte des
   repeints).

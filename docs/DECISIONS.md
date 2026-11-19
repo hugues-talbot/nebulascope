@@ -555,3 +555,26 @@ by the decode's completion; `waitloaded` waits for the probe queue too, so
 scripts still see the HDU rows. A unit test runs the collision itself
 (200 loads on a thread against 200 probes of the same file), and the
 conformance driver now reports the application's stderr on a failed run.
+
+## A scripted run has its own settings (2026-11-19)
+
+Field report: File ▸ Open Recent listed test fixtures in place of the
+user's own files. Every `--run` (the smoke test, the conformance check,
+ad-hoc verification scripts) wrote the real settings directory: the
+window fills in `shortcuts.ini` at start-up, each opened file goes into
+`recent.ini`, and some commands save a preference (`debayer <pattern>
+<method>`, the histogram common-axis toggle).
+
+Decision: when `--run` is on the command line, `main()` points QSettings
+(IniFormat, UserScope, which all three settings files use) at a private
+QTemporaryDir before the first settings object exists; the directory is
+removed on exit. Done in `main()` rather than by testing a "script is
+driving" flag at each write: that flag is set after the window has been
+built and the command-line files opened, so the first writes would
+already be through. Consequence, accepted and documented: a script starts
+from the built-in default preferences and shortcuts, not the user's. That
+is also what makes a script reproducible from one machine to the next.
+What a script needs is set inside it, or with the per-run options
+(`--orient`, `--mouse`, `--lang`). A CTest (`settings_isolation`, Unix)
+runs a script with HOME pointing at an empty directory and fails if any
+`.ini` appears there.
