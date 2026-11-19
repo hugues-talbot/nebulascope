@@ -156,6 +156,19 @@ if(BUILD_TESTING)
                          ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
                          TIMEOUT 300)
 
+    # A scripted run must leave the user's settings alone (main.cpp gives it
+    # a private settings directory). HOME decides where Qt puts them on Unix
+    # only, so the check would pass vacuously elsewhere.
+    if(UNIX)
+        add_test(NAME settings_isolation
+                 COMMAND ${CMAKE_COMMAND}
+                         -DAPP=$<TARGET_FILE:nebulascope>
+                         -DSRC=${CMAKE_SOURCE_DIR}
+                         -DWORK=${CMAKE_BINARY_DIR}/settings_isolation
+                         -P ${CMAKE_SOURCE_DIR}/tests/settings_isolation.cmake)
+        set_tests_properties(settings_isolation PROPERTIES TIMEOUT 120)
+    endif()
+
     # Sidecar conformance: the display block rendered by NebulaScope and by
     # the standalone reference (tools/render_sidecar.py, no NebulaScope code)
     # must agree pixel-for-pixel. Needs python3 + numpy; skipped otherwise.

@@ -17,8 +17,11 @@
 #include <QFileOpenEvent>
 #include <QPointer>
 #include <QTimer>
+#include <QSettings>
+#include <QTemporaryDir>
 #include <cstdio>
 #include <cstdlib>
+#include <optional>
 
 // QApplication subclass that handles macOS "open document" requests — double-
 // clicking a file in Finder or using "Open With" sends a QFileOpenEvent rather
@@ -176,8 +179,10 @@ static void applyTheme(QApplication& app) {
 
 int main(int argc, char** argv) {
     // Handle --help/-h before constructing the GUI so it works headless too.
+    bool scripted = false;                       // --run given: see below
     for (int i = 1; i < argc; ++i) {
         const QString a = QString::fromLocal8Bit(argv[i]);
+        if (a == "--run") scripted = true;
         if (a == "--version" || a == "-V") {
             // Official version + exact build provenance (git describe).
             std::printf("NebulaScope %s (%s)\n", appinfo::kVersion, appbuild::gitDescribe());
@@ -207,6 +212,28 @@ int main(int argc, char** argv) {
     app.setApplicationName("NebulaScope");
     app.setApplicationDisplayName("NebulaScope");
     app.setOrganizationName("NebulaScope");
+
+    // A scripted run (--run: the smoke test, verification scripts, batch
+    // jobs) must leave the user's settings alone. Merely starting the app
+    // writes them: the window fills in shortcuts.ini, every opened file goes
+    // into recent.ini (test fixtures were pushing the user's own files out of
+    // File > Open Recent), and some commands save a preference. So the whole
+    // process gets a private, empty settings directory, removed on exit: the
+    // script starts from the built-in defaults and its writes still round-trip
+    // within the run. This must precede the first QSettings object (the
+    // language lookup just below), and it covers IniFormat/UserScope only,
+    // which is what every settings file of the app uses.
+    std::optional<QTemporaryDir> scriptSettings;
+    if (scripted) {
+        scriptSettings.emplace();
+        if (!scriptSettings->isValid()) {
+            std::fprintf(stderr, "--run: cannot create a temporary settings directory (%s)\n",
+                         scriptSettings->errorString().toLocal8Bit().constData());
+            return 3;
+        }
+        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, scriptSettings->path());
+    }
+
     app.setWindowIcon(QIcon(":/appicon.png"));   // bundled via Qt resource; .icns drives the macOS dock
     applyTheme(app);
 

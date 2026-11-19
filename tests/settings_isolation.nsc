@@ -1,0 +1,14 @@
+# Everything a scripted run does that would write the user's settings in a
+# normal run. Driven by tests/settings_isolation.cmake (the `settings_isolation`
+# CTest), which then checks that no settings file was written.
+# Run from the repo root.
+
+# Starting the app fills in shortcuts.ini; an opened file goes to recent.ini.
+open tests/testdata/cfa_asiair_rggb.fits
+waitloaded
+assert channels 3
+
+# A non-default demosaic method is saved as a preference (preferences.ini).
+debayer rggb bilinear
+waitloaded
+assert channels 3
