@@ -511,9 +511,11 @@ telescope-pointing keywords for approximate coordinates.
 - **Right-click menu**, grouped readout / annotations / lookup / zoom:
   copy RA/Dec, copy pixel value, annotate here, paste annotation,
   **Look up in Aladin** (opens Aladin Lite framed ~10× the clicked
-  annotation), **Identify in SIMBAD** (cone search scaled to the annotation;
-  a second entry sends the same query to the **CfA mirror**, for when the
-  Strasbourg service is unavailable),
+  annotation), **Identify in SIMBAD** (cone search scaled to the annotation.
+  The first lookup of a session checks that the Strasbourg server answers;
+  if it does not, its official mirrors — CfA Harvard and IDIA — are asked
+  together, the first to answer is used, and the status bar says so. That
+  choice is kept until you quit, with no further checking),
   and **Point Stellarium Here** — drives a running Stellarium (its *Remote
   Control* plugin enabled, default port 8090) to the clicked sky position
   and a matching field of view: where Aladin answers *what is this*,

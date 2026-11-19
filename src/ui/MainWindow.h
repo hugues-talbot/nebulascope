@@ -154,6 +154,13 @@ private slots:
     // DS9's contrast/bias control (contrast 0..10, bias 0..1), carried by
     // the Brightness and Contrast adjustments — an exact correspondence.
     void applyDs9ContrastBias(double contrast, double bias);
+    // SIMBAD with failover: the main server is probed once per session; if
+    // it does not answer, the mirrors are asked together and the first that
+    // answers is kept until the app quits. `then` receives the chosen index
+    // into the server list, or -1 when none answers.
+    void withSimbadServer(std::function<void(int)> then);
+    void probeSimbad(int ix, std::function<void(int)> then);   // then(ix) if up, then(-1) if not
+    void openSimbadCone(double raDeg, double decDeg, double radiusArcmin);
     void combineStars();                  // screen-blend starless + stars-only                         // Tools ▸ Combine Channels…
 
 public:
@@ -291,6 +298,7 @@ private:
     void startDisplayDecode(const QString& path);
     void showDecodeBar(bool on);
     QStringList    m_pendingRegFiles;      // .reg opened WITH an image: applied once it shows
+    int            m_simbadIx = -1;        // SIMBAD server kept for the session; -1 = not probed yet
     QString        m_displayWanted;        // asked for, not yet shown
     QString        m_displayInFlight;      // decode running for the display
     QFutureWatcher<PrefetchResult>* m_displayWatcher = nullptr;

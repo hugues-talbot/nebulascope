@@ -596,9 +596,11 @@ coordonnées approchées.
   copier AD/Déc, copier la valeur du pixel, annoter ici, coller
   l'annotation, **Consulter dans Aladin** (ouvre Aladin Lite cadré à ~10×
   l'annotation cliquée), **Identifier dans SIMBAD** (recherche par cône à
-  l'échelle de l'annotation ; une seconde entrée envoie la même requête au
-  **miroir du CfA**, pour les jours où le service de Strasbourg est
-  indisponible), et **Pointer Stellarium ici** — pilote un
+  l'échelle de l'annotation. La première consultation d'une session vérifie
+  que le serveur de Strasbourg répond ; sinon ses miroirs officiels — CfA
+  Harvard et IDIA — sont interrogés ensemble, le premier à répondre est
+  utilisé, et la barre d'état le signale. Ce choix est conservé jusqu'à la
+  fermeture, sans autre vérification), et **Pointer Stellarium ici** — pilote un
   Stellarium en cours d'exécution (son greffon *Remote Control* activé,
   port 8090 par défaut) vers la position céleste cliquée avec un champ
   correspondant : là où Aladin répond *qu'est-ce que c'est*, Stellarium

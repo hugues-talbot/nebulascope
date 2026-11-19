@@ -93,6 +93,10 @@ const CommandRef kCommands[] = {
     "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
     "standard FITS cards; annotations translate with the pixels. `view`\n"
     "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
+  {"simbadprobe",{"simbadprobe",
+    "Find the SIMBAD server the app will use this session — the main site if\n"
+    "it answers, else the first mirror that does — and print it to stderr.\n"
+    "Opens nothing. Online; not for CI."}},
   {"importreg",  {"importreg <path>",
     "Import a SAOImage DS9 region file (.reg) onto the shown image as\n"
     "annotations (circle, ellipse, box, polygon, line, vector, text, point,\n"
@@ -541,6 +545,16 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         }
         else { err = "unknown adjustment"; return false; }
         m_w->m_model.setAdjust(a);
+        return true;
+    }
+    if (cmd == QLatin1String("simbadprobe")) {
+        bool done = false;
+        int got = -1;
+        m_w->withSimbadServer([&](int ix) { got = ix; done = true; });
+        QElapsedTimer et; et.start();
+        while (!done && et.elapsed() < 30000)
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        if (!done || got < 0) { err = "no SIMBAD server answered"; return false; }
         return true;
     }
     if (cmd == QLatin1String("importreg")) {

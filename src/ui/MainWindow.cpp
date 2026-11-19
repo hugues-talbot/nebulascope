@@ -6112,6 +6112,99 @@ bool MainWindow::importDs9RegionsFile(const QString& path, QString* errOut) {
     return true;
 }
 
+// ---- SIMBAD with failover ----------------------------------------------------
+//
+// The lookup opens a SIMBAD page in the browser, so a dead server used to
+// show as a browser error with no way back. The servers below are the main
+// site and its official mirrors (listed on https://cds.unistra.fr/); all
+// three answer the same URLs. The main server is probed ONCE per session;
+// if it does not answer, the mirrors are asked together and the first that
+// answers is kept until the app quits — no probing after that.
+namespace {
+struct SimbadServer { const char* host; const char* label; };
+const SimbadServer kSimbadServers[] = {
+    { "simbad.cds.unistra.fr",  "CDS Strasbourg" },
+    { "simbad.cfa.harvard.edu", "CfA Harvard" },
+    { "simbad.idia.ac.za",      "IDIA South Africa" },
+};
+constexpr int kSimbadCount = int(sizeof kSimbadServers / sizeof kSimbadServers[0]);
+} // namespace
+
+void MainWindow::probeSimbad(int ix, std::function<void(int)> then) {
+    if (ix < 0 || ix >= kSimbadCount) { then(-1); return; }
+    if (!m_net) m_net = new QNetworkAccessManager(this);
+    QNetworkRequest req{ QUrl(QStringLiteral("https://%1/simbad/")
+                                  .arg(QLatin1String(kSimbadServers[ix].host))) };
+    req.setTransferTimeout(8000);
+    QNetworkReply* r = m_net->get(req);
+    connect(r, &QNetworkReply::finished, this, [this, r, ix, then] {
+        r->deleteLater();
+        const int status = r->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        // Up = a 200 that is the service, not a maintenance notice served
+        // in its place (the 2026 outage answered 404 "Page unavailable").
+        const QByteArray head = r->read(4096);
+        const bool ok = r->error() == QNetworkReply::NoError && status == 200 &&
+                        !head.contains("Page unavailable");
+        if (m_scriptDriving)
+            fprintf(stderr, "simbad probe %s: HTTP %d, %s%s\n", kSimbadServers[ix].host, status,
+                    r->error() == QNetworkReply::NoError ? "no error"
+                                                         : r->errorString().toUtf8().constData(),
+                    ok ? " -> up" : " -> down");
+        then(ok ? ix : -1);
+    });
+}
+
+void MainWindow::withSimbadServer(std::function<void(int)> then) {
+    if (m_simbadIx >= 0) { then(m_simbadIx); return; }
+    statusBar()->showMessage(tr("Checking the SIMBAD servers…"));
+    auto settle = [this, then](int ix) {
+        if (ix < 0) {
+            statusBar()->showMessage(tr("No SIMBAD server answered (main site and mirrors) — offline?"), 8000);
+        } else {
+            m_simbadIx = ix;                       // kept until the app quits
+            statusBar()->showMessage(ix == 0
+                ? tr("SIMBAD: %1").arg(QLatin1String(kSimbadServers[ix].label))
+                : tr("SIMBAD at %1 is not answering — using the %2 mirror for this session")
+                      .arg(QLatin1String(kSimbadServers[0].label),
+                           QLatin1String(kSimbadServers[ix].label)), 8000);
+        }
+        if (m_scriptDriving)
+            fprintf(stderr, "simbad server: %s\n", ix < 0 ? "none" : kSimbadServers[ix].host);
+        then(ix);
+    };
+    // The main site first, alone: when it answers, nothing else is asked.
+    // When it does not, the mirrors are asked TOGETHER and the first to
+    // answer wins — a mirror that hangs must not make the user wait out its
+    // timeout before a healthy one is considered.
+    probeSimbad(0, [this, settle](int ix) {
+        if (ix == 0) { settle(0); return; }
+        auto decided = std::make_shared<bool>(false);
+        auto pending = std::make_shared<int>(kSimbadCount - 1);
+        if (*pending <= 0) { settle(-1); return; }
+        for (int m = 1; m < kSimbadCount; ++m)
+            probeSimbad(m, [settle, decided, pending](int got) {
+                --*pending;
+                if (*decided) return;
+                if (got >= 0) { *decided = true; settle(got); }
+                else if (*pending == 0) { *decided = true; settle(-1); }
+            });
+    });
+}
+
+void MainWindow::openSimbadCone(double raDeg, double decDeg, double radiusArcmin) {
+    withSimbadServer([raDeg, decDeg, radiusArcmin](int ix) {
+        if (ix < 0) return;
+        QUrl url(QStringLiteral("https://%1/simbad/sim-coo").arg(QLatin1String(kSimbadServers[ix].host)));
+        QUrlQuery q;
+        q.addQueryItem(QStringLiteral("Coord"), QStringLiteral("%1 %2")
+            .arg(raDeg, 0, 'f', 6).arg(decDeg, 0, 'f', 6));
+        q.addQueryItem(QStringLiteral("Radius"), QString::number(radiusArcmin, 'f', 2));
+        q.addQueryItem(QStringLiteral("Radius.unit"), QStringLiteral("arcmin"));
+        url.setQuery(q);
+        QDesktopServices::openUrl(url);
+    });
+}
+
 void MainWindow::applyDs9ContrastBias(double contrast, double bias) {
     contrast = qBound(0.0, contrast, 10.0);
     bias = qBound(0.0, bias, 1.0);
@@ -6662,7 +6755,6 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     menu.addSeparator();
     QAction* aAladin = nullptr;
     QAction* aSimbad = nullptr;
-    QAction* aSimbadCfa = nullptr;         // the Harvard mirror: same service, same URL form
     QAction* aStellarium = nullptr;
     QAction* aGaia = nullptr;
     QAction* aGaiaOverlay = nullptr;
@@ -6685,8 +6777,6 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
             aAladin = menu.addAction(tr("Look up in Aladin — %1").arg(where));
             aSimbad = menu.addAction(tr("Identify in SIMBAD — %1").arg(where));
             aSimbad->setData(radiusArcmin);
-            aSimbadCfa = menu.addAction(tr("Identify in SIMBAD (CfA mirror) — %1").arg(where));
-            aSimbadCfa->setData(radiusArcmin);
             aStellarium = menu.addAction(tr("Point Stellarium Here — %1").arg(where));
             aGaia = menu.addAction(tr("Identify Star in Gaia DR3 — %1").arg(where));
             gaiaX = cx; gaiaY = cy;
@@ -6783,19 +6873,10 @@ void MainWindow::onImageContextMenu(const QPoint& globalPos, int x, int y, bool 
     else if (aGaiaOverlay && chosen == aGaiaOverlay) {
         gaiaOverlayAction();
     }
-    else if ((aSimbad && chosen == aSimbad) || (aSimbadCfa && chosen == aSimbadCfa)) {
-        // SIMBAD coordinate (cone) query around the target — at CDS, or at
-        // the CfA mirror (same service and URL form; there when CDS is not).
-        QUrl url(chosen == aSimbad
-            ? QStringLiteral("https://simbad.cds.unistra.fr/simbad/sim-coo")
-            : QStringLiteral("https://simbad.cfa.harvard.edu/simbad/sim-coo"));
-        QUrlQuery q;
-        q.addQueryItem(QStringLiteral("Coord"), QStringLiteral("%1 %2")
-            .arg(alRa, 0, 'f', 6).arg(alDec, 0, 'f', 6));
-        q.addQueryItem(QStringLiteral("Radius"), QString::number(chosen->data().toDouble(), 'f', 2));
-        q.addQueryItem(QStringLiteral("Radius.unit"), QStringLiteral("arcmin"));
-        url.setQuery(q);
-        QDesktopServices::openUrl(url);
+    else if (aSimbad && chosen == aSimbad) {
+        // SIMBAD coordinate (cone) query around the target, on whichever
+        // server answers (main first, then the mirrors; kept for the session).
+        openSimbadCone(alRa, alDec, aSimbad->data().toDouble());
     }
     else if (aCopyAnn && chosen == aCopyAnn) {
         m_copiedAnn = m_annByPath[m_currentPath][std::size_t(copyIdx)];

@@ -442,8 +442,17 @@ DS9 hands.
 *Aladin.* The lookup opened an all-sky view: the Aladin Lite page (rebuilt
 after the 2026 CDS incident) reads numeric `ra`/`dec`/`fov` and ignores
 `target`/`survey`. The link now sends both forms — each page reads its own.
-SIMBAD at Strasbourg was down; the CfA mirror answers the same URL, and
-is offered as a second menu entry rather than a silent redirect.
+SIMBAD at Strasbourg was down. A second menu entry for the CfA mirror
+lasted a day; the user's specification replaced it: try the main server
+once, on failure go to a mirror, and stay there for the session. The
+lookup opens a browser page, so the app cannot see a failure after the
+fact — it probes first (a GET of the service root; up means HTTP 200 that
+is not the outage notice). One refinement came from the first live run:
+the Harvard mirror was hanging that afternoon, and probing mirrors in
+order made the user wait out its timeout. The main site is probed alone
+(when it answers, nothing else is asked); when it does not, the mirrors
+are asked TOGETHER and the first to answer wins — half a second that
+day, for IDIA. The official mirror list lives on https://cds.unistra.fr/.
 
 ## Display drags render what is on screen (2026-11-19)
 
