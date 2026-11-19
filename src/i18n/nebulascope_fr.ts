@@ -3502,17 +3502,22 @@ Ctrl/Cmd + glisser gauche.</translation>
     <message>
         <location filename="../ui/PreferencesDialog.cpp" line="127"/>
         <source>as stored in the file (default)</source>
-        <translation>tel que stocké dans le fichier (défaut)</translation>
+        <translation>telle que stockée dans le fichier (défaut)</translation>
     </message>
     <message>
         <location filename="../ui/PreferencesDialog.cpp" line="128"/>
-        <source>as the sky — flips and quarter turns only (exact pixels)</source>
-        <translation>comme le ciel — retournement et quarts de tour seulement (pixels exacts)</translation>
+        <source>FITS with astrometry: north up, east left — exact pixels (flip, quarter turns)</source>
+        <translation>FITS avec astrométrie : nord en haut, est à gauche — pixels exacts (retournement, quarts de tour)</translation>
     </message>
     <message>
         <location filename="../ui/PreferencesDialog.cpp" line="129"/>
-        <source>as the sky — north exactly up (resampled)</source>
-        <translation>comme le ciel — nord exactement en haut (rééchantillonné)</translation>
+        <source>FITS with astrometry: north exactly up, east left (resampled)</source>
+        <translation>FITS avec astrométrie : nord exactement en haut, est à gauche (rééchantillonné)</translation>
+    </message>
+    <message>
+        <location filename="../ui/PreferencesDialog.cpp" line="141"/>
+        <source>Orientation at open:</source>
+        <translation>Orientation à l&apos;ouverture :</translation>
     </message>
     <message>
         <location filename="../ui/PreferencesDialog.cpp" line="131"/>
@@ -3536,11 +3541,6 @@ pixel garde sa valeur, le nord finit à moins de 45° du haut (exactement en
 haut pour une image non tournée). Le second retire aussi l&apos;angle restant par
 rotation, ce qui rééchantillonne les données. S&apos;applique aux fichiers ouverts
 désormais ; Image ▸ Réinitialiser l&apos;orientation montre un fichier tel que stocké.</translation>
-    </message>
-    <message>
-        <location filename="../ui/PreferencesDialog.cpp" line="141"/>
-        <source>Plate-solved FITS open:</source>
-        <translation>Ouverture des FITS résolus :</translation>
     </message>
     <message>
         <location filename="../ui/PreferencesDialog.cpp" line="146"/>

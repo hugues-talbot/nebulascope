@@ -1114,9 +1114,9 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     c'est le dernier choix qui s'affiche ; chaque décodage achevé entre tout
     de même dans le cache. **Souris** — le glisser au bouton droit règle
     contraste et biais comme dans SAOImage DS9 (désactivé par défaut : le
-    glisser droit déplace l'image ; voir §6). **Ouverture des FITS
-    résolus** — *tel que stocké dans le fichier* (défaut), ou *comme le
-    ciel* : un fichier FITS porteur d'une solution astrométrique est alors
+    glisser droit déplace l'image ; voir §6). **Orientation à
+    l'ouverture** — *telle que stockée dans le fichier* (défaut), ou
+    *comme le ciel* : un fichier FITS porteur d'une solution astrométrique est alors
     orienté à l'ouverture, est à gauche du nord et nord en haut, exactement
     comme le ferait **Orienter comme le ciel**. Le premier choix « comme le
     ciel » n'emploie qu'un retournement et des quarts de tour — chaque

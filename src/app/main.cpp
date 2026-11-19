@@ -108,7 +108,7 @@ static void printUsage() {
         "                        for this run: stored (as in the file), sky (east left,\n"
         "                        north up by a flip and quarter turns only — exact\n"
         "                        pixels) or sky-exact (north exactly up, resampled).\n"
-        "                        The default is Preferences ▸ Plate-solved FITS open.\n"
+        "                        The default is Preferences ▸ Orientation at open.\n"
         "      --mouse <mode>    Right-button drag for this run: default (pan) or ds9\n"
         "                        (contrast/bias, as in SAOImage DS9). The default is\n"
         "                        Preferences ▸ Mouse.\n"

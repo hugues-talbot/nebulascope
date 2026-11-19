@@ -125,8 +125,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
 
     auto* skyOrient = new QComboBox();
     skyOrient->addItem(tr("as stored in the file (default)"));
-    skyOrient->addItem(tr("as the sky — flips and quarter turns only (exact pixels)"));
-    skyOrient->addItem(tr("as the sky — north exactly up (resampled)"));
+    skyOrient->addItem(tr("FITS with astrometry: north up, east left — exact pixels (flip, quarter turns)"));
+    skyOrient->addItem(tr("FITS with astrometry: north exactly up, east left (resampled)"));
     skyOrient->setCurrentIndex(p.skyOrient);
     skyOrient->setToolTip(tr("How a FITS file that carries a plate solution is oriented when it\n"
                              "is opened. NebulaScope draws the first row of a file at the top; the\n"
@@ -138,7 +138,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                              "unrotated frame). The second also rotates by the remaining angle,\n"
                              "which resamples the data. Applies to files opened from now on;\n"
                              "Image ▸ Reset Orientation shows a file as stored."));
-    form->addRow(tr("Plate-solved FITS open:"), skyOrient);
+    form->addRow(tr("Orientation at open:"), skyOrient);
 
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
@@ -230,6 +230,9 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         debayerMeth->setCurrentIndex(qBound(0, d.debayerMethod, 2));
         zoomCoarse->setValue(d.zoomStepCoarse);
         zoomFine->setValue(d.zoomStepFine);
+        cacheMB->setValue(d.imageCacheMB);
+        ds9Mouse->setChecked(d.ds9RightDrag);
+        skyOrient->setCurrentIndex(d.skyOrient);
     });
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {

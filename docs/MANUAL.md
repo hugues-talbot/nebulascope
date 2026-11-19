@@ -875,7 +875,7 @@ nebulascope [options] [files...]
       --orient <mode>    How plate-solved FITS files are oriented when opened,
                          for this run: stored, sky (flip and quarter turns
                          only) or sky-exact (north exactly up, resampled).
-                         The default is Preferences ▸ Plate-solved FITS open.
+                         The default is Preferences ▸ Orientation at open.
       --mouse <mode>     Right-button drag for this run: default (pan) or ds9
                          (contrast/bias). The default is Preferences ▸ Mouse.
       --run list         List all script commands (one-line summaries);
@@ -996,8 +996,8 @@ name reassembles exactly, for overwriting or re-saving.
     runs past four seconds. If you move on to another row meanwhile, the
     latest choice is the one shown; every decode that finishes still enters
     the cache. **Mouse** — right-button drag adjusts contrast/bias as in
-    SAOImage DS9 (off by default: right-drag pans; see §6). **Plate-solved
-    FITS open** — *as stored in the file* (default), or *as the sky*: a
+    SAOImage DS9 (off by default: right-drag pans; see §6). **Orientation
+    at open** — *as stored in the file* (default), or *as the sky*: a
     FITS file that carries a plate solution is then oriented when it is
     opened, east left of north and north up, exactly as **Orient to Sky**
     would. The first "as the sky" choice uses a flip and quarter turns only
