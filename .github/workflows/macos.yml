@@ -14,7 +14,7 @@ on:
 
 jobs:
   macos:
-    runs-on: macos-14          # arm64 (Apple Silicon)
+    runs-on: macos-15          # arm64 (Apple Silicon); the macos-14 arm64 image is retired
     env:
       DEPS: ${{ github.workspace }}/deps        # install prefix for libXISF
 
