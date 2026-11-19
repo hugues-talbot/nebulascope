@@ -5981,7 +5981,13 @@ void MainWindow::importSexCatalog() {
         a.y = cat.value(r, "Y_IMAGE") - 1.0;
         a.a = std::max(2.0, k * cat.value(r, "A_IMAGE", 2.0));
         a.b = std::max(2.0, k * cat.value(r, "B_IMAGE", 2.0));
-        a.angleDeg = -cat.value(r, "THETA_IMAGE");    // CCW/x (y-up) -> y-down scene
+        // THETA_IMAGE runs from +X toward +Y in FITS (X, Y) — and those ARE
+        // our pixel axes (row 1 is drawn at the top, no flip; the plate
+        // solution uses the same convention), so the direction (cos t, sin t)
+        // carries over unchanged. It was negated until v0.97, which mirrored
+        // every ellipse about the horizontal: a y-flip would have to flip
+        // the positions too, and they were (rightly) left alone.
+        a.angleDeg = cat.value(r, "THETA_IMAGE");
         if (lab == QLatin1String("NUMBER"))
             a.label = QString::number(int(cat.value(r, "NUMBER")));
         else if (lab == QLatin1String("MAG_AUTO"))
