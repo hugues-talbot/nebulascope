@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 //
 // Wcs — a linear World Coordinate System solution (gnomonic / TAN projection),
 // parsed from the shared ImageHeader. Covers the solutions written by
@@ -58,6 +59,23 @@ public:
     // axes. A standard FITS solution (north up, east left with y UP) has
     // det(CD) < 0 and is therefore shown mirrored here.
     bool mirroredOnScreen() const;
+    // Visual counter-clockwise rotation (degrees, in (-180, 180]) that would
+    // bring celestial north to screen-up at the centre of a w x h frame; NaN
+    // without a solution.
+    double northUpDelta(int w, int h) const;
+    // The operations that show a w x h frame as the sky — parity restored,
+    // north up. `ops` are lossless (one flip at most, then quarter turns)
+    // and leave north within 45 degrees of up; `rotateDeg` is the remaining
+    // visual-CCW rotation to put it exactly up (0 when exact = false, or
+    // when nothing remains). When the frame is mirrored the flip is the one
+    // that leaves the smaller rotation: a standard FITS needs one vertical
+    // flip and nothing else.
+    struct SkyOrientPlan {
+        std::vector<PixelXform> ops;
+        double rotateDeg = 0.0;
+        bool empty() const { return ops.empty() && rotateDeg == 0.0; }
+    };
+    SkyOrientPlan skyOrientPlan(int w, int h, bool exact) const;
 
     static QString formatRa(double raDeg);    // "HH:MM:SS.ss"
     static QString formatDec(double decDeg);  // "±DD°MM′SS.s″"

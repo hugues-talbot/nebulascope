@@ -872,6 +872,12 @@ nebulascope [options] [files...]
                          with every loaded image (same-session frames).
       --lang <code>      Override the UI language for this run (en, fr, or
                          system). The default is Preferences ▸ Language.
+      --orient <mode>    How plate-solved FITS files are oriented when opened,
+                         for this run: stored, sky (flip and quarter turns
+                         only) or sky-exact (north exactly up, resampled).
+                         The default is Preferences ▸ Plate-solved FITS open.
+      --mouse <mode>     Right-button drag for this run: default (pan) or ds9
+                         (contrast/bias). The default is Preferences ▸ Mouse.
       --run list         List all script commands (one-line summaries);
                          detailed help: --help <command>.
       --run <script>     Execute a command script and exit with the number of
@@ -990,7 +996,21 @@ name reassembles exactly, for overwriting or re-saving.
     runs past four seconds. If you move on to another row meanwhile, the
     latest choice is the one shown; every decode that finishes still enters
     the cache. **Mouse** — right-button drag adjusts contrast/bias as in
-    SAOImage DS9 (off by default: right-drag pans; see §6).
+    SAOImage DS9 (off by default: right-drag pans; see §6). **Plate-solved
+    FITS open** — *as stored in the file* (default), or *as the sky*: a
+    FITS file that carries a plate solution is then oriented when it is
+    opened, east left of north and north up, exactly as **Orient to Sky**
+    would. The first "as the sky" choice uses a flip and quarter turns only
+    — every pixel keeps its value, north ends within 45° of up, and a
+    standard unrotated frame comes out exactly as DS9 shows it; the second
+    also rotates out the remaining angle, which resamples. The orientation
+    is recorded like one you applied by hand: annotations, sidecars and
+    DS9 regions follow it, and **Reset Orientation** shows the file as
+    stored. It applies to files opened after the change, to FITS only
+    (XISF frames come from PixInsight already in sky parity), and never to
+    a file without a plate solution. Both this and the mouse setting can
+    be set for one run from the command line (`--orient`, `--mouse`)
+    without touching the saved preference.
   - **Shortcuts** — every action's binding, editable; stored in
     `shortcuts.ini` (empty value disables; stale clashes revert). Each
     entry records the default it was written with (`name.default`), so

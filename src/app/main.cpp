@@ -104,6 +104,14 @@ static void printUsage() {
         "                        with every loaded image (same-session frames).\n"
         "      --lang <code>     Override the UI language for this run (en, fr, or\n"
         "                        system). The default is Preferences ▸ Language.\n"
+        "      --orient <mode>   How plate-solved FITS files are oriented when opened,\n"
+        "                        for this run: stored (as in the file), sky (east left,\n"
+        "                        north up by a flip and quarter turns only — exact\n"
+        "                        pixels) or sky-exact (north exactly up, resampled).\n"
+        "                        The default is Preferences ▸ Plate-solved FITS open.\n"
+        "      --mouse <mode>    Right-button drag for this run: default (pan) or ds9\n"
+        "                        (contrast/bias, as in SAOImage DS9). The default is\n"
+        "                        Preferences ▸ Mouse.\n"
         "      --run <script>    Execute a line-based command script (testing/batch)\n"
         "                        and exit with the number of failed assertions.\n"
         "                        Headless: QT_QPA_PLATFORM=offscreen. See docs/MANUAL.md.\n"
@@ -213,6 +221,31 @@ int main(int argc, char** argv) {
         if (i >= 0 && i + 1 < a.size()) lang = a[i + 1].toLower();
         if (lang == QLatin1String("system")) lang.clear();
     }
+    // Per-run overrides of two preferences, parsed here for the same reason
+    // (the window reads them as it is built). Never saved.
+    {
+        const QStringList a = app.arguments();
+        int i = a.indexOf(QLatin1String("--orient"));
+        if (i >= 0) {
+            const QString m = i + 1 < a.size() ? a[i + 1].toLower() : QString();
+            const int v = m == QLatin1String("stored") ? 0 : m == QLatin1String("sky") ? 1
+                        : m == QLatin1String("sky-exact") ? 2 : -1;
+            if (v < 0) {
+                std::fprintf(stderr, "Bad --orient argument (expected stored, sky or sky-exact)\n");
+                return 2;
+            }
+            astro::Preferences::get().runSkyOrient = v;
+        }
+        i = a.indexOf(QLatin1String("--mouse"));
+        if (i >= 0) {
+            const QString m = i + 1 < a.size() ? a[i + 1].toLower() : QString();
+            if (m != QLatin1String("default") && m != QLatin1String("ds9")) {
+                std::fprintf(stderr, "Bad --mouse argument (expected default or ds9)\n");
+                return 2;
+            }
+            astro::Preferences::get().runDs9RightDrag = m == QLatin1String("ds9") ? 1 : 0;
+        }
+    }
     const QLocale uiLocale = lang.isEmpty() ? QLocale::system() : QLocale(lang);
     static QTranslator appTr, qtTr;              // must outlive app.exec()
     if (appTr.load(uiLocale, QStringLiteral("nebulascope"), QStringLiteral("_"),
@@ -257,7 +290,7 @@ int main(int argc, char** argv) {
             }
         } else if (a == "--shared-stf") {
             sharedStf = true;
-        } else if (a == "--lang" && i + 1 < args.size()) {
+        } else if ((a == "--lang" || a == "--orient" || a == "--mouse") && i + 1 < args.size()) {
             ++i;                                    // consumed above, before the GUI existed
         } else if (a == "--run" && i + 1 < args.size()) {
             scriptPath = args[++i];

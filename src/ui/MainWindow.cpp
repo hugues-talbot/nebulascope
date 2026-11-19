@@ -916,7 +916,7 @@ void MainWindow::connectViewSignals(ImageView* v) {
         if (v == m_view) onPixelHovered(x, y, r, g, b, valid);
     });
     connect(v, &ImageView::contextMenuRequested, this, &MainWindow::onImageContextMenu);
-    v->setRightDragAdjusts(Preferences::get().ds9RightDrag);
+    v->setRightDragAdjusts(Preferences::get().effectiveDs9RightDrag());
     connect(v, &ImageView::contrastBiasDragged, this, [this, v](double fx, double fy) {
         // DS9: bias off the horizontal position, contrast (0..10) off the vertical.
         if (v == m_view && m_image.isValid()) applyDs9ContrastBias(10.0 * fy, fx);
@@ -1438,7 +1438,7 @@ void MainWindow::buildMenusAndToolbar() {
             refreshAnnotations();                       // grid density, stroke width
             m_imgCache.setBudgetBytes(qint64(Preferences::get().imageCacheMB) * 1024 * 1024);
             for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
-                c->view()->setRightDragAdjusts(Preferences::get().ds9RightDrag);
+                c->view()->setRightDragAdjusts(Preferences::get().effectiveDs9RightDrag());
             const int newDebayer = Preferences::get().debayerMethod;
             if (newDebayer != oldDebayer) {
                 // Route through the undo stack: rewind the pref the dialog
@@ -2403,22 +2403,8 @@ RotateDialog* MainWindow::makeRotateDialog() {
 }
 
 double MainWindow::northUpDelta() const {
-    if (!m_image.isValid() || !m_wcs.valid()) return std::numeric_limits<double>::quiet_NaN();
-    // Screen direction of celestial north at the image centre; the rotation
-    // that sends it to "up" (screen angle -90 deg, visual-CCW positive) is
-    // phi + 90.
-    const double cx = (m_image.width() - 1) / 2.0, cy = (m_image.height() - 1) / 2.0;
-    double ra = 0, dec = 0, nx = 0, ny = 0;
-    if (!m_wcs.pixelToSky(cx, cy, ra, dec)) return std::numeric_limits<double>::quiet_NaN();
-    const bool south = dec > 89.0;                   // sample away from the pole
-    const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
-    if (!m_wcs.skyToPixel(ra, dec + dd, nx, ny)) return std::numeric_limits<double>::quiet_NaN();
-    double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
-    if (south) phi += 180.0;
-    double rel = phi + 90.0;
-    while (rel > 180.0) rel -= 360.0;
-    while (rel <= -180.0) rel += 360.0;
-    return rel;
+    if (!m_image.isValid()) return std::numeric_limits<double>::quiet_NaN();
+    return m_wcs.northUpDelta(m_image.width(), m_image.height());
 }
 
 void MainWindow::orientToSky() {
@@ -2705,6 +2691,7 @@ void MainWindow::removeSelectedRows(bool promptForAnnotations) {
         m_sidecarOrientByPath.remove(p);
         m_diskSizeByPath.remove(p);
         m_debayerByPath.remove(p);
+        m_skyOrientSeen.remove(p);                       // reopening considers it afresh
         for (int i = 0; ViewCell* c = m_grid->cellAt(i); ++i)
             if (c != m_grid->activeCell() && c->path == p) c->clearContent();
         delete m_fileList->takeItem(m_fileList->row(it));
@@ -3478,6 +3465,45 @@ void MainWindow::displayPath(const QString& path) {
                                       .arg(Wcs::formatRa(ra), Wcs::formatDec(dec));
     }
 
+    // Sky orientation at open (Preferences / --orient; off by default): a
+    // FITS file with a plate solution is shown east-left, north-up instead
+    // of as stored. The plan is SEEDED into this image's orientation history
+    // — the same record a manual flip or rotation leaves — so the replay
+    // below, sidecar annotations, saved orientation and Reset Orientation
+    // all treat it as any other orientation. Once per list row: after a
+    // Reset Orientation the file stays as stored.
+    QString skyOrientNote;
+    if (!m_skyOrientSeen.contains(path)) {
+        m_skyOrientSeen.insert(path);
+        const int mode = Preferences::get().effectiveSkyOrient();
+        if (mode > 0 && m_wcs.valid() && !m_xformByPath.contains(path) &&
+            m_header.container == QLatin1String("FITS")) {
+            const Wcs::SkyOrientPlan plan =
+                m_wcs.skyOrientPlan(m_image.width(), m_image.height(), mode == 2);
+            QStringList ops, said;
+            for (Wcs::PixelXform op : plan.ops) {
+                const Xform x = op == Wcs::PixelXform::RotCW  ? Xform::RotCW
+                              : op == Wcs::PixelXform::RotCCW ? Xform::RotCCW
+                              : op == Wcs::PixelXform::FlipH  ? Xform::FlipH : Xform::FlipV;
+                ops << xformName(x);
+                said << (x == Xform::FlipH ? tr("flipped horizontally")
+                       : x == Xform::FlipV ? tr("flipped vertically")
+                       : x == Xform::RotCW ? tr("turned 90° clockwise")
+                                           : tr("turned 90° counter-clockwise"));
+            }
+            if (plan.rotateDeg != 0.0) {
+                ops << QStringLiteral("rot:%1").arg(plan.rotateDeg, 0, 'f', 4);
+                said << tr("rotated %1°").arg(plan.rotateDeg, 0, 'f', 2);
+            }
+            if (!ops.isEmpty()) {
+                m_xformByPath[path] = ops;
+                bumpXformRev(path);
+                skyOrientNote = tr("Opened oriented as the sky (%1) — Image ▸ Reset Orientation shows it as stored")
+                                    .arg(said.join(QStringLiteral(", ")));
+            }
+        }
+    }
+
     m_model.setChannelCount(m_image.channels());
     // Disk-frame statistics: reused from the cache on a hit (they were
     // computed from these very pixels), recomputed and stored on a miss.
@@ -3734,6 +3760,10 @@ void MainWindow::displayPath(const QString& path) {
         .arg(m_fileList->currentRow() + 1).arg(m_fileList->count())
         .arg(debayerNote), 4000);
 
+    if (!skyOrientNote.isEmpty()) {
+        statusBar()->showMessage(skyOrientNote, 8000);
+        if (m_scriptDriving) fprintf(stderr, "%s\n", skyOrientNote.toUtf8().constData());
+    }
     if (!m_pendingRegFiles.isEmpty()) {     // region files opened together with this image
         const QStringList regs = m_pendingRegFiles;
         m_pendingRegFiles.clear();

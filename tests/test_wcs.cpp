@@ -212,4 +212,58 @@ NS_TEST(wcs_parity_as_displayed) {
     NS_CHECK(!Wcs().mirroredOnScreen());           // no solution: no claim
 }
 
+// A TAN solution rotated by rotDeg, standard parity (det < 0) or the other:
+// CD = R(rot) . diag(p s, s), so det(CD) = p s^2.
+static Wcs rotatedTan(double rotDeg, bool standardParity, int w, int h) {
+    const double s = 2.0 / 3600.0, th = rotDeg * M_PI / 180.0;
+    const double c = std::cos(th), sn = std::sin(th);
+    const double p = standardParity ? -1.0 : 1.0;
+    ImageHeader hd;
+    hd.cards.push_back({ "CTYPE1", "'RA---TAN'", QString() });
+    hd.cards.push_back({ "CTYPE2", "'DEC--TAN'", QString() });
+    addNum(hd, "CRVAL1", 150.0); addNum(hd, "CRVAL2", 20.0);
+    addNum(hd, "CRPIX1", (w + 1) / 2.0); addNum(hd, "CRPIX2", (h + 1) / 2.0);
+    addNum(hd, "CD1_1", p * s * c);  addNum(hd, "CD1_2", -s * sn);
+    addNum(hd, "CD2_1", p * s * sn); addNum(hd, "CD2_2", s * c);
+    return Wcs::fromHeader(hd);
+}
+
+NS_TEST(wcs_sky_orient_plan) {
+    // A standard FITS frame (north up with y UP): one vertical flip, exactly.
+    {
+        const Wcs w = Wcs::fromHeader(tanHeader(180.0, 45.0, 64.5, 48.5, 2.0));
+        for (bool exact : { false, true }) {
+            const Wcs::SkyOrientPlan p = w.skyOrientPlan(128, 96, exact);
+            NS_CHECK(p.ops.size() == 1 && p.ops[0] == Wcs::PixelXform::FlipV);
+            NS_CHECK(p.rotateDeg == 0.0);
+        }
+    }
+    // Any rotation, both parities, a non-square frame: the lossless plan ends
+    // unmirrored with north within 45 degrees of up, using at most one flip
+    // and quarter turns; the exact plan's rotation is what remains.
+    const int W = 200, H = 120;
+    for (bool std_ : { true, false })
+        for (double rot = -170.0; rot <= 180.0; rot += 23.0) {
+            const Wcs w = rotatedTan(rot, std_, W, H);
+            NS_CHECK(w.valid());
+            NS_CHECK(w.mirroredOnScreen() == std_);
+            const Wcs::SkyOrientPlan p = w.skyOrientPlan(W, H, true);
+            Wcs cur = w;
+            int cw = W, ch = H, flips = 0;
+            for (Wcs::PixelXform op : p.ops) {
+                cur = cur.transformed(op, cw, ch);
+                if (op == Wcs::PixelXform::RotCW || op == Wcs::PixelXform::RotCCW) std::swap(cw, ch);
+                else ++flips;
+            }
+            NS_CHECK(flips == (std_ ? 1 : 0));
+            NS_CHECK(p.ops.size() <= 3);
+            NS_CHECK(!cur.mirroredOnScreen());
+            const double rel = cur.northUpDelta(cw, ch);
+            NS_CHECK(std::fabs(rel) <= 45.0 + 1e-6);
+            NS_CHECK_NEAR(p.rotateDeg, std::fabs(rel) >= 0.01 ? rel : 0.0, 1e-9);
+            NS_CHECK(w.skyOrientPlan(W, H, false).rotateDeg == 0.0);
+        }
+    NS_CHECK(Wcs().skyOrientPlan(100, 100, true).empty());     // no solution: nothing
+}
+
 int main() { return nstest::runAll(); }

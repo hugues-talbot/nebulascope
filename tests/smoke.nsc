@@ -471,4 +471,37 @@ open smoke_data.xisf
 waitloaded
 assert range 0.0 1.0 0.01
 
+# Sky orientation at open (the preference / --orient, here its run-time
+# form). Rows are closed first: the choice is made once per list row.
+action clear_list
+assert rows 0
+skyorient lossless
+# A standard FITS solution, unrotated: one vertical flip, north exactly up.
+open tests/testdata/wcs_wide.fits
+waitloaded
+assert size 128 128
+assert skyoriented 0.05
+# Rotated 30 degrees: flips and quarter turns only leave north within 45
+# degrees of up, the frame unmirrored and every pixel untouched (same size).
+open tests/testdata/wcs_narrow.fits
+waitloaded
+assert size 128 128
+assert skyoriented 45
+# Reset Orientation shows the file as stored, and it stays that way.
+action reset_orientation
+waitloaded
+assert size 128 128
+action clear_list
+# Exact: the remaining angle is rotated out (expanded canvas), north up.
+skyorient exact
+open tests/testdata/wcs_narrow.fits
+waitloaded
+assert skyoriented 0.05
+action clear_list
+# Off again: as stored — this fixture is then shown mirrored.
+skyorient off
+open tests/testdata/wcs_wide.fits
+waitloaded
+assert size 128 128
+
 quit

@@ -47,13 +47,15 @@ const CommandRef kCommands[] = {
   {"histdrag",   {"histdrag b|m|w <dx_px>",
     "Synthesize a drag of the histogram's B/M/W grip by dx screen pixels\n"
     "(past the plot edge extends the axis). Test hook."}},
-  {"viewdrag",   {"viewdrag ctrl|alt|right|ds9 <fx0> <fy0> <fx1> <fy1>",
+  {"viewdrag",   {"viewdrag ctrl|alt|right|ds9|pref <fx0> <fy0> <fx1> <fy1>",
     "Synthesize a mouse drag on the active image view between two points\n"
     "given as fractions of the viewport (0..1 from the left / the top):\n"
     "ctrl = Ctrl/Cmd + left-drag (contrast/bias), alt = Alt/Option +\n"
     "right-drag with the default mouse (contrast/bias), right = plain\n"
     "right-drag with the default mouse (pan), ds9 = plain right-drag with\n"
-    "the DS9 mouse preference on for this drag (contrast/bias). Test hook."}},
+    "the DS9 mouse preference on for this drag (contrast/bias), pref = plain\n"
+    "right-drag under the mouse setting in force (preference or --mouse).\n"
+    "Test hook."}},
   {"window",     {"window <c|all> <black> <mid> <white>",
     "Set the linear window (B/M/W) in RAW data units for channel c (0..2) or\n"
     "all channels. Values may lie outside the data range."}},
@@ -94,6 +96,11 @@ const CommandRef kCommands[] = {
     "The plate solution is rebased exactly (pure CRPIX shift) and written as\n"
     "standard FITS cards; annotations translate with the pixels. `view`\n"
     "crops to the currently visible region (menu: Image > Crop, Shift+C)."}},
+  {"skyorient",  {"skyorient off|lossless|exact",
+    "How plate-solved FITS files opened FROM NOW ON in this run are oriented:\n"
+    "off = as stored; lossless = as the sky, by a flip and quarter turns only;\n"
+    "exact = north exactly up (resampled). The run-time form of the\n"
+    "preference and of --orient; nothing is saved."}},
   {"simbadprobe",{"simbadprobe",
     "Find the SIMBAD server the app will use this session — the main site if\n"
     "it answers, else the first mirror that does — and print it to stderr.\n"
@@ -341,12 +348,13 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         return true;
     }
     if (cmd == QLatin1String("viewdrag")) {
-        if (t.size() < 6) { err = "viewdrag ctrl|alt|right|ds9 <fx0> <fy0> <fx1> <fy1>"; return false; }
+        if (t.size() < 6) { err = "viewdrag ctrl|alt|right|ds9|pref <fx0> <fy0> <fx1> <fy1>"; return false; }
         if (!m_w->m_image.isValid()) { err = "no image shown"; return false; }
         const QString mode = t[1].toLower();
         if (mode != QLatin1String("ctrl") && mode != QLatin1String("right") &&
-            mode != QLatin1String("ds9") && mode != QLatin1String("alt")) {
-            err = "mode: ctrl | alt | right | ds9"; return false;
+            mode != QLatin1String("ds9") && mode != QLatin1String("alt") &&
+            mode != QLatin1String("pref")) {
+            err = "mode: ctrl | alt | right | ds9 | pref"; return false;
         }
         ImageView* v = m_w->m_view;
         QWidget* vp = v->viewport();
@@ -358,7 +366,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
                                          : mode == QLatin1String("alt")  ? Qt::AltModifier
                                                                          : Qt::NoModifier;
         // The DS9 mouse is a persisted preference; a test must not write it.
-        v->setRightDragAdjusts(mode == QLatin1String("ds9"));
+        if (mode != QLatin1String("pref")) v->setRightDragAdjusts(mode == QLatin1String("ds9"));
         auto send = [&](QEvent::Type ty, const QPointF& pos) {
             QMouseEvent ev(ty, pos, vp->mapToGlobal(pos.toPoint()), btn,
                            ty == QEvent::MouseButtonRelease ? Qt::NoButton : btn, mods);
@@ -369,7 +377,7 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         for (int i = 1; i <= steps; ++i)
             send(QEvent::MouseMove, start + (end - start) * (double(i) / steps));
         send(QEvent::MouseButtonRelease, end);
-        v->setRightDragAdjusts(Preferences::get().ds9RightDrag);
+        v->setRightDragAdjusts(Preferences::get().effectiveDs9RightDrag());
         return true;
     }
     if (cmd == QLatin1String("window")) {
@@ -549,6 +557,15 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         }
         else { err = "unknown adjustment"; return false; }
         m_w->m_model.setAdjust(a);
+        return true;
+    }
+    if (cmd == QLatin1String("skyorient")) {
+        if (!needArgs(1)) return false;
+        const QString m = t[1].toLower();
+        const int v = m == QLatin1String("off") ? 0 : m == QLatin1String("lossless") ? 1
+                    : m == QLatin1String("exact") ? 2 : -1;
+        if (v < 0) { err = "skyorient off|lossless|exact"; return false; }
+        Preferences::get().runSkyOrient = v;
         return true;
     }
     if (cmd == QLatin1String("simbadprobe")) {

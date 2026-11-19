@@ -35,6 +35,7 @@ void Preferences::load() {
     commonAxis      = s.value(QStringLiteral("histogram_common_axis"), commonAxis).toBool();
     imageCacheMB    = s.value(QStringLiteral("image_cache_mb"), imageCacheMB).toInt();
     ds9RightDrag    = s.value(QStringLiteral("ds9_right_drag"), ds9RightDrag).toBool();
+    skyOrient       = qBound(0, s.value(QStringLiteral("sky_orient"), skyOrient).toInt(), 2);
     s.endGroup();
     if (language != QLatin1String("en") && language != QLatin1String("fr"))
         language.clear();                      // anything else = follow the system
@@ -68,6 +69,7 @@ void Preferences::save() const {
     s.setValue(QStringLiteral("zoom_step_coarse"), zoomStepCoarse);
     s.setValue(QStringLiteral("image_cache_mb"), imageCacheMB);
     s.setValue(QStringLiteral("ds9_right_drag"), ds9RightDrag);
+    s.setValue(QStringLiteral("sky_orient"), skyOrient);
     s.setValue(QStringLiteral("zoom_step_fine"), zoomStepFine);
     s.setValue(QStringLiteral("histogram_common_axis"), commonAxis);
     s.endGroup();

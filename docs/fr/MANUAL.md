@@ -985,6 +985,12 @@ nebulascope [options] [fichiers...]
       --split <LxC>      Divise la vue (max 5x5).
       --shared-stf       Étire la première image et partage cet étirement.
       --lang <code>      Force la langue de l'interface (en, fr, system).
+      --orient <mode>    Orientation des FITS résolus à l'ouverture, pour cette
+                         exécution : stored (tel que stocké), sky (retournement
+                         et quarts de tour seulement) ou sky-exact (nord
+                         exactement en haut, rééchantillonné).
+      --mouse <mode>     Glisser au bouton droit pour cette exécution : default
+                         (panoramique) ou ds9 (contraste/biais).
       --run <script>     Exécute un script de commandes (tests/batch).
       --run list         Liste toutes les commandes de script.
   -h, --help [commande]  Aide — générale, ou détaillée pour une commande.
@@ -1108,7 +1114,24 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
     c'est le dernier choix qui s'affiche ; chaque décodage achevé entre tout
     de même dans le cache. **Souris** — le glisser au bouton droit règle
     contraste et biais comme dans SAOImage DS9 (désactivé par défaut : le
-    glisser droit déplace l'image ; voir §6).
+    glisser droit déplace l'image ; voir §6). **Ouverture des FITS
+    résolus** — *tel que stocké dans le fichier* (défaut), ou *comme le
+    ciel* : un fichier FITS porteur d'une solution astrométrique est alors
+    orienté à l'ouverture, est à gauche du nord et nord en haut, exactement
+    comme le ferait **Orienter comme le ciel**. Le premier choix « comme le
+    ciel » n'emploie qu'un retournement et des quarts de tour — chaque
+    pixel garde sa valeur, le nord finit à moins de 45° du haut, et une
+    image standard non tournée apparaît exactement comme dans DS9 ; le
+    second retire aussi l'angle restant par rotation, ce qui rééchantillonne.
+    L'orientation est enregistrée comme une orientation appliquée à la
+    main : annotations, fichiers annexes et régions DS9 la suivent, et
+    **Réinitialiser l'orientation** montre le fichier tel que stocké. Elle
+    s'applique aux fichiers ouverts après le changement, aux FITS seulement
+    (les XISF viennent de PixInsight déjà dans la parité du ciel), et jamais
+    à un fichier sans solution astrométrique. Ce réglage et celui de la
+    souris peuvent être fixés pour une seule exécution depuis la ligne de
+    commande (`--orient`, `--mouse`), sans toucher à la préférence
+    enregistrée.
   - **Raccourcis** — le raccourci de chaque action, éditable ; stocké dans
     `shortcuts.ini` (valeur vide = désactivé ; les conflits obsolètes sont
     rétablis). Chaque entrée enregistre le réglage par défaut avec lequel

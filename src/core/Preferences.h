@@ -33,6 +33,18 @@ struct Preferences {
     int    imageCacheMB    = 4096;             // decoded-image cache budget (0 = off)
     bool   ds9RightDrag    = false;            // right-button drag adjusts contrast/bias
                                                // as in SAOImage DS9 (default: it pans)
+    int    skyOrient       = 0;                // plate-solved FITS at open: 0 as stored
+                                               // (default), 1 oriented as the sky with
+                                               // flips/quarter turns only (exact pixels),
+                                               // 2 north exactly up (resampled)
+
+    // Per-run overrides from the command line (--mouse, --orient): never
+    // saved, and they win over the stored values for this process only.
+    // -1 = no override.
+    int    runDs9RightDrag = -1;
+    int    runSkyOrient    = -1;
+    bool   effectiveDs9RightDrag() const { return runDs9RightDrag >= 0 ? runDs9RightDrag != 0 : ds9RightDrag; }
+    int    effectiveSkyOrient() const { return runSkyOrient >= 0 ? runSkyOrient : skyOrient; }
 
     static Preferences& get();                 // singleton, loaded on first use
     void load();

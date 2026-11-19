@@ -494,6 +494,25 @@ the rotation dialog — a NEW control; North Up is unchanged) flips first
 when the frame is mirrored, picking the flip that leaves the smaller
 rotation (H turns the needed rotation r into -r, V into 180 - r), then
 rotates; for a standard FITS the whole operation is one lossless
-vertical flip. Left open, as a larger question: honouring ROWORDER /
-offering a bottom-up FITS display preference for DS9 parity at load.
+vertical flip.
+
+The load-time form followed the same day, in the user's words: by
+default read the data as it appears in the file, and give the option to
+open plate-solved FITS north up with the correct flip. It is the
+contrast/bias pattern again — a preference, off by default, with a
+per-run command-line override (`--orient stored|sky|sky-exact`, next to
+`--mouse default|ds9`; overrides live outside the saved fields, so a
+later Preferences save cannot persist them). Two decisions inside it.
+(1) The plan is SEEDED into the image's orientation history — the record
+a manual flip leaves — rather than applied in the reader: the decode
+cache stays the file as stored, and annotation mapping, sidecars, DS9
+pixel regions and Reset Orientation need no new case. Once per list row,
+so a Reset Orientation sticks. (2) "North up" is offered in two
+strengths, because an inspector should not resample data on its own: the
+first uses a flip and quarter turns only (exact pixels, north within 45
+degrees of up — for a standard unrotated frame, exactly DS9's view); the
+second also rotates out the remainder. The plan is a pure function of
+the solution (Wcs::skyOrientPlan), tested over all rotations and both
+parities; quarter-turn direction is chosen by trial, not by a sign
+convention. FITS only: XISF frames come from PixInsight in sky parity.
 

@@ -306,6 +306,8 @@ private:
     void startDisplayDecode(const QString& path);
     void showDecodeBar(bool on);
     QStringList    m_pendingRegFiles;      // .reg opened WITH an image: applied once it shows
+    QSet<QString>  m_skyOrientSeen;        // paths already considered for sky orientation at
+                                           // open (once per row: Reset Orientation must stick)
     int            m_simbadIx = -1;        // SIMBAD server kept for the session; -1 = not probed yet
     QString        m_displayWanted;        // asked for, not yet shown
     QString        m_displayInFlight;      // decode running for the display

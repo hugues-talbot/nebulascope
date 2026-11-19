@@ -1,4 +1,5 @@
 #include "core/Wcs.h"
+#include <limits>
 #include <QtMath>
 #include <QRegularExpression>
 #include <cmath>
@@ -262,6 +263,54 @@ double Wcs::rotationDeg() const {
 
 bool Wcs::mirroredOnScreen() const {
     return m_valid && (m_cd11 * m_cd22 - m_cd12 * m_cd21) < 0.0;
+}
+
+double Wcs::northUpDelta(int w, int h) const {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    if (!m_valid || w < 1 || h < 1) return nan;
+    // Screen direction of celestial north at the frame centre; the rotation
+    // that sends it to "up" (screen angle -90 deg, visual-CCW positive) is
+    // phi + 90.
+    const double cx = (w - 1) / 2.0, cy = (h - 1) / 2.0;
+    double ra = 0, dec = 0, nx = 0, ny = 0;
+    if (!pixelToSky(cx, cy, ra, dec)) return nan;
+    const bool south = dec > 89.0;                   // sample away from the pole
+    const double dd = south ? -1.0 / 60.0 : 1.0 / 60.0;
+    if (!skyToPixel(ra, dec + dd, nx, ny)) return nan;
+    double phi = qRadiansToDegrees(std::atan2(ny - cy, nx - cx));
+    if (south) phi += 180.0;
+    double rel = phi + 90.0;
+    while (rel > 180.0) rel -= 360.0;
+    while (rel <= -180.0) rel += 360.0;
+    return rel;
+}
+
+Wcs::SkyOrientPlan Wcs::skyOrientPlan(int w, int h, bool exact) const {
+    SkyOrientPlan plan;
+    double rel = northUpDelta(w, h);
+    if (!std::isfinite(rel)) return plan;
+    Wcs cur = *this;
+    auto apply = [&](PixelXform op) {
+        cur = cur.transformed(op, w, h);
+        if (op == PixelXform::RotCW || op == PixelXform::RotCCW) std::swap(w, h);
+        plan.ops.push_back(op);
+        rel = cur.northUpDelta(w, h);
+    };
+    if (cur.mirroredOnScreen())
+        // Either flip restores the parity; they differ by a half turn (a
+        // horizontal flip turns the needed rotation r into -r, a vertical
+        // one into 180 - r). Take the one that leaves less to rotate.
+        apply(std::fabs(rel) <= 90.0 ? PixelXform::FlipH : PixelXform::FlipV);
+    // Quarter turns until north is within 45 degrees of up. The direction
+    // is chosen by trial, not by a sign convention: whichever turn brings
+    // north closer.
+    for (int guard = 0; guard < 3 && std::isfinite(rel) && std::fabs(rel) > 45.0; ++guard) {
+        const double a = cur.transformed(PixelXform::RotCW, w, h).northUpDelta(h, w);
+        const double b = cur.transformed(PixelXform::RotCCW, w, h).northUpDelta(h, w);
+        apply(std::fabs(a) < std::fabs(b) ? PixelXform::RotCW : PixelXform::RotCCW);
+    }
+    if (exact && std::isfinite(rel) && std::fabs(rel) >= 0.01) plan.rotateDeg = rel;
+    return plan;
 }
 
 QString Wcs::formatRa(double raDeg) {

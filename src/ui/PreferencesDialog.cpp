@@ -123,6 +123,23 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
                             "right-drag, or Ctrl/Cmd + left-drag."));
     form->addRow(tr("Mouse:"), ds9Mouse);
 
+    auto* skyOrient = new QComboBox();
+    skyOrient->addItem(tr("as stored in the file (default)"));
+    skyOrient->addItem(tr("as the sky — flips and quarter turns only (exact pixels)"));
+    skyOrient->addItem(tr("as the sky — north exactly up (resampled)"));
+    skyOrient->setCurrentIndex(p.skyOrient);
+    skyOrient->setToolTip(tr("How a FITS file that carries a plate solution is oriented when it\n"
+                             "is opened. NebulaScope draws the first row of a file at the top; the\n"
+                             "FITS standard (and DS9) draw it at the bottom, so a standard FITS\n"
+                             "frame appears upside down and mirrored. \"As the sky\" reads the\n"
+                             "orientation from the plate solution: east left of north, north up.\n"
+                             "The first choice uses only a flip and quarter turns — every pixel\n"
+                             "keeps its value, north ends within 45° of up (exactly up for an\n"
+                             "unrotated frame). The second also rotates by the remaining angle,\n"
+                             "which resamples the data. Applies to files opened from now on;\n"
+                             "Image ▸ Reset Orientation shows a file as stored."));
+    form->addRow(tr("Plate-solved FITS open:"), skyOrient);
+
     auto* recentImg = new QSpinBox();
     recentImg->setRange(0, 50);
     recentImg->setValue(p.recentImagesMax);
@@ -230,6 +247,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
         p.overlayOpacity  = overlayOp->value() / 100.0;
         p.imageCacheMB = cacheMB->value();
         p.ds9RightDrag    = ds9Mouse->isChecked();
+        p.skyOrient       = skyOrient->currentIndex();
         p.debayerMethod   = debayerMeth->currentIndex();
         p.zoomStepCoarse  = zoomCoarse->value();
         p.zoomStepFine    = zoomFine->value();
