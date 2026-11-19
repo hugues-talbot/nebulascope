@@ -325,7 +325,10 @@ Mouse (in any view):
   compute, so the gesture drives those two sliders — you see them move,
   the result works in every stretch mode, is undone like any stretch
   gesture, saved in the sidecar, and reset by the adjustments' Reset. The
-  status bar shows the values on DS9's scale. For DS9 muscle memory,
+  status bar shows the values on DS9's scale. While the drag runs, only
+  the **visible region** is re-rendered, at about screen resolution, so it
+  follows the pointer even on a 60-megapixel master; the full frame is
+  rendered once, on release. For DS9 muscle memory,
   **Preferences ▸ Mouse** puts the same control on the **right button**
   (pan then stays on the middle button and Shift+left-drag; a right-click
   is still the menu). Script: `contrastbias <contrast> <bias>`.

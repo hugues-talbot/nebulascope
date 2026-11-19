@@ -295,6 +295,8 @@ void MainWindow::buildUi() {
     connect(&m_model, &StretchModel::changed, this, &MainWindow::updateDisplay);
     m_renderWatcher = new QFutureWatcher<QImage>(this);
     connect(m_renderWatcher, &QFutureWatcher<QImage>::finished, this, &MainWindow::onRenderDone);
+    m_previewWatcher = new QFutureWatcher<PreviewFrame>(this);
+    connect(m_previewWatcher, &QFutureWatcher<PreviewFrame>::finished, this, &MainWindow::onPreviewDone);
 
     // Keep the active image's stretch memory current: every edit (drag, tab,
     // Auto/Reset) is snapshotted under its path, so revisiting restores it.
@@ -918,6 +920,9 @@ void MainWindow::connectViewSignals(ImageView* v) {
     connect(v, &ImageView::contrastBiasDragged, this, [this, v](double fx, double fy) {
         // DS9: bias off the horizontal position, contrast (0..10) off the vertical.
         if (v == m_view && m_image.isValid()) applyDs9ContrastBias(10.0 * fy, fx);
+    });
+    connect(v, &ImageView::contrastBiasDragging, this, [this, v](bool on) {
+        if (v == m_view || !on) setPreviewMode(on);
     });
     // A list row dropped on this view: activate its cell, then show the row
     // there (same path as click-to-activate + click-the-row).
@@ -5508,9 +5513,80 @@ void MainWindow::holdRenders(bool on) {
     }
 }
 
+void MainWindow::setPreviewMode(bool on) {
+    if (on == m_previewMode) return;
+    m_previewMode = on;
+    if (on) return;
+    // Released: one last preview of the FINAL state (instant), then the one
+    // full-frame render, which replaces the patch when it lands.
+    requestPreview();
+    updateDisplay();
+}
+
+void MainWindow::requestPreview() {
+    if (!m_image.isValid() || m_image.format() != SampleFormat::Float32) return;
+    if (m_previewWatcher->isRunning()) { m_previewPending = true; return; }
+    m_previewPending = false;
+    const int W = m_image.width(), H = m_image.height();
+    const QRect vis = m_view->visibleImageRect().intersected(QRect(0, 0, W, H));
+    if (vis.isEmpty()) return;
+    // Decimate to about TWICE screen resolution when zoomed out. Point
+    // sampling is unbiased through any stretch (averaging the linear data
+    // first would not be: f(mean) != mean(f) on noisy shadows), but one
+    // sample per screen pixel looks grainier than the full frame, which the
+    // view averages on the way down; two per axis lets it average the
+    // preview too. Bounded at ~4 MP: a 61 MP frame at zoom-to-fit previews
+    // in a few milliseconds.
+    const double zoom = std::sqrt(std::abs(m_view->transform().determinant()));
+    int s = std::max(1, int(std::floor(0.5 / std::max(1e-6, zoom))));
+    while (double(vis.width() / s) * double(vis.height() / s) > 4.0e6) ++s;
+    const int cw = (vis.width() + s - 1) / s, ch = (vis.height() + s - 1) / s;
+    const int nch = m_image.channels();
+    ImageData small(cw, ch, nch, SampleFormat::Float32, m_image.colorSpace());
+    for (int c = 0; c < nch; ++c) {
+        const float* src = m_image.plane<float>(c);
+        float* dst = small.plane<float>(c);
+        for (int y = 0; y < ch; ++y) {
+            const float* row = src + std::size_t(vis.y() + y * s) * W + vis.x();
+            float* out = dst + std::size_t(y) * cw;
+            for (int x = 0; x < cw; ++x) out[x] = row[x * s];
+        }
+    }
+    PreviewFrame meta;
+    meta.rect = QRect(vis.x(), vis.y(), cw * s, ch * s);
+    meta.src = m_image.plane<float>(0);
+    meta.size = QSize(W, H);
+    meta.serial = m_stateSerial;
+    const StretchModel::State st = m_model.state();
+    const bool hasIcc = m_hasIcc;
+    const QColorTransform icc = m_iccToSrgb;
+    m_previewWatcher->setFuture(QtConcurrent::run([small, st, hasIcc, icc, meta]() {
+        StretchModel local;
+        local.setState(st);
+        PreviewFrame r = meta;
+        r.frame = DisplayRenderer::render(small, local, hasIcc ? &icc : nullptr);
+        return r;
+    }));
+}
+
+void MainWindow::onPreviewDone() {
+    const PreviewFrame r = m_previewWatcher->result();
+    // Show it only over the pixels it was cut from, and never over a full
+    // frame of the same or a newer state (the full frame is the better one).
+    const bool current = m_image.isValid() && m_image.plane<float>(0) == r.src &&
+                         QSize(m_image.width(), m_image.height()) == r.size;
+    if (current && !r.frame.isNull() && r.serial > m_fullShownSerial)
+        m_view->setPreviewPatch(r.frame, QRectF(r.rect));
+    // A state newer than this frame is waiting — including the FINAL one
+    // queued at release, which must still be shown while the full render runs.
+    if (m_previewPending) requestPreview();
+}
+
 void MainWindow::updateDisplay() {
     if (!m_image.isValid()) return;
+    ++m_stateSerial;
     if (m_renderHold > 0) { m_renderPending = true; return; }
+    if (m_previewMode) { requestPreview(); return; }   // visible region only, until release
     // Coalescing async render: the GUI thread never blocks on a frame. If a
     // render is in flight, just note that a newer state exists — when the
     // worker returns, the LATEST model state is rendered next (intermediate
@@ -5522,6 +5598,7 @@ void MainWindow::updateDisplay() {
     // the worker its own private copy, safe against mid-render rotations/switches.
     m_renderSrc = m_image.plane<float>(0);
     m_renderSize = QSize(m_image.width(), m_image.height());
+    m_renderSerial = m_stateSerial;
     const ImageData img = m_image;
     const StretchModel::State st = m_model.state();
     const bool hasIcc = m_hasIcc;                // colour-manage in the worker,
@@ -5542,7 +5619,10 @@ void MainWindow::onRenderDone() {
     // current state rendered instead.
     const bool current = (m_image.plane<float>(0) == m_renderSrc) &&
                          (QSize(m_image.width(), m_image.height()) == m_renderSize);
-    if (current && !frame.isNull()) m_view->setDisplayImage(frame);
+    if (current && !frame.isNull()) {
+        m_view->setDisplayImage(frame);            // also drops any preview patch
+        m_fullShownSerial = m_renderSerial;
+    }
     if (m_renderPending || !current) updateDisplay();
 }
 

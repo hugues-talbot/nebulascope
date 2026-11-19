@@ -445,3 +445,27 @@ after the 2026 CDS incident) reads numeric `ra`/`dec`/`fov` and ignores
 SIMBAD at Strasbourg was down; the CfA mirror answers the same URL, and
 is offered as a second menu entry rather than a silent redirect.
 
+## Display drags render what is on screen (2026-11-19)
+
+Field report on the new contrast/bias drag: correct, but slow on a big
+master. Measured on the 61 MP M16 frame, each live frame cost a 60 ms
+deep copy of the pixels and a 25 ms pixmap conversion on the interface
+thread around an 85 ms render — about 180 ms, half of it blocking the
+pointer. The user's proposal was the fix: until the mouse is released,
+render only the visible part. While a display drag runs, the visible
+rectangle is cut from the data at about twice screen resolution (4 MP
+cap), rendered by the SAME renderer under the same state, and laid over
+the stale frame as a patch — 9 ms at zoom-to-fit, less when zoomed in;
+on release one final preview shows the end state at once and the single
+full-frame render replaces the patch when it lands. Two details carry
+the correctness. The preview POINT-SAMPLES: averaging the linear data
+before the stretch would bias noisy shadows (f(mean) is not mean(f)),
+whereas a sample is unbiased through any transfer curve — mean levels of
+patch and full frame agree to half a grey level; the oversampling by two
+is there so the view averages the patch as it averages the frame. And
+frames carry a state serial: a preview is never shown over a full frame
+of the same or a newer state. The mode is a flag, not a counter, so a
+lost mouse release cannot wedge it. Histogram-handle and adjustment-
+slider drags keep their v0.96 behaviour (render deferred to release);
+the same preview could make them live, as an option.
+

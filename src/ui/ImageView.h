@@ -66,6 +66,12 @@ public:
     // this on, the RIGHT button does too, as in DS9 (pan then stays on the
     // middle button and Shift + left-drag; a right-CLICK is still the menu).
     void setRightDragAdjusts(bool on) { m_rightAdjusts = on; }
+    // Interactive preview: a freshly rendered patch of the VISIBLE region,
+    // laid over the (stale) full-frame pixmap while a display drag runs.
+    // `sceneRect` is the image-pixel rectangle it covers; the patch may be
+    // decimated (fewer pixels than the rect). Any full frame replaces it.
+    void setPreviewPatch(const QImage& img, const QRectF& sceneRect);
+    void clearPreviewPatch();
     DrawTool drawTool() const { return m_tool; }
 
     bool hasImage() const { return m_item != nullptr; }
@@ -105,6 +111,9 @@ signals:
     // viewport (0..1 from the left / from the top) — DS9 reads bias off x
     // and contrast off y, absolutely, so the position IS the setting.
     void contrastBiasDragged(double fx, double fy);
+    // Brackets one contrast/bias gesture: true on the first real movement,
+    // false on release.
+    void contrastBiasDragging(bool active);
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -122,6 +131,7 @@ private:
     QGraphicsScene* m_scene = nullptr;
     int m_markX = -1, m_markY = -1;   // measurement crosshair, image px
     QGraphicsPixmapItem* m_item = nullptr;
+    QGraphicsPixmapItem* m_patch = nullptr;   // interactive preview overlay (z just above m_item)
     QRubberBand* m_band = nullptr;
     QPoint m_press;
     bool m_banding = false;

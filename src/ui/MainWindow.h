@@ -109,6 +109,13 @@ private slots:
     void updateDisplay();
     void holdRenders(bool on);              // defer renders during control drags
     void onRenderDone();                  // async render finished — show + maybe rerun
+    // Interactive preview (display drags on a big frame): while a drag runs,
+    // only the VISIBLE region is rendered, decimated to screen resolution,
+    // and laid over the stale frame; the full-frame render happens once, on
+    // release. Same renderer, same state — only the pixel set differs.
+    void setPreviewMode(bool on);
+    void requestPreview();
+    void onPreviewDone();
     void toggleImageOnly();
     void onPixelHovered(int x, int y, double r, double g, double b, bool valid);
     void onImageContextMenu(const QPoint& globalPos, int x, int y, bool onImage);
@@ -468,6 +475,20 @@ protected:
     // worker; slider drags stay fluid while frames render off-thread, and
     // intermediate states are coalesced (only the latest is rendered).
     QFutureWatcher<QImage>* m_renderWatcher = nullptr;
+    struct PreviewFrame {
+        QImage frame;
+        QRect rect;                       // image pixels the frame covers
+        const void* src = nullptr;        // identity of the pixels it was cut from
+        QSize size;
+        quint64 serial = 0;               // display-state serial it shows
+    };
+    QFutureWatcher<PreviewFrame>* m_previewWatcher = nullptr;
+    bool        m_previewMode = false;    // a display drag is running (a flag, not a
+                                          // count: a lost release cannot wedge it)
+    bool        m_previewPending = false;
+    quint64     m_stateSerial = 0;        // bumped on every display-state change
+    quint64     m_renderSerial = 0;       // serial of the full render in flight
+    quint64     m_fullShownSerial = 0;    // serial of the full frame on screen
     bool        m_renderPending = false;  // a newer state arrived mid-render
     int         m_renderHold = 0;         // nested interactive-drag holds
     QNetworkAccessManager* m_net = nullptr;   // Stellarium remote control

@@ -373,7 +373,11 @@ Les images RVB ignorent la palette (le sélecteur est désactivé).
   ces deux curseurs — on les voit bouger, le résultat vaut dans tous les
   modes d'étirement, s'annule comme tout geste d'étirement, s'enregistre
   dans le fichier annexe et se réinitialise avec les ajustements. La barre
-  d'état affiche les valeurs sur l'échelle de DS9. Pour les habitués de
+  d'état affiche les valeurs sur l'échelle de DS9. Pendant le geste, seule
+  la **région visible** est recalculée, à peu près à la résolution de
+  l'écran : l'image suit le pointeur même sur un master de 60 mégapixels ;
+  l'image entière est rendue une seule fois, au relâchement. Pour les
+  habitués de
   DS9, **Préférences ▸ Souris** place le même contrôle sur le **bouton
   droit** (le panoramique reste alors sur le bouton du milieu et
   Maj+glisser gauche ; un clic droit ouvre toujours le menu). Script :

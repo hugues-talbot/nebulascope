@@ -52,7 +52,30 @@ void ImageView::adoptNavigationCalibrated(const ImageView* src, const QTransform
     m_adopting = false;
 }
 
+void ImageView::setPreviewPatch(const QImage& img, const QRectF& sceneRect) {
+    if (!m_item || img.isNull() || sceneRect.isEmpty()) return;
+    const QPixmap pm = QPixmap::fromImage(img);
+    if (!m_patch) {
+        m_patch = m_scene->addPixmap(pm);
+        m_patch->setZValue(0.5);                  // over the frame, under grid/annotations (z 10)
+    } else {
+        m_patch->setPixmap(pm);
+    }
+    QTransform t;
+    t.translate(sceneRect.x(), sceneRect.y());
+    t.scale(sceneRect.width() / img.width(), sceneRect.height() / img.height());
+    m_patch->setTransform(t);
+}
+
+void ImageView::clearPreviewPatch() {
+    if (!m_patch) return;
+    m_scene->removeItem(m_patch);
+    delete m_patch;
+    m_patch = nullptr;
+}
+
 void ImageView::clearDisplay() {
+    clearPreviewPatch();
     if (m_item) { m_scene->removeItem(m_item); delete m_item; m_item = nullptr; }
     m_scene->setSceneRect(QRectF());
     m_src = nullptr;
@@ -60,6 +83,7 @@ void ImageView::clearDisplay() {
 }
 
 void ImageView::setDisplayImage(const QImage& img) {
+    clearPreviewPatch();                          // a full frame supersedes any preview
     const QPixmap pm = QPixmap::fromImage(img);
     if (!m_item) {
         m_item = m_scene->addPixmap(pm);
@@ -84,6 +108,12 @@ void ImageView::paintEvent(QPaintEvent* e) {
             s < 0.999 ? Qt::SmoothTransformation : Qt::FastTransformation;
         if (m_item->transformationMode() != want)
             m_item->setTransformationMode(want);   // schedules one clean repaint
+        if (m_patch) {                             // the patch carries its own decimation
+            const qreal ps = s * std::sqrt(std::abs(m_patch->transform().determinant()));
+            const Qt::TransformationMode pw =
+                ps < 0.999 ? Qt::SmoothTransformation : Qt::FastTransformation;
+            if (m_patch->transformationMode() != pw) m_patch->setTransformationMode(pw);
+        }
     }
     QGraphicsView::paintEvent(e);
 }
@@ -384,6 +414,7 @@ void ImageView::mouseMoveEvent(QMouseEvent* e) {
         // A press that never really moves stays a click (the context menu on
         // the right button): nothing changes until the drag is unmistakable.
         if (!m_cbMoved && (e->pos() - m_cbStart).manhattanLength() < 4) return;
+        if (!m_cbMoved) emit contrastBiasDragging(true);
         m_cbMoved = true;
         const QSize vs = viewport()->size();
         emit contrastBiasDragged(double(e->pos().x()) / std::max(1, vs.width()),
@@ -478,7 +509,8 @@ void ImageView::mouseReleaseEvent(QMouseEvent* e) {
     }
     if (m_cbDrag && e->button() == m_cbButton) {
         m_cbDrag = false;
-        if (!m_cbMoved && e->button() == Qt::RightButton)       // a click after all
+        if (m_cbMoved) emit contrastBiasDragging(false);
+        else if (e->button() == Qt::RightButton)                // a click after all
             requestContextMenuAt(e->pos(), e->globalPosition().toPoint());
         return;
     }
