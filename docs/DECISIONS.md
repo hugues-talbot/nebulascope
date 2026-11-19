@@ -527,3 +527,31 @@ is read ahead of time, so a long list costs nothing until a row is
 visited. Reset Orientation, which already acted on every image, is its
 exact inverse.
 
+
+## CFITSIO is entered by one thread at a time (2026-11-20)
+
+Field evidence: the Windows CI job had failed since the asynchronous
+display decode (06fecc3), always in `sidecar_conformance`, always on the
+FITS fixture, about three cases in five: the application aborted
+(0xC0000409) right after `open`. Not reproducible on macOS in 250 runs.
+Cause: opening a FITS file queues the multi-HDU probe for the next
+event-loop tick on the interface thread, and since 06fecc3 the decode of
+that same file starts at the same moment on a worker. CFITSIO is
+thread-safe only when built reentrant; the vcpkg build is not. Its table
+of open files is global, and a file opened twice shares one internal
+structure, so the two threads corrupted each other. Homebrew and Debian
+build it reentrant, which is why only Windows showed it. v0.97 had the
+same exposure in a narrower form (the neighbour prefetch on a worker
+against a decode or a save on the interface thread, different files).
+
+Two decisions. (1) Correctness does not depend on how CFITSIO was built:
+every entry into CFITSIO/CCfits (reader, writer, HDU probe) holds one
+process-wide recursive mutex, `io::fitsMutex()`. FITS I/O was never
+parallel in this application, so nothing is lost. (2) The interface
+thread must not wait on that lock for the length of a decode, which is
+the stall the asynchronous decode removed. The HDU probe therefore stands
+aside while a display or prefetch decode is in flight and is rescheduled
+by the decode's completion; `waitloaded` waits for the probe queue too, so
+scripts still see the HDU rows. A unit test runs the collision itself
+(200 loads on a thread against 200 probes of the same file), and the
+conformance driver now reports the application's stderr on a failed run.

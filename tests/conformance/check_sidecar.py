@@ -84,7 +84,10 @@ def run_case(binary, name, kind, lines, workdir):
     r = subprocess.run([binary, "--run", script], env=env, capture_output=True,
                        text=True, timeout=180)
     if r.returncode != 0 or not os.path.exists(baked) or not os.path.exists(scpath):
-        return False, "NebulaScope run failed (rc=%d):\n%s" % (r.returncode, r.stdout[-1500:])
+        # stderr too: an abort leaves its reason there, and stdout (buffered
+        # when piped) is lost with the process.
+        return False, "NebulaScope run failed (rc=%d):\n%s\n%s" % (
+            r.returncode, r.stdout[-1500:], r.stderr[-1500:])
     # Reference render from the same fixture + sidecar.
     img = ref.load_image(srcfits)
     disp = ref.load_display(scpath)

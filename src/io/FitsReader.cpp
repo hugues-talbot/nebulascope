@@ -9,6 +9,11 @@
 
 namespace astro::io {
 
+std::recursive_mutex& fitsMutex() {
+    static std::recursive_mutex m;
+    return m;
+}
+
 // CFITSIO "equivalent" BITPIX (accounts for BSCALE/BZERO, e.g. USHORT_IMG) -> our type.
 static SampleFormat equivToFormat(int eqbitpix) {
     switch (eqbitpix) {
@@ -110,6 +115,7 @@ static void extractHeader(fitsfile* fptr, ImageHeader& h, int& status) {
 }
 
 QList<FitsHduEntry> listFitsImageHdus(const QString& path) {
+    const std::lock_guard<std::recursive_mutex> lock(fitsMutex());
     QList<FitsHduEntry> out;
     fitsfile* fptr = nullptr;
     int status = 0;
@@ -160,6 +166,7 @@ bool FitsReader::canRead(const QString& path) const {
 }
 
 LoadResult FitsReader::load(const QString& path, const LoadOptions& opts) const {
+    const std::lock_guard<std::recursive_mutex> lock(fitsMutex());
     LoadResult r;
     fitsfile* fptr = nullptr;
     int status = 0;

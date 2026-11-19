@@ -11,6 +11,9 @@
 #include <QString>
 #include <cmath>
 #include "io/XisfReader.h"
+#include "io/FitsReader.h"
+#include <atomic>
+#include <thread>
 #include <cstring>
 
 using namespace astro;
@@ -183,6 +186,27 @@ NS_TEST(pixinsight_written_xisf_interop) {
             worst = std::max(worst, std::fabs(double(a[i]) - double(b[i])));
     }
     NS_CHECK(worst <= 1.0 / 65535.0 + 1e-7);
+}
+
+// The asynchronous display decode puts CFITSIO on a worker thread while the
+// interface thread probes the SAME file for its HDUs. CFITSIO built without
+// reentrancy (the Windows build) shares one internal structure between two
+// opens of a file, so this used to abort intermittently; every entry now
+// holds io::fitsMutex(). The test is the collision itself, many times over.
+NS_TEST(fits_probe_and_load_from_two_threads) {
+    const QString path = QStringLiteral(NS_TESTDATA_DIR "/cfa_asiair_rggb.fits");
+    std::atomic<int> loadFailures{0}, probeFailures{0};
+    std::thread worker([&] {
+        for (int i = 0; i < 200; ++i) {
+            const io::LoadResult r = io::loadImage(path, {});
+            if (!r.ok || !r.image.isValid()) ++loadFailures;
+        }
+    });
+    for (int i = 0; i < 200; ++i)
+        if (io::listFitsImageHdus(path).isEmpty()) ++probeFailures;
+    worker.join();
+    NS_CHECK(loadFailures.load() == 0);
+    NS_CHECK(probeFailures.load() == 0);
 }
 
 NS_TEST(fits_writes_typed_cards) {

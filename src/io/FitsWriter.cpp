@@ -1,4 +1,5 @@
 #include "io/FitsWriter.h"
+#include "io/FitsReader.h"   // fitsMutex(): CFITSIO is entered by one thread at a time
 
 #include <QFileInfo>
 #include <QSet>
@@ -140,6 +141,7 @@ SaveResult FitsWriter::save(const QString& path, const ImageData& image,
                             const ImageHeader& header, const SaveOptions& opts) const {
     SaveResult r;
     if (!image.isValid()) { r.error = QStringLiteral("Empty image"); return r; }
+    const std::lock_guard<std::recursive_mutex> lock(fitsMutex());
 
     try {
         const int ch  = image.channels();

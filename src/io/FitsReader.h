@@ -1,7 +1,19 @@
 #pragma once
 #include "io/ImageReader.h"
 
+#include <mutex>
+
 namespace astro::io {
+
+// CFITSIO is not thread-safe unless it was built reentrant, and the build we
+// link on Windows (vcpkg) is not: its table of open files is global, and a
+// file opened twice SHARES one internal structure, so two threads in the
+// library at once corrupt each other (seen as an intermittent abort when the
+// HDU probe on the interface thread met the display decode on a worker).
+// Every entry into CFITSIO/CCfits — reader, writer, HDU probe — holds this
+// lock for its whole duration. Recursive, so a locked routine may call
+// another one.
+std::recursive_mutex& fitsMutex();
 
 // One image HDU inside a (possibly multi-extension) FITS file.
 struct FitsHduEntry {

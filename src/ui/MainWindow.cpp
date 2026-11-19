@@ -1770,10 +1770,15 @@ void MainWindow::addPaths(const QStringList& paths) {
 
 // Probe one queued FITS per event-loop tick for image HDUs; when a file has
 // more than one, decorate its row and insert indented child rows behind it.
+// CFITSIO is entered by one thread at a time (io::fitsMutex), so the probe
+// stands aside while a decode runs on a worker — otherwise this thread would
+// sit on the lock for the whole decode, which is exactly the stall the
+// asynchronous decode removed. Each decode's completion calls back here.
 void MainWindow::scheduleHduProbe() {
     if (m_hduProbeQueue.isEmpty()) return;
     QTimer::singleShot(0, this, [this] {
         if (m_hduProbeQueue.isEmpty()) return;
+        if (!m_displayInFlight.isEmpty() || !m_prefetchInFlight.isEmpty()) return;
         const QString base = m_hduProbeQueue.takeFirst();
         const QList<io::FitsHduEntry> hdus = io::listFitsImageHdus(base);
         if (hdus.size() > 1) {
@@ -3877,6 +3882,7 @@ void MainWindow::startNextPrefetch() {
         connect(m_prefetchWatcher, &QFutureWatcher<PrefetchResult>::finished, this, [this] {
             const PrefetchResult r = m_prefetchWatcher->result();
             m_prefetchInFlight.clear();
+            scheduleHduProbe();                      // it stood aside for this decode
             // Insert only if the file is still exactly what was decoded — a
             // write that landed mid-decode must not be masked.
             const QFileInfo fi(r.base);
@@ -3955,6 +3961,7 @@ void MainWindow::startDisplayDecode(const QString& path) {
         connect(m_displayWatcher, &QFutureWatcher<PrefetchResult>::finished, this, [this] {
             const PrefetchResult r = m_displayWatcher->result();
             m_displayInFlight.clear();
+            scheduleHduProbe();                      // it stood aside for this decode
             m_decodeBarTimer->stop();
             showDecodeBar(false);
             const QFileInfo fi(r.base);

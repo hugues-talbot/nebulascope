@@ -1015,8 +1015,11 @@ bool ScriptRunner::execute(const QString& line, QString& err) {
         const int timeout = t.size() > 1 ? t[1].toInt() : 10000;
         QElapsedTimer et; et.start();
         // A navigation decodes asynchronously: the previous image stays valid
-        // while the requested one is still in flight, so wait for that too.
-        auto pending = [&] { return !m_w->m_displayWanted.isEmpty() || !m_w->m_displayInFlight.isEmpty(); };
+        // while the requested one is still in flight, so wait for that too —
+        // and for the multi-HDU probe, which runs after the decode and adds
+        // the HDU rows a following `show <n>` may address.
+        auto pending = [&] { return !m_w->m_displayWanted.isEmpty() || !m_w->m_displayInFlight.isEmpty()
+                                    || !m_w->m_hduProbeQueue.isEmpty(); };
         while (et.elapsed() < timeout &&
                (pending() || !m_w->m_image.isValid() || m_w->m_curStats.empty()))
             QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
