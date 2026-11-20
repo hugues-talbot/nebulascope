@@ -74,6 +74,17 @@ demand.
 - [ ] Visible-region live preview for histogram-handle and slider drags
       (the contrast/bias drag has it; the handles render on release), as
       an option
+- [ ] FITS request queue on a single I/O thread, only if interface
+      freezes are reported (2026-11-20). Since v0.98 every CFITSIO entry
+      holds `io::fitsMutex()` (see DECISIONS.md), so a FITS operation on
+      the interface thread waits for a worker decode in flight. The
+      callers still on the interface thread are the HDU probe, Save Data
+      As to FITS, and the synchronous load (debayer change, split view,
+      a tool reading an uncached entry). A queue makes each of them post
+      a request and return, and allows priorities (the clicked frame
+      ahead of a prefetch). Convert first the caller where the freeze
+      was seen; the probe and Save are the easy ones, the synchronous
+      load has the most callers.
 - [ ] Differentiator polish as usage reveals friction (star combine, transport,
       annotation/dataset export)
 
