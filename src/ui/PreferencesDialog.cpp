@@ -37,9 +37,10 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     // a UI they can't read must still recognise their own entry.
     auto* language = new QComboBox();
     language->addItems({ tr("System default"), QStringLiteral("English"),
-                         QStringLiteral("Français") });
+                         QStringLiteral("Français"), QStringLiteral("Italiano") });
     language->setCurrentIndex(p.language == QLatin1String("en") ? 1
-                            : p.language == QLatin1String("fr") ? 2 : 0);
+                            : p.language == QLatin1String("fr") ? 2
+                            : p.language == QLatin1String("it") ? 3 : 0);
     language->setToolTip(tr("Takes effect at the next launch"));
     form->addRow(tr("Language:"), language);
 
@@ -238,6 +239,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent) : QDialog(parent) {
     connect(bb, &QDialogButtonBox::accepted, this, [=, &p] {
         p.language        = language->currentIndex() == 1 ? QStringLiteral("en")
                           : language->currentIndex() == 2 ? QStringLiteral("fr")
+                          : language->currentIndex() == 3 ? QStringLiteral("it")
                           : QString();
         p.gridTargetLines = grid->value();
         p.annColor        = colorBtn->property("color").value<QColor>();

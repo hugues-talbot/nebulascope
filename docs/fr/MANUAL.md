@@ -1009,7 +1009,7 @@ nebulascope [options] [fichiers...]
   -l, --list <fichier>   Charge une liste d'images sauvegardée.
       --split <LxC>      Divise la vue (max 5x5).
       --shared-stf       Étire la première image et partage cet étirement.
-      --lang <code>      Force la langue de l'interface (en, fr, system).
+      --lang <code>      Force la langue de l'interface (en, fr, it, system).
       --orient <mode>    Orientation des FITS résolus à l'ouverture, pour cette
                          exécution : stored (tel que stocké), sky (retournement
                          et quarts de tour seulement) ou sky-exact (nord
@@ -1155,7 +1155,7 @@ reconstitue à l'identique, pour écraser ou réenregistrer.
   entièrement épuré (les panoramiques fonctionnent toujours), p. ex.
   pour prévisualiser un fond d'écran en plein écran.
 - **Préférences…** (menu de l'application sur macOS) :
-  - **Général** — langue de l'interface (système / English / Français) ;
+  - **Général** — langue de l'interface (système / English / Français / Italiano) ;
     couleur, taille de texte et épaisseur de trait par défaut des
     annotations ; densité de la grille AD/Déc ; chargement automatique des
     fichiers annexes ; opacité des panneaux en surimpression ; tailles des

@@ -11,7 +11,7 @@
 namespace astro {
 
 struct Preferences {
-    QString language;                          // UI language: "" = system, "en", "fr"
+    QString language;                          // UI language: "" = system, "en", "fr", "it"
                                                // (applied at startup; --lang overrides)
     int    gridTargetLines = 6;               // RA/Dec grid density: ~lines across the frame
     QColor annColor        = QColor("#8fc0f5"); // default colour for new annotations

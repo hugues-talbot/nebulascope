@@ -37,7 +37,8 @@ void Preferences::load() {
     ds9RightDrag    = s.value(QStringLiteral("ds9_right_drag"), ds9RightDrag).toBool();
     skyOrient       = qBound(0, s.value(QStringLiteral("sky_orient"), skyOrient).toInt(), 2);
     s.endGroup();
-    if (language != QLatin1String("en") && language != QLatin1String("fr"))
+    if (language != QLatin1String("en") && language != QLatin1String("fr")
+        && language != QLatin1String("it"))
         language.clear();                      // anything else = follow the system
     gridTargetLines = qBound(3, gridTargetLines, 20);
     annTextSize     = qBound(5.0, annTextSize, 72.0);

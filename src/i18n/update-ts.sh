@@ -14,7 +14,7 @@
 set -e
 cd "$(dirname "$0")/../.."
 
-TS=src/i18n/nebulascope_fr.ts
+for TS in src/i18n/nebulascope_*.ts; do
 
 python3 - "$TS" strip <<'EOF'
 import re, sys
@@ -37,3 +37,5 @@ s = re.sub(r"<name>(?!astro::)(\w+)</name>", r"<name>astro::\1</name>", s)
 open(p, "w").write(s)
 print("contexts qualified:", len(set(re.findall(r"<name>(astro::\w+)</name>", s))))
 EOF
+
+done

@@ -126,6 +126,7 @@ target_include_directories(nebulascope PRIVATE ${CMAKE_BINARY_DIR}/generated)
 if(Qt6LinguistTools_FOUND)
     qt_add_translations(nebulascope
         TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/i18n/nebulascope_fr.ts
+                 ${CMAKE_CURRENT_SOURCE_DIR}/i18n/nebulascope_it.ts
         RESOURCE_PREFIX "/i18n"
         LUPDATE_OPTIONS -no-obsolete
     )
@@ -174,6 +175,12 @@ if(BUILD_TESTING)
     # must agree pixel-for-pixel. Needs python3 + numpy; skipped otherwise.
     find_package(Python3 QUIET COMPONENTS Interpreter)
     if(Python3_Interpreter_FOUND)
+        # Every catalog in src/i18n translates every string, with the same
+        # placeholders as the English source (a missing %1 loses a value).
+        add_test(NAME translations_complete
+                 COMMAND ${Python3_EXECUTABLE}
+                         ${CMAKE_SOURCE_DIR}/tests/check_translations.py
+                         ${CMAKE_SOURCE_DIR}/src/i18n)
         execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
                         RESULT_VARIABLE _np_rc OUTPUT_QUIET ERROR_QUIET)
         if(_np_rc EQUAL 0)

@@ -196,5 +196,8 @@ gaia, ds9reg — plus three tests that run the real app headless (offscreen
 QPA) via ScriptRunner: `smoke` (`tests/smoke.nsc`), `settings_isolation`
 (a scripted run writes no settings file; Unix) and `sidecar_conformance`
 (the sidecar's display block, rendered by the NumPy reference in
-`tools/render_sidecar.py`, matches the application's own rendering). All
+`tools/render_sidecar.py`, matches the application's own rendering). A
+fourth, `translations_complete` (`tests/check_translations.py`), reads the
+catalogs in `src/i18n` (French, Italian): every string is translated in
+each, with the placeholders of the English source. All
 run in the three CI jobs; failing output is published to the job summary.

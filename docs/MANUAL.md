@@ -892,8 +892,8 @@ nebulascope [options] [files...]
                          images to the cells in raster order.
       --shared-stf       Auto-stretch the first image and share that stretch
                          with every loaded image (same-session frames).
-      --lang <code>      Override the UI language for this run (en, fr, or
-                         system). The default is Preferences ▸ Language.
+      --lang <code>      Override the UI language for this run (en, fr, it,
+                         or system). The default is Preferences ▸ Language.
       --orient <mode>    How plate-solved FITS files are oriented when opened,
                          for this run: stored, sky (flip and quarter turns
                          only) or sky-exact (north exactly up, resampled).
@@ -1008,8 +1008,8 @@ name reassembles exactly, for overwriting or re-saving.
   fully clean canvas (pans still work), e.g. to preview a wallpaper
   rendition in fullscreen.
 - **Preferences…** (application menu on macOS):
-  - **General** — interface language (system default / English / Français —
-    applied at the next launch; the `.nsc` script language and CLI output
+  - **General** — interface language (system default / English / Français /
+    Italiano — applied at the next launch; the `.nsc` script language and CLI output
     stay English, as a locale-independent API); default annotation colour,
     text size, line thickness; RA/Dec grid density; sidecar auto-load;
     overlay panel opacity; recent files list sizes; **image cache** size —

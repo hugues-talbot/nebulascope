@@ -109,7 +109,7 @@ and never needs to know the source format.
   layout one keypress away), image-only mode (Tab), fullscreen,
   user-configurable shortcuts (`shortcuts.ini`), Preferences dialog (defaults,
   histories, shortcuts), recent images/annotations menus, undo/redo for
-  annotations and image transforms. English and French interface.
+  annotations and image transforms. English, French and Italian interface.
 - **Scripting** — `--run <script>` drives the real application headless
   (about fifty commands, with assertions) for tests, batch work and
   reproducible screenshots; a scripted run never touches your settings.
@@ -145,7 +145,7 @@ src/
   render/               # StretchModel (shared state) + DisplayRenderer
   ui/                   # ImageView, Histogram*, AnnotationLayer, dialogs,
                         # MainWindow, ScriptRunner (--run)
-  i18n/                 # French translation (nebulascope_fr.ts)
+  i18n/                 # French and Italian translations (nebulascope_<lang>.ts)
   app/                  # main.cpp (entry + theme), app.qrc, AppInfo.h
 tests/                  # CTest units (core, io, wcs, catalog, combine,
                         # colormap, debayer, psf, deconv, starremove, gaia,

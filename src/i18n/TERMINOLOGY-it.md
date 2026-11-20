@@ -1,47 +1,51 @@
-# Italian interface: terminology table (proposal for review)
+# Italian interface: terminology table
 
-Status: **proposal, not yet reviewed by a native speaker.** The Italian
-interface strings (`nebulascope_it.ts`) will be written against this table
-once it has been checked. English is the source language; the French column
-is the existing translation, given for reference.
+Status: **first native review received (2026-11-20).** The Italian interface
+strings (`nebulascope_it.ts`) are written against this table. English is the
+source language; the French column is the existing translation, given for
+reference.
 
 Scope: the application interface only. Script commands (`.nsc`),
 command-line output and script messages stay in English, as they do in
-French.
+French. The manual stays English and French.
 
-How to review: correct a term in the "Italian" column, or pick the
-alternative. The questions in section 1 are the ones where Italian usage is
-divided and a native astronomer's choice matters most. Everything else is a
-proposal that can be changed just as freely.
+## 1. Decisions and open questions
 
-## 1. Questions for the reviewer
+Reviewed by a native speaker who is an astronomer:
 
-| # | Question | Proposal | Alternative |
+| Term | Decision |
+|---|---|
+| Stretch | **stretch**, masculine, invariable: "lo stretch", "Copia lo stretch" |
+| Debayer | **demosaicizzazione** (not "debayerizzazione") |
+| RA/Dec | **AR/Dec** |
+| Kernel | **kernel**, left in English |
+| Colormap | **mappa colori** (not "mappa di colori") |
+| View menu | **Visualizza** |
+| Fitted stars | **stelle modellate**. "Stelle fittate" is spoken jargon and does not suit an interface. |
+
+Still open. The string in use is the proposal; each can be changed freely.
+
+| # | Question | In use | Alternative |
 |---|---|---|---|
-| 1 | "Stretch" (the display transfer function) | **stretch**, masculine, invariable: "lo stretch", "Copia lo stretch" | stiramento |
-| 2 | "Debayer" | **debayerizzazione** | demosaicizzazione |
-| 3 | Voice of commands and messages | **informal imperative**: "Apri…", "Scegli le due immagini." | impersonal infinitive: "Scegliere le due immagini." |
-| 4 | Right ascension / declination, short form | **AR/Dec** | RA/Dec |
-| 5 | "Image" and "frame" | **immagine** everywhere, including "Move Frames" | frame for the culling commands |
-| 6 | "Kernel" (deconvolution) | **kernel**, left in English | nucleo |
-| 7 | "Colormap" | **mappa di colori** | palette |
-| 8 | The View menu | **Vista** (macOS usage) | Visualizza (Windows usage) |
-| 9 | FITS "header" | **intestazione** | header |
-| 10 | Position angle, short form | **AP** (angolo di posizione) | PA |
-| 11 | "Checked" (the keep-check in the list), as distinct from "selected" | **spuntata** / "Spunta le selezionate" | contrassegnata |
-| 12 | "Sidecar" file | **file sidecar** | file associato |
-| 13 | DS9 "bias" (with contrast, on the mouse) | **bias**, left in English | polarizzazione; scostamento |
-| 14 | "Match Views" (align two views on a common feature) | **Abbina le viste** | Allinea le viste |
-| 15 | Box annotation | **riquadro** | rettangolo |
-| 16 | "Plate solution" | **soluzione astrometrica** | plate solving, left in English |
-| 17 | "Starless" / "stars-only" images | **senza stelle** / **solo stelle** | starless, left in English |
-| 18 | Quotation marks around file names | **«nome»** without inner spaces | “nome” |
+| 1 | Voice of commands and messages: does the application address the user informally, or impersonally? | **informal imperative**: "Apri…", "Scegli le due immagini." | impersonal infinitive: "Scegliere le due immagini." |
+| 2 | The keep mark of the image list. Each image in the list has a tick box. A ticked image is one to keep, and commands then move or remove the ticked or the unticked ones. It is a mark on an item, not a filter being active. "Spuntata" was judged too informal for software. | **contrassegnata** / "con contrassegno", "senza contrassegno", "Contrassegna le selezionate" | marcata; spuntata |
+| 3 | "Image" and "frame" | **immagine** everywhere, including "Move Frames" | frame for the culling commands |
+| 4 | FITS "header" | **intestazione** | header |
+| 5 | Position angle, short form | **AP** (angolo di posizione) | PA |
+| 6 | "Sidecar" file | **file sidecar** | file associato |
+| 7 | DS9 "bias" (with contrast, on the mouse) | **bias**, left in English | scostamento |
+| 8 | "Match Views" (align two views on a common feature) | **Abbina le viste** | Allinea le viste |
+| 9 | Box annotation | **riquadro** | rettangolo |
+| 10 | "Plate solution" | **soluzione astrometrica** | plate solving, left in English |
+| 11 | "Starless" / "stars-only" images | **senza stelle** / **solo stelle** | starless, left in English |
+| 12 | Quotation marks around file names | **«nome»** without inner spaces | “nome” |
+| 13 | "Delivered by proxy" (a deconvolved starless image whose PSF is verified on its starry counterpart) | **tramite un sostituto** | per procura; proxy, left in English |
 
 ## 2. Menus and standard commands
 
 | English | French | Italian |
 |---|---|---|
-| File / Edit / View / Image / Stretch / Tools / Help | Fichier / Édition / Affichage / Image / Étirement / Outils / Aide | File / Modifica / Vista / Immagine / Stretch / Strumenti / Aiuto |
+| File / Edit / View / Image / Stretch / Tools / Help | Fichier / Édition / Affichage / Image / Étirement / Outils / Aide | File / Modifica / Visualizza / Immagine / Stretch / Strumenti / Aiuto |
 | Open… / Open Recent | Ouvrir… / Ouvrir récent | Apri… / Apri recenti |
 | Save / Save … As… | Enregistrer / Enregistrer … sous… | Salva / Salva … come… |
 | Save Data As… | Enregistrer les données sous… | Salva i dati come… |
@@ -69,7 +73,7 @@ proposal that can be changed just as freely.
 |---|---|---|
 | view | vue | vista |
 | Split View | Diviser la vue | Dividi la vista |
-| Single / side by side / stacked | Simple / côte à côte / empilées | Singola / affiancate / sovrapposte |
+| Single / side by side / stacked | Simple / côte à côte / empilées | Singola / affiancate / impilate |
 | Rows / Columns | Lignes / Colonnes | Righe / Colonne |
 | Zoom to Fit | Ajuster à la vue | Adatta alla vista |
 | Zoom to Width | Ajuster à la largeur | Adatta alla larghezza |
@@ -110,8 +114,8 @@ proposal that can be changed just as freely.
 | Temp / Tint / Hue | Température / Teinte / Rotation | Temperatura / Tinta / Tonalità |
 | Saturation / Vibrance | Saturation / Vibrance | Saturazione / Vividezza |
 | clip | écrêtage | taglio |
-| colormap | palette de couleurs | mappa di colori |
-| Invert the colormap / ramp | Inverser la palette / rampe | Inverti la mappa di colori / rampa |
+| colormap | palette de couleurs | mappa colori |
+| Invert the colormap / ramp | Inverser la palette / rampe | Inverti la mappa colori / rampa |
 | break (threshold of the split colormap) | seuil | soglia |
 | COLORBAR | BARRE DE COULEURS | BARRA DEI COLORI |
 | strength / focus / peak / shape (GHS) | intensité / focalisation / pic / forme | intensità / focalizzazione / picco / forma |
@@ -134,8 +138,8 @@ are. Italian keeps "RGB", so there is no letter change as in French "RVB".
 | Reset Orientation | Réinitialiser l'orientation | Reimposta l'orientamento |
 | Crop to Visible Region | Recadrer sur la région visible | Ritaglia sulla regione visibile |
 | resampled | rééchantillonné | ricampionata |
-| Debayer | Dématriçage | Debayerizzazione |
-| debayered | dématricé | debayerizzata |
+| Debayer | Dématriçage | Demosaicizzazione |
+| debayered | dématricé | demosaicizzata |
 | raw mosaic | mosaïque brute | mosaico grezzo |
 | Bilinear / Superpixel (half size) | Bilinéaire / Superpixel (demi-taille) | Bilineare / Superpixel (metà dimensione) |
 | Reload Original | Recharger l'original | Ricarica l'originale |
@@ -152,10 +156,10 @@ are. Italian keeps "RGB", so there is no letter change as in French "RVB".
 | Append files… | Ajouter des fichiers… | Aggiungi file… |
 | list entry | entrée de liste | voce dell'elenco |
 | selected | sélectionnées | selezionate |
-| checked (keep) / unchecked | cochées (à garder) / décochées | spuntate (da tenere) / non spuntate |
-| Check / Uncheck Selected | Cocher / Décocher la sélection | Spunta / Togli la spunta alle selezionate |
-| Sort: Checked First | Trier : cochées d'abord | Ordina: prima le spuntate |
-| Move Checked / Unchecked To… | Déplacer les cochées / décochées vers… | Sposta le spuntate / non spuntate in… |
+| checked (keep) / unchecked | cochées (à garder) / décochées | contrassegnate (da tenere) / non contrassegnate; in messages "con contrassegno" / "senza contrassegno" |
+| Check / Uncheck Selected | Cocher / Décocher la sélection | Contrassegna / Togli il contrassegno alle selezionate |
+| Sort: Checked First | Trier : cochées d'abord | Ordina: prima le contrassegnate |
+| Move Checked / Unchecked To… | Déplacer les cochées / décochées vers… | Sposta le contrassegnate / non contrassegnate in… |
 | Remove … from List | Retirer … de la liste | Rimuovi … dall'elenco |
 | Close & Remove from List | Fermer et retirer de la liste | Chiudi e rimuovi dall'elenco |
 | Clear List & Close All | Vider la liste et tout fermer | Svuota l'elenco e chiudi tutto |
@@ -226,7 +230,7 @@ are. Italian keeps "RGB", so there is no letter change as in French "RVB".
 | non-destructive | non destructif | non distruttivo |
 | Measure PSF (Stars)… | Mesurer la PSF (étoiles)… | Misura la PSF (stelle)… |
 | FWHM / eccentricity / PA | FWHM / excentricité / AP | FWHM / eccentricità / AP |
-| fitted stars / usable stars | étoiles ajustées / utilisables | stelle interpolate / utilizzabili |
+| fitted stars / usable stars | étoiles ajustées / utilisables | stelle modellate / utilizzabili |
 | field map | carte de champ | mappa di campo |
 | Deconvolve to Target PSF… | Déconvoluer vers une PSF cible… | Deconvolvi verso una PSF obiettivo… |
 | kernel | noyau | kernel |
@@ -235,15 +239,11 @@ are. Italian keeps "RGB", so there is no letter change as in French "RVB".
 | round Gaussian | gaussienne circulaire | gaussiana circolare |
 | saturated cores (of stars) | cœurs saturés | nuclei stellari saturi |
 | feathered | avec fondu | con sfumatura |
-| delivered / delivered on proxy | livré / livré par procuration | ottenuta / ottenuta su un sostituto |
+| delivered / delivered on proxy | livré / livré par procuration | ottenuta / ottenuta sul sostituto |
 | Remove Stars (Analytic)… | Supprimer les étoiles (analytique)… | Rimuovi le stelle (analitico)… |
 | Detect above / Fill core above | Détecter au-dessus de / Remplir le cœur au-dessus de | Rileva sopra / Riempi il nucleo sopra |
 | noise fill | remplissage de bruit | riempimento con rumore |
 | candidates | candidats | candidati |
-
-"Fitted stars" is the term I am least sure of in this section: "stelle
-interpolate" is the usual Italian for a least-squares fit in data analysis,
-but "stelle adattate" or "stelle con fit" may read better to an astronomer.
 
 ## 10. Conventions
 
@@ -255,9 +255,15 @@ but "stelle adattate" or "stelle con fit" may read better to an astronomer.
 - **Articles**: commands keep the article, "Copia lo stretch", "Combina i
   canali", as Italian macOS applications do.
 - **Gender**: "immagine" and "vista" are feminine, so participles agree:
-  "ricaricata", "spuntate", "orientata come il cielo".
+  "ricaricata", "contrassegnate", "orientata come il cielo".
 - **Left in English**: blink, stretch, kernel, bias, cache, file, server,
   mirror, superpixel, screen (the blend mode), and all format and catalogue
   names.
+- **Undo names** are nouns, because they follow "Annulla": "Annulla
+  modifica dello stretch", "Annulla aggiunta di un riquadro".
+- **Keyboard names**: "Maiusc" for Shift and "Canc" for Del in messages. Qt
+  key strings in the shortcuts file stay as Qt writes them.
+- **Counts**: where the code gives a number without a plural form, the
+  string carries both endings, "%1 immagine/i".
 - **Keyboard accelerators**: each menu gets its own underlined letter,
   chosen so that no two entries of one menu collide.
