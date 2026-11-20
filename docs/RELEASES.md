@@ -2,6 +2,30 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.98.1 — 2026-11-20
+
+v0.98.1 — Italian interface
+
+Highlights:
+
+- **Italian interface** — the whole application in Italian, all 681
+  strings: menus, dialogs, tooltips, status messages. Choose it in
+  Preferences ▸ Language ▸ Italiano (applied at the next launch), with
+  `--lang it` for one run, or let an Italian system select it. Qt's own
+  dialogs follow. As in French, script commands and command-line output
+  stay English, so scripts behave the same in every language. The manual
+  remains English and French.
+- **A vocabulary reviewed by a native astronomer** — the terms are
+  recorded in `src/i18n/TERMINOLOGY-it.md`: stretch, demosaicizzazione,
+  AR/Dec, kernel, mappa colori, stelle modellate. The same file lists the
+  wording questions still open; this is a first round and corrections
+  are expected.
+- **Translations are tested** — a new test fails when a catalog lacks a
+  string, or when a translation loses or invents a `%1` placeholder. A
+  new interface string now needs its French and its Italian entry.
+
+No other change in behaviour since v0.98.
+
 ## v0.98 — 2026-11-20
 
 v0.98 — a DS9 user sits down: region files, contrast/bias on the mouse, frames oriented as the sky
