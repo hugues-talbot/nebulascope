@@ -69,9 +69,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-a24d42d3ab72b453e2694551f5c234ce.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -409,7 +409,10 @@ div.csl-indent {
   <li><a href="#gaia-dr3-lookups-online" id="toc-gaia-dr3-lookups-online" class="nav-link" data-scroll-target="#gaia-dr3-lookups-online">Gaia DR3 lookups (online)</a></li>
   </ul></li>
   <li><a href="#split-views-linked-navigation" id="toc-split-views-linked-navigation" class="nav-link" data-scroll-target="#split-views-linked-navigation">12. Split views &amp; linked navigation</a></li>
-  <li><a href="#command-line" id="toc-command-line" class="nav-link" data-scroll-target="#command-line">13. Command line</a></li>
+  <li><a href="#command-line" id="toc-command-line" class="nav-link" data-scroll-target="#command-line">13. Command line</a>
+  <ul class="collapse">
+  <li><a href="#script-commands" id="toc-script-commands" class="nav-link" data-scroll-target="#script-commands">Script commands</a></li>
+  </ul></li>
   <li><a href="#export" id="toc-export" class="nav-link" data-scroll-target="#export">14. Export</a></li>
   <li><a href="#layout-preferences-customization" id="toc-layout-preferences-customization" class="nav-link" data-scroll-target="#layout-preferences-customization">15. Layout, preferences &amp; customization</a></li>
   <li><a href="#troubleshooting" id="toc-troubleshooting" class="nav-link" data-scroll-target="#troubleshooting">16. Troubleshooting</a></li>
@@ -450,8 +453,8 @@ div.csl-indent {
 <section id="opening-images" class="level2">
 <h2 class="anchored" data-anchor-id="opening-images">1. Opening images</h2>
 <p><strong>Formats read:</strong> FITS (<code>.fits .fit .fts .fz</code>, including multi-HDU files and tile-compressed images; integer data are scaled via BSCALE/BZERO), PixInsight XISF (<code>.xisf</code>, including image properties and astrometric solutions), and JPEG / PNG / TIFF / WebP. Everything is promoted to 32-bit float on load, so the full pipeline is one code path; NaN/Inf blanks are respected throughout.</p>
-<p>Ways to open: - <strong>File ▸ Open…</strong> or the toolbar <strong>Open</strong> button (multi-select works). - <strong>Drag &amp; drop</strong> onto the window — or onto the app icon (macOS; the bundle declares the file types, so Finder’s <em>Open With</em> also lists NebulaScope). - <strong>File ▸ Open Recent</strong> — the last 10 images and last 5 annotation files. - <strong>Command line</strong> — see §13. - <strong>Multi-HDU FITS</strong> appear in the image list as an expandable entry, one row per image HDU; click the HDU you want.</p>
-<p>A newly opened image displays immediately — in the first <em>empty</em> view cell if the view is split, otherwise in the active view. Opening <em>several</em> images fills the empty cells <strong>in the order given</strong> (command line, Finder selection, dialog), one image per cell, until the cells run out. The list holds each image <strong>once</strong>: re-opening a listed image selects its existing row instead of adding a duplicate (the status bar notes it). On first view an image gets a plain <strong>min→max linear ramp</strong> (predictable, no guessing); press <strong>Auto STF</strong> for a boosted stretch (§3). Exception: an XISF that carries the producing application’s <strong>saved screen stretch</strong> (the <code>DisplayFunction</code> element — PixInsight writes its STF there) opens with that stretch applied, so a PI-processed image looks the way it did on PI’s screen; the status bar notes it, and <strong>Reset</strong> returns to the plain ramp. A white point beyond the data maximum (PI’s convention places it on the normalized [0,1] container) is <strong>rebased onto the data range</strong> in closed form — identical curve over the data, up to a uniform brightness scale — so the histogram handles and value boxes remain fully usable (derivation in the <em>Colour Transport</em> chapter’s appendix: the MTF family is closed under restriction-and-renormalisation). If the saved STF is <strong>unlinked</strong> (strongly per-channel — it equalizes the channels, visually cancelling a calibrated colour balance such as SPCC’s), the status bar says so and suggests <strong>Shift+U</strong>, the linked auto-stretch that preserves the calibration.</p>
+<p>Ways to open: - <strong>File ▸ Open…</strong> or the toolbar <strong>Open</strong> button (multi-select works). - <strong>Drag &amp; drop</strong> onto the window — or onto the app icon (macOS; the bundle declares the file types, so Finder’s <em>Open With</em> also lists NebulaScope). - <strong>File ▸ Open Recent</strong> — the last 10 images and last 5 annotation files. - <strong>Command line</strong> — see §13. - A <strong>SAOImage DS9 region file</strong> (<code>.reg</code>) dropped on the window, or given with its image, is not listed: it is imported onto the image as annotations (§9). - <strong>Multi-HDU FITS</strong> appear in the image list as an expandable entry, one row per image HDU; click the HDU you want.</p>
+<p>A newly opened image displays immediately — in the first <em>empty</em> view cell if the view is split, otherwise in the active view. Opening <em>several</em> images fills the empty cells <strong>in the order given</strong> (command line, Finder selection, dialog), one image per cell, until the cells run out. The list holds each image <strong>once</strong>: re-opening a listed image selects its existing row instead of adding a duplicate (the status bar notes it). A large file is decoded in the background: the window stays live, the status bar names the file, and a busy indicator appears if the decode runs past four seconds (§15). An image is shown <strong>as stored in the file</strong>, first row at the top; a plate-solved FITS frame can instead be opened oriented as the sky (§8, and <strong>Preferences ▸ Orientation at open</strong>, §15). On first view an image gets a plain <strong>min→max linear ramp</strong> (predictable, no guessing); press <strong>Auto STF</strong> for a boosted stretch (§3). Exception: an XISF that carries the producing application’s <strong>saved screen stretch</strong> (the <code>DisplayFunction</code> element — PixInsight writes its STF there) opens with that stretch applied, so a PI-processed image looks the way it did on PI’s screen; the status bar notes it, and <strong>Reset</strong> returns to the plain ramp. A white point beyond the data maximum (PI’s convention places it on the normalized [0,1] container) is <strong>rebased onto the data range</strong> in closed form — identical curve over the data, up to a uniform brightness scale — so the histogram handles and value boxes remain fully usable (derivation in the <em>Colour Transport</em> chapter’s appendix: the MTF family is closed under restriction-and-renormalisation). If the saved STF is <strong>unlinked</strong> (strongly per-channel — it equalizes the channels, visually cancelling a calibrated colour balance such as SPCC’s), the status bar says so and suggests <strong>Shift+U</strong>, the linked auto-stretch that preserves the calibration.</p>
 <p><strong>One-shot-colour (OSC) frames are debayered automatically.</strong> A mono frame whose header carries a Bayer pattern (<code>BAYERPAT</code>, honouring <code>XBAYROFF</code>/<code>YBAYROFF</code> — written by ASIAIR, ASICAP, NINA, SGP, …) opens as RGB. <strong>Image ▸ Debayer</strong> controls it per image: <em>Auto-Detect</em>, a forced pattern (for frames with missing or wrong keywords), or <em>Off</em> to inspect the raw mosaic. The algorithm is a global choice — in the same menu or in Preferences: <strong>RCD</strong> (default; directional, best on stars — validated against Siril’s RCD), <strong>Bilinear</strong>, or <strong>Superpixel</strong> (each 2×2 cell becomes one RGB pixel: half size, zero artifacts, fastest). Debayer changes (pattern mode or algorithm) are <strong>undoable</strong> (⌘Z). Debayering happens at load — the status bar notes the decision (e.g.&nbsp;<em>debayered RGGB, RCD</em>), the Info panel records it, and auto-reload (§7) and per-image stretch memory compose with it naturally.</p>
 <p><strong>Mosaics with no metadata at all</strong> — planetary/solar capture tools (FireCapture, SharpCap, …) can dump the raw sensor mosaic into plain grayscale PNG or TIFF, where no header will ever announce a Bayer pattern. NebulaScope sniffs the pixels: a mosaic betrays itself statistically (immediate neighbours differ far more than same-colour neighbours two pixels apart, and the two green sites agree on one diagonal of the 2×2 cell). When a metadata-less mono image looks like an undecoded mosaic, the status bar says so and names the two candidate patterns that fit the detected green diagonal — red versus blue can’t be told apart without knowing the scene, so pick the one that looks right (the wrong twin shows a blue Sun). Since one capture stream comes from one sensor, <strong>Image ▸ Debayer ▸ Apply Choice to All in List</strong> then stamps your forced pattern onto every listed frame in one action (scripts: <code>debayer bggr rcd all</code>).</p>
 <div class="quarto-figure quarto-figure-center">
@@ -612,7 +615,7 @@ div.csl-indent {
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="screenshots/rotate-dialog.png" class="img-fluid figure-img"></p>
-<figcaption>Rotation dialog with dial, preview and North Up</figcaption>
+<figcaption>Rotation dialog with dial, preview, North Up and North Up, East Left</figcaption>
 </figure>
 </div>
 <p>Everything follows the pixels through every transform: annotations, the astrometric solution (reference pixel + CD matrix), and view-link calibrations. Orientation histories are <strong>normalized</strong> — rotating back always restores the exact original canvas (expansion borders never accumulate). The orientation is recorded per image (and in sidecars), so an image re-opens the way you left it. <strong>Image ▸ Reset Orientation is the panic button</strong>: rotation state lives in three places — per-image data histories, calibrated-link transforms, and each view’s navigation (a calibrated Match legitimately puts a rotation into the viewport, which same-size auto-links then propagate) — and Reset Orientation vacates <strong>all of it, for every image and every view</strong>, redisplaying everything as freshly read. No confirmation: the result is exactly the well-defined just-opened state. Note: after an <em>arbitrary</em> rotation, <strong>Save Data As</strong> writes resampled pixels — do photometry on unrotated data.</p>
@@ -637,6 +640,13 @@ div.csl-indent {
 <li><strong>SExtractor import</strong> — Tools ▸ Import SExtractor Catalog… reads ASCII catalogs (needs <code>X_IMAGE</code>/<code>Y_IMAGE</code>; uses <code>A/B/THETA_IMAGE</code> ellipses when present), with ellipse scale factor, <code>FLAGS</code> filtering, <code>CLASS_STAR</code> colouring, and <code>NUMBER</code>/<code>MAG_AUTO</code> labels. Detections map correctly onto rotated views.</li>
 <li><strong>DS9 region import</strong> — Tools ▸ Import DS9 Regions… reads SAOImage DS9 <code>.reg</code> files onto the shown image (a <code>.reg</code> dropped on the window, or given on the command line with its image, does the same). Circles, ellipses and annuli become ellipse annotations; boxes become box annotations, rotation included; polygons and segments become their exact outline as line segments; lines, vectors, rulers and projections become lines; points a small circle; text a text annotation. <code>color</code>, <code>text={…}</code> and the font size are kept. Coordinates may be <code>image</code>/<code>physical</code> pixels or <code>fk5</code>, <code>icrs</code>, <code>j2000</code>, <code>galactic</code> through the plate solution, in degrees, sexagesimal or <code>12h34m56s</code> form, with sizes in <code>"</code>, <code>'</code>, <code>d</code>, <code>r</code>, <code>p</code>, <code>i</code> (no unit: degrees on the sky, pixels in the image — DS9’s rule). A region given on the sky is laid out <em>on the sky</em> — its angle runs from west toward north, as DS9 defines it — and each vertex is carried through the plate solution, so it lands correctly on rotated and mirrored frames; pixel regions follow the image through this session’s rotations. Nothing is dropped silently: the status bar counts what was skipped and why — sky regions on an unsolved image, unsupported shapes (<code>panda</code>, <code>epanda</code>, <code>bpanda</code>, <code>compass</code>, <code>composite</code>) or systems (<code>fk4</code>, <code>ecliptic</code>), unreadable lines. One undo step. Script: <code>importreg &lt;path&gt;</code>.</li>
 </ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="screenshots/ds9-regions.png" class="img-fluid figure-img"></p>
+<figcaption>DS9 regions imported onto M81: ellipse, box, circle and two vectors given in fk5</figcaption>
+</figure>
+</div>
+<p><em>A hand-written region file (<code>docs/screenshots/ds9-regions.reg</code>) on a frame whose north points to the right. The ellipse, the box, the circle and the two 5′ vectors toward north and east are given in <code>fk5</code>; each is laid out on the sky and carried through the plate solution, so they land where they should without the image being reoriented.</em></p>
 </section>
 <section id="astrometry" class="level2">
 <h2 class="anchored" data-anchor-id="astrometry">10. Astrometry</h2>
@@ -791,41 +801,67 @@ div.csl-indent {
                          The default is Preferences ▸ Orientation at open.
       --mouse &lt;mode&gt;     Right-button drag for this run: default (pan) or ds9
                          (contrast/bias). The default is Preferences ▸ Mouse.
-      --run list         List all script commands (one-line summaries);
-                         detailed help: --help &lt;command&gt;.
       --run &lt;script&gt;     Execute a command script and exit with the number of
                          failed assertions (testing/batch; headless with
-                         QT_QPA_PLATFORM=offscreen). Commands: open, show,
-                         next/prev, split, fn, autostf [linked], reset,
-                         adjust &lt;name&gt; &lt;v&gt;, stfall (share stretch with the
-                         whole list), rot90, flip, rotate, export, save,
-                         assert size|channels|pixel|range, sleep,
-                         waitloaded [ms] (block until image + stats ready),
-                         screenshot &lt;file&gt; (grab the whole window to PNG),
-                         cmap &lt;name&gt;, cmapmod invert|split on|off [t],
-                         panels on|off (Image Only toggle),
-                         action &lt;name&gt; (trigger a menu action by its
-                         shortcut-registry name, e.g. toggle_grid; avoid
-                         modal dialogs — they block the script),
-                         debayer auto|off|&lt;pattern&gt; [method] [all] (OSC
-                         demosaic mode for the displayed frame; `all`
-                         stamps it onto every list row),
-                         saveann [path] (write the annotation sidecar with
-                         the full display block), bake &lt;path&gt; (the display
-                         transfer baked as Float32 FITS — the conformance
-                         reference for tools/render_sidecar.py),
-                         tag on|off|toggle, tagsort, tagremove, tagmove
-                         (blink-culling: keep-checks and acting on them),
-                         transport &lt;row&gt; [strength%] (colour transport onto
-                         the displayed image, list row as reference),
-                         dialog rotate|combine|preferences|close (open a
-                         dialog NON-modally for scripted captures),
-                         dlgclick &lt;button text&gt;, dlgcombo &lt;n&gt; &lt;prefix&gt;
-                         (drive the open dialog's buttons / combos),
-                         screenshot &lt;file&gt; dialog (capture the open dialog),
-                         quit — one per line, #-comments; see tests/smoke.nsc.
-  -h, --help             This help.</code></pre>
-<p>Examples: <code>nebulascope *.fits</code> · <code>nebulascope --list tonight.txt</code> · <code>nebulascope --split 1x2 lum.fits ha.fits</code>. (macOS: invoke the binary inside the bundle, or symlink it onto your PATH — see docs/BUILDING-macos.md. Finder-injected <code>-psn</code> arguments are ignored.)</p>
+                         QT_QPA_PLATFORM=offscreen). One command per line,
+                         #-comments; see below and tests/smoke.nsc.
+      --run list         List all script commands with one-line summaries.
+  -h, --help [command]   This help — or the detailed help of one script
+                         command, e.g. nebulascope --help transport.
+  -V, --version          Version and exact build id (git describe).</code></pre>
+<p>Examples: <code>nebulascope *.fits</code> · <code>nebulascope --list tonight.txt</code> · <code>nebulascope --split 1x2 lum.fits ha.fits</code>. A <code>.reg</code> file given with an image is imported onto it (§9). (macOS: invoke the binary inside the bundle, or symlink it onto your PATH — see docs/BUILDING-macos.md. Finder-injected <code>-psn</code> arguments are ignored.)</p>
+<section id="script-commands" class="level3">
+<h3 class="anchored" data-anchor-id="script-commands">Script commands</h3>
+<p>A script drives the real application, one command per line. The application itself is the reference: <code>nebulascope --run list</code> prints every command with a one-line summary, and <code>nebulascope --help &lt;command&gt;</code> its usage and details. By purpose:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 75%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Purpose</th>
+<th style="text-align: left;">Commands</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Files and list</td>
+<td style="text-align: left;"><code>open</code>, <code>show</code>, <code>next</code>, <code>prev</code>, <code>split</code>, <code>activate</code>, <code>tag</code>, <code>tagsort</code>, <code>tagremove</code>, <code>tagmove</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Stretch and display</td>
+<td style="text-align: left;"><code>fn</code>, <code>autostf</code>, <code>reset</code>, <code>window</code>, <code>axis</code>, <code>adjust</code>, <code>contrastbias</code>, <code>stfall</code>, <code>cmap</code>, <code>cmapmod</code>, <code>blackpatch</code>, <code>transport</code>, <code>debayer</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Geometry</td>
+<td style="text-align: left;"><code>rot90</code>, <code>flip</code>, <code>rotate</code>, <code>crop</code>, <code>skyorient</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Annotations and catalogues</td>
+<td style="text-align: left;"><code>importreg</code>, <code>psfannotate</code>, <code>gaiastar</code>, <code>gaiaoverlay</code>, <code>simbadprobe</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Processing</td>
+<td style="text-align: left;"><code>removestars</code>, <code>deconv</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Output</td>
+<td style="text-align: left;"><code>export</code>, <code>save</code>, <code>saveann</code>, <code>bake</code>, <code>screenshot</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Synthetic input</td>
+<td style="text-align: left;"><code>histdrag</code>, <code>viewdrag</code>, <code>hover</code>, <code>regpick</code>, <code>action</code>, <code>dialog</code>, <code>dlgclick</code>, <code>dlgcombo</code>, <code>panels</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Control and tests</td>
+<td style="text-align: left;"><code>assert</code>, <code>waitloaded</code>, <code>sleep</code>, <code>quit</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>action &lt;name&gt;</code> triggers any menu action by its shortcut-registry name (for example <code>toggle_grid</code>, <code>orient_to_sky</code>, <code>measure_psf</code>); avoid actions that open a modal dialog, which would block the script, and use <code>dialog</code> for the dialogs that can be driven. <code>assert</code> checks the displayed image and the session (<code>size</code>, <code>channels</code>, <code>rows</code>, <code>annotations</code>, <code>skyoriented</code>, <code>pixel</code>, <code>range</code>, <code>stretch</code>, <code>adjust</code>, <code>fn</code>, and more); the process exits with the number of failed assertions. <code>waitloaded</code> blocks until the image, its statistics and the list are ready, which is the deterministic alternative to a fixed <code>sleep</code>.</p>
+<p><strong>A scripted run never touches your settings.</strong> With <code>--run</code>, the preferences, the shortcuts and the recent-files lists live in a private temporary directory that is removed on exit. A script therefore starts from the built-in defaults on every machine, which also makes it reproducible, and nothing it opens appears in <strong>File ▸ Open Recent</strong>. Set what a script needs inside the script (<code>skyorient</code>, <code>debayer</code>, …) or with the per-run options above (<code>--orient</code>, <code>--mouse</code>, <code>--lang</code>).</p>
+</section>
 </section>
 <section id="export" class="level2">
 <h2 class="anchored" data-anchor-id="export">14. Export</h2>
@@ -863,6 +899,12 @@ div.csl-indent {
 <li><em>NebulaScope XISF looks like noise in PixInsight</em> — fixed in v0.84+ (floats normalized to [0,1]); re-save the file. Compressed blocks (v0.86+) are PI-verified and not the culprit.</li>
 <li><em>RA/Dec missing on an XISF</em> — confirm the file carries <code>PCL:AstrometricSolution:*</code> properties (Info panel filter: <code>Astrometric</code>).</li>
 <li><em>Annotations misplaced after import</em> — they map through the recorded orientation; if the sidecar predates v0.12, re-orient and re-save once.</li>
+<li><em>A professional FITS frame looks mirrored, or upside down compared with DS9</em> — NebulaScope draws the first row of a file at the top, DS9 at the bottom. <strong>Image ▸ Orient to Sky</strong> puts north up and east left for every plate-solved image in the list (§8); <strong>Preferences ▸ Orientation at open</strong> does it for every FITS you open (§15).</li>
+<li><em>North Up leaves east on the right</em> — a rotation cannot undo a mirror; use <strong>Orient to Sky</strong>, which flips first when the plate solution says so.</li>
+<li><em>Right-drag pans but you expected DS9’s contrast/bias (or the reverse)</em> — <strong>Preferences ▸ Mouse</strong>. With either setting, Ctrl, Alt or ⌘ + right-drag adjusts contrast/bias, and Shift+left-drag pans (§6).</li>
+<li><em>Some DS9 regions did not import</em> — the status bar says how many and why. Regions given in sky coordinates need a plate-solved image; <code>panda</code> shapes, <code>compass</code>, <code>composite</code> and the <code>fk4</code>/<code>ecliptic</code> systems are not read (§9).</li>
+<li><em>Identify in SIMBAD reports that no server answered</em> — the Strasbourg site and both mirrors were tried; check the network. The servers are checked again at the next lookup (§10).</li>
+<li><em>A script ignores my preferences or shortcuts</em> — by design: a <code>--run</code> session uses private default settings (§13).</li>
 <li><em>Slow zoom/pan with overlay panels</em> — set overlay opacity to 100% in Preferences (translucency costs repaints).</li>
 <li>Build issues — see <code>docs/BUILDING-{macos,linux,windows}.md</code>.</li>
 </ul>

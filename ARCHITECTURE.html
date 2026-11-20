@@ -69,9 +69,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-a24d42d3ab72b453e2694551f5c234ce.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -424,7 +424,7 @@ div.csl-indent {
 </header>
 
 
-<p>Developer-facing map of the codebase (v0.86). The user-facing feature guide is <a href="./MANUAL.html">MANUAL.md</a>; design rationale lives in <a href="./DECISIONS.html">DECISIONS.md</a>.</p>
+<p>Developer-facing map of the codebase (v0.98). The user-facing feature guide is <a href="./MANUAL.html">MANUAL.md</a>; design rationale lives in <a href="./DECISIONS.html">DECISIONS.md</a>.</p>
 <section id="layers" class="level2">
 <h2 class="anchored" data-anchor-id="layers">Layers</h2>
 <pre><code>core/    pure C++ (no widgets): pixel model, math, geometry
@@ -444,31 +444,39 @@ app/     entry point, theme, resources, user-maintained AppInfo.h</code></pre>
 <li><strong>ColorTransport</strong> — sliced optimal transport between displayed RGB distributions (ROI-restricted sampling, saturation cut).</li>
 <li><strong>ChannelCombine</strong> — weighted mono→RGB merge engine (Qt-free).</li>
 <li><strong>Transform</strong> — lossless 90°/flip ops; <code>rotateArbitrary()</code> (bilinear, bbox-expanded canvas, NaN corners, weight-renormalized sampling).</li>
-<li><strong>Wcs</strong> — TAN projection from FITS keywords or PCL XISF properties; <code>transformed()</code> / <code>rotated()</code> rebase CRPIX + CD through any pixel remap.</li>
+<li><strong>Wcs</strong> — TAN projection from FITS keywords or PCL XISF properties; <code>transformed()</code> / <code>rotated()</code> rebase CRPIX + CD through any pixel remap. Parity and orientation are read from the solution: <code>mirroredOnScreen()</code> (sign of det CD, for the row-1-at-top display), <code>northUpDelta()</code>, and <code>skyOrientPlan()</code> — the flip and quarter turns (plus an optional residual rotation) that put north up and east left.</li>
 <li><strong>SexCatalog</strong> — SExtractor ASCII_HEAD parser; name-keyed column access, order-independent (feeds the annotation importer).</li>
-<li><strong>Preferences</strong> — QSettings-backed app options (recent lists, shortcuts location, UI defaults).</li>
+<li><strong>Ds9Regions</strong> — SAOImage DS9 <code>.reg</code> parser. Produces plain <code>Ds9Shape</code> records in image pixels; sky regions are laid out on the sphere (exact destination points) and carried through the Wcs vertex by vertex, so rotation and parity need no special case. Counts what it skips and why.</li>
+<li><strong>Debayer</strong> — RCD / bilinear / superpixel demosaic; pattern from the header, forced, or sniffed from pixel statistics.</li>
+<li><strong>PsfMeasure</strong> — elliptical Moffat fits over isolated stars; per-channel FWHM, eccentricity, field map.</li>
+<li><strong>Deconvolve</strong> — deconvolution to a declared target PSF (MCS single-filter transform, optional starlet-RED prior, contract-first λ ladder); kernel measured on the image or taken from a starry sibling.</li>
+<li><strong>StarRemove</strong> — analytic star removal, the first half of the MCS decomposition: each star is fitted as an elliptical Moffat and subtracted, brightest first, on the running residual.</li>
+<li><strong>GaiaQuery</strong> — asynchronous Gaia DR3 cone searches against the ESA archive (<code>GaiaClient</code>, the one core module that uses the network), with proper motion propagated to the observation epoch.</li>
+<li><strong>ImageCache</strong> — LRU of decoded images + statistics + header, keyed by list entry, budgeted in bytes, never served stale (file time and size checked on every hit).</li>
+<li><strong>Preferences</strong> — QSettings-backed app options (recent lists, shortcuts location, UI defaults). Options that have a command-line form carry a per-run override next to the saved field (<code>runSkyOrient</code>, <code>runDs9RightDrag</code>) and are read through <code>effective…()</code> getters, so an override is never written back by a later save.</li>
 </ul>
 </section>
 <section id="io" class="level3">
 <h3 class="anchored" data-anchor-id="io">io/</h3>
 <p>Abstract <code>ImageReader</code>/<code>ImageWriter</code> registries (<code>readerForFile()</code> by magic + extension). Backends: FITS (CCfits/CFITSIO; multi-HDU enumeration, tile compression, BSCALE/BZERO), XISF (libXISF; properties incl.&nbsp;astrometric solution), Qt image formats (JPEG/PNG/TIFF/WebP read; 16-bit TIFF write). Write path: FITS/XISF/16-bit TIFF. The XISF writer normalizes float data to [0,1] (NSSCALE/NSZERO keywords keep the inverse map — PixInsight’s bounds convention) and compresses data blocks per <code>SaveOptions</code> (Zstd/Zlib/LZ4, byte-shuffled; Zstd falls back to Zlib where libXISF was built without it).</p>
+<p><strong>Threading rule for FITS.</strong> CFITSIO is thread-safe only when built reentrant, and the Windows (vcpkg) build is not. Every entry into CFITSIO/CCfits — <code>FitsReader::load</code>, <code>listFitsImageHdus</code>, <code>FitsWriter::save</code> — holds <code>io::fitsMutex()</code>. New code that calls the library must do the same. The interface thread avoids waiting on that lock: the multi-HDU probe stands aside while a worker decode is in flight.</p>
 </section>
 <section id="render" class="level3">
 <h3 class="anchored" data-anchor-id="render">render/</h3>
 <ul>
 <li><strong>StretchModel</strong> — the single source of truth for display params (function, per-channel window points, GHS, colormap, adjustments); emits <code>changed()</code>. Snapshots as <code>StretchModel::State</code> power per-image stretch memory and copy/paste.</li>
-<li><strong>DisplayRenderer</strong> — ImageData + StretchModel → dithered 8-bit QImage through per-channel windowed LUTs (GHS shares one master curve); tone adjustments compose into the LUTs, colour adjustments run per pixel. <code>renderFloat()</code> is the same composition to Float32 planes (exports, OT, star screening). MainWindow drives it <strong>asynchronously</strong> (QtConcurrent): coalescing — a running render defers, the newest state renders next; a finished frame is shown only if its source pixels are still current.</li>
+<li><strong>DisplayRenderer</strong> — ImageData + StretchModel → dithered 8-bit QImage through per-channel windowed LUTs (GHS shares one master curve); tone adjustments compose into the LUTs, colour adjustments run per pixel. <code>renderFloat()</code> is the same composition to Float32 planes (exports, OT, star screening). MainWindow drives it <strong>asynchronously</strong> (QtConcurrent): coalescing — a running render defers, the newest state renders next; a finished frame is shown only if its source pixels are still current. During an interactive display drag (contrast/bias) only the <strong>visible region</strong> is rendered, point-sampled at about twice screen resolution and shown as a patch over the last full frame; the full frame is rendered once on release. State serials keep a stale patch from covering a newer full frame.</li>
 </ul>
 </section>
 <section id="ui" class="level3">
 <h3 class="anchored" data-anchor-id="ui">ui/</h3>
 <ul>
-<li><strong>MainWindow</strong> — owns the <em>active</em> image state (<code>m_image</code>, <code>m_currentPath</code>, <code>m_wcs</code>, <code>m_header</code>, stats) and all per-path maps: stretch memory (<code>m_stfByPath</code>), annotations (<code>m_annByPath</code>), orientation history (<code>m_xformByPath</code>), disk dimensions (<code>m_diskSizeByPath</code>).</li>
+<li><strong>MainWindow</strong> — owns the <em>active</em> image state (<code>m_image</code>, <code>m_currentPath</code>, <code>m_wcs</code>, <code>m_header</code>, stats) and all per-path maps: stretch memory (<code>m_stfByPath</code>), annotations (<code>m_annByPath</code>), orientation history (<code>m_xformByPath</code>), disk dimensions (<code>m_diskSizeByPath</code>). The decode for a list click, a blink or an open runs on a worker (<code>displayPathAsync</code> → <code>decodeEntry</code> → cache → <code>displayPath</code>); the previous image stays live meanwhile, the latest request wins, and neighbours are prefetched the same way. The SIMBAD server probe (main site, then the official mirrors, the choice kept for the session) and the Stellarium remote control live here.</li>
 <li><strong>ViewGrid / ViewCell</strong> — the split main view (≤5×5). One active cell; activation swaps the whole current-image state in/out of the cell (<code>onCellSwap</code>), so every per-path mechanism works unchanged. Inactive cells keep their decoded image + rendered pixmap.</li>
-<li><strong>ImageView</strong> — QGraphicsView canvas: rubber-band zoom, pans, wheel (Shift=fine), pixel hover, drawing tools, <code>viewNavigated</code> / <code>adoptNavigationCalibrated</code> for linked navigation.</li>
-<li><strong>AnnotationLayer</strong> — vector overlay + RA/Dec grid; rebuilds from plain <code>Annotation</code> data. Ellipse rotation uses explicit QTransforms (QTBUG-22335: <code>setRotation</code> is unreliable inside item groups).</li>
+<li><strong>ImageView</strong> — QGraphicsView canvas: rubber-band zoom, pans, wheel (Shift=fine), pixel hover, drawing tools, <code>viewNavigated</code> / <code>adoptNavigationCalibrated</code> for linked navigation; the DS9-style contrast/bias drag (it only reports pointer fractions — the mapping to Brightness/Contrast is in core <code>Adjustments</code>); the preview-patch overlay.</li>
+<li><strong>AnnotationLayer</strong> — vector overlay + RA/Dec grid; rebuilds from plain <code>Annotation</code> data (ellipse, box, line, text). Ellipse and box rotation use explicit QTransforms (QTBUG-22335: <code>setRotation</code> is unreliable inside item groups).</li>
 <li><strong>HistogramPanel/View, ColorBar, InfoPanel, CombineDialog, StarCombineDialog, RotateDialog, PreferencesDialog</strong> — all drive/read the shared StretchModel or MainWindow state; no widget owns pixel data.</li>
-<li><strong>ScriptRunner</strong> — <code>--run &lt;script&gt;</code> batch mode: one command per line (open/stretch/transform/save/assert/screenshot/…), exit code = failed assertions. Drives the real MainWindow; powers the CI smoke test.</li>
+<li><strong>ScriptRunner</strong> — <code>--run &lt;script&gt;</code> batch mode: one command per line (open/stretch/transform/save/assert/screenshot/…), exit code = failed assertions. Drives the real MainWindow; powers the CI smoke test. Each command carries its own help (<code>--run list</code>, <code>--help &lt;command&gt;</code>). Under <code>--run</code>, <code>main()</code> redirects QSettings to a private temporary directory, so a script neither reads nor writes the user’s settings.</li>
 </ul>
 </section>
 </section>
@@ -481,6 +489,9 @@ app/     entry point, theme, resources, user-maintained AppInfo.h</code></pre>
 <li><strong>Windowing is per-pixel float; LUTs hold only the shape</strong> (see Stretch).</li>
 <li><strong>Display is disposable.</strong> Nothing downstream of DisplayRenderer feeds back into data; Save Data As writes <code>m_image</code> (post-orientation), exports write the rendered QImage.</li>
 <li><strong>Linked navigation</strong> — the shared-frame condition <code>W_dst⁻¹·V_dst == W_src⁻¹·V_src</code> (Qt left-first composition); same-size auto-links are the identity-world special case.</li>
+<li><strong>The first row of a file is drawn at the top.</strong> Pixel index (x, y) is FITS (X−1, Y−1) with no flip — the convention of PixInsight and of capture software, not of DS9. On screen a frame is sky-true iff det(CD) &gt; 0, so a standard FITS frame appears mirrored. Annotation angles are directions in pixel axes; DS9 sky angles are converted at import.</li>
+<li><strong>Sky orientation is seeded, not decoded.</strong> Opening “as the sky” (the preference, <code>--orient</code>, or Orient to Sky reaching the other list rows) appends <code>Wcs::skyOrientPlan()</code> to the image’s orientation history at the first <code>displayPath</code> — the same record a manual flip leaves. The decode cache stays the file as stored, and invariants 1–2 carry everything else.</li>
+<li><strong>A new behaviour is an option; the old one stays the default.</strong> Behaviour borrowed from another tool arrives as a preference (off by default) with a per-run command-line override; see Preferences above.</li>
 </ol>
 </section>
 <section id="undo-model" class="level2">
@@ -489,7 +500,7 @@ app/     entry point, theme, resources, user-maintained AppInfo.h</code></pre>
 </section>
 <section id="tests" class="level2">
 <h2 class="anchored" data-anchor-id="tests">Tests</h2>
-<p><code>tests/</code> holds framework-free CTest units (<code>nstest.h</code>: NS_TEST/NS_CHECK, exit code = failure count) — six binaries: core (stretch/adjust/transform/ stats invariants), io (format round-trips incl.&nbsp;XISF normalization + per-codec compression), wcs, catalog, combine (+ colour transport), colormap — plus the <code>smoke</code> test, which runs the real app headless (offscreen QPA) through <code>tests/smoke.nsc</code> via ScriptRunner. All run in the three CI jobs; failing output is published to the job summary.</p>
+<p><code>tests/</code> holds framework-free CTest units (<code>nstest.h</code>: NS_TEST/NS_CHECK, exit code = failure count) — twelve binaries: core (stretch/adjust/ transform/stats invariants), io (format round-trips incl.&nbsp;XISF normalization + per-codec compression, the image cache, FITS access from two threads), wcs (incl.&nbsp;parity and the sky-orientation plan), catalog, combine (+ colour transport), colormap, debayer, psf, deconv, starremove, gaia, ds9reg — plus three tests that run the real app headless (offscreen QPA) via ScriptRunner: <code>smoke</code> (<code>tests/smoke.nsc</code>), <code>settings_isolation</code> (a scripted run writes no settings file; Unix) and <code>sidecar_conformance</code> (the sidecar’s display block, rendered by the NumPy reference in <code>tools/render_sidecar.py</code>, matches the application’s own rendering). All run in the three CI jobs; failing output is published to the job summary.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">

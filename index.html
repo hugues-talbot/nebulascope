@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Hugues Talbot">
-<meta name="dcterms.date" content="2026-11-19">
+<meta name="dcterms.date" content="2026-11-20">
 
 <title>NebulaScope</title>
 <style>
@@ -70,9 +70,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-a24d42d3ab72b453e2694551f5c234ce.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-93ea9577cdbf6ced302812e0f26facab.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -417,7 +417,7 @@ div.csl-indent {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2026</p>
+      <p class="date">November 20, 2026</p>
     </div>
   </div>
   
@@ -432,8 +432,8 @@ div.csl-indent {
 <section id="preface" class="level1 unnumbered">
 <h1 class="unnumbered">Preface</h1>
 <p>NebulaScope is a cross-platform Qt 6 desktop tool for inspecting and annotating astronomical images, focused on the thing most tools do poorly: precise, draggable RGB-histogram control — including a Generalised Hyperbolic Stretch for pulling faint galaxy signal out of a high-dynamic-range background without blowing out cores and stars.</p>
-<p>It reads FITS <span class="citation" data-cites="pence2010">(<a href="references.html#ref-pence2010" role="doc-biblioref">Pence et al. 2010</a>)</span> — including multi-HDU and tile-compressed files — PixInsight XISF <span class="citation" data-cites="xisf10">(<a href="references.html#ref-xisf10" role="doc-biblioref">Conejero 2015</a>)</span> with embedded astrometric solutions, and ordinary JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor <span class="citation" data-cites="bertin1996">(<a href="references.html#ref-bertin1996" role="doc-biblioref">Bertin and Arnouts 1996</a>)</span> import directly as annotation overlays, and a reference image’s colour palette can be transferred onto the displayed image through sliced optimal transport <span class="citation" data-cites="pitie2007">(<a href="references.html#ref-pitie2007" role="doc-biblioref">Pitié et al. 2007</a>)</span>.</p>
-<p>Where it fits: between viewers like SAOImage DS9 <span class="citation" data-cites="joye2003">(<a href="references.html#ref-joye2003" role="doc-biblioref">Joye and Mandel 2003</a>)</span> (regions, WCS readout, but dated stretch ergonomics) and processing suites like PixInsight or Siril (powerful stretches, but not fast annotation-centric inspectors). NebulaScope combines modern histogram manipulation — including the Generalised Hyperbolic Stretch <span class="citation" data-cites="ghs2022">(<a href="references.html#ref-ghs2022" role="doc-biblioref">Payne et al. 2022</a>)</span> — blink comparison with per-image stretch memory, and an editable, undoable vector annotation layer that can be fed from SExtractor catalogs, e.g.&nbsp;for building machine-learning training sets.</p>
+<p>It reads FITS <span class="citation" data-cites="pence2010">(<a href="references.html#ref-pence2010" role="doc-biblioref">Pence et al. 2010</a>)</span> — including multi-HDU and tile-compressed files — PixInsight XISF <span class="citation" data-cites="xisf10">(<a href="references.html#ref-xisf10" role="doc-biblioref">Conejero 2015</a>)</span> with embedded astrometric solutions, and ordinary JPEG/PNG/TIFF/WebP pictures. Star catalogs produced by SExtractor <span class="citation" data-cites="bertin1996">(<a href="references.html#ref-bertin1996" role="doc-biblioref">Bertin and Arnouts 1996</a>)</span> and region files written by SAOImage DS9 <span class="citation" data-cites="joye2003">(<a href="references.html#ref-joye2003" role="doc-biblioref">Joye and Mandel 2003</a>)</span> import directly as annotation overlays, and a reference image’s colour palette can be transferred onto the displayed image through sliced optimal transport <span class="citation" data-cites="pitie2007">(<a href="references.html#ref-pitie2007" role="doc-biblioref">Pitié et al. 2007</a>)</span>.</p>
+<p>Where it fits: between viewers like SAOImage DS9 <span class="citation" data-cites="joye2003">(<a href="references.html#ref-joye2003" role="doc-biblioref">Joye and Mandel 2003</a>)</span> (regions, WCS readout, but dated stretch ergonomics) and processing suites like PixInsight or Siril (powerful stretches, but not fast annotation-centric inspectors). NebulaScope combines modern histogram manipulation — including the Generalised Hyperbolic Stretch <span class="citation" data-cites="ghs2022">(<a href="references.html#ref-ghs2022" role="doc-biblioref">Payne et al. 2022</a>)</span> — blink comparison with per-image stretch memory, and an editable, undoable vector annotation layer that can be fed from SExtractor catalogs, e.g.&nbsp;for building machine-learning training sets. A DS9 user finds familiar ground: region files, the contrast/bias mouse control, the DS9 palettes, and frames shown north up and east left from their plate solution.</p>
 <p>This document collects the complete user manual, the developer-facing architecture map and design-decision log, with the per-platform build instructions and the release history as appendices. Every screenshot in this book is generated reproducibly by NebulaScope’s own scripting mode (see the manual’s command-line chapter) from real acquired data.</p>
 <p>The project’s source code and issue tracker live at <a href="https://github.com/hugues-talbot/nebulascope" class="uri">https://github.com/hugues-talbot/nebulascope</a>.</p>
 
