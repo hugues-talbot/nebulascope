@@ -69,9 +69,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fd437c11ef914449285a5c26e0daa494.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-c22d121c1962cb4eb0d4148300656303.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-fd437c11ef914449285a5c26e0daa494.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -500,7 +500,7 @@ app/     entry point, theme, resources, user-maintained AppInfo.h</code></pre>
 </section>
 <section id="tests" class="level2">
 <h2 class="anchored" data-anchor-id="tests">Tests</h2>
-<p><code>tests/</code> holds framework-free CTest units (<code>nstest.h</code>: NS_TEST/NS_CHECK, exit code = failure count) — twelve binaries: core (stretch/adjust/ transform/stats invariants), io (format round-trips incl.&nbsp;XISF normalization + per-codec compression, the image cache, FITS access from two threads), wcs (incl.&nbsp;parity and the sky-orientation plan), catalog, combine (+ colour transport), colormap, debayer, psf, deconv, starremove, gaia, ds9reg — plus three tests that run the real app headless (offscreen QPA) via ScriptRunner: <code>smoke</code> (<code>tests/smoke.nsc</code>), <code>settings_isolation</code> (a scripted run writes no settings file; Unix) and <code>sidecar_conformance</code> (the sidecar’s display block, rendered by the NumPy reference in <code>tools/render_sidecar.py</code>, matches the application’s own rendering). All run in the three CI jobs; failing output is published to the job summary.</p>
+<p><code>tests/</code> holds framework-free CTest units (<code>nstest.h</code>: NS_TEST/NS_CHECK, exit code = failure count) — twelve binaries: core (stretch/adjust/ transform/stats invariants), io (format round-trips incl.&nbsp;XISF normalization + per-codec compression, the image cache, FITS access from two threads), wcs (incl.&nbsp;parity and the sky-orientation plan), catalog, combine (+ colour transport), colormap, debayer, psf, deconv, starremove, gaia, ds9reg — plus three tests that run the real app headless (offscreen QPA) via ScriptRunner: <code>smoke</code> (<code>tests/smoke.nsc</code>), <code>settings_isolation</code> (a scripted run writes no settings file; Unix) and <code>sidecar_conformance</code> (the sidecar’s display block, rendered by the NumPy reference in <code>tools/render_sidecar.py</code>, matches the application’s own rendering). A fourth, <code>translations_complete</code> (<code>tests/check_translations.py</code>), reads the catalogs in <code>src/i18n</code> (French, Italian): every string is translated in each, with the placeholders of the English source. All run in the three CI jobs; failing output is published to the job summary.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">

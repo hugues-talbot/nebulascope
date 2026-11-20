@@ -69,9 +69,9 @@ div.csl-indent {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-27330ec348340ca706981e98b339590d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-4f67ab1e4efc86feb5e21e0983fc9301.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fd437c11ef914449285a5c26e0daa494.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-c22d121c1962cb4eb0d4148300656303.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-fd437c11ef914449285a5c26e0daa494.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -388,7 +388,8 @@ div.csl-indent {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#v0.98-2026-11-20" id="toc-v0.98-2026-11-20" class="nav-link active" data-scroll-target="#v0.98-2026-11-20">v0.98 — 2026-11-20</a></li>
+  <li><a href="#v0.98.1-2026-11-20" id="toc-v0.98.1-2026-11-20" class="nav-link active" data-scroll-target="#v0.98.1-2026-11-20">v0.98.1 — 2026-11-20</a></li>
+  <li><a href="#v0.98-2026-11-20" id="toc-v0.98-2026-11-20" class="nav-link" data-scroll-target="#v0.98-2026-11-20">v0.98 — 2026-11-20</a></li>
   <li><a href="#v0.97-2026-09-04" id="toc-v0.97-2026-09-04" class="nav-link" data-scroll-target="#v0.97-2026-09-04">v0.97 — 2026-09-04</a></li>
   <li><a href="#v0.96-2026-08-31" id="toc-v0.96-2026-08-31" class="nav-link" data-scroll-target="#v0.96-2026-08-31">v0.96 — 2026-08-31</a></li>
   <li><a href="#v0.95-2026-08-19" id="toc-v0.95-2026-08-19" class="nav-link" data-scroll-target="#v0.95-2026-08-19">v0.95 — 2026-08-19</a></li>
@@ -442,6 +443,17 @@ div.csl-indent {
 
 
 <p>Generated from the annotated <code>v*</code> tags (<code>docs/make-releases.sh</code>).</p>
+<section id="v0.98.1-2026-11-20" class="level2">
+<h2 class="anchored" data-anchor-id="v0.98.1-2026-11-20">v0.98.1 — 2026-11-20</h2>
+<p>v0.98.1 — Italian interface</p>
+<p>Highlights:</p>
+<ul>
+<li><strong>Italian interface</strong> — the whole application in Italian, all 681 strings: menus, dialogs, tooltips, status messages. Choose it in Preferences ▸ Language ▸ Italiano (applied at the next launch), with <code>--lang it</code> for one run, or let an Italian system select it. Qt’s own dialogs follow. As in French, script commands and command-line output stay English, so scripts behave the same in every language. The manual remains English and French.</li>
+<li><strong>A vocabulary reviewed by a native astronomer</strong> — the terms are recorded in <code>src/i18n/TERMINOLOGY-it.md</code>: stretch, demosaicizzazione, AR/Dec, kernel, mappa colori, stelle modellate. The same file lists the wording questions still open; this is a first round and corrections are expected.</li>
+<li><strong>Translations are tested</strong> — a new test fails when a catalog lacks a string, or when a translation loses or invents a <code>%1</code> placeholder. A new interface string now needs its French and its Italian entry.</li>
+</ul>
+<p>No other change in behaviour since v0.98.</p>
+</section>
 <section id="v0.98-2026-11-20" class="level2">
 <h2 class="anchored" data-anchor-id="v0.98-2026-11-20">v0.98 — 2026-11-20</h2>
 <p>v0.98 — a DS9 user sits down: region files, contrast/bias on the mouse, frames oriented as the sky</p>
