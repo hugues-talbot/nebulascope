@@ -2,6 +2,101 @@
 
 Generated from the annotated `v*` tags (`docs/make-releases.sh`).
 
+## v0.98 — 2026-11-20
+
+v0.98 — a DS9 user sits down: region files, contrast/bias on the mouse, frames oriented as the sky
+
+Highlights:
+
+- **DS9 region files** — Tools ▸ Import DS9 Regions… reads SAOImage DS9
+  `.reg` files onto the shown image; a `.reg` dropped on the window or
+  given on the command line with its image does the same. Circles,
+  ellipses and annuli become ellipses, boxes become boxes, polygons their
+  outline, lines, vectors and rulers lines, points small circles, text
+  text; colour, label and font size are kept. Pixel systems and `fk5`,
+  `icrs`, `j2000`, `galactic` are read, in degrees, sexagesimal or
+  `12h34m56s` form, with DS9's units. A region given on the sky is laid
+  out ON the sky and carried through the plate solution vertex by
+  vertex, so it lands correctly on rotated and mirrored frames. Nothing
+  is dropped silently: the status bar counts what was skipped and why.
+  Scripts: `importreg <path>`.
+- **Box annotations** — a fourth annotation type with its own toolbar
+  tool: drag corner to corner, then resize and rotate with the same two
+  handles as an ellipse. Saved in sidecars; DS9 boxes import as boxes.
+- **Contrast and bias on the mouse, as in DS9** — Ctrl, Alt or ⌘ +
+  right-drag (or Ctrl/⌘ + left-drag): the pointer's horizontal position
+  is the bias, its vertical position the contrast, on DS9's scales. It
+  is not a second mechanism: DS9's map, (x − bias) × contrast + ½, is
+  exactly Brightness then Contrast, so the gesture drives those two
+  sliders and inherits undo, sidecars and every stretch mode.
+  **Preferences ▸ Mouse** puts it on the plain right-drag for DS9 muscle
+  memory (off by default; `--mouse ds9` for one run). During the drag
+  only the visible region is rendered, so it follows the pointer on a
+  61-megapixel master (9 ms a frame instead of 180); the full frame is
+  rendered once, on release. Scripts: `contrastbias <contrast> <bias>`.
+- **Orient to Sky (north up, east left)** — a rotation cannot undo a
+  mirror, and NebulaScope draws the first row of a file at the top where
+  the FITS convention and DS9 draw it at the bottom, so a standard
+  professional frame appeared upside down and mirrored. The plate
+  solution knows the parity (the sign of its determinant): Image ▸ Orient
+  to Sky flips first when it must, then puts north up, in one undo step.
+  It reaches the whole list, each image by its own solution; the Info
+  panel says *shown mirrored* when it applies; Reset Orientation is the
+  exact inverse.
+- **Orientation at open** — a preference, *as stored in the file* by
+  default: plate-solved FITS files can open oriented as the sky, either
+  by a flip and quarter turns only (every pixel keeps its value, and a
+  standard unrotated frame comes out exactly as DS9 shows it) or with
+  north exactly up (resampled). For one run: `--orient
+  stored|sky|sky-exact`. Scripts: `skyorient off|lossless|exact`.
+- **SIMBAD with failover; Aladin repaired** — the first SIMBAD lookup of
+  a session checks the Strasbourg server once; if it does not answer,
+  the official mirrors (CfA Harvard, IDIA) are asked together and the
+  first to answer is used until the application quits. The Aladin Lite
+  link sends the position and field in the parameters the page now
+  reads.
+- **Starless deconvolution** — Deconvolve to Target PSF works on a
+  starless image: **Kernel from** takes the PSF measured on its starry
+  sibling (valid by linearity), the delivered PSF is verified by proxy
+  on that sibling, and a sanity check refuses a source that is not the
+  sibling. Or no sibling at all: *Remove stars first (analytic)* makes
+  the whole chain a stated operation. Scripts: `deconv … from <row>`,
+  `deconv … starless`.
+- **Remove Stars (Analytic)** — Tools ▸ Remove Stars: a starless image
+  with a stated construction, the first half of the MCS decomposition.
+  Each star is fitted as an elliptical Moffat of the measured shape and
+  subtracted, brightest first; the header records the construction, and
+  the stars-only complement is added for Combine Stars. Scripts:
+  `removestars [detect_sigma] [core_sigma] [stars]`.
+- **The window stays live while a file decodes** — the decode for an
+  open, a list click or a blink runs off the interface thread: the
+  previous image stays on screen, the status bar names the file, and a
+  busy indicator appears if the decode runs past four seconds. The
+  latest request wins.
+- **A scripted run has its own settings** — with `--run`, preferences,
+  shortcuts and recent files live in a private temporary directory:
+  test runs no longer fill File ▸ Open Recent with fixtures, and a
+  script starts from the same defaults on every machine.
+- **Appendix: the study continues** — star-removal backends behind one
+  call (StarXTerminator, StarNet2, analytic), referee v2.1 (pedestal,
+  continued truth, remover-independent apertures), a parametric Moffat
+  kernel fit beside the Wiener kernel, the [N II] correction of the Hα
+  truth, and an oracle-guided analytic star removal.
+
+Fixes: on Windows, opening a FITS file could abort the application
+intermittently in builds since the asynchronous decode (the decode on a
+worker met the multi-HDU probe on the same file, and that CFITSIO build
+is not thread-safe); every FITS access now takes one lock. SExtractor
+ellipses were drawn with their angle mirrored. A modifier + right-drag
+now works with the default mouse setting.
+
+Also: the documentation was audited against everything since v0.97 —
+the manual's script-command reference is complete again (53 commands),
+six new troubleshooting entries, a figure of DS9 regions on M81, the
+architecture chapter brought from v0.86 to v0.98, two new chapters in
+HISTORY.md; French translations for everything above; the macOS build
+moved to the macos-15 runner.
+
 ## v0.97 — 2026-09-04
 
 v0.97 — the PSF study comes home: Measure PSF, calibrated deconvolution, Gaia DR3, and a fast cache
